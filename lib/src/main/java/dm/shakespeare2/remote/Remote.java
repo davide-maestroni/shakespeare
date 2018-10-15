@@ -3,6 +3,7 @@ package dm.shakespeare2.remote;
 import java.io.InputStream;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 import dm.shakespeare2.actor.Actor;
 import dm.shakespeare2.function.Observer;
@@ -16,7 +17,7 @@ public interface Remote {
 
   void describeStage(Observer<StageDescription> observer) throws Exception;
 
-  void getCodeEntries(Map<String, String> hashes, Observer<Collection<String>> observer) throws
+  void getCodeEntries(Map<String, String> hashes, Observer<? extends Set<String>> observer) throws
       Exception;
 
   void sendCodeEntries(Map<String, InputStream> data) throws Exception;

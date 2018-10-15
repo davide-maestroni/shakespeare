@@ -5,7 +5,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.ExecutorService;
 
 import dm.shakespeare2.ActorTemplate;
-import dm.shakespeare2.Shakespeare;
 import dm.shakespeare2.actor.Actor;
 import dm.shakespeare2.actor.Behavior;
 import dm.shakespeare2.actor.Behavior.Context;
@@ -14,8 +13,6 @@ import dm.shakespeare2.actor.Stage;
 import dm.shakespeare2.function.Mapper;
 import dm.shakespeare2.function.Provider;
 import dm.shakespeare2.log.Logger;
-import dm.shakespeare2.message.ActorStoppedMessage;
-import dm.shakespeare2.message.AddActorMonitorMessage;
 import dm.shakespeare2.util.ConstantConditions;
 import dm.shakespeare2.util.DoubleQueue;
 
@@ -26,33 +23,26 @@ public abstract class ActorFactory extends ActorProxy {
 
   private static final Object DUMMY_MESSAGE = new Object();
   private static final Object STOP_MESSAGE = new Object();
-
+  private final Stage mInstanceStage;
   private final FactoryOrchestrator mOrchestrator;
-  private final Stage mStage;
   private Actor mActor;
 
   private DoubleQueue<DelayedMessage> mDelayedMessages = new DoubleQueue<DelayedMessage>();
   private IncomingHandler mHandler = new InitialHandler();
 
-  public ActorFactory(@NotNull final FactoryOrchestrator orchestrator) {
-    this(Shakespeare.backStage(), orchestrator); // TODO: 15/10/2018 factory stage
-  }
-
-  public ActorFactory(@NotNull final Stage stage, @NotNull final FactoryOrchestrator orchestrator) {
-    super(Shakespeare.backStage());
-    mStage = ConstantConditions.notNull("stage", stage);
+  public ActorFactory(@NotNull final FactoryOrchestrator orchestrator,
+      @NotNull final Stage factoryStage, @NotNull final Stage instanceStage) {
+    super(factoryStage);
+    mInstanceStage = ConstantConditions.notNull("stage", instanceStage);
     mOrchestrator = ConstantConditions.notNull("orchestrator", orchestrator);
   }
 
-  public ActorFactory(@NotNull final Stage stage, @NotNull final String id,
-      @NotNull final FactoryOrchestrator orchestrator) {
-    super(Shakespeare.backStage(), id);
-    mStage = ConstantConditions.notNull("stage", stage);
+  public ActorFactory(@NotNull final FactoryOrchestrator orchestrator,
+      @NotNull final Stage factoryStage, @NotNull final Stage instanceStage,
+      @NotNull final String id) {
+    super(factoryStage, id);
+    mInstanceStage = ConstantConditions.notNull("stage", instanceStage);
     mOrchestrator = ConstantConditions.notNull("orchestrator", orchestrator);
-  }
-
-  public ActorFactory(@NotNull final String id, @NotNull final FactoryOrchestrator orchestrator) {
-    this(Shakespeare.backStage(), id, orchestrator);
   }
 
   @NotNull
@@ -105,9 +95,9 @@ public abstract class ActorFactory extends ActorProxy {
   protected void onIncomingMessage(@NotNull final Actor sender, final Object message,
       @NotNull final Envelop envelop, @NotNull final Context context) throws Exception {
     if (message instanceof BehaviorMessage) {
-      mActor = mStage.newActor()
+      mActor = mInstanceStage.newActor()
           .id(getId())
-          .behavior(new BehaviorProvider((BehaviorMessage) message))
+          .behavior((BehaviorMessage) message)
           .executor(new Mapper<String, ExecutorService>() {
 
             public ExecutorService apply(final String value) throws Exception {
@@ -123,18 +113,12 @@ public abstract class ActorFactory extends ActorProxy {
               return buildInstanceLogger();
             }
           })
-          .build()
-          .tell(AddActorMonitorMessage.defaultInstance(), context.getSelf());
-      // TODO: 15/10/2018 wrap behavior to detect stop instead of monitor
+          .build();
       mHandler = new ConsumeHandler();
       final int size = mDelayedMessages.size();
       for (int i = 0; i < size; ++i) {
         tell(DUMMY_MESSAGE, ActorFactory.this);
       }
-
-    } else if ((message instanceof ActorStoppedMessage) && envelop.getSender().equals(mActor)) {
-      mActor = null;
-      mOrchestrator.tell(STOP_MESSAGE, context.getSelf());
 
     } else {
       mHandler.handle(sender, message, envelop, context);
@@ -184,8 +168,9 @@ public abstract class ActorFactory extends ActorProxy {
             @NotNull final Context context) throws Exception {
           if (mInstanceCount < mMaxInstances) {
             ++mInstanceCount;
+            final Actor self = context.getSelf();
             envelop.getSender()
-                .tell(new BehaviorMessage(message.buildInstanceBehavior()), context.getSelf());
+                .tell(new BehaviorMessage(message.buildInstanceBehavior(), self), self);
 
           } else {
             mFactories.add(message);
@@ -198,7 +183,8 @@ public abstract class ActorFactory extends ActorProxy {
           final DoubleQueue<ActorFactory> factories = mFactories;
           if (!factories.isEmpty()) {
             final ActorFactory factory = factories.removeFirst();
-            factory.tell(new BehaviorMessage(factory.buildInstanceBehavior()), context.getSelf());
+            final Actor self = context.getSelf();
+            factory.tell(new BehaviorMessage(factory.buildInstanceBehavior(), self), self);
 
           } else {
             --mInstanceCount;
@@ -208,30 +194,18 @@ public abstract class ActorFactory extends ActorProxy {
     }
   }
 
-  private static class BehaviorMessage {
+  private static class BehaviorMessage implements Provider<Behavior> {
 
     private final Behavior mBehavior;
+    private final Actor mOrchestrator;
 
-    private BehaviorMessage(@NotNull final Behavior behavior) {
+    private BehaviorMessage(@NotNull final Behavior behavior, @NotNull final Actor orchestrator) {
       mBehavior = ConstantConditions.notNull("behavior", behavior);
-    }
-
-    @NotNull
-    public Behavior getBehavior() {
-      return mBehavior;
-    }
-  }
-
-  private static class BehaviorProvider implements Provider<Behavior> {
-
-    private final BehaviorMessage mMessage;
-
-    private BehaviorProvider(@NotNull final BehaviorMessage message) {
-      mMessage = message;
+      mOrchestrator = orchestrator;
     }
 
     public Behavior get() {
-      return mMessage.getBehavior();
+      return new FactoryBehavior(mOrchestrator, mBehavior);
     }
   }
 
@@ -260,6 +234,35 @@ public abstract class ActorFactory extends ActorProxy {
 
     Object getMessage() {
       return mMessage;
+    }
+  }
+
+  private static class FactoryBehavior implements Behavior {
+
+    private final Behavior mBehavior;
+    private final Actor mOrchestrator;
+
+    private FactoryBehavior(@NotNull final Actor orchestrator, @NotNull final Behavior behavior) {
+      mOrchestrator = orchestrator;
+      mBehavior = behavior;
+    }
+
+    public void message(final Object message, @NotNull final Envelop envelop,
+        @NotNull final Context context) throws Exception {
+      mBehavior.message(message, envelop, context);
+    }
+
+    public void start(@NotNull final Context context) throws Exception {
+      mBehavior.start(context);
+    }
+
+    public void stop(@NotNull final Context context) throws Exception {
+      try {
+        mBehavior.stop(context);
+
+      } finally {
+        mOrchestrator.tell(STOP_MESSAGE, context.getSelf());
+      }
     }
   }
 
