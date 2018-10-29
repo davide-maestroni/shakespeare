@@ -33,9 +33,6 @@ public interface Behavior {
     @NotNull
     Actor getSelf();
 
-    @NotNull
-    Stage getStage();
-
     void resetBehavior();
 
     void restart();

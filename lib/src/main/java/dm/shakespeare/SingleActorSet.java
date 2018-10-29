@@ -35,8 +35,8 @@ class SingleActorSet extends HashSet<Actor> implements ActorSet {
     return this;
   }
 
-  public void kill() {
-    mActor.kill();
+  public void remove() {
+    mActor.remove();
   }
 
   @NotNull
@@ -49,17 +49,6 @@ class SingleActorSet extends HashSet<Actor> implements ActorSet {
   public ActorSet tellAll(@NotNull final Iterable<?> messages, @NotNull final Actor sender) {
     mActor.tellAll(messages, sender);
     return this;
-  }
-
-  @NotNull
-  public <T> Conversation<T> thread(@NotNull final String threadId, @NotNull final Actor sender) {
-    return mActor.thread(threadId, sender);
-  }
-
-  @NotNull
-  public <T> Conversation<T> thread(@NotNull final String threadId, @NotNull final Actor sender,
-      @NotNull final Class<? extends ThreadMessage>... messageFilters) {
-    return mActor.thread(threadId, sender, messageFilters);
   }
 
   @NotNull

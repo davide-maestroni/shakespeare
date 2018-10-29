@@ -18,22 +18,13 @@ public interface Actor {
   @NotNull
   String getId();
 
-  boolean isStopped();
-
-  void kill();
+  void remove();
 
   @NotNull
   Actor tell(Object message, @NotNull Actor sender);
 
   @NotNull
   Actor tellAll(@NotNull Iterable<?> messages, @NotNull Actor sender);
-
-  @NotNull
-  <T> Conversation<T> thread(@NotNull String threadId, @NotNull Actor sender);
-
-  @NotNull
-  <T> Conversation<T> thread(@NotNull String threadId, @NotNull Actor sender,
-      @NotNull Class<? extends ThreadMessage>... messageFilters);
 
   @NotNull
   <T> Conversation<T> thread(@NotNull String threadId, @NotNull Actor sender,
@@ -44,20 +35,13 @@ public interface Actor {
     @NotNull
     ActorSet forward(Object message, @NotNull Envelop envelop, @NotNull Actor sender);
 
-    void kill();
+    void remove();
 
     @NotNull
     ActorSet tell(Object message, @NotNull Actor sender);
 
     @NotNull
     ActorSet tellAll(@NotNull Iterable<?> messages, @NotNull Actor sender);
-
-    @NotNull
-    <T> Conversation<T> thread(@NotNull String threadId, @NotNull Actor sender);
-
-    @NotNull
-    <T> Conversation<T> thread(@NotNull String threadId, @NotNull Actor sender,
-        @NotNull Class<? extends ThreadMessage>... messageFilters);
 
     @NotNull
     <T> Conversation<T> thread(@NotNull String threadId, @NotNull Actor sender,

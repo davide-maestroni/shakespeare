@@ -2,9 +2,7 @@ package dm.shakespeare;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.ThreadMessage;
@@ -48,11 +46,7 @@ class DefaultActor implements Actor {
     return mId;
   }
 
-  public boolean isStopped() {
-    return mContext.isStopped();
-  }
-
-  public void kill() {
+  public void remove() {
     mContext.abort();
   }
 
@@ -98,17 +92,6 @@ class DefaultActor implements Actor {
     }
 
     return this;
-  }
-
-  @NotNull
-  public <T> Conversation<T> thread(@NotNull final String threadId, @NotNull final Actor sender) {
-    return thread(threadId, sender, Collections.<Class<? extends ThreadMessage>>emptySet());
-  }
-
-  @NotNull
-  public <T> Conversation<T> thread(@NotNull final String threadId, @NotNull final Actor sender,
-      @NotNull final Class<? extends ThreadMessage>... messageFilters) {
-    return thread(threadId, sender, Arrays.asList(messageFilters));
   }
 
   @NotNull

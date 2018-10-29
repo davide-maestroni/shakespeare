@@ -18,11 +18,19 @@ import dm.shakespeare.actor.Stage;
 import dm.shakespeare.executor.ExecutorServices;
 import dm.shakespeare.function.Mapper;
 import dm.shakespeare.function.Provider;
+import dm.shakespeare.function.Tester;
 
 /**
  * Created by davide-maestroni on 10/10/2018.
  */
 public abstract class ActorProxy extends ActorTemplate {
+
+  private static final Tester<String> POSITIVE_TESTER = new Tester<String>() {
+
+    public boolean test(final String value) {
+      return true;
+    }
+  };
 
   private final ReferenceQueue<Actor> mReferenceQueue = new ReferenceQueue<Actor>();
   private final HashMap<Actor, ActorReference> mSenders = new HashMap<Actor, ActorReference>();
@@ -75,7 +83,7 @@ public abstract class ActorProxy extends ActorTemplate {
                   return ExecutorServices.trampolineExecutor();
                 }
               })
-              .preventDefault(true)
+              .preventDefault(POSITIVE_TESTER)
               .build();
           mSenders.put(sender, new ActorReference(actor, sender, mReferenceQueue));
         }

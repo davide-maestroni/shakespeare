@@ -6,6 +6,7 @@ import java.util.concurrent.ExecutorService;
 
 import dm.shakespeare.function.Mapper;
 import dm.shakespeare.function.Provider;
+import dm.shakespeare.function.Tester;
 import dm.shakespeare.log.Logger;
 
 /**
@@ -29,11 +30,11 @@ public interface ActorBuilder {
   ActorBuilder logger(@NotNull Mapper<? super String, ? extends Logger> mapper);
 
   @NotNull
-  ActorBuilder mayInterruptIfRunning(boolean interruptIfRunning);
+  ActorBuilder mayInterruptIfRunning(@NotNull Tester<? super String> tester);
 
   @NotNull
-  ActorBuilder preventDefault(boolean prevent);
+  ActorBuilder preventDefault(@NotNull Tester<? super String> tester);
 
   @NotNull
-  ActorBuilder quota(int quota);
+  ActorBuilder quota(@NotNull Mapper<? super String, ? extends Integer> mapper);
 }

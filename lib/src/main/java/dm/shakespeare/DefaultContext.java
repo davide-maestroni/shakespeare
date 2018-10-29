@@ -16,7 +16,6 @@ import dm.shakespeare.actor.Actor.Envelop;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.actor.SignalingMessage;
-import dm.shakespeare.actor.Stage;
 import dm.shakespeare.executor.ExecutorServices;
 import dm.shakespeare.function.Provider;
 import dm.shakespeare.log.Logger;
@@ -156,7 +155,6 @@ class DefaultContext implements Context {
 
   private final Actor mActor;
   private final Provider<? extends Behavior> mBehaviorProvider;
-  private final BehaviorWrapper mBehaviorWrapper = new BehaviorWrapper();
   private final ConversationNotifier mConversationNotifier;
   private final ExecutorService mExecutor;
   private final Logger mLogger;
@@ -167,12 +165,12 @@ class DefaultContext implements Context {
   private final Runnable mRestartRunnable;
   private final Map<Class<?>, SignalingMessageHandler> mSignalingHandlers;
   private final DefaultStage mStage;
-  private final Runnable mStartRunnable;
   private final Runnable mStopRunnable;
   private final Map<Class<?>, SignalingMessageHandler> mSuperviseHandlers = SUPERVISE_HANDLERS;
 
   private volatile boolean mAborted;
   private Behavior mBehavior;
+  private BehaviorWrapper mBehaviorWrapper = new StartingWrapper();
   private DoubleQueue<DelayedMessage> mDelayedMessages = new DoubleQueue<DelayedMessage>();
   private Throwable mFailure;
   private Conversation<Object> mFailureConversation;
@@ -201,24 +199,6 @@ class DefaultContext implements Context {
     mMonitorNotifier = new MonitorNotifier(actor);
     mQuotaNotifier = ((mQuota = ConstantConditions.positive("quota", quota)) < Integer.MAX_VALUE)
         ? new DefaultQuotaNotifier() : DUMMY_NOTIFIER;
-    mStartRunnable = new Runnable() {
-
-      public void run() {
-        try {
-          mBehavior =
-              mOriginalBehavior = ConstantConditions.notNull("behavior", mBehaviorProvider.get());
-          mBehaviorWrapper.start(DefaultContext.this);
-
-        } catch (final RuntimeException e) {
-          mStopped = true;
-          throw e;
-
-        } catch (final Exception e) {
-          mStopped = true;
-          throw new RuntimeException(e);
-        }
-      }
-    };
     mStopRunnable = new Runnable() {
 
       public void run() {
@@ -229,7 +209,7 @@ class DefaultContext implements Context {
 
       public void run() {
         mHandler = new DefaultHandler();
-        final BehaviorWrapper behaviorWrapper = mBehaviorWrapper;
+        final Behavior behaviorWrapper = mBehaviorWrapper;
         try {
           behaviorWrapper.stop(DefaultContext.this);
           mBehavior = ConstantConditions.notNull("behavior", mBehaviorProvider.get());
@@ -284,11 +264,6 @@ class DefaultContext implements Context {
   @NotNull
   public Actor getSelf() {
     return mActor;
-  }
-
-  @NotNull
-  public Stage getStage() {
-    return mStage;
   }
 
   public void resetBehavior() {
@@ -357,10 +332,6 @@ class DefaultContext implements Context {
     }
   }
 
-  void start() {
-    mExecutor.execute(mStartRunnable);
-  }
-
   private void discardDelayed() {
     final Throwable failure = mFailure;
     @SuppressWarnings("UnnecessaryLocalVariable") final ConversationNotifier conversationNotifier =
@@ -389,6 +360,13 @@ class DefaultContext implements Context {
     for (int i = 0; i < size; ++i) {
       actor.tell(DUMMY_MESSAGE, actor);
     }
+  }
+
+  private interface BehaviorWrapper extends Behavior {
+
+    void message(Object message, @NotNull Envelop envelop, @NotNull Context context);
+
+    void stop(@NotNull Context context);
   }
 
   private interface MessageHandler {
@@ -427,47 +405,6 @@ class DefaultContext implements Context {
 
     Object getMessage() {
       return mMessage;
-    }
-  }
-
-  private class BehaviorWrapper implements Behavior {
-
-    public void message(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) {
-      if (isStopped()) {
-        bounce(message, envelop);
-        return;
-      }
-
-      mQuotaNotifier.consume();
-      mHandler.handle(message, envelop);
-    }
-
-    public void start(@NotNull final Context context) throws Exception {
-      mBehavior.start(context);
-      mMonitorNotifier.start();
-    }
-
-    public void stop(@NotNull final Context context) {
-      if (mStopped) {
-        return;
-      }
-
-      try {
-        mBehavior.stop(context);
-
-      } catch (final InterruptedException e) {
-        throw new RuntimeException(e);
-
-      } catch (final Throwable t) {
-        mLogger.wrn(t, "Suppressed exception");
-
-      } finally {
-        mStopped = true;
-        mStage.removeActor(mActor.getId());
-        mConversationNotifier.abort();
-        mMonitorNotifier.stop();
-      }
     }
   }
 
@@ -540,6 +477,48 @@ class DefaultContext implements Context {
     }
   }
 
+  private class DefaultWrapper implements BehaviorWrapper {
+
+    public void message(final Object message, @NotNull final Envelop envelop,
+        @NotNull final Context context) {
+      if (isStopped()) {
+        bounce(message, envelop);
+        return;
+      }
+
+      mQuotaNotifier.consume();
+      mHandler.handle(message, envelop);
+    }
+
+    public void stop(@NotNull final Context context) {
+      if (mStopped) {
+        return;
+      }
+
+      try {
+        mBehavior.stop(context);
+
+      } catch (final InterruptedException e) {
+        throw new RuntimeException(e);
+
+      } catch (final Throwable t) {
+        mLogger.wrn(t, "Suppressed exception");
+
+      } finally {
+        mStopped = true;
+        mStage.removeActor(mActor.getId());
+        mConversationNotifier.abort();
+        mMonitorNotifier.stop();
+      }
+    }
+
+    public void start(@NotNull final Context context) throws Exception {
+      mBehavior.start(context);
+      mMonitorNotifier.start();
+    }
+
+  }
+
   private class ResumedHandler extends DefaultHandler {
 
     public void handle(final Object message, @NotNull final Envelop envelop) {
@@ -557,6 +536,40 @@ class DefaultContext implements Context {
       mDelayedMessages = new DoubleQueue<DelayedMessage>();
       mHandler = new DefaultHandler();
       super.handle(message, envelop);
+    }
+  }
+
+  private class StartingWrapper extends DefaultWrapper {
+
+    @Override
+    public void message(final Object message, @NotNull final Envelop envelop,
+        @NotNull final Context context) {
+      try {
+        mBehaviorWrapper = new DefaultWrapper();
+        mBehavior =
+            mOriginalBehavior = ConstantConditions.notNull("behavior", mBehaviorProvider.get());
+        start(DefaultContext.this);
+
+      } catch (final RuntimeException e) {
+        mStopped = true;
+        throw e;
+
+      } catch (final Exception e) {
+        mStopped = true;
+        throw new RuntimeException(e);
+
+      } finally {
+        super.message(message, envelop, context);
+      }
+    }
+
+    @Override
+    public void stop(@NotNull final Context context) {
+      mBehaviorWrapper = new DefaultWrapper();
+      mStopped = true;
+      mStage.removeActor(mActor.getId());
+      mConversationNotifier.abort();
+      mMonitorNotifier.stop();
     }
   }
 

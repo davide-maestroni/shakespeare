@@ -36,11 +36,7 @@ class StandInActor implements Actor {
     return mId;
   }
 
-  public boolean isStopped() {
-    return false;
-  }
-
-  public void kill() {
+  public void remove() {
   }
 
   @NotNull
@@ -54,19 +50,8 @@ class StandInActor implements Actor {
   }
 
   @NotNull
-  public <T> Conversation<T> thread(@NotNull final String threadId, @NotNull final Actor sender) {
-    return new StandInConversation<T>(sender);
-  }
-
-  @NotNull
-  public <T> Conversation<T> thread(@NotNull final String threadId, @NotNull final Actor sender,
-      @NotNull final Class<? extends ThreadMessage>... messageFilters) {
-    return thread(threadId, sender);
-  }
-
-  @NotNull
   public <T> Conversation<T> thread(@NotNull final String threadId, @NotNull final Actor sender,
       @NotNull final Collection<? extends Class<? extends ThreadMessage>> messageFilters) {
-    return thread(threadId, sender);
+    return new StandInConversation<T>(sender);
   }
 }

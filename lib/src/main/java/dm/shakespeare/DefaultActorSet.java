@@ -4,7 +4,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.AbstractSet;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -37,9 +36,9 @@ class DefaultActorSet extends AbstractSet<Actor> implements ActorSet {
     return this;
   }
 
-  public void kill() {
+  public void remove() {
     for (final Actor actor : mActors) {
-      actor.kill();
+      actor.remove();
     }
   }
 
@@ -59,17 +58,6 @@ class DefaultActorSet extends AbstractSet<Actor> implements ActorSet {
     }
 
     return this;
-  }
-
-  @NotNull
-  public <T> Conversation<T> thread(@NotNull final String threadId, @NotNull final Actor sender) {
-    return thread(threadId, sender, Collections.<Class<? extends ThreadMessage>>emptySet());
-  }
-
-  @NotNull
-  public <T> Conversation<T> thread(@NotNull final String threadId, @NotNull final Actor sender,
-      @NotNull final Class<? extends ThreadMessage>... messageFilters) {
-    return thread(threadId, sender, Arrays.asList(messageFilters));
   }
 
   @NotNull

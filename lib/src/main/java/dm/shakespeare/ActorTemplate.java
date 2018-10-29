@@ -2,18 +2,21 @@ package dm.shakespeare;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 
 import dm.shakespeare.actor.Actor;
-import dm.shakespeare.actor.ActorBuilder;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.BehaviorBuilder;
 import dm.shakespeare.actor.Stage;
 import dm.shakespeare.actor.ThreadMessage;
+import dm.shakespeare.executor.ExecutorServices;
 import dm.shakespeare.function.Mapper;
 import dm.shakespeare.function.Provider;
+import dm.shakespeare.function.Tester;
+import dm.shakespeare.log.LogPrinters;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -22,21 +25,79 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public abstract class ActorTemplate implements Actor {
 
+  private static final ActorCreator DEFAULT_ACTOR_CREATOR = new ActorCreator() {
+
+    @NotNull
+    public Actor create(@NotNull final ActorTemplate template) {
+      return template.mActor;
+    }
+  };
+  private static final ActorCreator INIT_ACTOR_CREATOR = new ActorCreator() {
+
+    @NotNull
+    public Actor create(@NotNull final ActorTemplate template) throws Exception {
+      template.init();
+      final Actor actor = template.mActor =
+          template.mStage.newActor().id(template.mId).behavior(new Provider<Behavior>() {
+
+            private boolean mIsReset;
+
+            public Behavior get() throws Exception {
+              final ActorTemplate actor = mIsReset ? template.reset() : template;
+              mIsReset = true;
+              return actor.buildBehavior();
+            }
+          }).executor(new Mapper<String, ExecutorService>() {
+
+            public ExecutorService apply(final String id) throws Exception {
+              return template.buildExecutor();
+            }
+          }).mayInterruptIfRunning(new Tester<String>() {
+
+            public boolean test(final String value) throws Exception {
+              return template.mayInterruptIfRunning();
+            }
+          }).preventDefault(new Tester<String>() {
+
+            public boolean test(final String value) throws Exception {
+              return template.preventDefault();
+            }
+          }).quota(new Mapper<String, Integer>() {
+
+            public Integer apply(final String value) throws Exception {
+              return template.quota();
+            }
+          }).logger(new Mapper<String, Logger>() {
+
+            public Logger apply(final String value) throws Exception {
+              return template.buildLogger();
+            }
+          }).build();
+      template.mActorCreator = DEFAULT_ACTOR_CREATOR;
+      return actor;
+    }
+  };
+
   private static final AtomicLong sCount = new AtomicLong(Long.MIN_VALUE);
+  private static final ExecutorService sExecutor =
+      ExecutorServices.withThrottling(1, ExecutorServices.trampolineExecutor());
+  private static final Logger sLogger =
+      Logger.newLogger(LogPrinters.javaLoggingPrinter(ActorTemplate.class.getName()));
 
   private final String mId;
   private final Stage mStage;
 
   private volatile Actor mActor;
+  private ActorCreator mActorCreator = INIT_ACTOR_CREATOR;
 
   // temp actor
   public ActorTemplate() {
-    this(dm.shakespeare.BackStage.defaultInstance());
+    this(BackStage.defaultInstance());
   }
 
   // temp actor
   public ActorTemplate(@NotNull final String id) {
-    this(dm.shakespeare.BackStage.defaultInstance(), id);
+    this(BackStage.defaultInstance(), id);
   }
 
   // stage actor
@@ -59,50 +120,55 @@ public abstract class ActorTemplate implements Actor {
   @NotNull
   public ActorTemplate forward(final Object message, @NotNull final Envelop envelop,
       @NotNull final Actor sender) {
-    getActor().forward(message, envelop, sender);
+    sExecutor.execute(new ActorRunnable() {
+
+      void runSafe() throws Exception {
+        mActorCreator.create(ActorTemplate.this).forward(message, envelop, sender);
+      }
+    });
     return this;
   }
 
   @NotNull
   public final String getId() {
-    return getActor().getId();
+    return mId;
   }
 
-  public boolean isStopped() {
-    return getActor().isStopped();
-  }
+  public void remove() {
+    sExecutor.execute(new ActorRunnable() {
 
-  public void kill() {
-    getActor().kill();
+      void runSafe() throws Exception {
+        mActorCreator.create(ActorTemplate.this).remove();
+      }
+    });
   }
 
   @NotNull
   public ActorTemplate tell(final Object message, @NotNull final Actor sender) {
-    getActor().tell(message, sender);
+    sExecutor.execute(new ActorRunnable() {
+
+      void runSafe() throws Exception {
+        mActorCreator.create(ActorTemplate.this).tell(message, sender);
+      }
+    });
     return this;
   }
 
   @NotNull
   public ActorTemplate tellAll(@NotNull final Iterable<?> messages, @NotNull final Actor sender) {
-    getActor().tellAll(messages, sender);
+    sExecutor.execute(new ActorRunnable() {
+
+      void runSafe() throws Exception {
+        mActorCreator.create(ActorTemplate.this).tellAll(messages, sender);
+      }
+    });
     return this;
-  }
-
-  @NotNull
-  public <T> Conversation<T> thread(@NotNull final String threadId, @NotNull final Actor sender) {
-    return getActor().thread(threadId, sender);
-  }
-
-  @NotNull
-  public <T> Conversation<T> thread(@NotNull final String threadId, @NotNull final Actor sender,
-      @NotNull final Class<? extends ThreadMessage>... messageFilters) {
-    return getActor().thread(threadId, sender, messageFilters);
   }
 
   @NotNull
   public <T> Conversation<T> thread(@NotNull final String threadId, @NotNull final Actor sender,
       @NotNull final Collection<? extends Class<? extends ThreadMessage>> messageFilters) {
-    return getActor().thread(threadId, sender, messageFilters);
+    return new ConversationTemplate<T>(threadId, sender, messageFilters);
   }
 
   @NotNull
@@ -112,7 +178,12 @@ public abstract class ActorTemplate implements Actor {
 
   @NotNull
   public final ActorTemplate start() {
-    getActor();
+    sExecutor.execute(new ActorRunnable() {
+
+      void runSafe() throws Exception {
+        mActorCreator.create(ActorTemplate.this);
+      }
+    });
     return this;
   }
 
@@ -135,15 +206,15 @@ public abstract class ActorTemplate implements Actor {
   }
 
   protected boolean mayInterruptIfRunning() throws Exception {
-    return false;
+    return DefaultStage.defaultInterruptTester().test(mId);
   }
 
   protected boolean preventDefault() throws Exception {
-    return false;
+    return DefaultStage.defaultPreventTester().test(mId);
   }
 
   protected int quota() throws Exception {
-    return Integer.MAX_VALUE;
+    return DefaultStage.defaultQuotaMapper().apply(mId);
   }
 
   @NotNull
@@ -151,43 +222,146 @@ public abstract class ActorTemplate implements Actor {
     return ConstantConditions.unsupported("please provide your own implementation");
   }
 
-  @NotNull
-  private Actor getActor() {
-    if (mActor == null) {
-      mActor = mStage.getOrCreate(mId, new Mapper<ActorBuilder, Actor>() {
+  private interface ActorCreator {
 
-        public Actor apply(final ActorBuilder builder) throws Exception {
-          init();
-          return builder.behavior(new Provider<Behavior>() {
+    @NotNull
+    Actor create(@NotNull ActorTemplate template) throws Exception;
+  }
 
-            private boolean mIsReset;
+  private interface ConversationCreator<T> {
 
-            public Behavior get() throws Exception {
-              final ActorTemplate actor = mIsReset ? reset() : ActorTemplate.this;
-              mIsReset = true;
-              return actor.buildBehavior();
+    @NotNull
+    Conversation<T> create(@NotNull ActorTemplate template, @NotNull String threadId,
+        @NotNull Actor sender,
+        @NotNull Collection<? extends Class<? extends ThreadMessage>> messageFilters) throws
+        Exception;
+  }
+
+  private abstract class ActorRunnable implements Runnable {
+
+    public final void run() {
+      try {
+        runSafe();
+
+      } catch (final Exception e) {
+        sLogger.err(e);
+        mActor = Shakespeare.backStage().newActor().id(mId).behavior(new Provider<Behavior>() {
+
+          public Behavior get() throws Exception {
+            throw e;
+          }
+        }).executor(DefaultStage.defaultExecutorMapper()).build();
+      }
+    }
+
+    abstract void runSafe() throws Exception;
+  }
+
+  private class ConversationTemplate<T> implements Conversation<T> {
+
+    private final ArrayList<Class<? extends ThreadMessage>> mMessageFilters;
+    private final SingleActorSet mRecipients;
+    private final Actor mSender;
+    private final String mThreadId;
+
+    private Conversation<T> mConversation;
+    private ConversationCreator<T> mConversationCreator;
+
+    private ConversationTemplate(@NotNull final String threadId, @NotNull final Actor sender,
+        @NotNull final Collection<? extends Class<? extends ThreadMessage>> messageFilters) {
+      mThreadId = ConstantConditions.notNull("threadId", threadId);
+      mSender = ConstantConditions.notNull("sender", sender);
+      mMessageFilters = new ArrayList<Class<? extends ThreadMessage>>(messageFilters);
+      mRecipients = new SingleActorSet(ActorTemplate.this);
+      mConversationCreator = new ConversationCreator<T>() {
+
+        @NotNull
+        @SuppressWarnings("unchecked")
+        public Conversation<T> create(@NotNull final ActorTemplate template,
+            @NotNull final String threadId, @NotNull final Actor sender,
+            @NotNull final Collection<? extends Class<? extends ThreadMessage>> messageFilters)
+            throws
+            Exception {
+          mConversation =
+              template.mActorCreator.create(template).thread(threadId, sender, messageFilters);
+          mConversationCreator = new ConversationCreator() {
+
+            @NotNull
+            public Conversation create(@NotNull final ActorTemplate template,
+                @NotNull final String threadId, @NotNull final Actor sender,
+                @NotNull final Collection messageFilters) {
+              return mConversation;
             }
-          })
-              .executor(new Mapper<String, ExecutorService>() {
+          };
+          return mConversation;
+        }
+      };
+    }
 
-                public ExecutorService apply(final String id) throws Exception {
-                  return buildExecutor();
-                }
-              })
-              .mayInterruptIfRunning(mayInterruptIfRunning())
-              .preventDefault(preventDefault())
-              .quota(quota())
-              .logger(new Mapper<String, Logger>() {
+    public void abort() {
+      sExecutor.execute(new ActorRunnable() {
 
-                public Logger apply(final String value) throws Exception {
-                  return buildLogger();
-                }
-              })
-              .build();
+        void runSafe() throws Exception {
+          mConversationCreator.create(ActorTemplate.this, mThreadId, mSender, mMessageFilters)
+              .abort();
         }
       });
     }
 
-    return mActor;
+    public void close() {
+      sExecutor.execute(new ActorRunnable() {
+
+        void runSafe() throws Exception {
+          mConversationCreator.create(ActorTemplate.this, mThreadId, mSender, mMessageFilters)
+              .close();
+        }
+      });
+    }
+
+    @NotNull
+    public Conversation forward(final Object message, @NotNull final Envelop envelop) {
+      sExecutor.execute(new ActorRunnable() {
+
+        void runSafe() throws Exception {
+          mConversationCreator.create(ActorTemplate.this, mThreadId, mSender, mMessageFilters)
+              .forward(message, envelop);
+        }
+      });
+      return this;
+    }
+
+    @NotNull
+    public ActorSet getRecipients() {
+      return mRecipients;
+    }
+
+    @NotNull
+    public String getThreadId() {
+      return mThreadId;
+    }
+
+    @NotNull
+    public Conversation<T> tell(final T message) {
+      sExecutor.execute(new ActorRunnable() {
+
+        void runSafe() throws Exception {
+          mConversationCreator.create(ActorTemplate.this, mThreadId, mSender, mMessageFilters)
+              .tell(message);
+        }
+      });
+      return this;
+    }
+
+    @NotNull
+    public Conversation<T> tellAll(@NotNull final Iterable<? extends T> messages) {
+      sExecutor.execute(new ActorRunnable() {
+
+        void runSafe() throws Exception {
+          mConversationCreator.create(ActorTemplate.this, mThreadId, mSender, mMessageFilters)
+              .tellAll(messages);
+        }
+      });
+      return this;
+    }
   }
 }

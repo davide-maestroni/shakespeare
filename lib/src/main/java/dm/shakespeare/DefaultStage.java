@@ -1,7 +1,6 @@
 package dm.shakespeare;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -75,6 +74,19 @@ class DefaultStage implements Stage {
           return Logger.newLogger(LogPrinters.javaLoggingPrinter(value));
         }
       };
+  private static final Mapper<? super String, ? extends Integer> DEFAULT_QUOTA_MAPPER =
+      new Mapper<String, Integer>() {
+
+        public Integer apply(final String value) {
+          return Integer.MAX_VALUE;
+        }
+      };
+  private static final Tester<? super String> DEFAULT_TESTER = new Tester<String>() {
+
+    public boolean test(final String value) {
+      return false;
+    }
+  };
 
   private final Map<String, Actor> mActors;
   private final Object mMutex = new Object();
@@ -104,8 +116,23 @@ class DefaultStage implements Stage {
   }
 
   @NotNull
+  static Tester<? super String> defaultInterruptTester() {
+    return DEFAULT_TESTER;
+  }
+
+  @NotNull
   static Mapper<? super String, ? extends Logger> defaultLoggerMapper() {
     return DEFAULT_LOGGER_MAPPER;
+  }
+
+  @NotNull
+  static Tester<? super String> defaultPreventTester() {
+    return DEFAULT_TESTER;
+  }
+
+  @NotNull
+  static Mapper<? super String, ? extends Integer> defaultQuotaMapper() {
+    return DEFAULT_QUOTA_MAPPER;
   }
 
   public void addMonitor(@NotNull final Actor monitor) {
@@ -190,92 +217,23 @@ class DefaultStage implements Stage {
   }
 
   @NotNull
+  public ActorSet getAll() {
+    final HashSet<Actor> actors;
+    synchronized (mMutex) {
+      actors = new HashSet<Actor>(mActors.values());
+    }
+
+    return new DefaultActorSet(actors);
+  }
+
+  @NotNull
   public String getName() {
     return mName;
   }
 
   @NotNull
-  public Actor getOrCreate(@NotNull final String id,
-      @NotNull final Mapper<? super ActorBuilder, ? extends Actor> mapper) {
-    ConstantConditions.notNull("id", id);
-    ConstantConditions.notNull("mapper", mapper);
-    final Map<String, Actor> actors = mActors;
-    synchronized (mMutex) {
-      Actor actor = actors.get(id);
-      if (actor != null) {
-        return actor;
-      }
-
-      if (actors.containsKey(id)) {
-        try {
-          do {
-            mMutex.wait();
-            actor = actors.get(id);
-          } while ((actor == null) && actors.containsKey(id));
-
-        } catch (final InterruptedException e) {
-          throw new RuntimeException(e);
-        }
-
-        if (actor != null) {
-          mMutex.notifyAll();
-          return actor;
-        }
-
-        actors.put(id, null);
-
-      } else {
-        actors.put(id, null);
-      }
-    }
-
-    final Actor actor;
-    try {
-      actor = mapper.apply(new DefaultActorBuilder(id));
-
-    } catch (final RuntimeException e) {
-      final Actor removed;
-      synchronized (mMutex) {
-        removed = actors.remove(id);
-        mMutex.notifyAll();
-      }
-
-      if (removed != null) {
-        mStageNotifier.remove(id);
-      }
-
-      throw e;
-
-    } catch (final Exception e) {
-      final Actor removed;
-      synchronized (mMutex) {
-        removed = actors.remove(id);
-        mMutex.notifyAll();
-      }
-
-      if (removed != null) {
-        mStageNotifier.remove(id);
-      }
-
-      throw new RuntimeException(e);
-    }
-
-    final Actor old;
-    synchronized (mMutex) {
-      old = actors.put(id, actor);
-      mMutex.notifyAll();
-    }
-
-    if (old == null) {
-      mStageNotifier.create(id);
-    }
-
-    return actor;
-  }
-
-  @NotNull
   public ActorBuilder newActor() {
-    return new DefaultActorBuilder(null);
+    return new DefaultActorBuilder();
   }
 
   public void removeMonitor(@NotNull final Actor monitor) {
@@ -308,21 +266,14 @@ class DefaultStage implements Stage {
 
   private class DefaultActorBuilder implements ActorBuilder {
 
-    private final boolean mAssignedId;
-
     private String mActorId;
     private Provider<? extends Behavior> mBehaviorProvider = DEFAULT_BEHAVIOR_PROVIDER;
     private Mapper<? super String, ? extends ExecutorService> mExecutorMapper =
         DEFAULT_EXECUTOR_MAPPER;
+    private Tester<? super String> mInterruptTester = DEFAULT_TESTER;
     private Mapper<? super String, ? extends Logger> mLoggerMapper = DEFAULT_LOGGER_MAPPER;
-    private boolean mMayInterruptIfRunning;
-    private boolean mPreventDefault;
-    private int mQuota = Integer.MAX_VALUE;
-
-    private DefaultActorBuilder(@Nullable final String id) {
-      mActorId = id;
-      mAssignedId = (id != null);
-    }
+    private Tester<? super String> mPreventTester = DEFAULT_TESTER;
+    private Mapper<? super String, ? extends Integer> mQuotaMapper = DEFAULT_QUOTA_MAPPER;
 
     @NotNull
     public ActorBuilder behavior(@NotNull final Provider<? extends Behavior> provider) {
@@ -334,70 +285,51 @@ class DefaultStage implements Stage {
     public Actor build() {
       final Map<String, Actor> actors = mActors;
       String actorId;
-      synchronized (mMutex) {
-        actorId = mActorId;
-        if (actorId == null) {
-          do {
+      while (true) {
+        if (mActorId != null) {
+          actorId = mActorId;
+
+        } else {
+          synchronized (mMutex) {
             actorId = Actor.class.getName() + "#" + mCount++;
-          } while (actors.containsKey(actorId));
-
-        } else if (!mAssignedId && actors.containsKey(actorId)) {
-          throw new IllegalStateException("an actor with the same ID already exists: " + actorId);
+          }
         }
 
-        actors.put(actorId, null);
-      }
+        final DefaultActor actor;
+        final DefaultContext context;
+        try {
+          final boolean mayInterruptIfRunning = mInterruptTester.test(actorId);
+          final boolean preventDefault = mPreventTester.test(actorId);
+          final Integer quota = mQuotaMapper.apply(actorId);
+          final ExecutorService executor = mExecutorMapper.apply(actorId);
+          final Logger logger = mLoggerMapper.apply(actorId);
+          actor = new DefaultActor(actorId);
+          context =
+              new DefaultContext(DefaultStage.this, actor, mBehaviorProvider, mayInterruptIfRunning,
+                  preventDefault, quota, executor, logger);
+          actor.setContext(context);
 
-      final DefaultActor actor;
-      final DefaultContext context;
-      try {
-        final ExecutorService executor = mExecutorMapper.apply(actorId);
-        final Logger logger = mLoggerMapper.apply(actorId);
-        actor = new DefaultActor(actorId);
-        context =
-            new DefaultContext(DefaultStage.this, actor, mBehaviorProvider, mMayInterruptIfRunning,
-                mPreventDefault, mQuota, executor, logger);
-        actor.setContext(context);
-        context.start();
+        } catch (final RuntimeException e) {
+          throw e;
 
-      } catch (final RuntimeException e) {
-        final Actor removed;
+        } catch (final Exception e) {
+          throw new RuntimeException(e);
+        }
+
         synchronized (mMutex) {
-          removed = actors.remove(actorId);
-          mMutex.notifyAll();
+          if (actors.containsKey(actorId)) {
+            if (mActorId != null) {
+              throw new IllegalStateException(
+                  "an actor with the same ID already exists: " + actorId);
+            }
+
+          } else {
+            actors.put(actorId, actor);
+            mStageNotifier.create(actorId);
+            return actor;
+          }
         }
-
-        if (removed != null) {
-          mStageNotifier.remove(actorId);
-        }
-
-        throw e;
-
-      } catch (final Exception e) {
-        final Actor removed;
-        synchronized (mMutex) {
-          removed = actors.remove(actorId);
-          mMutex.notifyAll();
-        }
-
-        if (removed != null) {
-          mStageNotifier.remove(actorId);
-        }
-
-        throw new RuntimeException(e);
       }
-
-      final Actor old;
-      synchronized (mMutex) {
-        old = actors.put(actorId, actor);
-        mMutex.notifyAll();
-      }
-
-      if (old == null) {
-        mStageNotifier.create(actorId);
-      }
-
-      return actor;
     }
 
     @NotNull
@@ -409,10 +341,6 @@ class DefaultStage implements Stage {
 
     @NotNull
     public ActorBuilder id(@NotNull final String id) {
-      if (mAssignedId) {
-        throw new IllegalStateException("cannot modify the actor ID");
-      }
-
       mActorId = ConstantConditions.notNull("mapper", id);
       return this;
     }
@@ -424,20 +352,20 @@ class DefaultStage implements Stage {
     }
 
     @NotNull
-    public ActorBuilder mayInterruptIfRunning(final boolean interruptIfRunning) {
-      mMayInterruptIfRunning = interruptIfRunning;
+    public ActorBuilder mayInterruptIfRunning(@NotNull final Tester<? super String> tester) {
+      mInterruptTester = ConstantConditions.notNull("tester", tester);
       return this;
     }
 
     @NotNull
-    public ActorBuilder preventDefault(final boolean prevent) {
-      mPreventDefault = prevent;
+    public ActorBuilder preventDefault(@NotNull final Tester<? super String> tester) {
+      mPreventTester = ConstantConditions.notNull("tester", tester);
       return this;
     }
 
     @NotNull
-    public ActorBuilder quota(final int quota) {
-      mQuota = ConstantConditions.positive("quota", quota);
+    public ActorBuilder quota(@NotNull final Mapper<? super String, ? extends Integer> mapper) {
+      mQuotaMapper = ConstantConditions.notNull("mapper", mapper);
       return this;
     }
   }

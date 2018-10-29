@@ -95,11 +95,6 @@ public abstract class ActorObject extends ActorTemplate {
   }
 
   @NotNull
-  public static ActorObjectBuilder newActor() {
-    return newActor(Shakespeare.backStage());
-  }
-
-  @NotNull
   public static ActorObjectBuilder newActor(@NotNull final Stage stage) {
     return new ActorObjectBuilder(stage);
   }
@@ -134,34 +129,6 @@ public abstract class ActorObject extends ActorTemplate {
   public <T> T tellAs(@NotNull final Class<? super T> type, @NotNull final Actor sender) {
     return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type},
         new SenderActorHandler(this, ConstantConditions.notNull("sender", sender)));
-  }
-
-  @NotNull
-  @SuppressWarnings("unchecked")
-  public <T> T threadAs(@NotNull final Class<? super T> type, @NotNull final String threadId,
-      @NotNull final Actor sender) {
-    final Conversation<Object> conversation = thread(threadId, sender);
-    if (Closeable.class.isAssignableFrom(type)) {
-      return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type},
-          new CloseableConversationHandler(conversation));
-    }
-
-    return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type, Closeable.class},
-        new ConversationHandler(conversation));
-  }
-
-  @NotNull
-  @SuppressWarnings("unchecked")
-  public <T> T threadAs(@NotNull final Class<? super T> type, @NotNull final String threadId,
-      @NotNull final Actor sender, @NotNull final Class<? extends ThreadMessage>... includes) {
-    final Conversation<Object> conversation = thread(threadId, sender, includes);
-    if (Closeable.class.isAssignableFrom(type)) {
-      return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type},
-          new CloseableConversationHandler(conversation));
-    }
-
-    return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type, Closeable.class},
-        new ConversationHandler(conversation));
   }
 
   @NotNull

@@ -5,7 +5,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.regex.Pattern;
 
 import dm.shakespeare.actor.Actor.ActorSet;
-import dm.shakespeare.function.Mapper;
 import dm.shakespeare.function.Tester;
 
 /**
@@ -33,11 +32,10 @@ public interface Stage {
   Actor get(@NotNull String id);
 
   @NotNull
-  String getName();
+  ActorSet getAll();
 
   @NotNull
-  Actor getOrCreate(@NotNull String id,
-      @NotNull Mapper<? super ActorBuilder, ? extends Actor> mapper);
+  String getName();
 
   @NotNull
   ActorBuilder newActor();
