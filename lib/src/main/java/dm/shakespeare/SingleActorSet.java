@@ -52,9 +52,10 @@ class SingleActorSet extends HashSet<Actor> implements ActorSet {
   }
 
   @NotNull
-  public <T> Conversation<T> thread(@NotNull final String threadId, @NotNull final Actor sender,
-      @NotNull final Collection<? extends Class<? extends ThreadMessage>> messageFilters) {
-    return mActor.thread(threadId, sender, messageFilters);
+  public <T> Conversation<T> thread(@NotNull final String threadId,
+      @NotNull final Collection<? extends Class<? extends ThreadMessage>> messageFilters,
+      @NotNull final Actor sender) {
+    return mActor.thread(threadId, messageFilters, sender);
   }
 
   @NotNull

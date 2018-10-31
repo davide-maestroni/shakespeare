@@ -73,9 +73,9 @@ public abstract class ActorSingleton extends ActorProxy {
 
   @Override
   protected final void init() throws Exception {
-    instanceInit();
     Actor actor = sActors.get(getClass());
     if (actor == null) {
+      instanceInit();
       actor = mInstanceStage.newActor().id(getId()).behavior(new Provider<Behavior>() {
 
         public Behavior get() throws Exception {

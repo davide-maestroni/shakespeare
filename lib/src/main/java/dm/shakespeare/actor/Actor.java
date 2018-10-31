@@ -27,8 +27,9 @@ public interface Actor {
   Actor tellAll(@NotNull Iterable<?> messages, @NotNull Actor sender);
 
   @NotNull
-  <T> Conversation<T> thread(@NotNull String threadId, @NotNull Actor sender,
-      @NotNull Collection<? extends Class<? extends ThreadMessage>> messageFilters);
+  <T> Conversation<T> thread(@NotNull String threadId,
+      @NotNull Collection<? extends Class<? extends ThreadMessage>> messageFilters,
+      @NotNull Actor sender);
 
   interface ActorSet extends Set<Actor> {
 
@@ -44,8 +45,9 @@ public interface Actor {
     ActorSet tellAll(@NotNull Iterable<?> messages, @NotNull Actor sender);
 
     @NotNull
-    <T> Conversation<T> thread(@NotNull String threadId, @NotNull Actor sender,
-        @NotNull Collection<? extends Class<? extends ThreadMessage>> messageFilters);
+    <T> Conversation<T> thread(@NotNull String threadId,
+        @NotNull Collection<? extends Class<? extends ThreadMessage>> messageFilters,
+        @NotNull Actor sender);
   }
 
   interface Conversation<T> extends Closeable {

@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
  * the released code by using Proguard and adding, for example, the following rule to the
  * configuration file:
  * <pre><code>
- * -assumenosideeffects class dm.jail.log.Logger {
+ * -assumenosideeffects class dm.shakespeare.log.Logger {
  *   public void dbg(...);
  * }
  * </code></pre>

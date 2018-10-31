@@ -61,8 +61,9 @@ class DefaultActorSet extends AbstractSet<Actor> implements ActorSet {
   }
 
   @NotNull
-  public <T> Conversation<T> thread(@NotNull final String threadId, @NotNull final Actor sender,
-      @NotNull final Collection<? extends Class<? extends ThreadMessage>> messageFilters) {
+  public <T> Conversation<T> thread(@NotNull final String threadId,
+      @NotNull final Collection<? extends Class<? extends ThreadMessage>> messageFilters,
+      @NotNull final Actor sender) {
     return new ConversationSet<T>(this, threadId, sender, messageFilters);
   }
 
@@ -97,7 +98,7 @@ class DefaultActorSet extends AbstractSet<Actor> implements ActorSet {
       final ArrayList<Conversation<T>> conversations = new ArrayList<Conversation<T>>();
       try {
         for (final Actor actor : actors) {
-          conversations.add(actor.<T>thread(threadId, sender, includes));
+          conversations.add(actor.<T>thread(threadId, includes, sender));
         }
 
       } catch (final RuntimeException e) {

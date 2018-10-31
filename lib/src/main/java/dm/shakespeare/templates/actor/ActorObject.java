@@ -22,6 +22,7 @@ import dm.shakespeare.actor.BehaviorBuilder.Matcher;
 import dm.shakespeare.actor.Stage;
 import dm.shakespeare.actor.ThreadMessage;
 import dm.shakespeare.function.Mapper;
+import dm.shakespeare.function.Tester;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.templates.behavior.BehaviorTemplates;
 import dm.shakespeare.templates.util.Methods;
@@ -134,9 +135,9 @@ public abstract class ActorObject extends ActorTemplate {
   @NotNull
   @SuppressWarnings("unchecked")
   public <T> T threadAs(@NotNull final Class<? super T> type, @NotNull final String threadId,
-      @NotNull final Actor sender,
-      @NotNull final Collection<? extends Class<? extends ThreadMessage>> includes) {
-    final Conversation<Object> conversation = thread(threadId, sender, includes);
+      @NotNull final Collection<? extends Class<? extends ThreadMessage>> includes,
+      @NotNull final Actor sender) {
+    final Conversation<Object> conversation = thread(threadId, includes, sender);
     if (Closeable.class.isAssignableFrom(type)) {
       return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type},
           new CloseableConversationHandler(conversation));
@@ -212,7 +213,10 @@ public abstract class ActorObject extends ActorTemplate {
     private Mapper<? super Behavior, ? extends Behavior> mBehaviorMapper;
     private Mapper<? super BehaviorBuilder, ? extends BehaviorBuilder> mBuilderMapper;
     private Mapper<? super String, ? extends ExecutorService> mExecutorMapper;
+    private Tester<? super String> mInterruptTester;
     private Mapper<? super String, ? extends Logger> mLoggerMapper;
+    private Tester<? super String> mPreventTester;
+    private Mapper<? super String, ? extends Integer> mQuotaMapper;
 
     private ActorObjectBuilder(@NotNull final Stage stage) {
       mStage = ConstantConditions.notNull("stage", stage);
@@ -236,9 +240,9 @@ public abstract class ActorObject extends ActorTemplate {
     public ActorObject build(@NotNull final Object object) {
       final String actorId = mActorId;
       return (actorId != null) ? new WrapperActorObject(object, mStage, actorId, mBehaviorMapper,
-          mBuilderMapper, mExecutorMapper, mLoggerMapper)
-          : new WrapperActorObject(object, mStage, mBehaviorMapper, mBuilderMapper, mExecutorMapper,
-              mLoggerMapper);
+          mBuilderMapper, mInterruptTester, mPreventTester, mQuotaMapper, mExecutorMapper,
+          mLoggerMapper) : new WrapperActorObject(object, mStage, mBehaviorMapper, mBuilderMapper,
+          mInterruptTester, mPreventTester, mQuotaMapper, mExecutorMapper, mLoggerMapper);
     }
 
     @NotNull
@@ -258,6 +262,25 @@ public abstract class ActorObject extends ActorTemplate {
     public ActorObjectBuilder logger(
         @NotNull final Mapper<? super String, ? extends Logger> mapper) {
       mLoggerMapper = ConstantConditions.notNull("mapper", mapper);
+      return this;
+    }
+
+    @NotNull
+    public ActorObjectBuilder mayInterruptIfRunning(@NotNull final Tester<? super String> tester) {
+      mInterruptTester = ConstantConditions.notNull("tester", tester);
+      return this;
+    }
+
+    @NotNull
+    public ActorObjectBuilder preventDefault(@NotNull final Tester<? super String> tester) {
+      mPreventTester = ConstantConditions.notNull("tester", tester);
+      return this;
+    }
+
+    @NotNull
+    public ActorObjectBuilder quota(
+        @NotNull final Mapper<? super String, ? extends Integer> mapper) {
+      mQuotaMapper = ConstantConditions.notNull("mapper", mapper);
       return this;
     }
   }
@@ -409,18 +432,27 @@ public abstract class ActorObject extends ActorTemplate {
     private final Mapper<? super Behavior, ? extends Behavior> mBehaviorMapper;
     private final Mapper<? super BehaviorBuilder, ? extends BehaviorBuilder> mBuilderMapper;
     private final Mapper<? super String, ? extends ExecutorService> mExecutorMapper;
+    private final Tester<? super String> mInterruptTester;
     private final Mapper<? super String, ? extends Logger> mLoggerMapper;
     private final Object mObject;
+    private final Tester<? super String> mPreventTester;
+    private final Mapper<? super String, ? extends Integer> mQuotaMapper;
 
     private WrapperActorObject(@NotNull final Object object, @NotNull final Stage stage,
         @Nullable final Mapper<? super Behavior, ? extends Behavior> behaviorMapper,
         @Nullable final Mapper<? super BehaviorBuilder, ? extends BehaviorBuilder> builderMapper,
+        @Nullable final Tester<? super String> interruptTester,
+        @Nullable final Tester<? super String> preventTester,
+        @Nullable final Mapper<? super String, ? extends Integer> quotaMapper,
         @Nullable final Mapper<? super String, ? extends ExecutorService> executorMapper,
         @Nullable final Mapper<? super String, ? extends Logger> loggerMapper) {
       super(stage);
       mObject = ConstantConditions.notNull("object", object);
       mBehaviorMapper = behaviorMapper;
       mBuilderMapper = builderMapper;
+      mInterruptTester = interruptTester;
+      mPreventTester = preventTester;
+      mQuotaMapper = quotaMapper;
       mExecutorMapper = executorMapper;
       mLoggerMapper = loggerMapper;
     }
@@ -429,12 +461,18 @@ public abstract class ActorObject extends ActorTemplate {
         @NotNull final String id,
         @Nullable final Mapper<? super Behavior, ? extends Behavior> behaviorMapper,
         @Nullable final Mapper<? super BehaviorBuilder, ? extends BehaviorBuilder> builderMapper,
+        @Nullable final Tester<? super String> interruptTester,
+        @Nullable final Tester<? super String> preventTester,
+        @Nullable final Mapper<? super String, ? extends Integer> quotaMapper,
         @Nullable final Mapper<? super String, ? extends ExecutorService> executorMapper,
         @Nullable final Mapper<? super String, ? extends Logger> loggerMapper) {
       super(stage, id);
       mObject = ConstantConditions.notNull("object", object);
       mBehaviorMapper = behaviorMapper;
       mBuilderMapper = builderMapper;
+      mInterruptTester = interruptTester;
+      mPreventTester = preventTester;
+      mQuotaMapper = quotaMapper;
       mExecutorMapper = executorMapper;
       mLoggerMapper = loggerMapper;
     }
@@ -463,12 +501,6 @@ public abstract class ActorObject extends ActorTemplate {
 
     @NotNull
     @Override
-    protected ActorTemplate reset() {
-      return this;
-    }
-
-    @NotNull
-    @Override
     protected ExecutorService buildExecutor() throws Exception {
       final Mapper<? super String, ? extends ExecutorService> executorMapper = mExecutorMapper;
       return (executorMapper != null) ? executorMapper.apply(getId()) : super.buildExecutor();
@@ -479,6 +511,31 @@ public abstract class ActorObject extends ActorTemplate {
     protected Logger buildLogger() throws Exception {
       final Mapper<? super String, ? extends Logger> loggerMapper = mLoggerMapper;
       return (loggerMapper != null) ? loggerMapper.apply(getId()) : super.buildLogger();
+    }
+
+    @Override
+    protected boolean mayInterruptIfRunning() throws Exception {
+      final Tester<? super String> interruptTester = mInterruptTester;
+      return (interruptTester != null) ? interruptTester.test(getId())
+          : super.mayInterruptIfRunning();
+    }
+
+    @Override
+    protected boolean preventDefault() throws Exception {
+      final Tester<? super String> preventTester = mPreventTester;
+      return (preventTester != null) ? preventTester.test(getId()) : super.preventDefault();
+    }
+
+    @Override
+    protected int quota() throws Exception {
+      final Mapper<? super String, ? extends Integer> quotaMapper = mQuotaMapper;
+      return (quotaMapper != null) ? quotaMapper.apply(getId()) : super.quota();
+    }
+
+    @NotNull
+    @Override
+    protected ActorTemplate reset() {
+      return this;
     }
   }
 }

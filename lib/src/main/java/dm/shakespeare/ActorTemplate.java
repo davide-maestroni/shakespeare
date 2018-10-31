@@ -87,7 +87,7 @@ public abstract class ActorTemplate implements Actor {
   private final String mId;
   private final Stage mStage;
 
-  private volatile Actor mActor;
+  private Actor mActor;
   private ActorCreator mActorCreator = INIT_ACTOR_CREATOR;
 
   // temp actor
@@ -166,8 +166,9 @@ public abstract class ActorTemplate implements Actor {
   }
 
   @NotNull
-  public <T> Conversation<T> thread(@NotNull final String threadId, @NotNull final Actor sender,
-      @NotNull final Collection<? extends Class<? extends ThreadMessage>> messageFilters) {
+  public <T> Conversation<T> thread(@NotNull final String threadId,
+      @NotNull final Collection<? extends Class<? extends ThreadMessage>> messageFilters,
+      @NotNull final Actor sender) {
     return new ConversationTemplate<T>(threadId, sender, messageFilters);
   }
 
@@ -250,7 +251,12 @@ public abstract class ActorTemplate implements Actor {
           public Behavior get() throws Exception {
             throw e;
           }
-        }).executor(DefaultStage.defaultExecutorMapper()).build();
+        }).executor(new Mapper<String, ExecutorService>() {
+
+          public ExecutorService apply(final String value) {
+            return ExecutorServices.trampolineExecutor();
+          }
+        }).build();
       }
     }
 
@@ -283,7 +289,7 @@ public abstract class ActorTemplate implements Actor {
             throws
             Exception {
           mConversation =
-              template.mActorCreator.create(template).thread(threadId, sender, messageFilters);
+              template.mActorCreator.create(template).thread(threadId, messageFilters, sender);
           mConversationCreator = new ConversationCreator() {
 
             @NotNull

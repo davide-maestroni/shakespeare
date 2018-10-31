@@ -95,8 +95,9 @@ class DefaultActor implements Actor {
   }
 
   @NotNull
-  public <T> Conversation<T> thread(@NotNull final String threadId, @NotNull final Actor sender,
-      @NotNull final Collection<? extends Class<? extends ThreadMessage>> messageFilters) {
+  public <T> Conversation<T> thread(@NotNull final String threadId,
+      @NotNull final Collection<? extends Class<? extends ThreadMessage>> messageFilters,
+      @NotNull final Actor sender) {
     return new DefaultConversation<T>(threadId, sender, mContext).open(messageFilters);
   }
 

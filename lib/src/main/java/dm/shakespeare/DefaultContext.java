@@ -134,7 +134,7 @@ class DefaultContext implements Context {
             context.mSupervisor = sender;
             final String failureId = context.mFailureId;
             context.mFailureConversation =
-                sender.thread(failureId, actor, SUPERVISOR_INCLUDED_MESSAGES)
+                sender.thread(failureId, SUPERVISOR_INCLUDED_MESSAGES, actor)
                     .tell(new SupervisedFailureMessage(failureId, context.mFailure));
           }
         });
@@ -438,7 +438,7 @@ class DefaultContext implements Context {
           try {
             final String failureId = mFailureId = Integer.toString(System.identityHashCode(t));
             mFailureConversation =
-                supervisor.thread(failureId, mActor, SUPERVISOR_INCLUDED_MESSAGES)
+                supervisor.thread(failureId, SUPERVISOR_INCLUDED_MESSAGES, mActor)
                     .tell(new SupervisedFailureMessage(failureId, t));
             mFailure = t;
             mHandler = new SuspendedHandler();

@@ -13,10 +13,12 @@ abstract class AbstractThreadMessage implements ThreadMessage {
 
   private final Envelop mEnvelop;
   private final Object mMessage;
+  private final String mThreadId;
 
   AbstractThreadMessage(final Object message, @NotNull final Envelop envelop) {
     mMessage = message;
     mEnvelop = ConstantConditions.notNull("envelop", envelop);
+    mThreadId = ConstantConditions.notNull("threadId", envelop.getThreadId());
   }
 
   @NotNull
@@ -26,5 +28,10 @@ abstract class AbstractThreadMessage implements ThreadMessage {
 
   public final Object getMessage() {
     return mMessage;
+  }
+
+  @NotNull
+  public final String getThreadId() {
+    return mThreadId;
   }
 }
