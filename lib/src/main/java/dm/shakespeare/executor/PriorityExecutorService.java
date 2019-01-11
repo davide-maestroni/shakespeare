@@ -50,11 +50,11 @@ class PriorityExecutorService extends AbstractExecutorService {
     return (l1 < l2) ? -1 : ((l1 == l2) ? 0 : 1);
   }
 
-  public void execute(@NotNull final Runnable runnable) {
+  public void execute(@NotNull final Runnable command) {
     synchronized (mContext) {
       final PriorityContext context = mContext;
       context.queue.add(
-          new WrappedRunnable(ConstantConditions.notNull("runnable", runnable), mPriority,
+          new WrappedRunnable(ConstantConditions.notNull("command", command), mPriority,
               context.age--));
     }
 

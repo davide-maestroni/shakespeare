@@ -37,8 +37,8 @@ class TimeoutExecutorService extends AbstractExecutorService {
     mMayInterruptIfRunning = mayInterruptIfRunning;
   }
 
-  public void execute(@NotNull final Runnable runnable) {
-    timeout(mExecutor.submit(runnable));
+  public void execute(@NotNull final Runnable command) {
+    timeout(mExecutor.submit(command));
   }
 
   public void shutdown() {

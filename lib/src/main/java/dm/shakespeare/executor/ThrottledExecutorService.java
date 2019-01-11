@@ -30,9 +30,9 @@ class ThrottledExecutorService extends AbstractExecutorService {
     mMaxConcurrency = ConstantConditions.positive("maxConcurrency", maxConcurrency);
   }
 
-  public void execute(@NotNull final Runnable runnable) {
+  public void execute(@NotNull final Runnable command) {
     synchronized (mMutex) {
-      mQueue.add(ConstantConditions.notNull("runnable", runnable));
+      mQueue.add(ConstantConditions.notNull("command", command));
       if (mPendingCount >= mMaxConcurrency) {
         return;
       }

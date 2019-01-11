@@ -22,26 +22,26 @@ class TimeoutScheduledExecutorService extends dm.shakespeare.executor.TimeoutExe
   }
 
   @NotNull
-  public ScheduledFuture<?> schedule(@NotNull final Runnable runnable, final long delay,
+  public ScheduledFuture<?> schedule(@NotNull final Runnable command, final long delay,
       @NotNull final TimeUnit unit) {
-    return timeout(mExecutor.schedule(runnable, delay, unit));
+    return timeout(mExecutor.schedule(command, delay, unit));
   }
 
   @NotNull
-  public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> callable, final long delay,
+  public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> task, final long delay,
       @NotNull final TimeUnit unit) {
-    return timeout(mExecutor.schedule(callable, delay, unit));
+    return timeout(mExecutor.schedule(task, delay, unit));
   }
 
   @NotNull
-  public ScheduledFuture<?> scheduleAtFixedRate(@NotNull final Runnable runnable,
+  public ScheduledFuture<?> scheduleAtFixedRate(@NotNull final Runnable command,
       final long initialDelay, final long period, @NotNull final TimeUnit unit) {
-    return timeout(mExecutor.scheduleAtFixedRate(runnable, initialDelay, period, unit));
+    return timeout(mExecutor.scheduleAtFixedRate(command, initialDelay, period, unit));
   }
 
   @NotNull
-  public ScheduledFuture<?> scheduleWithFixedDelay(@NotNull final Runnable runnable,
+  public ScheduledFuture<?> scheduleWithFixedDelay(@NotNull final Runnable command,
       final long initialDelay, final long delay, @NotNull final TimeUnit unit) {
-    return timeout(mExecutor.scheduleWithFixedDelay(runnable, initialDelay, delay, unit));
+    return timeout(mExecutor.scheduleWithFixedDelay(command, initialDelay, delay, unit));
   }
 }

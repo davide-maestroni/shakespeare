@@ -25,38 +25,38 @@ class PriorityScheduledExecutorService extends PriorityExecutorService
   }
 
   @NotNull
-  public ScheduledFuture<?> schedule(@NotNull final Runnable runnable, final long delay,
+  public ScheduledFuture<?> schedule(@NotNull final Runnable command, final long delay,
       @NotNull final TimeUnit unit) {
     final RunnableFuture future =
-        new RunnableFuture(this, runnable, TimeUnits.toTimestampNanos(delay, unit));
+        new RunnableFuture(this, command, TimeUnits.toTimestampNanos(delay, unit));
     future.setFuture(mExecutor.schedule(future, delay, unit));
     return future;
   }
 
   @NotNull
-  public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> callable, final long delay,
+  public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> task, final long delay,
       @NotNull final TimeUnit unit) {
     final CallableFuture<V> future =
-        new CallableFuture<V>(this, callable, TimeUnits.toTimestampNanos(delay, unit));
+        new CallableFuture<V>(this, task, TimeUnits.toTimestampNanos(delay, unit));
     future.setFuture(mExecutor.schedule(future, delay, unit));
     return future;
   }
 
   @NotNull
-  public ScheduledFuture<?> scheduleAtFixedRate(@NotNull final Runnable runnable,
+  public ScheduledFuture<?> scheduleAtFixedRate(@NotNull final Runnable command,
       final long initialDelay, final long period, @NotNull final TimeUnit unit) {
     final RunnableFuture future =
-        new RunnableFuture(this, runnable, TimeUnits.toTimestampNanos(initialDelay, unit),
+        new RunnableFuture(this, command, TimeUnits.toTimestampNanos(initialDelay, unit),
             unit.toNanos(ConstantConditions.positive("period", period)));
     future.setFuture(mExecutor.scheduleAtFixedRate(future, initialDelay, period, unit));
     return future;
   }
 
   @NotNull
-  public ScheduledFuture<?> scheduleWithFixedDelay(@NotNull final Runnable runnable,
+  public ScheduledFuture<?> scheduleWithFixedDelay(@NotNull final Runnable command,
       final long initialDelay, final long delay, @NotNull final TimeUnit unit) {
     final RunnableFuture future =
-        new RunnableFuture(this, runnable, TimeUnits.toTimestampNanos(initialDelay, unit),
+        new RunnableFuture(this, command, TimeUnits.toTimestampNanos(initialDelay, unit),
             unit.toNanos(-ConstantConditions.positive("delay", delay)));
     future.setFuture(mExecutor.scheduleWithFixedDelay(future, initialDelay, delay, unit));
     return future;

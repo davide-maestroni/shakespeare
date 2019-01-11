@@ -90,10 +90,10 @@ class ScheduledThreadPoolExecutorService extends ScheduledThreadPoolExecutor {
 
   @NotNull
   @Override
-  public <V> ScheduledFuture<V> schedule(final Callable<V> callable, final long delay,
+  public <V> ScheduledFuture<V> schedule(final Callable<V> task, final long delay,
       final TimeUnit unit) {
     final ExecutorFuture<V> future =
-        new ExecutorFuture<V>(mExecutor, callable, TimeUnits.toTimestampNanos(delay, unit));
+        new ExecutorFuture<V>(mExecutor, task, TimeUnits.toTimestampNanos(delay, unit));
     future.setFuture(super.schedule(future, delay, unit));
     return future;
   }
@@ -196,7 +196,7 @@ class ScheduledThreadPoolExecutorService extends ScheduledThreadPoolExecutor {
       throw new IllegalStateException();
     }
 
-    public V get(final long timeout, @NotNull final TimeUnit timeUnit) throws InterruptedException,
+    public V get(final long timeout, @NotNull final TimeUnit unit) throws InterruptedException,
         ExecutionException, TimeoutException {
       synchronized (mMutex) {
         final long startTime = System.currentTimeMillis();
@@ -205,8 +205,8 @@ class ScheduledThreadPoolExecutorService extends ScheduledThreadPoolExecutor {
           public boolean isTrue() {
             return (mScheduledFuture != null);
           }
-        }, timeout, timeUnit)) {
-          return mFuture.get(timeUnit.toMillis(timeout) + startTime - System.currentTimeMillis(),
+        }, timeout, unit)) {
+          return mFuture.get(unit.toMillis(timeout) + startTime - System.currentTimeMillis(),
               TimeUnit.MILLISECONDS);
         }
       }
@@ -223,8 +223,8 @@ class ScheduledThreadPoolExecutorService extends ScheduledThreadPoolExecutor {
           .compareTo(delayed.getDelay(TimeUnit.NANOSECONDS));
     }
 
-    public long getDelay(@NotNull final TimeUnit timeUnit) {
-      return timeUnit.convert(mTimestamp, TimeUnit.NANOSECONDS);
+    public long getDelay(@NotNull final TimeUnit unit) {
+      return unit.convert(mTimestamp, TimeUnit.NANOSECONDS);
     }
 
     @Override

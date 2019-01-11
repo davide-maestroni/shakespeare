@@ -535,6 +535,7 @@ public abstract class ActorObject extends ActorTemplate {
     @NotNull
     @Override
     protected ActorTemplate reset() {
+      // TODO: 31/10/2018 @OnReset??
       return this;
     }
   }

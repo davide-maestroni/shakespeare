@@ -43,38 +43,45 @@ class RunnableFuture implements ScheduledFuture<Object>, Runnable {
   }
 
   public boolean cancel(final boolean mayInterruptIfRunning) {
+    final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
+    boolean isCancelled =
+        (scheduledFuture != null) && scheduledFuture.cancel(mayInterruptIfRunning);
     synchronized (mMutex) {
       final Future<?> future = mFuture;
       if (future != null) {
-        return future.cancel(mayInterruptIfRunning);
+        isCancelled |= future.cancel(mayInterruptIfRunning);
       }
     }
 
-    final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
-    return (scheduledFuture != null) && scheduledFuture.cancel(mayInterruptIfRunning);
+    return isCancelled;
   }
 
   public boolean isCancelled() {
+    final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
+    boolean isCancelled = (scheduledFuture != null) && scheduledFuture.isCancelled();
     synchronized (mMutex) {
       final Future<?> future = mFuture;
       if (future != null) {
-        return future.isCancelled();
+        isCancelled |= future.isCancelled();
       }
     }
 
-    final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
-    return (scheduledFuture != null) && scheduledFuture.isCancelled();
+    return isCancelled;
   }
 
   public boolean isDone() {
-    synchronized (mMutex) {
-      final Future<?> future = mFuture;
-      if (future != null) {
-        return future.isDone();
+    final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
+    boolean isDone = (scheduledFuture != null) && scheduledFuture.isDone();
+    if (isDone) {
+      synchronized (mMutex) {
+        final Future<?> future = mFuture;
+        if (future != null) {
+          return future.isDone();
+        }
       }
     }
 
-    return false;
+    return isDone;
   }
 
   public Object get() throws InterruptedException, ExecutionException {

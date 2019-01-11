@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
-import dm.penelope.config.BuildConfig;
+import dm.shakespeare.config.BuildConfig;
 
 /**
  * Created by davide-maestroni on 09/06/2018.

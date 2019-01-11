@@ -49,7 +49,7 @@ dependencies {
 }
 
 buildConfig {
-  packageName 'dm.penelope.config'
+  packageName 'dm.shakespeare.config'
   buildConfigField 'long', 'VERSION_HASH_CODE', project.version.hashCode() + 'L'
 }
 
