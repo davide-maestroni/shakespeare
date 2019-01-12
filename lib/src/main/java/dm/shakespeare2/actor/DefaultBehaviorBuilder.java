@@ -58,7 +58,6 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
     } else {
       messageHandler = new MultipleMessageHandler(messageHandlers, noMatchHandlers);
     }
-
     final ArrayList<Observer<? super Context>> startObservers = mStartObservers;
     final Observer<? super Context> startObserver;
     if (startObservers.isEmpty()) {
@@ -70,7 +69,6 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
     } else {
       startObserver = new MultipleContextObserver(startObservers);
     }
-
     final ArrayList<Observer<? super Context>> stopObservers = mStopObservers;
     final Observer<? super Context> stopObserver;
     if (stopObservers.isEmpty()) {
@@ -82,7 +80,6 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
     } else {
       stopObserver = new MultipleContextObserver(stopObservers);
     }
-
     return new DefaultBehavior(messageHandler, startObserver, stopObserver);
   }
 
@@ -207,7 +204,6 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
           return true;
         }
       }
-
       return false;
     }
   }

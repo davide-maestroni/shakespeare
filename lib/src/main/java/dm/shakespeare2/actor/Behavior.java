@@ -35,6 +35,8 @@ public interface Behavior {
     @NotNull
     Actor getSelf();
 
+    boolean isDismissed();
+
     void restartSelf();
 
     void setBehavior(@NotNull Behavior behavior);

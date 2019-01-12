@@ -44,7 +44,7 @@ public class LocalStage implements Stage {
       final Iterator<Actor> iterator = actors.iterator();
       while (iterator.hasNext()) {
         final Actor actor = iterator.next();
-        if ((actor != null) && !tester.test(actor)) {
+        if ((actor == null) || !tester.test(actor)) {
           iterator.remove();
         }
       }
@@ -55,7 +55,6 @@ public class LocalStage implements Stage {
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
-
     return new LocalActorSet(actors);
   }
 
@@ -100,7 +99,6 @@ public class LocalStage implements Stage {
     if (actor == null) {
       throw new IllegalArgumentException("cannot find an actor with ID: " + id);
     }
-
     return actor;
   }
 
@@ -110,17 +108,45 @@ public class LocalStage implements Stage {
     synchronized (mMutex) {
       actors = new HashSet<Actor>(mActors.values());
     }
-
+    actors.remove(null);
     return new LocalActorSet(actors);
   }
 
   @NotNull
   public Actor newActor(@NotNull final ActorScript script) {
-    return newActor(UUID.randomUUID().toString(), script);
+    String id;
+    synchronized (mMutex) {
+      final HashMap<String, Actor> actors = mActors;
+      do {
+        id = UUID.randomUUID().toString();
+      } while (actors.containsKey(id));
+      // reserve ID
+      actors.put(id, null);
+    }
+    return createActor(id, script);
   }
 
   @NotNull
   public Actor newActor(@NotNull final String id, @NotNull final ActorScript script) {
+    synchronized (mMutex) {
+      final HashMap<String, Actor> actors = mActors;
+      if (actors.containsKey(id)) {
+        throw new IllegalStateException("an actor with the same ID already exists: " + id);
+      }
+      // reserve ID
+      actors.put(id, null);
+    }
+    return createActor(id, script);
+  }
+
+  void removeActor(@NotNull final String id) {
+    synchronized (mMutex) {
+      mActors.remove(id);
+    }
+  }
+
+  @NotNull
+  private Actor createActor(@NotNull final String id, @NotNull final ActorScript script) {
     LocalActor actor;
     try {
       final int quota = script.getQuota(id);
@@ -133,28 +159,18 @@ public class LocalStage implements Stage {
       context.setActor(actor);
 
     } catch (final RuntimeException e) {
+      removeActor(id);
       throw e;
 
     } catch (final Exception e) {
+      removeActor(id);
       throw new RuntimeException(e);
     }
 
     synchronized (mMutex) {
-      final HashMap<String, Actor> actors = mActors;
-      if (actors.containsKey(id)) {
-        throw new IllegalStateException("an actor with the same ID already exists: " + id);
-
-      } else {
-        actors.put(id, actor);
-        return actor;
-      }
+      mActors.put(id, actor);
     }
-  }
-
-  void removeActor(@NotNull final String id) {
-    synchronized (mMutex) {
-      mActors.remove(id);
-    }
+    return actor;
   }
 
   private static class PatternTester implements Tester<Actor> {

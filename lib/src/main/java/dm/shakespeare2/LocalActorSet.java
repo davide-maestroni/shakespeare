@@ -30,6 +30,24 @@ class LocalActorSet extends AbstractSet<Actor> implements ActorSet {
   }
 
   @NotNull
+  public ActorSet tell(final Object message, @Nullable final Options options,
+      @NotNull final Actor sender) {
+    for (final Actor actor : mActors) {
+      actor.tell(message, options, sender);
+    }
+    return this;
+  }
+
+  @NotNull
+  public ActorSet tellAll(@NotNull final Iterable<?> messages, @Nullable final Options options,
+      @NotNull final Actor sender) {
+    for (final Actor actor : mActors) {
+      actor.tellAll(messages, options, sender);
+    }
+    return this;
+  }
+
+  @NotNull
   public Iterator<Actor> iterator() {
     return mActors.iterator();
   }
@@ -46,25 +64,5 @@ class LocalActorSet extends AbstractSet<Actor> implements ActorSet {
   @Override
   public boolean contains(final Object o) {
     return mActors.contains(o);
-  }
-
-  @NotNull
-  public ActorSet tell(final Object message, @Nullable final Options options,
-      @NotNull final Actor sender) {
-    for (final Actor actor : mActors) {
-      actor.tell(message, options, sender);
-    }
-
-    return this;
-  }
-
-  @NotNull
-  public ActorSet tellAll(@NotNull final Iterable<?> messages, @Nullable final Options options,
-      @NotNull final Actor sender) {
-    for (final Actor actor : mActors) {
-      actor.tellAll(messages, options, sender);
-    }
-
-    return this;
   }
 }

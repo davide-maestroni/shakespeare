@@ -37,20 +37,21 @@ class LocalContext implements Context {
     public void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
     }
   };
-  private final ContextExecutorService mContextExecutor;
-  private final Runnable mDismissRunnable;
   private final ExecutorService mExecutor;
   private final Logger mLogger;
   private final int mQuota;
   private final QuotaNotifier mQuotaNotifier;
-  private final Runnable mRestartRunnable;
   private final LocalStage mStage;
 
   private Actor mActor;
   private Behavior mBehavior;
   private BehaviorWrapper mBehaviorWrapper = new BehaviorStarter();
+  private ContextExecutorService mContextExecutor;
   private ContextScheduledExecutorService mContextScheduledExecutor;
+  private Runnable mDismissRunnable;
   private volatile boolean mDismissed;
+  private Runnable mRestartRunnable;
+  private volatile Thread mRunner;
   private boolean mStopped;
 
   LocalContext(@NotNull final LocalStage stage, @NotNull final Behavior behavior, final int quota,
@@ -59,29 +60,28 @@ class LocalContext implements Context {
     mBehavior = ConstantConditions.notNull("behavior", behavior);
     mExecutor = ExecutorServices.withThrottling(1, executor);
     mLogger = ConstantConditions.notNull("logger", logger);
-    mContextExecutor = new ContextExecutorService(executor);
     mQuotaNotifier = ((mQuota = ConstantConditions.positive("quota", quota)) < Integer.MAX_VALUE)
         ? new DefaultQuotaNotifier() : DUMMY_NOTIFIER;
-    mDismissRunnable = new Runnable() {
-
-      public void run() {
-        mBehaviorWrapper.onStop(LocalContext.this);
-      }
-    };
-    mRestartRunnable = new Runnable() {
-
-      public void run() {
-        mBehaviorWrapper.onRestart(LocalContext.this);
-      }
-    };
   }
 
   public void dismissSelf() {
+    mDismissed = true;
+    if (mDismissRunnable == null) {
+      mDismissRunnable = new Runnable() {
+
+        public void run() {
+          mBehaviorWrapper.onStop(LocalContext.this);
+        }
+      };
+    }
     mExecutor.execute(mDismissRunnable);
   }
 
   @NotNull
   public ExecutorService getExecutor() {
+    if (mContextExecutor == null) {
+      mContextExecutor = new ContextExecutorService(mExecutor, this);
+    }
     return mExecutor;
   }
 
@@ -94,9 +94,8 @@ class LocalContext implements Context {
   public ScheduledExecutorService getScheduledExecutor() {
     if (mContextScheduledExecutor == null) {
       mContextScheduledExecutor =
-          new ContextScheduledExecutorService(ExecutorServices.asScheduled(mExecutor));
+          new ContextScheduledExecutorService(ExecutorServices.asScheduled(mExecutor), this);
     }
-
     return mContextScheduledExecutor;
   }
 
@@ -105,7 +104,19 @@ class LocalContext implements Context {
     return mActor;
   }
 
+  public boolean isDismissed() {
+    return mStopped || mDismissed;
+  }
+
   public void restartSelf() {
+    if (mRestartRunnable == null) {
+      mRestartRunnable = new Runnable() {
+
+        public void run() {
+          mBehaviorWrapper.onRestart(LocalContext.this);
+        }
+      };
+    }
     mExecutor.execute(mRestartRunnable);
   }
 
@@ -114,7 +125,13 @@ class LocalContext implements Context {
   }
 
   void dismiss(final boolean mayInterruptIfRunning) {
-    mDismissed = true;
+    if (mayInterruptIfRunning) {
+      try {
+        mRunner.interrupt();
+
+      } catch (final NullPointerException ignored) {
+      }
+    }
     dismissSelf();
   }
 
@@ -122,27 +139,33 @@ class LocalContext implements Context {
     return mQuotaNotifier.exceedsQuota(size);
   }
 
-  boolean isStopped() {
-    return mStopped || mDismissed;
-  }
-
   void message(final Object message, @NotNull final Envelop envelop) {
-    mBehaviorWrapper.onMessage(message, envelop, this);
+    mRunner = Thread.currentThread();
+    try {
+      mBehaviorWrapper.onMessage(message, envelop, this);
+
+    } finally {
+      mRunner = null;
+    }
   }
 
   void messages(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
-    if (isStopped() && envelop.getOptions().getBounce()) {
+    if (isDismissed() && envelop.getOptions().getBounce()) {
       final ArrayList<Object> bounces = new ArrayList<Object>();
       for (final Object message : messages) {
         bounces.add(new Bounce(message, envelop));
       }
-
       envelop.getSender().tellAll(bounces, null, mActor);
       return;
     }
+    mRunner = Thread.currentThread();
+    try {
+      for (final Object message : messages) {
+        mBehaviorWrapper.onMessage(message, envelop, this);
+      }
 
-    for (final Object message : messages) {
-      mBehaviorWrapper.onMessage(message, envelop, this);
+    } finally {
+      mRunner = null;
     }
   }
 
@@ -163,7 +186,10 @@ class LocalContext implements Context {
   }
 
   private void cancelTasks() {
-    mContextExecutor.cancelAll(true);
+    final ContextExecutorService executor = mContextExecutor;
+    if (executor != null) {
+      executor.cancelAll(true);
+    }
     final ContextScheduledExecutorService scheduledExecutor = mContextScheduledExecutor;
     if (scheduledExecutor != null) {
       scheduledExecutor.cancelAll(true);
@@ -188,6 +214,10 @@ class LocalContext implements Context {
       super.onStart(context);
       super.onMessage(message, envelop, context);
     }
+
+    @Override
+    public void onStop(@NotNull final Context context) {
+    }
   }
 
   private class BehaviorWrapper implements Behavior {
@@ -195,13 +225,12 @@ class LocalContext implements Context {
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Context context) {
       final Options options = envelop.getOptions();
-      if (isStopped()) {
+      if (isDismissed()) {
         if (options.getBounce()) {
           envelop.getSender().tell(new ActorDismissed(message, envelop), null, mActor);
         }
         return;
       }
-
       mQuotaNotifier.consume();
       try {
         mBehavior.onMessage(message, envelop, context);
@@ -209,12 +238,13 @@ class LocalContext implements Context {
           envelop.getSender().tell(new Success(message, envelop), null, mActor);
         }
 
-      } catch (final InterruptedException e) {
-        throw new RuntimeException(e);
-
       } catch (final Throwable t) {
         if (options.getFailure()) {
           envelop.getSender().tell(new Failure(message, envelop, t), null, mActor);
+        }
+        onStop(context);
+        if (t instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
         }
       }
     }
@@ -223,11 +253,13 @@ class LocalContext implements Context {
       try {
         mBehavior.onStart(context);
 
-      } catch (final InterruptedException e) {
-        throw new RuntimeException(e);
-
       } catch (final Throwable t) {
+        mStopped = true;
+        cancelTasks();
         mLogger.wrn(t, "Suppressed exception");
+        if (t instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
       }
     }
 
@@ -235,35 +267,38 @@ class LocalContext implements Context {
       if (mStopped) {
         return;
       }
-
       mStopped = true;
       mStage.removeActor(mActor.getId());
-      cancelTasks();
       try {
         mBehavior.onStop(context);
 
-      } catch (final InterruptedException e) {
-        throw new RuntimeException(e);
-
       } catch (final Throwable t) {
         mLogger.wrn(t, "Suppressed exception");
+        if (t instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
+
+      } finally {
+        cancelTasks();
       }
     }
 
     void onRestart(@NotNull final Context context) {
-      cancelTasks();
+      if (isDismissed()) {
+        return;
+      }
       final Behavior behavior = mBehavior;
       try {
         behavior.onStop(context);
         behavior.onStart(context);
 
-      } catch (final InterruptedException e) {
-        mStopped = true;
-        throw new RuntimeException(e);
-
       } catch (final Throwable t) {
         mStopped = true;
+        cancelTasks();
         mLogger.wrn(t, "Suppressed exception");
+        if (t instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
       }
     }
   }
@@ -286,7 +321,6 @@ class LocalContext implements Context {
       if ((mCount + size) > mQuota) {
         return true;
       }
-
       mCount += size;
       return false;
     }

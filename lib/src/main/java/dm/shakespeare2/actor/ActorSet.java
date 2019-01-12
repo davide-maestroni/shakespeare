@@ -10,6 +10,8 @@ import java.util.Set;
  */
 public interface ActorSet extends Set<Actor> {
 
+  void dismiss(boolean mayInterruptIfRunning);
+
   @NotNull
   ActorSet tell(Object message, @Nullable Options options, @NotNull Actor sender);
 

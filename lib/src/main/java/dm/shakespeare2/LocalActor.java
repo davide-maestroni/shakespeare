@@ -13,9 +13,8 @@ import dm.shakespeare2.actor.Options;
  */
 class LocalActor implements Actor {
 
-  private final String mId;
-
   private final LocalContext mContext;
+  private final String mId;
 
   LocalActor(@NotNull final String id, @NotNull final LocalContext context) {
     mId = ConstantConditions.notNull("id", id);
@@ -46,7 +45,6 @@ class LocalActor implements Actor {
         }
       });
     }
-
     return this;
   }
 
@@ -65,7 +63,6 @@ class LocalActor implements Actor {
         }
       });
     }
-
     return this;
   }
 
