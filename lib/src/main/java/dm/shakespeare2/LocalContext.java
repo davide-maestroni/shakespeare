@@ -113,7 +113,17 @@ class LocalContext implements Context {
       mRestartRunnable = new Runnable() {
 
         public void run() {
-          mBehaviorWrapper.onRestart(LocalContext.this);
+          mRunner = Thread.currentThread();
+          try {
+            mBehaviorWrapper.onRestart(LocalContext.this);
+
+          } finally {
+            mRunner = null;
+          }
+
+          if (Thread.currentThread().isInterrupted()) {
+            mBehaviorWrapper.onStop(LocalContext.this);
+          }
         }
       };
     }
@@ -147,6 +157,10 @@ class LocalContext implements Context {
     } finally {
       mRunner = null;
     }
+
+    if (Thread.currentThread().isInterrupted()) {
+      mBehaviorWrapper.onStop(this);
+    }
   }
 
   void messages(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
@@ -166,6 +180,10 @@ class LocalContext implements Context {
 
     } finally {
       mRunner = null;
+    }
+
+    if (Thread.currentThread().isInterrupted()) {
+      mBehaviorWrapper.onStop(this);
     }
   }
 
@@ -213,6 +231,9 @@ class LocalContext implements Context {
       mBehaviorWrapper = new BehaviorWrapper();
       super.onStart(context);
       super.onMessage(message, envelop, context);
+      if (Thread.currentThread().isInterrupted()) {
+        onStop(context);
+      }
     }
 
     @Override
@@ -256,7 +277,7 @@ class LocalContext implements Context {
       } catch (final Throwable t) {
         mStopped = true;
         cancelTasks();
-        mLogger.wrn(t, "Suppressed exception");
+        mLogger.wrn(t, "suppressed exception");
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }
@@ -273,7 +294,7 @@ class LocalContext implements Context {
         mBehavior.onStop(context);
 
       } catch (final Throwable t) {
-        mLogger.wrn(t, "Suppressed exception");
+        mLogger.wrn(t, "suppressed exception");
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }
@@ -295,7 +316,7 @@ class LocalContext implements Context {
       } catch (final Throwable t) {
         mStopped = true;
         cancelTasks();
-        mLogger.wrn(t, "Suppressed exception");
+        mLogger.wrn(t, "suppressed exception");
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }

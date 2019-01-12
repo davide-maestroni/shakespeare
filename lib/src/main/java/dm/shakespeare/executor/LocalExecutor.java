@@ -57,20 +57,24 @@ class LocalExecutor {
   }
 
   private void addCommand(@NotNull final Runnable command) {
+    final DoubleQueue<Runnable> commands = mCommands;
     if (!mIsRunning) {
       mIsRunning = true;
       try {
-        try {
-          command.run();
+        if (commands.isEmpty()) {
+          try {
+            command.run();
 
-        } catch (final Throwable t) {
-          if (Thread.interrupted()) {
-            throw new RuntimeException(t);
+          } catch (final Throwable t) {
+            sLogger.wrn(t, "suppressed exception");
+            if (Thread.currentThread().isInterrupted()) {
+              return;
+            }
           }
 
-          sLogger.wrn(t, "Suppressed exception");
+        } else {
+          commands.add(command);
         }
-
         run();
 
       } finally {
@@ -78,7 +82,7 @@ class LocalExecutor {
       }
 
     } else {
-      mCommands.add(command);
+      commands.add(command);
     }
   }
 
@@ -91,7 +95,10 @@ class LocalExecutor {
           commands.removeFirst().run();
 
         } catch (final Throwable t) {
-          sLogger.wrn(t, "Suppressed exception");
+          sLogger.wrn(t, "suppressed exception");
+          if (Thread.currentThread().isInterrupted()) {
+            return;
+          }
         }
       }
 
