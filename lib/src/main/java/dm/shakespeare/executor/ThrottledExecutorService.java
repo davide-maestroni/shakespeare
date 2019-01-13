@@ -73,7 +73,7 @@ class ThrottledExecutorService extends AbstractExecutorService {
 
   void executeNext(@NotNull final Runnable command) {
     synchronized (mMutex) {
-      mQueue.addLast(ConstantConditions.notNull("command", command));
+      mQueue.addFirst(ConstantConditions.notNull("command", command));
       if (mPendingCount >= mMaxConcurrency) {
         return;
       }

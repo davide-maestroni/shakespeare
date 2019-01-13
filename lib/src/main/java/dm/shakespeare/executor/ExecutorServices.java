@@ -7,6 +7,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.WeakIdentityHashMap;
 
 /**
@@ -16,6 +17,10 @@ public class ExecutorServices {
 
   private static final WeakIdentityHashMap<ExecutorService, ScheduledExecutorService>
       sScheduledExecutors = new WeakIdentityHashMap<ExecutorService, ScheduledExecutorService>();
+
+  private ExecutorServices() {
+    ConstantConditions.avoid();
+  }
 
   @NotNull
   public static ActorExecutorService asActorExecutor(@NotNull final ExecutorService executor) {

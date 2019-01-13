@@ -84,7 +84,6 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
     if (newFirst == mLast) {
       doubleCapacity();
     }
-
     ++mSize;
   }
 
@@ -101,7 +100,6 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
     if (mFirst == (mLast = (last + 1) & mMask)) {
       doubleCapacity();
     }
-
     ++mSize;
   }
 
@@ -111,7 +109,6 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
     if ((index < 0) || (index >= size())) {
       throw new IndexOutOfBoundsException();
     }
-
     return (E) mData[(mFirst + index) & mMask];
   }
 
@@ -152,7 +149,6 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
         array[size] = null;
       }
     }
-
     return array;
   }
 
@@ -172,7 +168,6 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
       data[index] = null;
       index = (index + 1) & mask;
     }
-
     mFirst = 0;
     mLast = 0;
     mSize = 0;
@@ -203,7 +198,6 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
     if (isEmpty()) {
       return null;
     }
-
     return peekFirst();
   }
 
@@ -218,7 +212,6 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
     if (isEmpty()) {
       throw new NoSuchElementException();
     }
-
     return (E) mData[mFirst];
   }
 
@@ -233,7 +226,6 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
     if (isEmpty()) {
       throw new NoSuchElementException();
     }
-
     final int mask = mMask;
     return (E) mData[(mLast - 1) & mask];
   }
@@ -245,7 +237,6 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
     if ((first <= last) ? (index < first) || (index >= last) : (index < first) && (index >= last)) {
       throw new IndexOutOfBoundsException();
     }
-
     removeElement(index);
   }
 
@@ -260,7 +251,6 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
     if (isEmpty()) {
       throw new NoSuchElementException();
     }
-
     final Object[] data = mData;
     final int first = mFirst;
     mFirst = (first + 1) & mMask;
@@ -281,7 +271,6 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
     if (isEmpty()) {
       throw new NoSuchElementException();
     }
-
     final Object[] data = mData;
     final int mask = mMask;
     final int newLast = (mLast - 1) & mask;
@@ -324,12 +313,10 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
         mFirst = i;
         return -(mSize -= (n - destPos));
       }
-
       dst[n++] = (T) data[i];
       data[i] = null;
       i = (i + 1) & mask;
     }
-
     mFirst = 0;
     mLast = 0;
     mSize = 0;
@@ -352,7 +339,6 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
       data[i] = null;
       i = (i + 1) & mask;
     }
-
     mFirst = 0;
     mLast = 0;
     mSize = 0;
@@ -372,7 +358,6 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
       System.arraycopy(data, first, dst, 0, length);
       System.arraycopy(data, 0, dst, length, last);
     }
-
     return dst;
   }
 
@@ -383,7 +368,6 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
     if (newSize < size) {
       throw new OutOfMemoryError();
     }
-
     final int first = mFirst;
     final int remainder = size - first;
     final Object[] newData = new Object[newSize];
@@ -412,7 +396,6 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
         data[0] = data[mask];
         System.arraycopy(data, first, data, first + 1, mask - first);
       }
-
       mData[first] = null;
       mFirst = (first + 1) & mask;
       isForward = true;
@@ -426,11 +409,9 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
         data[mask] = data[0];
         System.arraycopy(data, 1, data, 0, last);
       }
-
       mLast = (last - 1) & mask;
       isForward = false;
     }
-
     --mSize;
     return isForward;
   }
@@ -441,13 +422,9 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
   private static class DoubleQueueIterator<E> implements Iterator<E> {
 
     private final DoubleQueue<E> mQueue;
-
     private boolean mIsRemoved;
-
     private int mOriginalFirst;
-
     private int mOriginalLast;
-
     private int mPointer;
 
     /**
@@ -470,12 +447,10 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
       if (pointer == originalLast) {
         throw new NoSuchElementException();
       }
-
       final DoubleQueue<E> queue = mQueue;
       if ((queue.mFirst != mOriginalFirst) || (queue.mLast != originalLast)) {
         throw new ConcurrentModificationException();
       }
-
       mIsRemoved = false;
       mPointer = (pointer + 1) & queue.mMask;
       return (E) queue.mData[pointer];
@@ -485,18 +460,15 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
       if (mIsRemoved) {
         throw new IllegalStateException("element already removed");
       }
-
       final int pointer = mPointer;
       final int originalFirst = mOriginalFirst;
       if (pointer == originalFirst) {
         throw new IllegalStateException();
       }
-
       final DoubleQueue<E> queue = mQueue;
       if ((queue.mFirst != originalFirst) || (queue.mLast != mOriginalLast)) {
         throw new ConcurrentModificationException();
       }
-
       final int mask = queue.mMask;
       final int index = (pointer - 1) & mask;
       if (queue.removeElement(index)) {
@@ -506,7 +478,6 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
         mOriginalLast = queue.mLast;
         mPointer = (mPointer - 1) & mask;
       }
-
       mIsRemoved = true;
     }
   }
