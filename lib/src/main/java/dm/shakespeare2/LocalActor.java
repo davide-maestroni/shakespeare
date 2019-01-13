@@ -38,7 +38,7 @@ class LocalActor implements Actor {
       context.quotaExceeded(message, new BounceEnvelop(sender, options));
 
     } else {
-      context.getExecutor().execute(new DefaultEnvelop(sender, options) {
+      context.getActorExecutor().execute(new DefaultEnvelop(sender, options) {
 
         void open() {
           mContext.message(message, this);
@@ -56,7 +56,7 @@ class LocalActor implements Actor {
       context.quotaExceeded(messages, new BounceEnvelop(sender, options));
 
     } else {
-      context.getExecutor().execute(new DefaultEnvelop(sender, options) {
+      context.getActorExecutor().execute(new DefaultEnvelop(sender, options) {
 
         void open() {
           mContext.messages(messages, this);

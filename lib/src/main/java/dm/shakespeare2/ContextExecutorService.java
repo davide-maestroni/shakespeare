@@ -58,17 +58,17 @@ class ContextExecutorService implements ExecutorService {
 
   @NotNull
   public <T> Future<T> submit(@NotNull final Callable<T> task) {
-    return addFuture(mExecutor.submit(wrap(task)));
+    return wrap(addFuture(mExecutor.submit(wrap(task))));
   }
 
   @NotNull
   public <T> Future<T> submit(@NotNull final Runnable task, final T result) {
-    return addFuture(mExecutor.submit(wrap(task), result));
+    return wrap(addFuture(mExecutor.submit(wrap(task), result)));
   }
 
   @NotNull
   public Future<?> submit(@NotNull final Runnable task) {
-    return addFuture(mExecutor.submit(wrap(task)));
+    return wrap(addFuture(mExecutor.submit(wrap(task))));
   }
 
   @NotNull
@@ -107,26 +107,32 @@ class ContextExecutorService implements ExecutorService {
   }
 
   @NotNull
-  <T> Callable<T> wrap(@NotNull final Callable<T> task) {
-    return new ContextCallable<T>(task, mContext);
+  <V> Callable<V> wrap(@NotNull final Callable<V> task) {
+    return new ContextCallable<V>(task, mContext);
   }
 
   @NotNull
-  <T> Runnable wrap(@NotNull final Runnable task) {
+  Runnable wrap(@NotNull final Runnable task) {
     return new ContextRunnable(task, mContext);
   }
 
-  private static class ContextCallable<T> implements Callable<T> {
+  @NotNull
+  private <V> Future<V> wrap(@NotNull final Future<V> future) {
+    return new ContextFuture<V>(future);
+  }
+
+  private static class ContextCallable<V> implements Callable<V> {
 
     private final Context mContext;
-    private final Callable<T> mTask;
 
-    private ContextCallable(@NotNull final Callable<T> task, @NotNull final Context context) {
+    private final Callable<V> mTask;
+
+    private ContextCallable(@NotNull final Callable<V> task, @NotNull final Context context) {
       mTask = ConstantConditions.notNull("task", task);
       mContext = context;
     }
 
-    public T call() throws Exception {
+    public V call() throws Exception {
       if (mContext.isDismissed()) {
         throw new IllegalStateException();
       }
@@ -134,9 +140,56 @@ class ContextExecutorService implements ExecutorService {
     }
   }
 
+  private static class ContextFuture<V> implements Future<V> {
+
+    private final Future<V> mFuture;
+
+    private ContextFuture(@NotNull final Future<V> future) {
+      mFuture = ConstantConditions.notNull("future", future);
+    }
+
+    public boolean cancel(final boolean mayInterruptIfRunning) {
+      return mFuture.cancel(mayInterruptIfRunning);
+    }
+
+    public boolean isCancelled() {
+      return mFuture.isCancelled();
+    }
+
+    public boolean isDone() {
+      return mFuture.isDone();
+    }
+
+    public V get() {
+      return ConstantConditions.unsupported();
+    }
+
+    public V get(final long timeout, @NotNull final TimeUnit unit) {
+      return ConstantConditions.unsupported();
+    }
+
+    @Override
+    public int hashCode() {
+      return mFuture.hashCode();
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof ContextFuture)) {
+        return false;
+      }
+      final ContextFuture<?> that = (ContextFuture<?>) o;
+      return mFuture.equals(that.mFuture);
+    }
+  }
+
   private static class ContextRunnable implements Runnable {
 
     private final Context mContext;
+
     private final Runnable mTask;
 
     private ContextRunnable(@NotNull final Runnable task, @NotNull final Context context) {

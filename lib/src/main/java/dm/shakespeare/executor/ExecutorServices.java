@@ -18,11 +18,18 @@ public class ExecutorServices {
       sScheduledExecutors = new WeakIdentityHashMap<ExecutorService, ScheduledExecutorService>();
 
   @NotNull
+  public static ActorExecutorService asActorExecutor(@NotNull final ExecutorService executor) {
+    if (executor instanceof ActorExecutorService) {
+      return (ActorExecutorService) executor;
+    }
+    return new ActorExecutorService(executor);
+  }
+
+  @NotNull
   public static ScheduledExecutorService asScheduled(@NotNull final ExecutorService executor) {
     if (executor instanceof ScheduledExecutorService) {
       return (ScheduledExecutorService) executor;
     }
-
     ScheduledExecutorService scheduledExecutor;
     synchronized (sScheduledExecutors) {
       final WeakIdentityHashMap<ExecutorService, ScheduledExecutorService> executors =
@@ -33,7 +40,6 @@ public class ExecutorServices {
         executors.put(executor, scheduledExecutor);
       }
     }
-
     return scheduledExecutor;
   }
 
@@ -71,7 +77,6 @@ public class ExecutorServices {
     if (executor instanceof ScheduledExecutorService) {
       return withPriority(priority, (ScheduledExecutorService) executor);
     }
-
     return new PriorityExecutorService(executor, priority);
   }
 
@@ -87,7 +92,6 @@ public class ExecutorServices {
     if (executor instanceof ScheduledExecutorService) {
       return withThrottling(maxExecutions, (ScheduledExecutorService) executor);
     }
-
     return new ThrottledExecutorService(executor, maxExecutions);
   }
 
@@ -104,7 +108,6 @@ public class ExecutorServices {
       return withTimeout(timeout, timeUnit, mayInterruptIfRunning,
           (ScheduledExecutorService) executor);
     }
-
     return new TimeoutExecutorService(executor, timeout, timeUnit, mayInterruptIfRunning);
   }
 

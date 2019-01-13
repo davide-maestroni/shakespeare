@@ -36,10 +36,8 @@ class ThrottledExecutorService extends AbstractExecutorService {
       if (mPendingCount >= mMaxConcurrency) {
         return;
       }
-
       ++mPendingCount;
     }
-
     mExecutor.execute(mRunnable);
   }
 
@@ -71,6 +69,17 @@ class ThrottledExecutorService extends AbstractExecutorService {
   public boolean awaitTermination(final long timeout, @NotNull final TimeUnit unit) throws
       InterruptedException {
     return mExecutor.awaitTermination(timeout, unit);
+  }
+
+  void executeNext(@NotNull final Runnable command) {
+    synchronized (mMutex) {
+      mQueue.addLast(ConstantConditions.notNull("command", command));
+      if (mPendingCount >= mMaxConcurrency) {
+        return;
+      }
+      ++mPendingCount;
+    }
+    mExecutor.execute(mRunnable);
   }
 
   /**

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
+import dm.shakespeare.executor.ActorExecutorService;
 import dm.shakespeare.executor.ExecutorServices;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.ConstantConditions;
@@ -37,7 +38,8 @@ class LocalContext implements Context {
     public void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
     }
   };
-  private final ExecutorService mExecutor;
+
+  private final ActorExecutorService mActorExecutor;
   private final Logger mLogger;
   private final int mQuota;
   private final QuotaNotifier mQuotaNotifier;
@@ -58,7 +60,7 @@ class LocalContext implements Context {
       @NotNull final ExecutorService executor, @NotNull final Logger logger) {
     mStage = ConstantConditions.notNull("stage", stage);
     mBehavior = ConstantConditions.notNull("behavior", behavior);
-    mExecutor = ExecutorServices.withThrottling(1, executor);
+    mActorExecutor = ExecutorServices.asActorExecutor(executor);
     mLogger = ConstantConditions.notNull("logger", logger);
     mQuotaNotifier = ((mQuota = ConstantConditions.positive("quota", quota)) < Integer.MAX_VALUE)
         ? new DefaultQuotaNotifier() : DUMMY_NOTIFIER;
@@ -74,15 +76,15 @@ class LocalContext implements Context {
         }
       };
     }
-    mExecutor.execute(mDismissRunnable);
+    mActorExecutor.executeNext(mDismissRunnable);
   }
 
   @NotNull
   public ExecutorService getExecutor() {
     if (mContextExecutor == null) {
-      mContextExecutor = new ContextExecutorService(mExecutor, this);
+      mContextExecutor = new ContextExecutorService(mActorExecutor, this);
     }
-    return mExecutor;
+    return mContextExecutor;
   }
 
   @NotNull
@@ -94,7 +96,7 @@ class LocalContext implements Context {
   public ScheduledExecutorService getScheduledExecutor() {
     if (mContextScheduledExecutor == null) {
       mContextScheduledExecutor =
-          new ContextScheduledExecutorService(ExecutorServices.asScheduled(mExecutor), this);
+          new ContextScheduledExecutorService(ExecutorServices.asScheduled(mActorExecutor), this);
     }
     return mContextScheduledExecutor;
   }
@@ -127,7 +129,7 @@ class LocalContext implements Context {
         }
       };
     }
-    mExecutor.execute(mRestartRunnable);
+    mActorExecutor.executeNext(mRestartRunnable);
   }
 
   public void setBehavior(@NotNull final Behavior behavior) {
@@ -147,6 +149,11 @@ class LocalContext implements Context {
 
   boolean exceedsQuota(final int size) {
     return mQuotaNotifier.exceedsQuota(size);
+  }
+
+  @NotNull
+  ActorExecutorService getActorExecutor() {
+    return mActorExecutor;
   }
 
   void message(final Object message, @NotNull final Envelop envelop) {
