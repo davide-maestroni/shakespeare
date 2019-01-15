@@ -28,9 +28,9 @@ class TimeoutScheduledExecutorService extends dm.shakespeare.executor.TimeoutExe
   }
 
   @NotNull
-  public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> task, final long delay,
+  public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> callable, final long delay,
       @NotNull final TimeUnit unit) {
-    return timeout(mExecutor.schedule(task, delay, unit));
+    return timeout(mExecutor.schedule(callable, delay, unit));
   }
 
   @NotNull

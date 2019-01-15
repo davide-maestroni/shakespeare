@@ -8,10 +8,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface Actor {
 
+  @NotNull
+  Actor addObserver(@NotNull Actor observer);
+
   void dismiss(boolean mayInterruptIfRunning);
 
   @NotNull
   String getId();
+
+  @NotNull
+  Actor removeObserver(@NotNull Actor observer);
 
   @NotNull
   Actor tell(Object message, @Nullable Options options, @NotNull Actor sender);

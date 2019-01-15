@@ -34,10 +34,10 @@ class PriorityScheduledExecutorService extends PriorityExecutorService
   }
 
   @NotNull
-  public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> task, final long delay,
+  public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> callable, final long delay,
       @NotNull final TimeUnit unit) {
     final CallableFuture<V> future =
-        new CallableFuture<V>(this, task, TimeUnits.toTimestampNanos(delay, unit));
+        new CallableFuture<V>(this, callable, TimeUnits.toTimestampNanos(delay, unit));
     future.setFuture(mExecutor.schedule(future, delay, unit));
     return future;
   }

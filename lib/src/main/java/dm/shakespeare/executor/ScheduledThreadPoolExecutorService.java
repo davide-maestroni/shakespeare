@@ -19,9 +19,9 @@ package dm.shakespeare.executor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Delayed;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -32,7 +32,6 @@ import java.util.concurrent.TimeoutException;
 
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.TimeUnits;
-import dm.shakespeare.util.TimeUnits.Condition;
 
 /**
  * Scheduled thread pool executor wrapping an executor service.
@@ -50,7 +49,12 @@ class ScheduledThreadPoolExecutorService extends ScheduledThreadPoolExecutor {
    */
   ScheduledThreadPoolExecutorService(@NotNull final ExecutorService service) {
     super(1);
-    mExecutor = ConstantConditions.notNull("service", service);
+    if (service instanceof QueuedExecutorService) {
+      mExecutor = new NextExecutorService((QueuedExecutorService) service);
+
+    } else {
+      mExecutor = ConstantConditions.notNull("service", service);
+    }
   }
 
   @Override
@@ -85,15 +89,18 @@ class ScheduledThreadPoolExecutorService extends ScheduledThreadPoolExecutor {
   @Override
   public ScheduledFuture<?> schedule(final Runnable command, final long delay,
       final TimeUnit unit) {
-    return super.schedule(new ScheduledRunnable(mExecutor, command), delay, unit);
+    final RunnableFuture future =
+        new RunnableFuture(mExecutor, command, TimeUnits.toTimestampNanos(delay, unit));
+    future.setFuture(super.schedule(future, delay, unit));
+    return future;
   }
 
   @NotNull
   @Override
-  public <V> ScheduledFuture<V> schedule(final Callable<V> task, final long delay,
+  public <V> ScheduledFuture<V> schedule(final Callable<V> callable, final long delay,
       final TimeUnit unit) {
-    final ExecutorFuture<V> future =
-        new ExecutorFuture<V>(mExecutor, task, TimeUnits.toTimestampNanos(delay, unit));
+    final CallableFuture<V> future =
+        new CallableFuture<V>(mExecutor, callable, TimeUnits.toTimestampNanos(delay, unit));
     future.setFuture(super.schedule(future, delay, unit));
     return future;
   }
@@ -102,16 +109,22 @@ class ScheduledThreadPoolExecutorService extends ScheduledThreadPoolExecutor {
   @Override
   public ScheduledFuture<?> scheduleAtFixedRate(final Runnable command, final long initialDelay,
       final long period, final TimeUnit unit) {
-    return super.scheduleAtFixedRate(new ScheduledRunnable(mExecutor, command), initialDelay,
-        period, unit);
+    final RunnableFuture future =
+        new RunnableFuture(mExecutor, command, TimeUnits.toTimestampNanos(initialDelay, unit),
+            unit.toNanos(ConstantConditions.positive("period", period)));
+    future.setFuture(super.scheduleAtFixedRate(future, initialDelay, period, unit));
+    return future;
   }
 
   @NotNull
   @Override
   public ScheduledFuture<?> scheduleWithFixedDelay(final Runnable command, final long initialDelay,
       final long delay, final TimeUnit unit) {
-    return super.scheduleWithFixedDelay(new ScheduledRunnable(mExecutor, command), initialDelay,
-        delay, unit);
+    final RunnableFuture future =
+        new RunnableFuture(mExecutor, command, TimeUnits.toTimestampNanos(initialDelay, unit),
+            unit.toNanos(-ConstantConditions.positive("delay", delay)));
+    future.setFuture(super.scheduleWithFixedDelay(future, initialDelay, delay, unit));
+    return future;
   }
 
   @Override
@@ -128,162 +141,78 @@ class ScheduledThreadPoolExecutorService extends ScheduledThreadPoolExecutor {
     return runnables;
   }
 
-  private static class ExecutorFuture<V> implements ScheduledFuture<V>, Runnable {
+  private static class NextExecutorService implements ExecutorService {
 
-    private final Callable<V> mCallable;
-    private final ExecutorService mExecutor;
-    private final Object mMutex = new Object();
-    private final long mTimestamp;
+    private final QueuedExecutorService mExecutor;
 
-    private Future<V> mFuture;
-    private ScheduledFuture<?> mScheduledFuture;
-
-    private ExecutorFuture(@NotNull final ExecutorService executor,
-        @NotNull final Callable<V> callable, final long timestamp) {
+    private NextExecutorService(@NotNull final QueuedExecutorService executor) {
       mExecutor = executor;
-      mCallable = callable;
-      mTimestamp = timestamp;
     }
 
-    public boolean cancel(final boolean mayInterruptIfRunning) {
-      synchronized (mMutex) {
-        final Future<V> future = mFuture;
-        if (future != null) {
-          return future.cancel(mayInterruptIfRunning);
-        }
-      }
-
-      final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
-      return (scheduledFuture != null) && scheduledFuture.cancel(mayInterruptIfRunning);
+    public void execute(@NotNull final Runnable command) {
+      mExecutor.executeNext(command);
     }
 
-    public boolean isCancelled() {
-      synchronized (mMutex) {
-        final Future<V> future = mFuture;
-        if (future != null) {
-          return future.isCancelled();
-        }
-      }
-
-      final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
-      return (scheduledFuture != null) && scheduledFuture.isCancelled();
+    public void shutdown() {
+      mExecutor.shutdown();
     }
 
-    public boolean isDone() {
-      synchronized (mMutex) {
-        final Future<V> future = mFuture;
-        if (future != null) {
-          return future.isDone();
-        }
-
-        final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
-        return (scheduledFuture != null) && scheduledFuture.isDone();
-      }
+    @NotNull
+    public List<Runnable> shutdownNow() {
+      return mExecutor.shutdownNow();
     }
 
-    public V get() throws InterruptedException, ExecutionException {
-      synchronized (mMutex) {
-        if (TimeUnits.waitUntil(mMutex, new Condition() {
-
-          public boolean isTrue() {
-            return (mScheduledFuture != null);
-          }
-        }, -1, TimeUnit.MILLISECONDS)) {
-          return mFuture.get();
-        }
-      }
-
-      throw new IllegalStateException();
+    public boolean isShutdown() {
+      return mExecutor.isShutdown();
     }
 
-    public V get(final long timeout, @NotNull final TimeUnit unit) throws InterruptedException,
+    public boolean isTerminated() {
+      return mExecutor.isTerminated();
+    }
+
+    public boolean awaitTermination(final long timeout, @NotNull final TimeUnit unit) throws
+        InterruptedException {
+      return mExecutor.awaitTermination(timeout, unit);
+    }
+
+    @NotNull
+    public <T> Future<T> submit(@NotNull final Callable<T> task) {
+      return mExecutor.submit(task);
+    }
+
+    @NotNull
+    public <T> Future<T> submit(@NotNull final Runnable task, final T result) {
+      return mExecutor.submit(task, result);
+    }
+
+    @NotNull
+    public Future<?> submit(@NotNull final Runnable task) {
+      return mExecutor.submit(task);
+    }
+
+    @NotNull
+    public <T> List<Future<T>> invokeAll(
+        @NotNull final Collection<? extends Callable<T>> tasks) throws InterruptedException {
+      return mExecutor.invokeAll(tasks);
+    }
+
+    @NotNull
+    public <T> List<Future<T>> invokeAll(@NotNull final Collection<? extends Callable<T>> tasks,
+        final long timeout, @NotNull final TimeUnit unit) throws InterruptedException {
+      return mExecutor.invokeAll(tasks, timeout, unit);
+    }
+
+    @NotNull
+    public <T> T invokeAny(@NotNull final Collection<? extends Callable<T>> tasks) throws
+        InterruptedException, ExecutionException {
+      return mExecutor.invokeAny(tasks);
+    }
+
+    public <T> T invokeAny(@NotNull final Collection<? extends Callable<T>> tasks,
+        final long timeout, @NotNull final TimeUnit unit) throws InterruptedException,
         ExecutionException, TimeoutException {
-      synchronized (mMutex) {
-        final long startTime = System.currentTimeMillis();
-        if (TimeUnits.waitUntil(mMutex, new Condition() {
-
-          public boolean isTrue() {
-            return (mScheduledFuture != null);
-          }
-        }, timeout, unit)) {
-          return mFuture.get(unit.toMillis(timeout) + startTime - System.currentTimeMillis(),
-              TimeUnit.MILLISECONDS);
-        }
-      }
-
-      throw new TimeoutException();
-    }
-
-    public int compareTo(@NotNull final Delayed delayed) {
-      if (delayed == this) {
-        return 0;
-      }
-
-      return Long.valueOf(getDelay(TimeUnit.NANOSECONDS))
-          .compareTo(delayed.getDelay(TimeUnit.NANOSECONDS));
-    }
-
-    public long getDelay(@NotNull final TimeUnit unit) {
-      return unit.convert(mTimestamp, TimeUnit.NANOSECONDS);
-    }
-
-    @Override
-    public int hashCode() {
-      int result = (int) (mTimestamp ^ (mTimestamp >>> 32));
-      result = 31 * result + (mFuture != null ? mFuture.hashCode() : 0);
-      result = 31 * result + (mScheduledFuture != null ? mScheduledFuture.hashCode() : 0);
-      return result;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
-        return true;
-      }
-
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-
-      final ExecutorFuture<?> that = (ExecutorFuture<?>) o;
-      return (mTimestamp == that.mTimestamp) && (mFuture != null ? mFuture.equals(that.mFuture)
-          : that.mFuture == null) && (mScheduledFuture != null ? mScheduledFuture.equals(
-          that.mScheduledFuture) : that.mScheduledFuture == null);
-    }
-
-    public void run() {
-      mFuture = mExecutor.submit(mCallable);
-    }
-
-    private void setFuture(@NotNull final ScheduledFuture<?> future) {
-      synchronized (mMutex) {
-        mScheduledFuture = future;
-      }
-    }
-  }
-
-  /**
-   * Runnable executing another runnable.
-   */
-  private static class ScheduledRunnable implements Runnable {
-
-    private final ExecutorService mExecutor;
-    private final Runnable mRunnable;
-
-    /**
-     * Constructor.
-     *
-     * @param executor the executor service.
-     * @param runnable the runnable to execute.
-     */
-    private ScheduledRunnable(@NotNull final ExecutorService executor,
-        @NotNull final Runnable runnable) {
-      mExecutor = executor;
-      mRunnable = runnable;
-    }
-
-    public void run() {
-      mExecutor.execute(mRunnable);
+      return mExecutor.invokeAny(tasks, timeout, unit);
     }
   }
 }
+

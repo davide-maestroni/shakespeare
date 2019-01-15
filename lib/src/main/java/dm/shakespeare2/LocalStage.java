@@ -24,8 +24,15 @@ import dm.shakespeare2.actor.Stage;
  */
 public class LocalStage implements Stage {
 
+  private static final StandInActor STAND_IN_ACTOR = new StandInActor();
+
   private final HashMap<String, Actor> mActors = new HashMap<String, Actor>();
   private final Object mMutex = new Object();
+
+  @NotNull
+  public static Actor standIn() {
+    return STAND_IN_ACTOR;
+  }
 
   @NotNull
   public ActorSet findAll(@NotNull final Pattern idPattern) {

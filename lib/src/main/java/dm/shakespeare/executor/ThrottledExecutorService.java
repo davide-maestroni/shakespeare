@@ -15,7 +15,7 @@ import dm.shakespeare.util.DoubleQueue;
 /**
  * Created by davide-maestroni on 06/06/2018.
  */
-class ThrottledExecutorService extends AbstractExecutorService {
+class ThrottledExecutorService extends AbstractExecutorService implements QueuedExecutorService {
 
   private final ExecutorService mExecutor;
   private final int mMaxConcurrency;
@@ -33,6 +33,17 @@ class ThrottledExecutorService extends AbstractExecutorService {
   public void execute(@NotNull final Runnable command) {
     synchronized (mMutex) {
       mQueue.add(ConstantConditions.notNull("command", command));
+      if (mPendingCount >= mMaxConcurrency) {
+        return;
+      }
+      ++mPendingCount;
+    }
+    mExecutor.execute(mRunnable);
+  }
+
+  public void executeNext(@NotNull final Runnable command) {
+    synchronized (mMutex) {
+      mQueue.addFirst(ConstantConditions.notNull("command", command));
       if (mPendingCount >= mMaxConcurrency) {
         return;
       }
@@ -69,17 +80,6 @@ class ThrottledExecutorService extends AbstractExecutorService {
   public boolean awaitTermination(final long timeout, @NotNull final TimeUnit unit) throws
       InterruptedException {
     return mExecutor.awaitTermination(timeout, unit);
-  }
-
-  void executeNext(@NotNull final Runnable command) {
-    synchronized (mMutex) {
-      mQueue.addFirst(ConstantConditions.notNull("command", command));
-      if (mPendingCount >= mMaxConcurrency) {
-        return;
-      }
-      ++mPendingCount;
-    }
-    mExecutor.execute(mRunnable);
   }
 
   /**

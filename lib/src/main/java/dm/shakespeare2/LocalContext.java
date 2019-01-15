@@ -3,11 +3,12 @@ package dm.shakespeare2;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-import dm.shakespeare.executor.ActorExecutorService;
 import dm.shakespeare.executor.ExecutorServices;
+import dm.shakespeare.executor.QueuedExecutorService;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare2.actor.Actor;
@@ -17,8 +18,10 @@ import dm.shakespeare2.actor.Envelop;
 import dm.shakespeare2.actor.Options;
 import dm.shakespeare2.message.ActorDismissed;
 import dm.shakespeare2.message.Bounce;
+import dm.shakespeare2.message.DeadLetter;
 import dm.shakespeare2.message.Failure;
 import dm.shakespeare2.message.QuotaExceeded;
+import dm.shakespeare2.message.Receipt;
 import dm.shakespeare2.message.Success;
 
 /**
@@ -26,6 +29,7 @@ import dm.shakespeare2.message.Success;
  */
 class LocalContext implements Context {
 
+  private static final DeadLetter DEAD_LETTER = new DeadLetter();
   private static final QuotaNotifier DUMMY_NOTIFIER = new QuotaNotifier() {
 
     public void consume() {
@@ -39,8 +43,9 @@ class LocalContext implements Context {
     }
   };
 
-  private final ActorExecutorService mActorExecutor;
+  private final QueuedExecutorService mActorExecutor;
   private final Logger mLogger;
+  private final HashSet<Actor> mObservers = new HashSet<Actor>();
   private final int mQuota;
   private final QuotaNotifier mQuotaNotifier;
   private final LocalStage mStage;
@@ -50,6 +55,7 @@ class LocalContext implements Context {
   private BehaviorWrapper mBehaviorWrapper = new BehaviorStarter();
   private ContextExecutorService mContextExecutor;
   private ContextScheduledExecutorService mContextScheduledExecutor;
+  private Options mDeadOptions;
   private Runnable mDismissRunnable;
   private volatile boolean mDismissed;
   private Runnable mRestartRunnable;
@@ -60,7 +66,9 @@ class LocalContext implements Context {
       @NotNull final ExecutorService executor, @NotNull final Logger logger) {
     mStage = ConstantConditions.notNull("stage", stage);
     mBehavior = ConstantConditions.notNull("behavior", behavior);
-    mActorExecutor = ExecutorServices.asActorExecutor(executor);
+    mActorExecutor =
+        (executor instanceof ScheduledExecutorService) ? ExecutorServices.asActorExecutor(
+            (ScheduledExecutorService) executor) : ExecutorServices.asActorExecutor(executor);
     mLogger = ConstantConditions.notNull("logger", logger);
     mQuotaNotifier = ((mQuota = ConstantConditions.positive("quota", quota)) < Integer.MAX_VALUE)
         ? new DefaultQuotaNotifier() : DUMMY_NOTIFIER;
@@ -82,7 +90,14 @@ class LocalContext implements Context {
   @NotNull
   public ExecutorService getExecutor() {
     if (mContextExecutor == null) {
-      mContextExecutor = new ContextExecutorService(mActorExecutor, this);
+      final QueuedExecutorService actorExecutor = mActorExecutor;
+      if (actorExecutor instanceof ScheduledExecutorService) {
+        mContextExecutor = (mContextScheduledExecutor =
+            new ContextScheduledExecutorService((ScheduledExecutorService) actorExecutor, this));
+
+      } else {
+        mContextExecutor = new ContextExecutorService(actorExecutor, this);
+      }
     }
     return mContextExecutor;
   }
@@ -95,8 +110,15 @@ class LocalContext implements Context {
   @NotNull
   public ScheduledExecutorService getScheduledExecutor() {
     if (mContextScheduledExecutor == null) {
-      mContextScheduledExecutor =
-          new ContextScheduledExecutorService(ExecutorServices.asScheduled(mActorExecutor), this);
+      final QueuedExecutorService actorExecutor = mActorExecutor;
+      if (actorExecutor instanceof ScheduledExecutorService) {
+        mContextExecutor = (mContextScheduledExecutor =
+            new ContextScheduledExecutorService((ScheduledExecutorService) actorExecutor, this));
+
+      } else {
+        mContextScheduledExecutor =
+            new ContextScheduledExecutorService(ExecutorServices.asScheduled(mActorExecutor), this);
+      }
     }
     return mContextScheduledExecutor;
   }
@@ -136,12 +158,20 @@ class LocalContext implements Context {
     mBehavior = ConstantConditions.notNull("behavior", behavior);
   }
 
+  void addObserver(@NotNull final Actor observer) {
+    if (mStopped) {
+      observer.tell(DEAD_LETTER, mDeadOptions, mActor);
+
+    } else {
+      mObservers.add(observer);
+    }
+  }
+
   void dismiss(final boolean mayInterruptIfRunning) {
     if (mayInterruptIfRunning) {
-      try {
-        mRunner.interrupt();
-
-      } catch (final NullPointerException ignored) {
+      final Thread runner = mRunner;
+      if (runner != null) {
+        runner.interrupt();
       }
     }
     dismissSelf();
@@ -152,7 +182,7 @@ class LocalContext implements Context {
   }
 
   @NotNull
-  ActorExecutorService getActorExecutor() {
+  QueuedExecutorService getActorExecutor() {
     return mActorExecutor;
   }
 
@@ -171,12 +201,13 @@ class LocalContext implements Context {
   }
 
   void messages(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
-    if (isDismissed() && envelop.getOptions().getBounce()) {
+    final Options options = envelop.getOptions();
+    if (isDismissed() && options.getBounce()) {
       final ArrayList<Object> bounces = new ArrayList<Object>();
       for (final Object message : messages) {
-        bounces.add(new Bounce(message, envelop));
+        bounces.add(new Bounce(message, options));
       }
-      envelop.getSender().tellAll(bounces, null, mActor);
+      envelop.getSender().tellAll(bounces, Options.thread(options.getThread()), mActor);
       return;
     }
     mRunner = Thread.currentThread();
@@ -206,6 +237,10 @@ class LocalContext implements Context {
     mQuotaNotifier.quotaExceeded(message, envelop);
   }
 
+  void removeObserver(@NotNull final Actor observer) {
+    mObservers.remove(observer);
+  }
+
   void setActor(@NotNull final Actor actor) {
     mActor = ConstantConditions.notNull("actor", actor);
   }
@@ -218,6 +253,15 @@ class LocalContext implements Context {
     final ContextScheduledExecutorService scheduledExecutor = mContextScheduledExecutor;
     if (scheduledExecutor != null) {
       scheduledExecutor.cancelAll(true);
+    }
+  }
+
+  private void setStopped() {
+    mStopped = true;
+    mStage.removeActor(mActor.getId());
+    final Options options = (mDeadOptions = Options.sentAt(System.currentTimeMillis()));
+    for (final Actor observer : mObservers) {
+      observer.tell(DEAD_LETTER, options, mActor);
     }
   }
 
@@ -255,20 +299,32 @@ class LocalContext implements Context {
       final Options options = envelop.getOptions();
       if (isDismissed()) {
         if (options.getBounce()) {
-          envelop.getSender().tell(new ActorDismissed(message, envelop), null, mActor);
+          envelop.getSender()
+              .tell(new ActorDismissed(message, options),
+                  Options.thread(envelop.getOptions().getThread()), mActor);
         }
         return;
+      }
+
+      if (options.getReceipt()) {
+        envelop.getSender()
+            .tell(new Receipt(message, options), Options.thread(envelop.getOptions().getThread()),
+                mActor);
       }
       mQuotaNotifier.consume();
       try {
         mBehavior.onMessage(message, envelop, context);
         if (options.getSuccess()) {
-          envelop.getSender().tell(new Success(message, envelop), null, mActor);
+          envelop.getSender()
+              .tell(new Success(message, options), Options.thread(envelop.getOptions().getThread()),
+                  mActor);
         }
 
       } catch (final Throwable t) {
         if (options.getFailure()) {
-          envelop.getSender().tell(new Failure(message, envelop, t), null, mActor);
+          envelop.getSender()
+              .tell(new Failure(message, options, t),
+                  Options.thread(envelop.getOptions().getThread()), mActor);
         }
         onStop(context);
         if (t instanceof InterruptedException) {
@@ -282,7 +338,7 @@ class LocalContext implements Context {
         mBehavior.onStart(context);
 
       } catch (final Throwable t) {
-        mStopped = true;
+        setStopped();
         cancelTasks();
         mLogger.wrn(t, "suppressed exception");
         if (t instanceof InterruptedException) {
@@ -295,8 +351,7 @@ class LocalContext implements Context {
       if (mStopped) {
         return;
       }
-      mStopped = true;
-      mStage.removeActor(mActor.getId());
+      setStopped();
       try {
         mBehavior.onStop(context);
 
@@ -321,7 +376,7 @@ class LocalContext implements Context {
         behavior.onStart(context);
 
       } catch (final Throwable t) {
-        mStopped = true;
+        setStopped();
         cancelTasks();
         mLogger.wrn(t, "suppressed exception");
         if (t instanceof InterruptedException) {
@@ -336,8 +391,10 @@ class LocalContext implements Context {
     private int mCount = 0;
 
     public void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
-      if (envelop.getOptions().getBounce()) {
-        envelop.getSender().tell(new QuotaExceeded(message, envelop), null, mActor);
+      final Options options = envelop.getOptions();
+      if (options.getBounce()) {
+        envelop.getSender()
+            .tell(new QuotaExceeded(message, options), Options.thread(options.getThread()), mActor);
       }
     }
 

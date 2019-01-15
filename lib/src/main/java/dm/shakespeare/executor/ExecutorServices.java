@@ -31,6 +31,15 @@ public class ExecutorServices {
   }
 
   @NotNull
+  public static ActorScheduledExecutorService asActorExecutor(
+      @NotNull final ScheduledExecutorService executor) {
+    if (executor instanceof ActorScheduledExecutorService) {
+      return (ActorScheduledExecutorService) executor;
+    }
+    return new ActorScheduledExecutorService(executor);
+  }
+
+  @NotNull
   public static ScheduledExecutorService asScheduled(@NotNull final ExecutorService executor) {
     if (executor instanceof ScheduledExecutorService) {
       return (ScheduledExecutorService) executor;

@@ -21,6 +21,17 @@ class LocalActor implements Actor {
     mContext = ConstantConditions.notNull("context", context);
   }
 
+  @NotNull
+  public Actor addObserver(@NotNull final Actor observer) {
+    mContext.getActorExecutor().executeNext(new Runnable() {
+
+      public void run() {
+        mContext.addObserver(observer);
+      }
+    });
+    return this;
+  }
+
   public void dismiss(final boolean mayInterruptIfRunning) {
     mContext.dismiss(mayInterruptIfRunning);
   }
@@ -28,6 +39,17 @@ class LocalActor implements Actor {
   @NotNull
   public String getId() {
     return mId;
+  }
+
+  @NotNull
+  public Actor removeObserver(@NotNull final Actor observer) {
+    mContext.getActorExecutor().executeNext(new Runnable() {
+
+      public void run() {
+        mContext.removeObserver(observer);
+      }
+    });
+    return this;
   }
 
   @NotNull

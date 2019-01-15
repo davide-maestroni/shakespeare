@@ -26,15 +26,15 @@ class ContextScheduledExecutorService extends ContextExecutorService
   }
 
   @NotNull
-  public ScheduledFuture<?> schedule(@NotNull final Runnable command, final long timeout,
+  public ScheduledFuture<?> schedule(@NotNull final Runnable command, final long delay,
       @NotNull final TimeUnit unit) {
-    return wrap(addFuture(mExecutor.schedule(wrap(command), timeout, unit)));
+    return wrap(addFuture(mExecutor.schedule(wrap(command), delay, unit)));
   }
 
   @NotNull
-  public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> task, final long timeout,
+  public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> callable, final long delay,
       @NotNull final TimeUnit unit) {
-    return wrap(addFuture(mExecutor.schedule(wrap(task), timeout, unit)));
+    return wrap(addFuture(mExecutor.schedule(wrap(callable), delay, unit)));
   }
 
   @NotNull

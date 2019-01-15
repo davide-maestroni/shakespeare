@@ -43,6 +43,16 @@ public class Options implements Serializable {
     mSentAt = sentAt;
   }
 
+  @NotNull
+  public static Options sentAt(final long timestamp) {
+    return new Options(null, false, false, false, false, timestamp);
+  }
+
+  @NotNull
+  public static Options thread(@Nullable final String id) {
+    return new Options(id, false, false, false, false, 0);
+  }
+
   public boolean getBounce() {
     return mBounceEnabled;
   }

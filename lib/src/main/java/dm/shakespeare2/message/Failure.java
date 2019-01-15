@@ -3,7 +3,7 @@ package dm.shakespeare2.message;
 import org.jetbrains.annotations.NotNull;
 
 import dm.shakespeare.util.ConstantConditions;
-import dm.shakespeare2.actor.Envelop;
+import dm.shakespeare2.actor.Options;
 
 /**
  * Created by davide-maestroni on 10/01/2018.
@@ -12,9 +12,9 @@ public class Failure extends Receipt {
 
   private final Throwable mCause;
 
-  public Failure(final Object message, @NotNull final Envelop envelop,
+  public Failure(final Object message, @NotNull final Options options,
       @NotNull final Throwable cause) {
-    super(message, envelop);
+    super(message, options);
     mCause = ConstantConditions.notNull("cause", cause);
   }
 
