@@ -16,6 +16,7 @@ abstract class DefaultEnvelop implements Envelop, Runnable {
   private final Options mOptions;
   private final Actor mSender;
   private final long mSentAt;
+  private boolean mPreventReceipt;
   private long mReceivedAt = -1;
 
   DefaultEnvelop(@NotNull final Actor sender) {
@@ -59,6 +60,14 @@ abstract class DefaultEnvelop implements Envelop, Runnable {
 
   public long getSentAt() {
     return mSentAt;
+  }
+
+  public boolean isPreventReceipt() {
+    return mPreventReceipt;
+  }
+
+  public void preventReceipt() {
+    mPreventReceipt = true;
   }
 
   public void run() {

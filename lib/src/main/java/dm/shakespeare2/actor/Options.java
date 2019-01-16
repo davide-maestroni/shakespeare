@@ -16,44 +16,43 @@ public class Options implements Serializable {
 
   private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 
-  private final boolean mBounceEnabled;
-  private final boolean mFailureEnabled;
+  private final String mReceiptId;
   private final String mThread;
   private final long mTimeOffset;
 
   public Options() {
     mThread = null;
-    mBounceEnabled = false;
-    mFailureEnabled = false;
+    mReceiptId = null;
     mTimeOffset = 0;
   }
 
-  private Options(@Nullable final String threadId, final boolean bounceEnabled,
-      final boolean failureEnabled, final long timeOffset) {
+  private Options(@Nullable final String threadId, final String receiptId, final long timeOffset) {
     mThread = threadId;
-    mBounceEnabled = bounceEnabled;
-    mFailureEnabled = failureEnabled;
+    mReceiptId = receiptId;
     mTimeOffset = timeOffset;
   }
 
   @NotNull
-  public static Options thread(@Nullable final String id) {
-    return new Options(id, false, false, 0);
+  public static Options receipt(@Nullable final String receiptId) {
+    return new Options(null, receiptId, 0L);
+  }
+
+  @NotNull
+  public static Options thread(@Nullable final String threadId) {
+    return new Options(threadId, null, 0);
   }
 
   @NotNull
   public static Options timeOffset(final long offsetMillis) {
-    return new Options(null, false, false, offsetMillis);
+    return new Options(null, null, offsetMillis);
   }
 
-  public boolean getBounce() {
-    return mBounceEnabled;
+  @Nullable
+  public String getReceiptId() {
+    return mReceiptId;
   }
 
-  public boolean getFailure() {
-    return mFailureEnabled;
-  }
-
+  @Nullable
   public String getThread() {
     return mThread;
   }
@@ -63,22 +62,17 @@ public class Options implements Serializable {
   }
 
   @NotNull
-  public Options withBounce(final boolean enabled) {
-    return new Options(mThread, enabled, mFailureEnabled, mTimeOffset);
+  public Options withReceiptId(@Nullable final String receiptId) {
+    return new Options(mThread, receiptId, mTimeOffset);
   }
 
   @NotNull
-  public Options withFailure(final boolean enabled) {
-    return new Options(mThread, mBounceEnabled, enabled, mTimeOffset);
-  }
-
-  @NotNull
-  public Options withThread(@Nullable final String id) {
-    return new Options(id, mBounceEnabled, mFailureEnabled, mTimeOffset);
+  public Options withThread(@Nullable final String threadId) {
+    return new Options(threadId, mReceiptId, mTimeOffset);
   }
 
   @NotNull
   public Options withTimeOffset(final long offsetMillis) {
-    return new Options(mThread, mBounceEnabled, mFailureEnabled, offsetMillis);
+    return new Options(mThread, mReceiptId, offsetMillis);
   }
 }

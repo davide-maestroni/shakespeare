@@ -8,7 +8,7 @@ import dm.shakespeare2.actor.Options;
 /**
  * Created by davide-maestroni on 10/01/2018.
  */
-public class Failure extends Receipt {
+public class Failure extends Bounce {
 
   private final Throwable mCause;
 

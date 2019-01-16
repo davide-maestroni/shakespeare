@@ -16,9 +16,9 @@ import dm.shakespeare2.actor.Behavior;
 import dm.shakespeare2.actor.Behavior.Context;
 import dm.shakespeare2.actor.Envelop;
 import dm.shakespeare2.actor.Options;
-import dm.shakespeare2.message.ActorDismissed;
 import dm.shakespeare2.message.Bounce;
 import dm.shakespeare2.message.DeadLetter;
+import dm.shakespeare2.message.Delivery;
 import dm.shakespeare2.message.Failure;
 import dm.shakespeare2.message.QuotaExceeded;
 
@@ -199,7 +199,7 @@ class LocalContext implements Context {
 
   void messages(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
     final Options options = envelop.getOptions();
-    if (isDismissed() && options.getBounce()) {
+    if (isDismissed() && (options.getReceiptId() != null)) {
       final ArrayList<Object> bounces = new ArrayList<Object>();
       for (final Object message : messages) {
         bounces.add(new Bounce(message, options));
@@ -294,10 +294,10 @@ class LocalContext implements Context {
         @NotNull final Context context) {
       final Options options = envelop.getOptions();
       if (isDismissed()) {
-        if (options.getBounce()) {
+        if (options.getReceiptId() != null) {
           envelop.getSender()
-              .tell(new ActorDismissed(message, options),
-                  Options.thread(envelop.getOptions().getThread()), mActor);
+              .tell(new Bounce(message, options), Options.thread(envelop.getOptions().getThread()),
+                  mActor);
         }
         return;
       }
@@ -305,9 +305,14 @@ class LocalContext implements Context {
       mQuotaNotifier.consume();
       try {
         mBehavior.onMessage(message, envelop, context);
+        if ((options.getReceiptId() != null) && !envelop.isPreventReceipt()) {
+          envelop.getSender()
+              .tell(new Delivery(message, options),
+                  Options.thread(envelop.getOptions().getThread()), mActor);
+        }
 
       } catch (final Throwable t) {
-        if (options.getFailure()) {
+        if ((options.getReceiptId() != null) && !envelop.isPreventReceipt()) {
           envelop.getSender()
               .tell(new Failure(message, options, t),
                   Options.thread(envelop.getOptions().getThread()), mActor);
@@ -378,7 +383,7 @@ class LocalContext implements Context {
 
     public void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
       final Options options = envelop.getOptions();
-      if (options.getBounce()) {
+      if (options.getReceiptId() != null) {
         envelop.getSender()
             .tell(new QuotaExceeded(message, options), Options.thread(options.getThread()), mActor);
       }

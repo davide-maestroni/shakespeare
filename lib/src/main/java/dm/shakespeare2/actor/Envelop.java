@@ -16,4 +16,8 @@ public interface Envelop {
   Actor getSender();
 
   long getSentAt();
+
+  boolean isPreventReceipt();
+
+  void preventReceipt();
 }

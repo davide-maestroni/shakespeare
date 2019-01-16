@@ -15,8 +15,9 @@ import dm.shakespeare2.actor.BehaviorBuilder.Handler;
 import dm.shakespeare2.actor.Envelop;
 import dm.shakespeare2.actor.Options;
 import dm.shakespeare2.message.Bounce;
+import dm.shakespeare2.message.DeadLetter;
 import dm.shakespeare2.message.Failure;
-import dm.shakespeare2.message.Notification;
+import dm.shakespeare2.message.Receipt;
 import dm.shakespeare2.template.SupervisedScript.SupervisedRecovery.RecoveryType;
 
 /**
@@ -123,6 +124,7 @@ public class SupervisedScript extends ActorScriptWrapper {
     private static final Object DUMMY_MESSAGE = new Object();
 
     private final ContextWrapper mContext;
+    private final String mReceiptId = toString();
 
     private Behavior mBehavior;
     private DoubleQueue<DelayedMessage> mDelayedMessages = new DoubleQueue<DelayedMessage>();
@@ -157,16 +159,16 @@ public class SupervisedScript extends ActorScriptWrapper {
       mBehavior.onStop(mContext.withContext(context));
     }
 
-    private void discardDelayed(@NotNull final Context context) {
+    private void discardDelayed(@NotNull final Actor self) {
       final Throwable failure = mFailure;
       final DelayedMessage failureMessage = mFailureMessage;
       if (failureMessage != null) {
         final Envelop envelop = failureMessage.getEnvelop();
         final Options options = envelop.getOptions();
-        if (options.getFailure()) {
+        if (options.getReceiptId() != null) {
           envelop.getSender()
               .tell(new Failure(failureMessage.getMessage(), options, failure),
-                  Options.thread(options.getThread()), context.getSelf());
+                  Options.thread(options.getThread()), self);
         }
       }
 
@@ -174,17 +176,18 @@ public class SupervisedScript extends ActorScriptWrapper {
       for (final DelayedMessage delayedMessage : delayedMessages) {
         final Envelop envelop = delayedMessage.getEnvelop();
         final Options options = envelop.getOptions();
-        if (options.getFailure()) {
+        if (options.getReceiptId() != null) {
           envelop.getSender()
               .tell(new Failure(delayedMessage.getMessage(), options, failure),
-                  Options.thread(options.getThread()), context.getSelf());
+                  Options.thread(options.getThread()), self);
         }
       }
 
       mDelayedMessages = new DoubleQueue<DelayedMessage>();
     }
 
-    private void resetFailure() {
+    private void resetFailure(@NotNull final Actor self) {
+      mSupervisor.removeObserver(self);
       mSupervisor = null;
       mSupervisorThread = null;
       mFailure = null;
@@ -192,11 +195,10 @@ public class SupervisedScript extends ActorScriptWrapper {
       mFailureMessage = null;
     }
 
-    private void resumeDelayed(@NotNull final Context context) {
-      final Actor actor = context.getSelf();
+    private void resumeDelayed(@NotNull final Actor self) {
       final int size = mDelayedMessages.size();
       for (int i = 0; i < size; ++i) {
-        actor.tell(DUMMY_MESSAGE, null, actor);
+        self.tell(DUMMY_MESSAGE, null, self);
       }
     }
 
@@ -235,59 +237,78 @@ public class SupervisedScript extends ActorScriptWrapper {
           if (!sender.equals(self)) {
             mSupervisor = sender;
             mSupervisorThread = options.getThread();
+            sender.addObserver(context.getSelf());
 
-          } else if (options.getFailure()) {
+          } else if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
                     new IllegalArgumentException("an actor can't supervise itself")),
                 Options.thread(options.getThread()), self);
+            envelop.preventReceipt();
           }
-          return;
 
         } else if (message instanceof Unsupervise) {
           final Actor sender = envelop.getSender();
           if (sender.equals(mSupervisor)) {
+            mSupervisor.removeObserver(context.getSelf());
             mSupervisor = null;
             mSupervisorThread = null;
 
-          } else if (options.getFailure()) {
+          } else if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
                     new IllegalArgumentException("sender is not the current supervisor")),
                 Options.thread(options.getThread()), context.getSelf());
+            envelop.preventReceipt();
           }
-          return;
 
         } else if (message instanceof SupervisedRecovery) {
           final Actor sender = envelop.getSender();
           if (sender.equals(mSupervisor)) {
             context.getLogger().wrn("ignoring recovery message: " + message);
-            return;
+
+          } else if (options.getReceiptId() != null) {
+            sender.tell(new Failure(message, options,
+                    new IllegalArgumentException("sender is not the current supervisor")),
+                Options.thread(options.getThread()), context.getSelf());
+            envelop.preventReceipt();
           }
-        }
 
-        try {
-          mBehavior.onMessage(message, envelop, mContext.withContext(context));
+        } else if (Receipt.isReceipt(message, mReceiptId)) {
+          context.getLogger().wrn("ignoring receipt message: " + message);
 
-        } catch (final Throwable t) {
-          if (!(t instanceof InterruptedException)) {
-            final Actor supervisor = mSupervisor;
-            if (supervisor != null) {
-              final String failureId = UUID.randomUUID().toString();
-              supervisor.tell(new SupervisedFailure(failureId, t),
-                  new Options().withThread(mSupervisorThread).withBounce(true).withFailure(true),
-                  context.getSelf());
-              mFailure = t;
-              mFailureId = failureId;
-              mFailureMessage = new DelayedMessage(message, envelop);
-              mHandler = new SuperviseHandler();
-              return;
+        } else if (message instanceof DeadLetter) {
+          final Actor sender = envelop.getSender();
+          if (sender.equals(mSupervisor)) {
+            mSupervisor = null;
+            mSupervisorThread = null;
+          }
+
+        } else {
+          try {
+            mBehavior.onMessage(message, envelop, mContext.withContext(context));
+
+          } catch (final Throwable t) {
+            if (!(t instanceof InterruptedException)) {
+              final Actor supervisor = mSupervisor;
+              if (supervisor != null) {
+                final String failureId = UUID.randomUUID().toString();
+                supervisor.tell(new SupervisedFailure(failureId, t),
+                    new Options().withThread(mSupervisorThread).withReceiptId(mReceiptId),
+                    context.getSelf());
+                mFailure = t;
+                mFailureId = failureId;
+                mFailureMessage = new DelayedMessage(message, envelop);
+                mHandler = new SuperviseHandler();
+                envelop.preventReceipt();
+                return;
+              }
             }
-          }
 
-          if (t instanceof RuntimeException) {
-            throw (RuntimeException) t;
+            if (t instanceof RuntimeException) {
+              throw (RuntimeException) t;
 
-          } else if (t instanceof Exception) {
-            throw (Exception) t;
+            } else if (t instanceof Exception) {
+              throw (Exception) t;
+            }
           }
         }
       }
@@ -322,40 +343,40 @@ public class SupervisedScript extends ActorScriptWrapper {
           return;
         }
 
+        final Actor self = context.getSelf();
         final Options options = envelop.getOptions();
         if (message instanceof Supervise) {
-          final Actor self = context.getSelf();
           final Actor sender = envelop.getSender();
           if (!sender.equals(self)) {
             if (!sender.equals(mSupervisor)) {
               // TODO: 14/01/2019 notify old supervisor???
               mSupervisor = sender;
               mSupervisorThread = options.getThread();
+              sender.addObserver(self);
               sender.tell(new SupervisedFailure(mFailureId, mFailure),
-                  new Options().withThread(mSupervisorThread).withBounce(true).withFailure(true),
-                  context.getSelf());
+                  new Options().withThread(mSupervisorThread).withReceiptId(mReceiptId), self);
             }
 
-          } else if (options.getFailure()) {
+          } else if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
                     new IllegalArgumentException("an actor can't supervise itself")),
                 Options.thread(options.getThread()), self);
+            envelop.preventReceipt();
           }
-          return;
 
         } else if (message instanceof Unsupervise) {
           final Actor sender = envelop.getSender();
           if (sender.equals(mSupervisor)) {
-            resetFailure();
-            discardDelayed(context);
+            resetFailure(self);
+            discardDelayed(self);
             context.dismissSelf();
 
-          } else if (options.getFailure()) {
+          } else if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
                     new IllegalArgumentException("sender is not the current supervisor")),
-                Options.thread(options.getThread()), context.getSelf());
+                Options.thread(options.getThread()), self);
+            envelop.preventReceipt();
           }
-          return;
 
         } else if (message instanceof SupervisedRecovery) {
           final Actor sender = envelop.getSender();
@@ -366,82 +387,93 @@ public class SupervisedScript extends ActorScriptWrapper {
               final DelayedMessage failureMessage = mFailureMessage;
               if (recoveryType == RecoveryType.RETRY) {
                 mDelayedMessages.addFirst(failureMessage);
-                resetFailure();
+                resetFailure(self);
                 mHandler = new ResumeHandler();
-                resumeDelayed(context);
+                resumeDelayed(self);
 
               } else if (recoveryType == RecoveryType.RESUME) {
                 final Envelop failureEnvelop = failureMessage.getEnvelop();
                 final Options failureOptions = failureEnvelop.getOptions();
-                if (failureOptions.getFailure()) {
+                if (failureOptions.getReceiptId() != null) {
                   failureEnvelop.getSender()
                       .tell(new Failure(failureMessage.getMessage(), failureOptions, mFailure),
-                          Options.thread(failureOptions.getThread()), context.getSelf());
+                          Options.thread(failureOptions.getThread()), self);
                 }
-                resetFailure();
+                resetFailure(self);
                 mHandler = new ResumeHandler();
-                resumeDelayed(context);
+                resumeDelayed(self);
 
               } else if (recoveryType == RecoveryType.RESTART_AND_RETRY) {
                 mDelayedMessages.addFirst(failureMessage);
-                resetFailure();
+                resetFailure(self);
                 mHandler = new ResumeHandler();
-                resumeDelayed(context);
+                resumeDelayed(self);
                 context.restartSelf();
 
               } else if (recoveryType == RecoveryType.RESTART_AND_RESUME) {
                 final Envelop failureEnvelop = failureMessage.getEnvelop();
                 final Options failureOptions = failureEnvelop.getOptions();
-                if (failureOptions.getFailure()) {
+                if (failureOptions.getReceiptId() != null) {
                   failureEnvelop.getSender()
                       .tell(new Failure(failureMessage.getMessage(), failureOptions, mFailure),
-                          Options.thread(failureEnvelop.getOptions().getThread()),
-                          context.getSelf());
+                          Options.thread(failureEnvelop.getOptions().getThread()), self);
                 }
-                resetFailure();
+                resetFailure(self);
                 mHandler = new ResumeHandler();
-                resumeDelayed(context);
+                resumeDelayed(self);
                 context.restartSelf();
 
               } else if (recoveryType == RecoveryType.RESTART) {
-                resetFailure();
-                discardDelayed(context);
+                resetFailure(self);
+                discardDelayed(self);
                 context.restartSelf();
 
               } else {
-                resetFailure();
-                discardDelayed(context);
+                resetFailure(self);
+                discardDelayed(self);
                 context.dismissSelf();
               }
 
-            } else if (options.getFailure()) {
+            } else if (options.getReceiptId() != null) {
               sender.tell(
                   new Failure(message, options, new IllegalArgumentException("invalid failure ID")),
-                  Options.thread(options.getThread()), context.getSelf());
+                  Options.thread(options.getThread()), self);
+              envelop.preventReceipt();
             }
 
-          } else if (options.getFailure()) {
+          } else if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
                     new IllegalArgumentException("sender is not the current supervisor")),
-                Options.thread(options.getThread()), context.getSelf());
+                Options.thread(options.getThread()), self);
+            envelop.preventReceipt();
           }
-          return;
 
-        } else if ((message instanceof Bounce) || (message instanceof Failure)) {
-          final Object bouncedMessage = ((Notification) message).getMessage();
-          if (bouncedMessage instanceof SupervisedFailure) {
-            final Actor sender = envelop.getSender();
-            if (sender.equals(mSupervisor) && mFailureId.equals(
-                ((SupervisedFailure) bouncedMessage).getFailureId())) {
-              resetFailure();
-              discardDelayed(context);
-              context.dismissSelf();
-              return;
+        } else if (Receipt.isReceipt(message, mReceiptId)) {
+          if (message instanceof Bounce) {
+            final Object bouncedMessage = ((Bounce) message).getMessage();
+            if (bouncedMessage instanceof SupervisedFailure) {
+              final Actor sender = envelop.getSender();
+              if (sender.equals(mSupervisor) && mFailureId.equals(
+                  ((SupervisedFailure) bouncedMessage).getFailureId())) {
+                resetFailure(self);
+                discardDelayed(self);
+                context.dismissSelf();
+              }
             }
           }
-        }
 
-        mDelayedMessages.add(new DelayedMessage(message, envelop));
+        } else if (message instanceof DeadLetter) {
+          final Actor sender = envelop.getSender();
+          if (sender.equals(mSupervisor)) {
+            resetFailure(self);
+            discardDelayed(self);
+            context.dismissSelf();
+          }
+
+        } else {
+          mDelayedMessages.add(new DelayedMessage(message, envelop));
+          envelop.preventReceipt();
+        }
       }
     }
   }
