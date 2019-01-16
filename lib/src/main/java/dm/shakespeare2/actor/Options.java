@@ -18,39 +18,32 @@ public class Options implements Serializable {
 
   private final boolean mBounceEnabled;
   private final boolean mFailureEnabled;
-  private final boolean mReceiptEnabled;
-  private final long mSentAt;
-  private final boolean mSuccessEnabled;
   private final String mThread;
+  private final long mTimeOffset;
 
   public Options() {
     mThread = null;
     mBounceEnabled = false;
     mFailureEnabled = false;
-    mReceiptEnabled = false;
-    mSuccessEnabled = false;
-    mSentAt = 0;
+    mTimeOffset = 0;
   }
 
   private Options(@Nullable final String threadId, final boolean bounceEnabled,
-      final boolean failureEnabled, final boolean receiptEnabled, final boolean successEnabled,
-      final long sentAt) {
+      final boolean failureEnabled, final long timeOffset) {
     mThread = threadId;
     mBounceEnabled = bounceEnabled;
     mFailureEnabled = failureEnabled;
-    mReceiptEnabled = receiptEnabled;
-    mSuccessEnabled = successEnabled;
-    mSentAt = sentAt;
-  }
-
-  @NotNull
-  public static Options sentAt(final long timestamp) {
-    return new Options(null, false, false, false, false, timestamp);
+    mTimeOffset = timeOffset;
   }
 
   @NotNull
   public static Options thread(@Nullable final String id) {
-    return new Options(id, false, false, false, false, 0);
+    return new Options(id, false, false, 0);
+  }
+
+  @NotNull
+  public static Options timeOffset(final long offsetMillis) {
+    return new Options(null, false, false, offsetMillis);
   }
 
   public boolean getBounce() {
@@ -61,52 +54,31 @@ public class Options implements Serializable {
     return mFailureEnabled;
   }
 
-  public boolean getReceipt() {
-    return mReceiptEnabled;
-  }
-
-  public long getSentAt() {
-    return mSentAt;
-  }
-
-  public boolean getSuccess() {
-    return mSuccessEnabled;
-  }
-
   public String getThread() {
     return mThread;
   }
 
+  public long getTimeOffset() {
+    return mTimeOffset;
+  }
+
   @NotNull
   public Options withBounce(final boolean enabled) {
-    return new Options(mThread, enabled, mFailureEnabled, mReceiptEnabled, mSuccessEnabled,
-        mSentAt);
+    return new Options(mThread, enabled, mFailureEnabled, mTimeOffset);
   }
 
   @NotNull
   public Options withFailure(final boolean enabled) {
-    return new Options(mThread, mBounceEnabled, enabled, mReceiptEnabled, mSuccessEnabled, mSentAt);
-  }
-
-  @NotNull
-  public Options withReceipt(final boolean enabled) {
-    return new Options(mThread, mBounceEnabled, mFailureEnabled, enabled, mSuccessEnabled, mSentAt);
-  }
-
-  @NotNull
-  public Options withSentAt(final long timestamp) {
-    return new Options(mThread, mBounceEnabled, mFailureEnabled, mReceiptEnabled, mSuccessEnabled,
-        timestamp);
-  }
-
-  @NotNull
-  public Options withSuccess(final boolean enabled) {
-    return new Options(mThread, mBounceEnabled, mFailureEnabled, mReceiptEnabled, enabled, mSentAt);
+    return new Options(mThread, mBounceEnabled, enabled, mTimeOffset);
   }
 
   @NotNull
   public Options withThread(@Nullable final String id) {
-    return new Options(id, mBounceEnabled, mFailureEnabled, mReceiptEnabled, mSuccessEnabled,
-        mSentAt);
+    return new Options(id, mBounceEnabled, mFailureEnabled, mTimeOffset);
+  }
+
+  @NotNull
+  public Options withTimeOffset(final long offsetMillis) {
+    return new Options(mThread, mBounceEnabled, mFailureEnabled, offsetMillis);
   }
 }

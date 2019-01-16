@@ -21,8 +21,6 @@ import dm.shakespeare2.message.Bounce;
 import dm.shakespeare2.message.DeadLetter;
 import dm.shakespeare2.message.Failure;
 import dm.shakespeare2.message.QuotaExceeded;
-import dm.shakespeare2.message.Receipt;
-import dm.shakespeare2.message.Success;
 
 /**
  * Created by davide-maestroni on 01/10/2019.
@@ -55,7 +53,6 @@ class LocalContext implements Context {
   private BehaviorWrapper mBehaviorWrapper = new BehaviorStarter();
   private ContextExecutorService mContextExecutor;
   private ContextScheduledExecutorService mContextScheduledExecutor;
-  private Options mDeadOptions;
   private Runnable mDismissRunnable;
   private volatile boolean mDismissed;
   private Runnable mRestartRunnable;
@@ -160,7 +157,7 @@ class LocalContext implements Context {
 
   void addObserver(@NotNull final Actor observer) {
     if (mStopped) {
-      observer.tell(DEAD_LETTER, mDeadOptions, mActor);
+      observer.tell(DEAD_LETTER, null, mActor);
 
     } else {
       mObservers.add(observer);
@@ -259,9 +256,8 @@ class LocalContext implements Context {
   private void setStopped() {
     mStopped = true;
     mStage.removeActor(mActor.getId());
-    final Options options = (mDeadOptions = Options.sentAt(System.currentTimeMillis()));
     for (final Actor observer : mObservers) {
-      observer.tell(DEAD_LETTER, options, mActor);
+      observer.tell(DEAD_LETTER, null, mActor);
     }
   }
 
@@ -306,19 +302,9 @@ class LocalContext implements Context {
         return;
       }
 
-      if (options.getReceipt()) {
-        envelop.getSender()
-            .tell(new Receipt(message, options), Options.thread(envelop.getOptions().getThread()),
-                mActor);
-      }
       mQuotaNotifier.consume();
       try {
         mBehavior.onMessage(message, envelop, context);
-        if (options.getSuccess()) {
-          envelop.getSender()
-              .tell(new Success(message, options), Options.thread(envelop.getOptions().getThread()),
-                  mActor);
-        }
 
       } catch (final Throwable t) {
         if (options.getFailure()) {

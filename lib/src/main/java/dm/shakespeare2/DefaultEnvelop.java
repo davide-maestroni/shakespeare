@@ -40,7 +40,7 @@ abstract class DefaultEnvelop implements Envelop, Runnable {
   DefaultEnvelop(@NotNull final Actor sender, @Nullable final Options options) {
     mSender = ConstantConditions.notNull("sender", sender);
     mOptions = (options != null) ? options : Options.EMPTY;
-    mSentAt = System.currentTimeMillis();
+    mSentAt = System.currentTimeMillis() - mOptions.getTimeOffset();
   }
 
   @NotNull
