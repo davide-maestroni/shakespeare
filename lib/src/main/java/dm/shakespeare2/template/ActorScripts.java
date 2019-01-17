@@ -11,5 +11,5 @@ public class ActorScripts {
     ConstantConditions.avoid();
   }
 
-  // TODO: 13/01/2019 router(?), reflection(?), singleton(?)
+  // TODO: 13/01/2019 router(?), annotation(?)
 }
