@@ -37,8 +37,7 @@ public class ProxyScript extends ActorScript {
 
   @NotNull
   @Override
-  public final Behavior getBehavior(@NotNull final String id) {
-    // TODO: 16/01/2019 full vs incoming
+  public Behavior getBehavior(@NotNull final String id) {
     return new AbstractBehavior() {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
@@ -68,8 +67,8 @@ public class ProxyScript extends ActorScript {
           }
 
         } else if (proxyToSenderMap.containsKey(sender)) {
-          final Actor originalSender = proxyToSenderMap.get(sender).get();
-          if (originalSender == null) {
+          final Actor recipient = proxyToSenderMap.get(sender).get();
+          if (recipient == null) {
             if (options.getReceiptId() != null) {
               sender.tell(new Bounce(message, options), Options.thread(options.getThread()),
                   context.getSelf());
@@ -79,19 +78,19 @@ public class ProxyScript extends ActorScript {
             }
 
           } else {
-            onOutgoing(actor, originalSender, message, envelop.getSentAt(), options, context);
+            onOutgoing(actor, recipient, message, envelop.getSentAt(), options, context);
           }
 
         } else {
           final Actor self = context.getSelf();
-          Actor proxy = senderToProxyMap.get(sender);
-          if (proxy == null) {
+          if (!senderToProxyMap.containsKey(sender)) {
             proxyToSenderMap.keySet().retainAll(senderToProxyMap.values());
-            proxy = new LocalStage().newActor(sender.getId(), new SenderScript(self, actor));
+            final Actor proxy =
+                new LocalStage().newActor(sender.getId(), new SenderScript(self, actor));
             senderToProxyMap.put(sender, proxy);
             proxyToSenderMap.put(proxy, new WeakReference<Actor>(sender));
           }
-          onIncoming(actor, proxy, message, envelop.getSentAt(), envelop.getOptions(), context);
+          onIncoming(actor, sender, message, envelop.getSentAt(), envelop.getOptions(), context);
         }
         envelop.preventReceipt();
       }
@@ -101,7 +100,10 @@ public class ProxyScript extends ActorScript {
   protected void onIncoming(@NotNull final Actor proxied, @NotNull final Actor sender,
       final Object message, final long sentAt, @NotNull final Options options,
       @NotNull final Context context) throws Exception {
-    proxied.tell(message, options.asSentAt(sentAt), sender);
+    final Actor proxy = mSenderToProxyMap.get(sender);
+    if (proxy != null) {
+      proxied.tell(message, options.asSentAt(sentAt), proxy);
+    }
   }
 
   protected void onOutgoing(@NotNull final Actor proxied, @NotNull final Actor recipient,
@@ -135,8 +137,8 @@ public class ProxyScript extends ActorScript {
           } else {
             proxy.tell(message, envelop.getOptions().asSentAt(envelop.getSentAt()),
                 context.getSelf());
+            envelop.preventReceipt();
           }
-          envelop.preventReceipt();
         }
       };
     }

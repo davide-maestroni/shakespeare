@@ -157,22 +157,35 @@ public class SupervisedScript extends ActorScriptWrapper {
     }
 
     public void onStop(@NotNull final Context context) throws Exception {
+      final Actor self = context.getSelf();
+      final Throwable failure = mFailure;
+      if (failure != null) {
+        mDelayedMessages.addFirst(mFailureMessage);
+        resetFailure(self);
+        discardDelayed(self, failure);
+
+      } else {
+        resetFailure(self);
+        bounceDelayed(self);
+      }
       mBehavior.onStop(mContext.withContext(context));
     }
 
-    private void discardDelayed(@NotNull final Actor self) {
-      final Throwable failure = mFailure;
-      final DelayedMessage failureMessage = mFailureMessage;
-      if (failureMessage != null) {
-        final Envelop envelop = failureMessage.getEnvelop();
+    private void bounceDelayed(@NotNull final Actor self) {
+      final DoubleQueue<DelayedMessage> delayedMessages = mDelayedMessages;
+      for (final DelayedMessage delayedMessage : delayedMessages) {
+        final Envelop envelop = delayedMessage.getEnvelop();
         final Options options = envelop.getOptions();
         if (options.getReceiptId() != null) {
           envelop.getSender()
-              .tell(new Failure(failureMessage.getMessage(), options, failure),
+              .tell(new Bounce(delayedMessage.getMessage(), options),
                   Options.thread(options.getThread()), self);
         }
       }
+      mDelayedMessages = new DoubleQueue<DelayedMessage>();
+    }
 
+    private void discardDelayed(@NotNull final Actor self, @NotNull final Throwable failure) {
       final DoubleQueue<DelayedMessage> delayedMessages = mDelayedMessages;
       for (final DelayedMessage delayedMessage : delayedMessages) {
         final Envelop envelop = delayedMessage.getEnvelop();
@@ -183,7 +196,6 @@ public class SupervisedScript extends ActorScriptWrapper {
                   Options.thread(options.getThread()), self);
         }
       }
-
       mDelayedMessages = new DoubleQueue<DelayedMessage>();
     }
 
@@ -329,7 +341,6 @@ public class SupervisedScript extends ActorScriptWrapper {
           super.handle(delayedMessage.getMessage(), delayedMessage.getEnvelop(), context);
           return;
         }
-
         mDelayedMessages = new DoubleQueue<DelayedMessage>();
         mHandler = new DefaultHandler();
         super.handle(message, envelop, context);
@@ -368,8 +379,6 @@ public class SupervisedScript extends ActorScriptWrapper {
         } else if (message instanceof Unsupervise) {
           final Actor sender = envelop.getSender();
           if (sender.equals(mSupervisor)) {
-            resetFailure(self);
-            discardDelayed(self);
             context.dismissSelf();
 
           } else if (options.getReceiptId() != null) {
@@ -425,13 +434,9 @@ public class SupervisedScript extends ActorScriptWrapper {
                 context.restartSelf();
 
               } else if (recoveryType == RecoveryType.RESTART) {
-                resetFailure(self);
-                discardDelayed(self);
                 context.restartSelf();
 
               } else {
-                resetFailure(self);
-                discardDelayed(self);
                 context.dismissSelf();
               }
 
@@ -456,8 +461,6 @@ public class SupervisedScript extends ActorScriptWrapper {
               final Actor sender = envelop.getSender();
               if (sender.equals(mSupervisor) && mFailureId.equals(
                   ((SupervisedFailure) bouncedMessage).getFailureId())) {
-                resetFailure(self);
-                discardDelayed(self);
                 context.dismissSelf();
               }
             }
@@ -466,8 +469,6 @@ public class SupervisedScript extends ActorScriptWrapper {
         } else if (message instanceof DeadLetter) {
           final Actor sender = envelop.getSender();
           if (sender.equals(mSupervisor)) {
-            resetFailure(self);
-            discardDelayed(self);
             context.dismissSelf();
           }
 
