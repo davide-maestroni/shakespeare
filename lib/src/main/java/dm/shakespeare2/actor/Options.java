@@ -47,6 +47,11 @@ public class Options implements Serializable {
     return new Options(null, null, offsetMillis);
   }
 
+  @NotNull
+  public Options asSentAt(final long timeMillis) {
+    return withTimeOffset(System.currentTimeMillis() - timeMillis + mTimeOffset);
+  }
+
   @Nullable
   public String getReceiptId() {
     return mReceiptId;

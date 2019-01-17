@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 
+import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare2.actor.Actor;
 import dm.shakespeare2.actor.ActorSet;
 import dm.shakespeare2.actor.Options;
@@ -20,7 +21,7 @@ class LocalActorSet extends AbstractSet<Actor> implements ActorSet {
   private final Set<Actor> mActors;
 
   LocalActorSet(@NotNull final Set<? extends Actor> actors) {
-    mActors = Collections.unmodifiableSet(actors);
+    mActors = Collections.unmodifiableSet(ConstantConditions.notNullElements("actors", actors));
   }
 
   public void dismiss(final boolean mayInterruptIfRunning) {

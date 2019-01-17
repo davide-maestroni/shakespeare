@@ -39,6 +39,9 @@ class LocalContext implements Context {
 
     public void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
     }
+
+    public void quotaExceeded(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
+    }
   };
 
   private final QueuedExecutorService mActorExecutor;
@@ -184,6 +187,12 @@ class LocalContext implements Context {
   }
 
   void message(final Object message, @NotNull final Envelop envelop) {
+    final Options options = envelop.getOptions();
+    if (isDismissed() && (options.getReceiptId() != null)) {
+      envelop.getSender()
+          .tell(new Bounce(message, options), Options.thread(options.getThread()), mActor);
+      return;
+    }
     mRunner = Thread.currentThread();
     try {
       mBehaviorWrapper.onMessage(message, envelop, this);
@@ -223,11 +232,7 @@ class LocalContext implements Context {
   }
 
   void quotaExceeded(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
-    @SuppressWarnings("UnnecessaryLocalVariable") final QuotaNotifier quotaNotifier =
-        mQuotaNotifier;
-    for (final Object message : messages) {
-      quotaNotifier.quotaExceeded(message, envelop);
-    }
+    mQuotaNotifier.quotaExceeded(messages, envelop);
   }
 
   void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
@@ -268,6 +273,8 @@ class LocalContext implements Context {
     boolean exceedsQuota(int size);
 
     void quotaExceeded(Object message, @NotNull Envelop envelop);
+
+    void quotaExceeded(@NotNull Iterable<?> messages, @NotNull Envelop envelop);
   }
 
   private class BehaviorStarter extends BehaviorWrapper {
@@ -292,6 +299,7 @@ class LocalContext implements Context {
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Context context) {
+      mQuotaNotifier.consume();
       final Options options = envelop.getOptions();
       if (isDismissed()) {
         if (options.getReceiptId() != null) {
@@ -302,24 +310,36 @@ class LocalContext implements Context {
         return;
       }
 
-      mQuotaNotifier.consume();
-      try {
-        mBehavior.onMessage(message, envelop, context);
-        if ((options.getReceiptId() != null) && !envelop.isPreventReceipt()) {
-          envelop.getSender()
-              .tell(new Delivery(message, options),
-                  Options.thread(envelop.getOptions().getThread()), mActor);
+      if (options.getReceiptId() != null) {
+        try {
+          mBehavior.onMessage(message, envelop, context);
+          if (!envelop.isPreventReceipt()) {
+            envelop.getSender()
+                .tell(new Delivery(message, options),
+                    Options.thread(envelop.getOptions().getThread()), mActor);
+          }
+
+        } catch (final Throwable t) {
+          if (!envelop.isPreventReceipt()) {
+            envelop.getSender()
+                .tell(new Failure(message, options, t),
+                    Options.thread(envelop.getOptions().getThread()), mActor);
+          }
+          onStop(context);
+          if (t instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+          }
         }
 
-      } catch (final Throwable t) {
-        if ((options.getReceiptId() != null) && !envelop.isPreventReceipt()) {
-          envelop.getSender()
-              .tell(new Failure(message, options, t),
-                  Options.thread(envelop.getOptions().getThread()), mActor);
-        }
-        onStop(context);
-        if (t instanceof InterruptedException) {
-          Thread.currentThread().interrupt();
+      } else {
+        try {
+          mBehavior.onMessage(message, envelop, context);
+
+        } catch (final Throwable t) {
+          onStop(context);
+          if (t instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+          }
         }
       }
     }
@@ -386,6 +406,17 @@ class LocalContext implements Context {
       if (options.getReceiptId() != null) {
         envelop.getSender()
             .tell(new QuotaExceeded(message, options), Options.thread(options.getThread()), mActor);
+      }
+    }
+
+    public void quotaExceeded(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
+      final Options options = envelop.getOptions();
+      if (options.getReceiptId() != null) {
+        final ArrayList<Object> bounces = new ArrayList<Object>();
+        for (final Object message : messages) {
+          bounces.add(new QuotaExceeded(message, options));
+        }
+        envelop.getSender().tellAll(bounces, Options.thread(options.getThread()), mActor);
       }
     }
 

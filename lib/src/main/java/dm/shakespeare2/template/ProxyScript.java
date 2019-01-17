@@ -10,66 +10,76 @@ import java.util.concurrent.ExecutorService;
 import dm.shakespeare.executor.ExecutorServices;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare2.LocalStage;
+import dm.shakespeare2.actor.AbstractBehavior;
 import dm.shakespeare2.actor.Actor;
 import dm.shakespeare2.actor.ActorScript;
 import dm.shakespeare2.actor.Behavior;
 import dm.shakespeare2.actor.Behavior.Context;
 import dm.shakespeare2.actor.Envelop;
 import dm.shakespeare2.actor.Options;
-import dm.shakespeare2.message.DeadLetter;
+import dm.shakespeare2.message.Bounce;
+import dm.shakespeare2.message.Failure;
+import dm.shakespeare2.message.IllegalRecipientException;
 
 /**
  * Created by davide-maestroni on 01/16/2019.
  */
 public class ProxyScript extends ActorScript {
 
-  private final Actor mActor;
+  private final WeakReference<Actor> mActor;
   private final HashMap<Actor, WeakReference<Actor>> mProxyToSenderMap =
       new HashMap<Actor, WeakReference<Actor>>();
   private final WeakHashMap<Actor, Actor> mSenderToProxyMap = new WeakHashMap<Actor, Actor>();
 
   public ProxyScript(@NotNull final Actor actor) {
-    mActor = ConstantConditions.notNull("actor", actor);
-  }
-
-  @NotNull
-  public static Options asSentAt(final long sentAt, @NotNull final Options options) {
-    return options.withTimeOffset(System.currentTimeMillis() - sentAt + options.getTimeOffset());
+    mActor = new WeakReference<Actor>(ConstantConditions.notNull("actor", actor));
   }
 
   @NotNull
   @Override
   public final Behavior getBehavior(@NotNull final String id) {
     // TODO: 16/01/2019 full vs incoming
-    return new Behavior() {
+    return new AbstractBehavior() {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) throws Exception {
-        final HashMap<Actor, WeakReference<Actor>> proxyToSenderMap = mProxyToSenderMap;
+        final Actor actor = mActor.get();
         final WeakHashMap<Actor, Actor> senderToProxyMap = mSenderToProxyMap;
-        final Actor actor = mActor;
+        final HashMap<Actor, WeakReference<Actor>> proxyToSenderMap = mProxyToSenderMap;
         final Actor sender = envelop.getSender();
-        if (actor.equals(sender)) {
-          if (message instanceof DeadLetter) {
-            for (final Actor proxy : senderToProxyMap.values()) {
-              proxy.dismiss(false);
-            }
-            context.dismissSelf();
+        final Options options = envelop.getOptions();
+        if (actor == null) {
+          if (options.getReceiptId() != null) {
+            envelop.getSender()
+                .tell(new Bounce(message, options), Options.thread(options.getThread()),
+                    context.getSelf());
+          }
 
-          } else {
-            // TODO: 16/01/2019 short circuit! bounce?
+          for (final Actor proxy : senderToProxyMap.values()) {
+            proxy.dismiss(false);
+          }
+          context.dismissSelf();
+
+        } else if (actor.equals(sender)) {
+          if (options.getReceiptId() != null) {
+            sender.tell(new Failure(message, options,
+                    new IllegalRecipientException("an actor can't proxy itself")),
+                Options.thread(options.getThread()), context.getSelf());
           }
 
         } else if (proxyToSenderMap.containsKey(sender)) {
           final Actor originalSender = proxyToSenderMap.get(sender).get();
           if (originalSender == null) {
-            // TODO: 16/01/2019 bounce
-            sender.dismiss(false);
-            proxyToSenderMap.remove(sender);
+            if (options.getReceiptId() != null) {
+              sender.tell(new Bounce(message, options), Options.thread(options.getThread()),
+                  context.getSelf());
+
+            } else {
+              sender.dismiss(false);
+            }
 
           } else {
-            onOutgoing(actor, originalSender, message, envelop.getSentAt(), envelop.getOptions(),
-                context);
+            onOutgoing(actor, originalSender, message, envelop.getSentAt(), options, context);
           }
 
         } else {
@@ -77,7 +87,7 @@ public class ProxyScript extends ActorScript {
           Actor proxy = senderToProxyMap.get(sender);
           if (proxy == null) {
             proxyToSenderMap.keySet().retainAll(senderToProxyMap.values());
-            proxy = new LocalStage().newActor(sender.getId(), new SenderScript(self, mActor));
+            proxy = new LocalStage().newActor(sender.getId(), new SenderScript(self, actor));
             senderToProxyMap.put(sender, proxy);
             proxyToSenderMap.put(proxy, new WeakReference<Actor>(sender));
           }
@@ -85,27 +95,19 @@ public class ProxyScript extends ActorScript {
         }
         envelop.preventReceipt();
       }
-
-      public void onStart(@NotNull final Context context) {
-        mActor.addObserver(context.getSelf());
-      }
-
-      public void onStop(@NotNull final Context context) {
-        mActor.removeObserver(context.getSelf());
-      }
     };
   }
 
   protected void onIncoming(@NotNull final Actor proxied, @NotNull final Actor sender,
       final Object message, final long sentAt, @NotNull final Options options,
       @NotNull final Context context) throws Exception {
-    proxied.tell(message, asSentAt(sentAt, options), sender);
+    proxied.tell(message, options.asSentAt(sentAt), sender);
   }
 
   protected void onOutgoing(@NotNull final Actor proxied, @NotNull final Actor recipient,
       final Object message, final long sentAt, @NotNull final Options options,
       @NotNull final Context context) throws Exception {
-    recipient.tell(message, asSentAt(sentAt, options), context.getSelf());
+    recipient.tell(message, options.asSentAt(sentAt), context.getSelf());
   }
 
   private static class SenderScript extends ActorScript {
@@ -120,26 +122,21 @@ public class ProxyScript extends ActorScript {
 
     @NotNull
     public Behavior getBehavior(@NotNull final String id) {
-      return new Behavior() {
+      return new AbstractBehavior() {
 
         public void onMessage(final Object message, @NotNull final Envelop envelop,
             @NotNull final Context context) {
           final Actor proxy = mProxy;
           if (proxy.equals(envelop.getSender())) {
-            mProxied.tell(message, asSentAt(envelop.getSentAt(), envelop.getOptions()),
+            mProxied.tell(message, envelop.getOptions().asSentAt(envelop.getSentAt()),
                 context.getSelf());
+            context.dismissSelf();
 
           } else {
-            proxy.tell(message, asSentAt(envelop.getSentAt(), envelop.getOptions()),
+            proxy.tell(message, envelop.getOptions().asSentAt(envelop.getSentAt()),
                 context.getSelf());
           }
           envelop.preventReceipt();
-        }
-
-        public void onStart(@NotNull final Context context) {
-        }
-
-        public void onStop(@NotNull final Context context) {
         }
       };
     }

@@ -17,6 +17,7 @@ import dm.shakespeare2.actor.Options;
 import dm.shakespeare2.message.Bounce;
 import dm.shakespeare2.message.DeadLetter;
 import dm.shakespeare2.message.Failure;
+import dm.shakespeare2.message.IllegalRecipientException;
 import dm.shakespeare2.message.Receipt;
 import dm.shakespeare2.template.SupervisedScript.SupervisedRecovery.RecoveryType;
 
@@ -241,7 +242,7 @@ public class SupervisedScript extends ActorScriptWrapper {
 
           } else if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
-                    new IllegalArgumentException("an actor can't supervise itself")),
+                    new IllegalRecipientException("an actor can't supervise itself")),
                 Options.thread(options.getThread()), self);
             envelop.preventReceipt();
           }
@@ -255,7 +256,7 @@ public class SupervisedScript extends ActorScriptWrapper {
 
           } else if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
-                    new IllegalArgumentException("sender is not the current supervisor")),
+                    new IllegalStateException("sender is not the current supervisor")),
                 Options.thread(options.getThread()), context.getSelf());
             envelop.preventReceipt();
           }
@@ -267,7 +268,7 @@ public class SupervisedScript extends ActorScriptWrapper {
 
           } else if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
-                    new IllegalArgumentException("sender is not the current supervisor")),
+                    new IllegalStateException("sender is not the current supervisor")),
                 Options.thread(options.getThread()), context.getSelf());
             envelop.preventReceipt();
           }
@@ -359,7 +360,7 @@ public class SupervisedScript extends ActorScriptWrapper {
 
           } else if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
-                    new IllegalArgumentException("an actor can't supervise itself")),
+                    new IllegalRecipientException("an actor can't supervise itself")),
                 Options.thread(options.getThread()), self);
             envelop.preventReceipt();
           }
@@ -373,7 +374,7 @@ public class SupervisedScript extends ActorScriptWrapper {
 
           } else if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
-                    new IllegalArgumentException("sender is not the current supervisor")),
+                    new IllegalStateException("sender is not the current supervisor")),
                 Options.thread(options.getThread()), self);
             envelop.preventReceipt();
           }
@@ -443,7 +444,7 @@ public class SupervisedScript extends ActorScriptWrapper {
 
           } else if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
-                    new IllegalArgumentException("sender is not the current supervisor")),
+                    new IllegalStateException("sender is not the current supervisor")),
                 Options.thread(options.getThread()), self);
             envelop.preventReceipt();
           }
