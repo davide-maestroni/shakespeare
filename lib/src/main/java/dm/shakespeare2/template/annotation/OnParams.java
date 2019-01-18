@@ -12,7 +12,4 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface OnParams {
 
-  // TODO: 17/01/2019 rename
-
-  String value();
 }

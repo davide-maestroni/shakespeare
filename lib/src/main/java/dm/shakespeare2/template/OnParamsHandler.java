@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import dm.shakespeare.function.Tester;
-import dm.shakespeare.templates.message.ParameterizedMessage;
+import dm.shakespeare.util.Iterables;
 import dm.shakespeare2.actor.Behavior.Context;
 import dm.shakespeare2.actor.BehaviorBuilder;
 import dm.shakespeare2.actor.BehaviorBuilder.Handler;
@@ -21,10 +21,10 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
 
   public void handle(@NotNull final BehaviorBuilder builder, @NotNull final Object object,
       @NotNull final Method method, @NotNull final OnParams annotation) {
-    builder.onMessage(new MessageTester(annotation), new MessageHandler(object, method));
+    builder.onMessage(new MessageTester(method), new MessageHandler(object, method));
   }
 
-  private static class MessageHandler implements Handler<ParameterizedMessage> {
+  private static class MessageHandler implements Handler<Iterable<?>> {
 
     private final Method mMethod;
     private final Object mObject;
@@ -34,12 +34,12 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
       mMethod = method;
     }
 
-    public void handle(final ParameterizedMessage message, @NotNull final Envelop envelop,
+    public void handle(final Iterable<?> params, @NotNull final Envelop envelop,
         @NotNull final Context context) throws Exception {
       final Method method = mMethod;
       final Class<?>[] parameterTypes = method.getParameterTypes();
       final int length = parameterTypes.length;
-      List<?> args = message.getParams();
+      List<?> args = Iterables.asList(params);
       final int size = args.size();
       if (length > size) {
         final ArrayList<Object> parameters = new ArrayList<Object>(args);
@@ -55,7 +55,6 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
             throw new IllegalArgumentException("invalid method parameter: " + parameterType);
           }
         }
-
         args = parameters;
       }
       final Object result = Methods.makeAccessible(method).invoke(mObject, args.toArray());
@@ -65,15 +64,25 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
 
   private static class MessageTester implements Tester<Object> {
 
-    private final String mName;
+    private final Class<?>[] mParameterTypes;
 
-    private MessageTester(@NotNull final OnParams annotation) {
-      mName = annotation.value();
+    private MessageTester(@NotNull final Method method) {
+      mParameterTypes = method.getParameterTypes();
     }
 
     public boolean test(final Object message) {
-      return (message instanceof ParameterizedMessage) && mName.equals(
-          ((ParameterizedMessage) message).getType());
+      if (message instanceof Iterable) {
+        final Class<?>[] parameterTypes = mParameterTypes;
+        final Iterable<?> iterable = (Iterable<?>) message;
+        int i = 0;
+        for (final Object o : iterable) {
+          if ((o != null) && !parameterTypes[i++].isInstance(o)) {
+            return false;
+          }
+        }
+        return (i == parameterTypes.length);
+      }
+      return false;
     }
   }
 }

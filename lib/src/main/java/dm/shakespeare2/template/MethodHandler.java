@@ -51,7 +51,6 @@ class MethodHandler implements Handler<Object> {
           parameters.add(context);
         }
       }
-
       args = parameters.toArray();
 
     } else {
