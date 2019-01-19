@@ -7,23 +7,26 @@ import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 import dm.shakespeare.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.DoubleQueue;
 import dm.shakespeare2.actor.AbstractBehavior;
 import dm.shakespeare2.actor.Actor;
-import dm.shakespeare2.actor.ActorScript;
 import dm.shakespeare2.actor.Behavior;
 import dm.shakespeare2.actor.Behavior.Context;
 import dm.shakespeare2.actor.Envelop;
 import dm.shakespeare2.actor.Options;
+import dm.shakespeare2.actor.Script;
 
 /**
  * Created by davide-maestroni on 01/17/2019.
  */
-public class ReflectionScript extends ActorScript {
+public class ReflectionScript extends Script {
 
   private static final ThreadLocal<DoubleQueue<Context>> CONTEXTS =
       new ThreadLocal<DoubleQueue<Context>>() {
@@ -101,7 +104,7 @@ public class ReflectionScript extends ActorScript {
         final Method method;
         try {
           method = Methods.makeAccessible(
-              object.getClass().getMethod(invoke.getMethodName(), invoke.getParameterTypes()));
+              object.getClass().getMethod(invoke.getMethodName(), invoke.getParameterTypeArray()));
 
         } catch (final NoSuchMethodException e) {
           context.getLogger().wrn(e, "ignoring message: %s", message);
@@ -111,12 +114,11 @@ public class ReflectionScript extends ActorScript {
         CONTEXTS.get().addFirst(context);
         ENVELOPS.get().addFirst(envelop);
         try {
-          final Object result = method.invoke(object, invoke.getArguments());
+          final Object result = method.invoke(object, invoke.getArgumentArray());
           final Class<?> returnType = method.getReturnType();
           if ((returnType != void.class) && (returnType != Void.class)) {
             // TODO: 31/08/2018 specific message?
-            envelop.getSender()
-                .tell(result, Options.thread(envelop.getOptions().getThread()), context.getSelf());
+            envelop.getSender().tell(result, envelop.getOptions().threadOnly(), context.getSelf());
           }
 
         } finally {
@@ -131,31 +133,41 @@ public class ReflectionScript extends ActorScript {
 
     private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 
-    private final Object[] mArguments;
+    private final Object[] mArgumentArray;
     private final String mMethodName;
-    private final Class<?>[] mParameterTypes;
+    private final Class<?>[] mParameterTypeArray;
 
     private Invoke(@NotNull final String methodName, @NotNull final Class<?>[] parameterTypes,
         @NotNull final Object... arguments) {
       mMethodName = ConstantConditions.notNull("methodName", methodName);
-      mParameterTypes =
+      mParameterTypeArray =
           ConstantConditions.notNullElements("parameterTypes", parameterTypes).clone();
-      mArguments = ConstantConditions.notNull("arguments", arguments).clone();
+      mArgumentArray = ConstantConditions.notNull("arguments", arguments).clone();
     }
 
     @NotNull
-    private Object[] getArguments() {
-      return mArguments;
+    public List<Object> getArguments() {
+      return Collections.unmodifiableList(Arrays.asList(mArgumentArray));
     }
 
     @NotNull
-    private String getMethodName() {
+    public String getMethodName() {
       return mMethodName;
     }
 
     @NotNull
-    private Class<?>[] getParameterTypes() {
-      return mParameterTypes;
+    public List<Class<?>> getParameterTypes() {
+      return Collections.unmodifiableList(Arrays.asList(mParameterTypeArray));
+    }
+
+    @NotNull
+    private Object[] getArgumentArray() {
+      return mArgumentArray;
+    }
+
+    @NotNull
+    private Class<?>[] getParameterTypeArray() {
+      return mParameterTypeArray;
     }
   }
 

@@ -9,7 +9,6 @@ import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare2.actor.Behavior.Context;
 import dm.shakespeare2.actor.BehaviorBuilder.Handler;
 import dm.shakespeare2.actor.Envelop;
-import dm.shakespeare2.actor.Options;
 
 /**
  * Created by davide-maestroni on 09/12/2018.
@@ -21,7 +20,7 @@ class MethodHandler implements Handler<Object> {
 
   MethodHandler(@NotNull final Object object, @NotNull final Method method) {
     mObject = ConstantConditions.notNull("object", object);
-    mMethod = ConstantConditions.notNull("method", method);
+    mMethod = Methods.makeAccessible(method);
   }
 
   static void handleReturnValue(@NotNull final Method method, final Object value,
@@ -29,8 +28,7 @@ class MethodHandler implements Handler<Object> {
     final Class<?> returnType = method.getReturnType();
     if ((returnType != void.class) && (returnType != Void.class)) {
       // TODO: 31/08/2018 specific message?
-      envelop.getSender()
-          .tell(value, Options.thread(envelop.getOptions().getThread()), context.getSelf());
+      envelop.getSender().tell(value, envelop.getOptions().threadOnly(), context.getSelf());
     }
   }
 
@@ -56,7 +54,7 @@ class MethodHandler implements Handler<Object> {
     } else {
       args = new Object[]{message};
     }
-    final Object result = Methods.makeAccessible(method).invoke(mObject, args);
+    final Object result = method.invoke(mObject, args);
     handleReturnValue(method, result, envelop, context);
   }
 }

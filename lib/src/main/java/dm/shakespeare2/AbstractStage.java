@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 import dm.shakespeare.function.Tester;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare2.actor.Actor;
-import dm.shakespeare2.actor.ActorScript;
+import dm.shakespeare2.actor.Script;
 import dm.shakespeare2.actor.ActorSet;
 import dm.shakespeare2.actor.Stage;
 
@@ -110,7 +110,7 @@ public abstract class AbstractStage implements Stage {
   }
 
   @NotNull
-  public Actor newActor(@NotNull final ActorScript script) {
+  public Actor newActor(@NotNull final Script script) {
     String id;
     synchronized (mMutex) {
       final HashMap<String, Actor> actors = mActors;
@@ -124,7 +124,7 @@ public abstract class AbstractStage implements Stage {
   }
 
   @NotNull
-  public Actor newActor(@NotNull final String id, @NotNull final ActorScript script) {
+  public Actor newActor(@NotNull final String id, @NotNull final Script script) {
     synchronized (mMutex) {
       final HashMap<String, Actor> actors = mActors;
       if (actors.containsKey(id)) {
@@ -137,7 +137,7 @@ public abstract class AbstractStage implements Stage {
   }
 
   @NotNull
-  protected abstract Actor createActor(@NotNull String id, @NotNull ActorScript script) throws
+  protected abstract Actor createActor(@NotNull String id, @NotNull Script script) throws
       Exception;
 
   void addActor(@NotNull final String id, @NotNull final Actor actor) {
@@ -153,7 +153,7 @@ public abstract class AbstractStage implements Stage {
   }
 
   @NotNull
-  private Actor registerActor(@NotNull final String id, @NotNull final ActorScript script) {
+  private Actor registerActor(@NotNull final String id, @NotNull final Script script) {
     try {
       final Actor actor = createActor(id, script);
       addActor(id, actor);

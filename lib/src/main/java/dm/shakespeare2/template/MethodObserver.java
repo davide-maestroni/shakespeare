@@ -21,7 +21,7 @@ class MethodObserver implements Observer<Context> {
 
   MethodObserver(@NotNull final Object object, @NotNull final Method method) {
     mObject = ConstantConditions.notNull("object", object);
-    mMethod = ConstantConditions.notNull("method", method);
+    mMethod = Methods.makeAccessible(method);
   }
 
   public void accept(final Context context) throws Exception {
@@ -40,6 +40,6 @@ class MethodObserver implements Observer<Context> {
     } else {
       args = EMPTY_ARGS;
     }
-    Methods.makeAccessible(method).invoke(mObject, args);
+    method.invoke(mObject, args);
   }
 }

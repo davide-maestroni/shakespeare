@@ -9,6 +9,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import dm.shakespeare.executor.ExecutorServices;
 import dm.shakespeare.executor.QueuedExecutorService;
+import dm.shakespeare.function.Observer;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare2.actor.Actor;
@@ -49,7 +50,7 @@ class LocalContext implements Context {
   private final HashSet<Actor> mObservers = new HashSet<Actor>();
   private final int mQuota;
   private final QuotaNotifier mQuotaNotifier;
-  private final LocalStage mStage;
+  private final Observer<Actor> mRemover;
 
   private Actor mActor;
   private Behavior mBehavior;
@@ -62,9 +63,9 @@ class LocalContext implements Context {
   private volatile Thread mRunner;
   private boolean mStopped;
 
-  LocalContext(@NotNull final LocalStage stage, @NotNull final Behavior behavior, final int quota,
-      @NotNull final ExecutorService executor, @NotNull final Logger logger) {
-    mStage = ConstantConditions.notNull("stage", stage);
+  LocalContext(@NotNull final Observer<Actor> remover, @NotNull final Behavior behavior,
+      final int quota, @NotNull final ExecutorService executor, @NotNull final Logger logger) {
+    mRemover = ConstantConditions.notNull("remover", remover);
     mBehavior = ConstantConditions.notNull("behavior", behavior);
     mActorExecutor =
         (executor instanceof ScheduledExecutorService) ? ExecutorServices.asActorExecutor(
@@ -189,8 +190,7 @@ class LocalContext implements Context {
   void message(final Object message, @NotNull final Envelop envelop) {
     final Options options = envelop.getOptions();
     if (isDismissed() && (options.getReceiptId() != null)) {
-      envelop.getSender()
-          .tell(new Bounce(message, options), Options.thread(options.getThread()), mActor);
+      envelop.getSender().tell(new Bounce(message, options), options.threadOnly(), mActor);
       return;
     }
     mRunner = Thread.currentThread();
@@ -213,7 +213,7 @@ class LocalContext implements Context {
       for (final Object message : messages) {
         bounces.add(new Bounce(message, options));
       }
-      envelop.getSender().tellAll(bounces, Options.thread(options.getThread()), mActor);
+      envelop.getSender().tellAll(bounces, options.threadOnly(), mActor);
       return;
     }
     mRunner = Thread.currentThread();
@@ -260,7 +260,18 @@ class LocalContext implements Context {
 
   private void setStopped() {
     mStopped = true;
-    mStage.removeActor(mActor.getId());
+    try {
+      mRemover.accept(mActor);
+
+    } catch (final Exception e) {
+      // it should never happen
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+
+      throw new RuntimeException(e);
+    }
+
     for (final Actor observer : mObservers) {
       observer.tell(DEAD_LETTER, null, mActor);
     }
@@ -303,9 +314,7 @@ class LocalContext implements Context {
       final Options options = envelop.getOptions();
       if (isDismissed()) {
         if (options.getReceiptId() != null) {
-          envelop.getSender()
-              .tell(new Bounce(message, options), Options.thread(envelop.getOptions().getThread()),
-                  mActor);
+          envelop.getSender().tell(new Bounce(message, options), options.threadOnly(), mActor);
         }
         return;
       }
@@ -314,16 +323,13 @@ class LocalContext implements Context {
         try {
           mBehavior.onMessage(message, envelop, context);
           if (!envelop.isPreventReceipt()) {
-            envelop.getSender()
-                .tell(new Delivery(message, options),
-                    Options.thread(envelop.getOptions().getThread()), mActor);
+            envelop.getSender().tell(new Delivery(message, options), options.threadOnly(), mActor);
           }
 
         } catch (final Throwable t) {
           if (!envelop.isPreventReceipt()) {
             envelop.getSender()
-                .tell(new Failure(message, options, t),
-                    Options.thread(envelop.getOptions().getThread()), mActor);
+                .tell(new Failure(message, options, t), options.threadOnly(), mActor);
           }
           onStop(context);
           if (t instanceof InterruptedException) {
@@ -404,8 +410,7 @@ class LocalContext implements Context {
     public void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
       final Options options = envelop.getOptions();
       if (options.getReceiptId() != null) {
-        envelop.getSender()
-            .tell(new QuotaExceeded(message, options), Options.thread(options.getThread()), mActor);
+        envelop.getSender().tell(new QuotaExceeded(message, options), options.threadOnly(), mActor);
       }
     }
 
@@ -416,7 +421,7 @@ class LocalContext implements Context {
         for (final Object message : messages) {
           bounces.add(new QuotaExceeded(message, options));
         }
-        envelop.getSender().tellAll(bounces, Options.thread(options.getThread()), mActor);
+        envelop.getSender().tellAll(bounces, options.threadOnly(), mActor);
       }
     }
 

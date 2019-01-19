@@ -10,13 +10,16 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import dm.shakespeare.config.BuildConfig;
 import dm.shakespeare.executor.ExecutorServices;
+import dm.shakespeare.function.Mapper;
+import dm.shakespeare.function.Observer;
 import dm.shakespeare.log.LogPrinters;
 import dm.shakespeare.log.Logger;
+import dm.shakespeare2.actor.BehaviorBuilder.Handler;
 
 /**
  * Created by davide-maestroni on 01/08/2019.
  */
-public abstract class ActorScript implements Serializable {
+public abstract class Script implements Serializable {
 
   private static final ScheduledExecutorService DEFAULT_EXECUTOR =
       ExecutorServices.newDynamicScheduledThreadPool(new ThreadFactory() {
@@ -29,6 +32,16 @@ public abstract class ActorScript implements Serializable {
       });
 
   private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
+
+  @NotNull
+  public static <T> Handler<T> acceptHandler(@NotNull final Observer<T> observer) {
+    return new AcceptHandler<T>(observer);
+  }
+
+  @NotNull
+  public static <T> Handler<T> applyHandler(@NotNull final Mapper<T, ?> mapper) {
+    return new ApplyHandler<T>(mapper);
+  }
 
   @NotNull
   public static BehaviorBuilder newBehavior() {

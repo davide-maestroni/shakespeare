@@ -25,6 +25,6 @@ class OnStopHandler implements AnnotationHandler<OnStop> {
         }
       }
     }
-    builder.onStart(new MethodObserver(object, method));
+    builder.onStop(new MethodObserver(object, method));
   }
 }

@@ -34,7 +34,7 @@ class StandInActor implements Actor {
   public Actor tell(final Object message, @Nullable final Options options,
       @NotNull final Actor sender) {
     if ((options != null) && (options.getReceiptId() != null)) {
-      sender.tell(new Delivery(message, options), Options.thread(options.getThread()), this);
+      sender.tell(new Delivery(message, options), options.threadOnly(), this);
     }
     return this;
   }

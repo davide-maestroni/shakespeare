@@ -12,11 +12,11 @@ import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare2.LocalStage;
 import dm.shakespeare2.actor.AbstractBehavior;
 import dm.shakespeare2.actor.Actor;
-import dm.shakespeare2.actor.ActorScript;
 import dm.shakespeare2.actor.Behavior;
 import dm.shakespeare2.actor.Behavior.Context;
 import dm.shakespeare2.actor.Envelop;
 import dm.shakespeare2.actor.Options;
+import dm.shakespeare2.actor.Script;
 import dm.shakespeare2.message.Bounce;
 import dm.shakespeare2.message.Failure;
 import dm.shakespeare2.message.IllegalRecipientException;
@@ -24,7 +24,7 @@ import dm.shakespeare2.message.IllegalRecipientException;
 /**
  * Created by davide-maestroni on 01/16/2019.
  */
-public class ProxyScript extends ActorScript {
+public class ProxyScript extends Script {
 
   private final WeakReference<Actor> mActor;
   private final HashMap<Actor, WeakReference<Actor>> mProxyToSenderMap =
@@ -50,8 +50,7 @@ public class ProxyScript extends ActorScript {
         if (actor == null) {
           if (options.getReceiptId() != null) {
             envelop.getSender()
-                .tell(new Bounce(message, options), Options.thread(options.getThread()),
-                    context.getSelf());
+                .tell(new Bounce(message, options), options.threadOnly(), context.getSelf());
           }
 
           for (final Actor proxy : senderToProxyMap.values()) {
@@ -62,16 +61,16 @@ public class ProxyScript extends ActorScript {
         } else if (actor.equals(sender)) {
           if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
-                    new IllegalRecipientException("an actor can't proxy itself")),
-                Options.thread(options.getThread()), context.getSelf());
+                    new IllegalRecipientException("an actor can't proxy itself")), options
+                    .threadOnly(),
+                context.getSelf());
           }
 
         } else if (proxyToSenderMap.containsKey(sender)) {
           final Actor recipient = proxyToSenderMap.get(sender).get();
           if (recipient == null) {
             if (options.getReceiptId() != null) {
-              sender.tell(new Bounce(message, options), Options.thread(options.getThread()),
-                  context.getSelf());
+              sender.tell(new Bounce(message, options), options.threadOnly(), context.getSelf());
 
             } else {
               sender.dismiss(false);
@@ -112,7 +111,7 @@ public class ProxyScript extends ActorScript {
     recipient.tell(message, options.asSentAt(sentAt), context.getSelf());
   }
 
-  private static class SenderScript extends ActorScript {
+  private static class SenderScript extends Script {
 
     private final Actor mProxied;
     private final Actor mProxy;

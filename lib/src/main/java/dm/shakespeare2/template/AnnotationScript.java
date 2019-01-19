@@ -9,7 +9,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import dm.shakespeare.util.ConstantConditions;
-import dm.shakespeare2.actor.ActorScript;
+import dm.shakespeare2.actor.Script;
 import dm.shakespeare2.actor.Behavior;
 import dm.shakespeare2.actor.BehaviorBuilder;
 import dm.shakespeare2.template.annotation.OnAny;
@@ -24,7 +24,7 @@ import dm.shakespeare2.template.annotation.OnStop;
 /**
  * Created by davide-maestroni on 01/17/2019.
  */
-public class AnnotationScript extends ActorScript {
+public class AnnotationScript extends Script {
 
   private static final HashMap<Class<? extends Annotation>, AnnotationHandler<?>>
       sAnnotationHandlers = new HashMap<Class<? extends Annotation>, AnnotationHandler<?>>() {{

@@ -31,7 +31,7 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
 
     private MessageHandler(@NotNull final Object object, @NotNull final Method method) {
       mObject = object;
-      mMethod = method;
+      mMethod = Methods.makeAccessible(method);
     }
 
     public void handle(final Iterable<?> params, @NotNull final Envelop envelop,
@@ -57,7 +57,7 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
         }
         args = parameters;
       }
-      final Object result = Methods.makeAccessible(method).invoke(mObject, args.toArray());
+      final Object result = method.invoke(mObject, args.toArray());
       MethodHandler.handleReturnValue(method, result, envelop, context);
     }
   }

@@ -6,18 +6,18 @@ import java.io.Serializable;
 
 import dm.shakespeare.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
-import dm.shakespeare2.actor.ActorScript;
 import dm.shakespeare2.actor.Behavior;
 import dm.shakespeare2.actor.Envelop;
+import dm.shakespeare2.actor.Script;
 
 /**
  * Created by davide-maestroni on 01/16/2019.
  */
-public class PoisonableScript extends ActorScriptWrapper {
+public class PoisonableScript extends ScriptWrapper {
 
   private static final PoisonPill POISON_PILL = new PoisonPill();
 
-  public PoisonableScript(@NotNull final ActorScript script) {
+  public PoisonableScript(@NotNull final Script script) {
     super(script);
   }
 
@@ -63,7 +63,6 @@ public class PoisonableScript extends ActorScriptWrapper {
         context.dismissSelf();
         return;
       }
-
       mBehavior.onMessage(message, envelop, mContext.withContext(context));
     }
 

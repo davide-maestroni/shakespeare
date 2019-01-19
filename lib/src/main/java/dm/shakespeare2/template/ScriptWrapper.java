@@ -6,17 +6,17 @@ import java.util.concurrent.ExecutorService;
 
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.ConstantConditions;
-import dm.shakespeare2.actor.ActorScript;
+import dm.shakespeare2.actor.Script;
 import dm.shakespeare2.actor.Behavior;
 
 /**
  * Created by davide-maestroni on 01/16/2019.
  */
-public class ActorScriptWrapper extends ActorScript {
+public class ScriptWrapper extends Script {
 
-  private final ActorScript mScript;
+  private final Script mScript;
 
-  public ActorScriptWrapper(@NotNull final ActorScript script) {
+  public ScriptWrapper(@NotNull final Script script) {
     mScript = ConstantConditions.notNull("script", script);
   }
 

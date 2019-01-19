@@ -9,11 +9,11 @@ import dm.shakespeare.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.DoubleQueue;
 import dm.shakespeare2.actor.Actor;
-import dm.shakespeare2.actor.ActorScript;
 import dm.shakespeare2.actor.Behavior;
 import dm.shakespeare2.actor.BehaviorBuilder.Handler;
 import dm.shakespeare2.actor.Envelop;
 import dm.shakespeare2.actor.Options;
+import dm.shakespeare2.actor.Script;
 import dm.shakespeare2.message.Bounce;
 import dm.shakespeare2.message.DeadLetter;
 import dm.shakespeare2.message.Failure;
@@ -24,12 +24,12 @@ import dm.shakespeare2.template.SupervisedScript.SupervisedRecovery.RecoveryType
 /**
  * Created by davide-maestroni on 01/16/2019.
  */
-public class SupervisedScript extends ActorScriptWrapper {
+public class SupervisedScript extends ScriptWrapper {
 
   private static final Supervise SUPERVISE = new Supervise();
   private static final Unsupervise UNSUPERVISE = new Unsupervise();
 
-  public SupervisedScript(@NotNull final ActorScript script) {
+  public SupervisedScript(@NotNull final Script script) {
     super(script);
   }
 
@@ -178,8 +178,7 @@ public class SupervisedScript extends ActorScriptWrapper {
         final Options options = envelop.getOptions();
         if (options.getReceiptId() != null) {
           envelop.getSender()
-              .tell(new Bounce(delayedMessage.getMessage(), options),
-                  Options.thread(options.getThread()), self);
+              .tell(new Bounce(delayedMessage.getMessage(), options), options.threadOnly(), self);
         }
       }
       mDelayedMessages = new DoubleQueue<DelayedMessage>();
@@ -193,7 +192,7 @@ public class SupervisedScript extends ActorScriptWrapper {
         if (options.getReceiptId() != null) {
           envelop.getSender()
               .tell(new Failure(delayedMessage.getMessage(), options, failure),
-                  Options.thread(options.getThread()), self);
+                  options.threadOnly(), self);
         }
       }
       mDelayedMessages = new DoubleQueue<DelayedMessage>();
@@ -255,7 +254,7 @@ public class SupervisedScript extends ActorScriptWrapper {
           } else if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
                     new IllegalRecipientException("an actor can't supervise itself")),
-                Options.thread(options.getThread()), self);
+                options.threadOnly(), self);
             envelop.preventReceipt();
           }
 
@@ -269,7 +268,7 @@ public class SupervisedScript extends ActorScriptWrapper {
           } else if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
                     new IllegalStateException("sender is not the current supervisor")),
-                Options.thread(options.getThread()), context.getSelf());
+                options.threadOnly(), context.getSelf());
             envelop.preventReceipt();
           }
 
@@ -281,7 +280,7 @@ public class SupervisedScript extends ActorScriptWrapper {
           } else if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
                     new IllegalStateException("sender is not the current supervisor")),
-                Options.thread(options.getThread()), context.getSelf());
+                options.threadOnly(), context.getSelf());
             envelop.preventReceipt();
           }
 
@@ -372,7 +371,7 @@ public class SupervisedScript extends ActorScriptWrapper {
           } else if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
                     new IllegalRecipientException("an actor can't supervise itself")),
-                Options.thread(options.getThread()), self);
+                options.threadOnly(), self);
             envelop.preventReceipt();
           }
 
@@ -384,7 +383,7 @@ public class SupervisedScript extends ActorScriptWrapper {
           } else if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
                     new IllegalStateException("sender is not the current supervisor")),
-                Options.thread(options.getThread()), self);
+                options.threadOnly(), self);
             envelop.preventReceipt();
           }
 
@@ -407,7 +406,7 @@ public class SupervisedScript extends ActorScriptWrapper {
                 if (failureOptions.getReceiptId() != null) {
                   failureEnvelop.getSender()
                       .tell(new Failure(failureMessage.getMessage(), failureOptions, mFailure),
-                          Options.thread(failureOptions.getThread()), self);
+                          failureOptions.threadOnly(), self);
                 }
                 resetFailure(self);
                 mHandler = new ResumeHandler();
@@ -426,7 +425,7 @@ public class SupervisedScript extends ActorScriptWrapper {
                 if (failureOptions.getReceiptId() != null) {
                   failureEnvelop.getSender()
                       .tell(new Failure(failureMessage.getMessage(), failureOptions, mFailure),
-                          Options.thread(failureEnvelop.getOptions().getThread()), self);
+                          failureOptions.threadOnly(), self);
                 }
                 resetFailure(self);
                 mHandler = new ResumeHandler();
@@ -443,14 +442,14 @@ public class SupervisedScript extends ActorScriptWrapper {
             } else if (options.getReceiptId() != null) {
               sender.tell(
                   new Failure(message, options, new IllegalArgumentException("invalid failure ID")),
-                  Options.thread(options.getThread()), self);
+                  options.threadOnly(), self);
               envelop.preventReceipt();
             }
 
           } else if (options.getReceiptId() != null) {
             sender.tell(new Failure(message, options,
                     new IllegalStateException("sender is not the current supervisor")),
-                Options.thread(options.getThread()), self);
+                options.threadOnly(), self);
             envelop.preventReceipt();
           }
 

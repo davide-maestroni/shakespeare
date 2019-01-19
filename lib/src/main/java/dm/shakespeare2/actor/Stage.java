@@ -30,8 +30,8 @@ public interface Stage {
   ActorSet getAll();
 
   @NotNull
-  Actor newActor(@NotNull ActorScript script);
+  Actor newActor(@NotNull Script script);
 
   @NotNull
-  Actor newActor(@NotNull String id, @NotNull ActorScript script);
+  Actor newActor(@NotNull String id, @NotNull Script script);
 }

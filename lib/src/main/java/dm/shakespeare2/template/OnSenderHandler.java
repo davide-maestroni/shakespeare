@@ -17,7 +17,7 @@ import dm.shakespeare2.template.annotation.VoidTester;
 class OnSenderHandler implements AnnotationHandler<OnSender> {
 
   public void handle(@NotNull final BehaviorBuilder builder, @NotNull final Object object,
-      @NotNull final Method method, @NotNull final OnSender annotation) {
+      @NotNull final Method method, @NotNull final OnSender annotation) throws Exception {
     Tester<? super Envelop> tester = null;
     final Class<? extends Tester<? super Envelop>> testerClass = annotation.testerClass();
     final String name = annotation.testerName();
@@ -26,16 +26,7 @@ class OnSenderHandler implements AnnotationHandler<OnSender> {
         throw new IllegalArgumentException(
             "only one of idRegexp, testerClass and testerName parameters must be specified");
       }
-
-      try {
-        tester = testerClass.newInstance();
-
-      } catch (final RuntimeException e) {
-        throw e;
-
-      } catch (final Exception e) {
-        throw new RuntimeException(e);
-      }
+      tester = testerClass.newInstance();
 
     } else {
       if (name.isEmpty()) {
@@ -78,11 +69,11 @@ class OnSenderHandler implements AnnotationHandler<OnSender> {
 
     private MessageTester(@NotNull final Object object, @NotNull final Method method) {
       mObject = object;
-      mMethod = method;
+      mMethod = Methods.makeAccessible(method);
     }
 
     public boolean test(final Envelop envelop) throws Exception {
-      return (Boolean) Methods.makeAccessible(mMethod).invoke(mObject, envelop);
+      return (Boolean) mMethod.invoke(mObject, envelop);
     }
   }
 }

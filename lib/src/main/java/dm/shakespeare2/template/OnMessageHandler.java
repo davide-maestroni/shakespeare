@@ -18,7 +18,7 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
 
   @SuppressWarnings("unchecked")
   public void handle(@NotNull final BehaviorBuilder builder, @NotNull final Object object,
-      @NotNull final Method method, @NotNull final OnMessage annotation) {
+      @NotNull final Method method, @NotNull final OnMessage annotation) throws Exception {
     Tester<?> tester = null;
     final Class<?>[] messageClasses = annotation.messageClasses();
     final Class<? extends Tester<?>> testerClass = annotation.testerClass();
@@ -41,16 +41,7 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
         throw new IllegalArgumentException(
             "only one of messageClasses, testerClass and testerName parameters must be specified");
       }
-
-      try {
-        tester = testerClass.newInstance();
-
-      } catch (final RuntimeException e) {
-        throw e;
-
-      } catch (final Exception e) {
-        throw new RuntimeException(e);
-      }
+      tester = testerClass.newInstance();
 
     } else {
       if (name.isEmpty()) {
@@ -124,11 +115,11 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
 
     private MessageTester(@NotNull final Object object, @NotNull final Method method) {
       mObject = object;
-      mMethod = method;
+      mMethod = Methods.makeAccessible(method);
     }
 
     public boolean test(final Object message) throws Exception {
-      return (Boolean) Methods.makeAccessible(mMethod).invoke(mObject, message);
+      return (Boolean) mMethod.invoke(mObject, message);
     }
   }
 }

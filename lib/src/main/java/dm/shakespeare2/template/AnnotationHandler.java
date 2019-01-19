@@ -13,5 +13,5 @@ import dm.shakespeare2.actor.BehaviorBuilder;
 interface AnnotationHandler<T extends Annotation> {
 
   void handle(@NotNull BehaviorBuilder builder, @NotNull Object object, @NotNull Method method,
-      @NotNull T annotation);
+      @NotNull T annotation) throws Exception;
 }

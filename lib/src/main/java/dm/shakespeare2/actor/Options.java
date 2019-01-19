@@ -32,20 +32,6 @@ public class Options implements Serializable {
     mTimeOffset = timeOffset;
   }
 
-  @NotNull
-  public static Options receipt(@Nullable final String receiptId) {
-    return new Options(null, receiptId, 0L);
-  }
-
-  @NotNull
-  public static Options thread(@Nullable final String threadId) {
-    return new Options(threadId, null, 0);
-  }
-
-  @NotNull
-  public static Options timeOffset(final long offsetMillis) {
-    return new Options(null, null, offsetMillis);
-  }
 
   @NotNull
   public Options asSentAt(final long timeMillis) {
@@ -64,6 +50,11 @@ public class Options implements Serializable {
 
   public long getTimeOffset() {
     return mTimeOffset;
+  }
+
+  @NotNull
+  public Options threadOnly() {
+    return new Options(mThread, null, 0);
   }
 
   @NotNull

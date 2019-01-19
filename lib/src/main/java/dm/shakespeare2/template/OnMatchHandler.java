@@ -18,7 +18,7 @@ class OnMatchHandler implements AnnotationHandler<OnMatch> {
 
   @SuppressWarnings("unchecked")
   public void handle(@NotNull final BehaviorBuilder builder, @NotNull final Object object,
-      @NotNull final Method method, @NotNull final OnMatch annotation) {
+      @NotNull final Method method, @NotNull final OnMatch annotation) throws Exception {
     Matcher<?> matcher = null;
     final Class<? extends Matcher<?>> matcherClass = annotation.matcherClass();
     final String name = annotation.matcherName();
@@ -27,16 +27,7 @@ class OnMatchHandler implements AnnotationHandler<OnMatch> {
         throw new IllegalArgumentException(
             "only one of matcherClass and matcherName parameters must be specified");
       }
-
-      try {
-        matcher = matcherClass.newInstance();
-
-      } catch (final RuntimeException e) {
-        throw e;
-
-      } catch (final Exception e) {
-        throw new RuntimeException(e);
-      }
+      matcher = matcherClass.newInstance();
 
     } else {
       if (name.isEmpty()) {
@@ -80,12 +71,12 @@ class OnMatchHandler implements AnnotationHandler<OnMatch> {
 
     private MessageMatcher(@NotNull final Object object, @NotNull final Method method) {
       mObject = object;
-      mMethod = method;
+      mMethod = Methods.makeAccessible(method);
     }
 
     public boolean match(final Object message, @NotNull final Envelop envelop,
         @NotNull final Context context) throws Exception {
-      return (Boolean) Methods.makeAccessible(mMethod).invoke(mObject, message, envelop, context);
+      return (Boolean) mMethod.invoke(mObject, message, envelop, context);
     }
   }
 }
