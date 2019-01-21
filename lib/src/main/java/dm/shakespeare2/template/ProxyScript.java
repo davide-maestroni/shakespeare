@@ -49,8 +49,7 @@ public class ProxyScript extends Script {
         final Options options = envelop.getOptions();
         if (actor == null) {
           if (options.getReceiptId() != null) {
-            envelop.getSender()
-                .tell(new Bounce(message, options), options.threadOnly(), context.getSelf());
+            safeTell(sender, new Bounce(message, options), options.threadOnly(), context);
           }
 
           for (final Actor proxy : senderToProxyMap.values()) {
@@ -60,17 +59,17 @@ public class ProxyScript extends Script {
 
         } else if (actor.equals(sender)) {
           if (options.getReceiptId() != null) {
-            sender.tell(new Failure(message, options,
+            safeTell(sender, new Failure(message, options,
                     new IllegalRecipientException("an actor can't proxy itself")), options
                     .threadOnly(),
-                context.getSelf());
+                context);
           }
 
         } else if (proxyToSenderMap.containsKey(sender)) {
           final Actor recipient = proxyToSenderMap.get(sender).get();
           if (recipient == null) {
             if (options.getReceiptId() != null) {
-              sender.tell(new Bounce(message, options), options.threadOnly(), context.getSelf());
+              safeTell(sender, new Bounce(message, options), options.threadOnly(), context);
 
             } else {
               sender.dismiss(false);

@@ -118,7 +118,7 @@ public class ReflectionScript extends Script {
           final Class<?> returnType = method.getReturnType();
           if ((returnType != void.class) && (returnType != Void.class)) {
             // TODO: 31/08/2018 specific message?
-            envelop.getSender().tell(result, envelop.getOptions().threadOnly(), context.getSelf());
+            safeTell(envelop.getSender(), result, envelop.getOptions().threadOnly(), context);
           }
 
         } finally {

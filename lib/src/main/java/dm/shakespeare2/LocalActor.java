@@ -3,6 +3,8 @@ package dm.shakespeare2;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.concurrent.RejectedExecutionException;
+
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.Iterables;
 import dm.shakespeare2.actor.Actor;
@@ -60,12 +62,17 @@ class LocalActor implements Actor {
       context.quotaExceeded(message, new BounceEnvelop(sender, options));
 
     } else {
-      context.getActorExecutor().execute(new DefaultEnvelop(sender, options) {
+      try {
+        context.getActorExecutor().execute(new DefaultEnvelop(sender, options) {
 
-        void open() {
-          mContext.message(message, this);
-        }
-      });
+          void open() {
+            mContext.message(message, this);
+          }
+        });
+
+      } catch (final RejectedExecutionException e) {
+        context.quotaExceeded(message, new BounceEnvelop(sender, options));
+      }
     }
     return this;
   }
@@ -78,12 +85,17 @@ class LocalActor implements Actor {
       context.quotaExceeded(messages, new BounceEnvelop(sender, options));
 
     } else {
-      context.getActorExecutor().execute(new DefaultEnvelop(sender, options) {
+      try {
+        context.getActorExecutor().execute(new DefaultEnvelop(sender, options) {
 
-        void open() {
-          mContext.messages(messages, this);
-        }
-      });
+          void open() {
+            mContext.messages(messages, this);
+          }
+        });
+
+      } catch (final RejectedExecutionException e) {
+        context.quotaExceeded(messages, new BounceEnvelop(sender, options));
+      }
     }
     return this;
   }
