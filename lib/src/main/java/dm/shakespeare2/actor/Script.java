@@ -37,12 +37,12 @@ public abstract class Script implements Serializable {
   private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 
   @NotNull
-  public static <T> Handler<T> acceptHandler(@NotNull final Observer<T> observer) {
+  public static <T> Handler<T> accept(@NotNull final Observer<T> observer) {
     return new AcceptHandler<T>(observer);
   }
 
   @NotNull
-  public static <T> Handler<T> applyHandler(@NotNull final Mapper<T, ?> mapper) {
+  public static <T> Handler<T> apply(@NotNull final Mapper<T, ?> mapper) {
     return new ApplyHandler<T>(mapper);
   }
 

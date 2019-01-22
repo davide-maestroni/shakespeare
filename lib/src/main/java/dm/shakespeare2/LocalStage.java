@@ -36,8 +36,8 @@ public class LocalStage extends AbstractStage {
     final Logger logger = script.getLogger(id);
     final ExecutorService executor = script.getExecutor(id);
     final Behavior behavior = script.getBehavior(id);
-    final LocalContext context = new LocalContext(mRemover, behavior, quota, executor, logger);
-    final LocalActor actor = new LocalActor(id, context);
+    final LocalContext context = new LocalContext(mRemover, behavior, executor, logger);
+    final LocalActor actor = new LocalActor(id, quota, context);
     context.setActor(actor);
     addActor(id, actor);
     return actor;

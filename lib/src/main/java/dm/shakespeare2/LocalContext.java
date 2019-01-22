@@ -23,7 +23,6 @@ import dm.shakespeare2.message.Bounce;
 import dm.shakespeare2.message.DeadLetter;
 import dm.shakespeare2.message.Delivery;
 import dm.shakespeare2.message.Failure;
-import dm.shakespeare2.message.QuotaExceeded;
 
 /**
  * Created by davide-maestroni on 01/10/2019.
@@ -31,27 +30,10 @@ import dm.shakespeare2.message.QuotaExceeded;
 class LocalContext implements Context {
 
   private static final DeadLetter DEAD_LETTER = new DeadLetter();
-  private static final QuotaNotifier DUMMY_NOTIFIER = new QuotaNotifier() {
-
-    public void consume() {
-    }
-
-    public boolean exceedsQuota(final int size) {
-      return false;
-    }
-
-    public void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
-    }
-
-    public void quotaExceeded(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
-    }
-  };
 
   private final QueuedExecutorService mActorExecutor;
   private final Logger mLogger;
   private final HashSet<Actor> mObservers = new HashSet<Actor>();
-  private final int mQuota;
-  private final QuotaNotifier mQuotaNotifier;
   private final Observer<Actor> mRemover;
 
   private Actor mActor;
@@ -66,15 +48,13 @@ class LocalContext implements Context {
   private boolean mStopped;
 
   LocalContext(@NotNull final Observer<Actor> remover, @NotNull final Behavior behavior,
-      final int quota, @NotNull final ExecutorService executor, @NotNull final Logger logger) {
+      @NotNull final ExecutorService executor, @NotNull final Logger logger) {
     mRemover = ConstantConditions.notNull("remover", remover);
     mBehavior = ConstantConditions.notNull("behavior", behavior);
     mActorExecutor =
         (executor instanceof ScheduledExecutorService) ? ExecutorServices.asActorExecutor(
             (ScheduledExecutorService) executor) : ExecutorServices.asActorExecutor(executor);
     mLogger = ConstantConditions.notNull("logger", logger);
-    mQuotaNotifier = ((mQuota = ConstantConditions.positive("quota", quota)) < Integer.MAX_VALUE)
-        ? new DefaultQuotaNotifier() : DUMMY_NOTIFIER;
   }
 
   public void dismissSelf() {
@@ -180,10 +160,6 @@ class LocalContext implements Context {
     dismissSelf();
   }
 
-  boolean exceedsQuota(final int size) {
-    return mQuotaNotifier.exceedsQuota(size);
-  }
-
   @NotNull
   QueuedExecutorService getActorExecutor() {
     return mActorExecutor;
@@ -233,16 +209,27 @@ class LocalContext implements Context {
     }
   }
 
-  void quotaExceeded(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
-    mQuotaNotifier.quotaExceeded(messages, envelop);
-  }
-
-  void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
-    mQuotaNotifier.quotaExceeded(message, envelop);
-  }
-
   void removeObserver(@NotNull final Actor observer) {
     mObservers.remove(observer);
+  }
+
+  void reply(@NotNull final Actor actor, final Object message, @Nullable final Options options) {
+    try {
+      actor.tell(message, options, mActor);
+
+    } catch (final RejectedExecutionException e) {
+      mLogger.err(e, "ignoring exception");
+    }
+  }
+
+  void replyAll(@NotNull final Actor actor, @NotNull final Iterable<?> messages,
+      @Nullable final Options options) {
+    try {
+      actor.tellAll(messages, options, mActor);
+
+    } catch (final RejectedExecutionException e) {
+      mLogger.err(e, "ignoring exception");
+    }
   }
 
   void setActor(@NotNull final Actor actor) {
@@ -257,26 +244,6 @@ class LocalContext implements Context {
     final ContextScheduledExecutorService scheduledExecutor = mContextScheduledExecutor;
     if (scheduledExecutor != null) {
       scheduledExecutor.cancelAll(true);
-    }
-  }
-
-  private void reply(@NotNull final Actor actor, final Object message,
-      @Nullable final Options options) {
-    try {
-      actor.tell(message, options, mActor);
-
-    } catch (final RejectedExecutionException e) {
-      mLogger.err(e, "ignoring exception");
-    }
-  }
-
-  private void replyAll(@NotNull final Actor actor, @NotNull final Iterable<?> messages,
-      @Nullable final Options options) {
-    try {
-      actor.tellAll(messages, options, mActor);
-
-    } catch (final RejectedExecutionException e) {
-      mLogger.err(e, "ignoring exception");
     }
   }
 
@@ -297,17 +264,6 @@ class LocalContext implements Context {
     for (final Actor observer : mObservers) {
       reply(observer, DEAD_LETTER, null);
     }
-  }
-
-  private interface QuotaNotifier {
-
-    void consume();
-
-    boolean exceedsQuota(int size);
-
-    void quotaExceeded(Object message, @NotNull Envelop envelop);
-
-    void quotaExceeded(@NotNull Iterable<?> messages, @NotNull Envelop envelop);
   }
 
   private class BehaviorStarter extends BehaviorWrapper {
@@ -332,7 +288,6 @@ class LocalContext implements Context {
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Context context) {
-      mQuotaNotifier.consume();
       final Options options = envelop.getOptions();
       if (isDismissed()) {
         if (options.getReceiptId() != null) {
@@ -421,41 +376,6 @@ class LocalContext implements Context {
           Thread.currentThread().interrupt();
         }
       }
-    }
-  }
-
-  private class DefaultQuotaNotifier implements QuotaNotifier {
-
-    private int mCount = 0;
-
-    public void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
-      final Options options = envelop.getOptions();
-      if (options.getReceiptId() != null) {
-        reply(envelop.getSender(), new QuotaExceeded(message, options), options.threadOnly());
-      }
-    }
-
-    public void quotaExceeded(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
-      final Options options = envelop.getOptions();
-      if (options.getReceiptId() != null) {
-        final ArrayList<Object> bounces = new ArrayList<Object>();
-        for (final Object message : messages) {
-          bounces.add(new QuotaExceeded(message, options));
-        }
-        replyAll(envelop.getSender(), bounces, options.threadOnly());
-      }
-    }
-
-    public synchronized void consume() {
-      --mCount;
-    }
-
-    public synchronized boolean exceedsQuota(final int size) {
-      if ((mCount + size) > mQuota) {
-        return true;
-      }
-      mCount += size;
-      return false;
     }
   }
 }
