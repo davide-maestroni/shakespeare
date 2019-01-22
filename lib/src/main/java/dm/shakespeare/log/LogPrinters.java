@@ -83,7 +83,6 @@ public class LogPrinters {
           return true;
         }
       }
-
       return false;
     }
 
@@ -93,7 +92,6 @@ public class LogPrinters {
           return true;
         }
       }
-
       return false;
     }
 
@@ -103,7 +101,6 @@ public class LogPrinters {
           return true;
         }
       }
-
       return false;
     }
 

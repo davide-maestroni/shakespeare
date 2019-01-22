@@ -4,7 +4,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
-import dm.shakespeare.actor.Actor.Envelop;
 import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.function.Observer;
 import dm.shakespeare.function.Tester;

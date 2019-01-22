@@ -8,7 +8,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import dm.shakespeare.actor.Actor.Envelop;
+import dm.shakespeare.actor.Envelop;
 
 /**
  * Created by davide-maestroni on 10/01/2018.

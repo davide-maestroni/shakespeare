@@ -91,7 +91,6 @@ public class ConstantConditions {
       throw new IllegalArgumentException(
           "the " + name + " must not be negative, but is: " + number);
     }
-
     return number;
   }
 
@@ -122,7 +121,6 @@ public class ConstantConditions {
     if (object == null) {
       throw new NullPointerException("the " + name + " must not be null");
     }
-
     return object;
   }
 
@@ -139,7 +137,6 @@ public class ConstantConditions {
         throw new NullPointerException("the " + name + " array must not contain null elements");
       }
     }
-
     return array;
   }
 
@@ -165,7 +162,6 @@ public class ConstantConditions {
         }
       }
     }
-
     return collection;
   }
 
@@ -215,7 +211,6 @@ public class ConstantConditions {
     if (number <= 0) {
       throw new IllegalArgumentException("the " + name + " must be positive, but is: " + number);
     }
-
     return number;
   }
 
@@ -253,7 +248,6 @@ public class ConstantConditions {
           if ((i + 1) < length) {
             return unsupportedMethodName(stackTrace[i + 1]);
           }
-
           return "";
 
         } else {
@@ -262,14 +256,12 @@ public class ConstantConditions {
               if ((j + 1) < length) {
                 return unsupportedMethodName(stackTrace[j + 1]);
               }
-
               return "";
             }
           }
         }
       }
     }
-
     return "";
   }
 

@@ -58,7 +58,6 @@ class TimeoutExecutorService extends AbstractExecutorService {
         sTimeoutService.shutdown();
       }
     }
-
     return runnables;
   }
 
@@ -80,7 +79,6 @@ class TimeoutExecutorService extends AbstractExecutorService {
     if (sCount.getAndIncrement() == 0) {
       sTimeoutService = Executors.newSingleThreadScheduledExecutor();
     }
-
     sTimeoutService.schedule(new CancelRunnable(future, mMayInterruptIfRunning), mTimeout,
         mTimeUnit);
     return future;

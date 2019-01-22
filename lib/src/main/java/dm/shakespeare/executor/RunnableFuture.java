@@ -52,7 +52,6 @@ class RunnableFuture implements ScheduledFuture<Object>, Runnable {
         isCancelled |= future.cancel(mayInterruptIfRunning);
       }
     }
-
     return isCancelled;
   }
 
@@ -65,7 +64,6 @@ class RunnableFuture implements ScheduledFuture<Object>, Runnable {
         isCancelled |= future.isCancelled();
       }
     }
-
     return isCancelled;
   }
 
@@ -80,7 +78,6 @@ class RunnableFuture implements ScheduledFuture<Object>, Runnable {
         }
       }
     }
-
     return isDone;
   }
 
@@ -148,7 +145,6 @@ class RunnableFuture implements ScheduledFuture<Object>, Runnable {
     if ((o == null) || (getClass() != o.getClass())) {
       return false;
     }
-
     final RunnableFuture that = (RunnableFuture) o;
     return (mPeriod == that.mPeriod) && (mFuture != null ? mFuture.equals(that.mFuture)
         : that.mFuture == null) && (mScheduledFuture != null ? mScheduledFuture.equals(

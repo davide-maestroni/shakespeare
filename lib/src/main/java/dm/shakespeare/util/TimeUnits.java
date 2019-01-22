@@ -35,7 +35,6 @@ public class TimeUnits {
       ConstantConditions.notNull("timeUnit", timeUnit);
       return System.nanoTime();
     }
-
     return timeUnit.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
   }
 
@@ -63,7 +62,6 @@ public class TimeUnits {
         }
       }
     }
-
     final long startNanos = System.nanoTime();
     while (true) {
       if (!sleepSinceNanos(time, timeUnit, startNanos)) {
@@ -90,13 +88,11 @@ public class TimeUnits {
       ConstantConditions.notNull("timeUnit", timeUnit);
       return false;
     }
-
     final long millisToSleep = milliTime - System.currentTimeMillis() + timeUnit.toMillis(time);
     if (millisToSleep <= 0) {
       ConstantConditions.notNull("timeUnit", timeUnit);
       return false;
     }
-
     TimeUnit.MILLISECONDS.sleep(millisToSleep);
     return true;
   }
@@ -119,13 +115,11 @@ public class TimeUnits {
       ConstantConditions.notNull("timeUnit", timeUnit);
       return false;
     }
-
     final long nanosToSleep = nanoTime - System.nanoTime() + timeUnit.toNanos(time);
     if (nanosToSleep <= 0) {
       ConstantConditions.notNull("timeUnit", timeUnit);
       return false;
     }
-
     TimeUnit.NANOSECONDS.sleep(nanosToSleep);
     return true;
   }
@@ -134,7 +128,6 @@ public class TimeUnits {
     if (timeUnit.compareTo(TimeUnit.DAYS) < 0) {
       return Math.round(value / timeUnit.convert(1, TimeUnit.DAYS));
     }
-
     return Math.round(value * TimeUnit.DAYS.convert(1, timeUnit));
   }
 
@@ -142,7 +135,6 @@ public class TimeUnits {
     if (timeUnit.compareTo(TimeUnit.HOURS) < 0) {
       return Math.round(value / timeUnit.convert(1, TimeUnit.HOURS));
     }
-
     return Math.round(value * TimeUnit.HOURS.convert(1, timeUnit));
   }
 
@@ -154,7 +146,6 @@ public class TimeUnits {
     if (timeUnit.compareTo(TimeUnit.MICROSECONDS) < 0) {
       return Math.round(value / timeUnit.convert(1, TimeUnit.MICROSECONDS));
     }
-
     return Math.round(value * TimeUnit.MICROSECONDS.convert(1, timeUnit));
   }
 
@@ -162,7 +153,6 @@ public class TimeUnits {
     if (timeUnit.compareTo(TimeUnit.MILLISECONDS) < 0) {
       return Math.round(value / timeUnit.convert(1, TimeUnit.MILLISECONDS));
     }
-
     return Math.round(value * TimeUnit.MILLISECONDS.convert(1, timeUnit));
   }
 
@@ -170,7 +160,6 @@ public class TimeUnits {
     if (timeUnit.compareTo(TimeUnit.MINUTES) < 0) {
       return Math.round(value / timeUnit.convert(1, TimeUnit.MINUTES));
     }
-
     return Math.round(value * TimeUnit.MINUTES.convert(1, timeUnit));
   }
 
@@ -178,7 +167,6 @@ public class TimeUnits {
     if (timeUnit.compareTo(TimeUnit.SECONDS) < 0) {
       return Math.round(value / timeUnit.convert(1, TimeUnit.SECONDS));
     }
-
     return Math.round(value * TimeUnit.SECONDS.convert(1, timeUnit));
   }
 
@@ -214,13 +202,11 @@ public class TimeUnits {
       target.wait();
       return true;
     }
-
     final long millisToWait = milliTime - System.currentTimeMillis() + timeUnit.toMillis(time);
     if (millisToWait <= 0) {
       ConstantConditions.notNull("timeUnit", timeUnit);
       return false;
     }
-
     TimeUnit.MILLISECONDS.timedWait(target, millisToWait);
     return true;
   }
@@ -251,13 +237,11 @@ public class TimeUnits {
       target.wait();
       return true;
     }
-
     final long nanosToWait = nanoTime - System.nanoTime() + timeUnit.toNanos(time);
     if (nanosToWait <= 0) {
       ConstantConditions.notNull("timeUnit", timeUnit);
       return false;
     }
-
     TimeUnit.NANOSECONDS.timedWait(target, nanosToWait);
     return true;
   }
@@ -287,7 +271,6 @@ public class TimeUnits {
       while (!condition.isTrue()) {
         target.wait();
       }
-
       return true;
     }
 
@@ -307,7 +290,6 @@ public class TimeUnits {
         }
       }
     }
-
     return true;
   }
 

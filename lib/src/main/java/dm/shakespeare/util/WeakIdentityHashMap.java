@@ -107,7 +107,6 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
       map.remove(reference);
       reference = (IdentityWeakReference) queue.poll();
     }
-
     return this;
   }
 
@@ -172,7 +171,6 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
         }
       };
     }
-
     return mKeySet;
   }
 
@@ -198,7 +196,6 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
         }
       };
     }
-
     return mEntrySet;
   }
 
@@ -251,7 +248,6 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
       if (!(obj instanceof IdentityWeakReference)) {
         return false;
       }
-
       final IdentityWeakReference that = (IdentityWeakReference) obj;
       if (mIsNull) {
         return that.mIsNull;
@@ -260,7 +256,6 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
       if (mHashCode != that.mHashCode) {
         return false;
       }
-
       final Object referent = get();
       return (referent != null) && (referent == that.get());
     }
@@ -347,7 +342,6 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
     if (!(o instanceof WeakIdentityHashMap)) {
       return (o instanceof Map) && o.equals(this);
     }
-
     final WeakIdentityHashMap<?, ?> that = (WeakIdentityHashMap<?, ?>) o;
     return mMap.equals(that.mMap);
   }

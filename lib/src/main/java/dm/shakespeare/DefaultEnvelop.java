@@ -1,9 +1,11 @@
 package dm.shakespeare;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import dm.shakespeare.actor.Actor;
-import dm.shakespeare.actor.Actor.Envelop;
+import dm.shakespeare.actor.Envelop;
+import dm.shakespeare.actor.Options;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -11,35 +13,40 @@ import dm.shakespeare.util.ConstantConditions;
  */
 abstract class DefaultEnvelop implements Envelop, Runnable {
 
+  private final Options mOptions;
   private final Actor mSender;
   private final long mSentAt;
-  private final String mThreadId;
-
+  private boolean mPreventReceipt;
   private long mReceivedAt = -1;
 
   DefaultEnvelop(@NotNull final Actor sender) {
     mSender = ConstantConditions.notNull("sender", sender);
-    mThreadId = null;
+    mOptions = Options.EMPTY;
     mSentAt = System.currentTimeMillis();
   }
 
   DefaultEnvelop(@NotNull final Actor sender, @NotNull final Envelop envelop) {
     mSender = ConstantConditions.notNull("sender", sender);
-    mThreadId = envelop.getThreadId();
+    mOptions = envelop.getOptions();
     mSentAt = envelop.getSentAt();
   }
 
   DefaultEnvelop(@NotNull final Actor sender, @NotNull final Envelop envelop,
-      @NotNull final String threadId) {
+      @Nullable final Options options) {
     mSender = ConstantConditions.notNull("sender", sender);
-    mThreadId = ConstantConditions.notNull("threadId", threadId);
     mSentAt = envelop.getSentAt();
+    mOptions = (options != null) ? options : Options.EMPTY;
   }
 
-  DefaultEnvelop(@NotNull final Actor sender, @NotNull final String threadId) {
+  DefaultEnvelop(@NotNull final Actor sender, @Nullable final Options options) {
     mSender = ConstantConditions.notNull("sender", sender);
-    mThreadId = ConstantConditions.notNull("threadId", threadId);
-    mSentAt = System.currentTimeMillis();
+    mOptions = (options != null) ? options : Options.EMPTY;
+    mSentAt = System.currentTimeMillis() - mOptions.getTimeOffset();
+  }
+
+  @NotNull
+  public Options getOptions() {
+    return mOptions;
   }
 
   public long getReceivedAt() {
@@ -55,9 +62,12 @@ abstract class DefaultEnvelop implements Envelop, Runnable {
     return mSentAt;
   }
 
-  @NotNull
-  public String getThreadId() {
-    return mThreadId;
+  public boolean isPreventReceipt() {
+    return mPreventReceipt;
+  }
+
+  public void preventReceipt() {
+    mPreventReceipt = true;
   }
 
   public void run() {

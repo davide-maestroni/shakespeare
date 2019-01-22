@@ -5,7 +5,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-import dm.shakespeare.actor.Actor.Envelop;
 import dm.shakespeare.log.Logger;
 
 /**
@@ -13,13 +12,16 @@ import dm.shakespeare.log.Logger;
  */
 public interface Behavior {
 
-  void message(Object message, @NotNull Envelop envelop, @NotNull Context context) throws Exception;
+  void onMessage(Object message, @NotNull Envelop envelop, @NotNull Context context) throws
+      Exception;
 
-  void start(@NotNull Context context) throws Exception;
+  void onStart(@NotNull Context context) throws Exception;
 
-  void stop(@NotNull Context context) throws Exception;
+  void onStop(@NotNull Context context) throws Exception;
 
   interface Context {
+
+    void dismissSelf();
 
     @NotNull
     ExecutorService getExecutor();
@@ -33,12 +35,10 @@ public interface Behavior {
     @NotNull
     Actor getSelf();
 
-    void resetBehavior();
+    boolean isDismissed();
 
-    void restart();
+    void restartSelf();
 
     void setBehavior(@NotNull Behavior behavior);
-
-    void stopSelf();
   }
 }

@@ -65,7 +65,6 @@ class ThrottledExecutorService extends AbstractExecutorService implements Queued
       runnables = new ArrayList<Runnable>(queue);
       queue.clear();
     }
-
     return runnables;
   }
 

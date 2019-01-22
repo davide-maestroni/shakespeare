@@ -42,7 +42,6 @@ class CallableFuture<V> implements ScheduledFuture<V>, Runnable {
         return future.cancel(mayInterruptIfRunning);
       }
     }
-
     final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
     return (scheduledFuture != null) && scheduledFuture.cancel(mayInterruptIfRunning);
   }
@@ -54,7 +53,6 @@ class CallableFuture<V> implements ScheduledFuture<V>, Runnable {
         return future.isCancelled();
       }
     }
-
     final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
     return (scheduledFuture != null) && scheduledFuture.isCancelled();
   }
@@ -66,7 +64,6 @@ class CallableFuture<V> implements ScheduledFuture<V>, Runnable {
         return future.isDone();
       }
     }
-
     return false;
   }
 
@@ -107,7 +104,6 @@ class CallableFuture<V> implements ScheduledFuture<V>, Runnable {
     if (delayed == this) {
       return 0;
     }
-
     return Long.valueOf(getDelay(TimeUnit.NANOSECONDS))
         .compareTo(delayed.getDelay(TimeUnit.NANOSECONDS));
   }
@@ -133,7 +129,6 @@ class CallableFuture<V> implements ScheduledFuture<V>, Runnable {
     if ((o == null) || (getClass() != o.getClass())) {
       return false;
     }
-
     final CallableFuture<?> that = (CallableFuture<?>) o;
     return (mTimestamp == that.mTimestamp) && (mFuture != null ? mFuture.equals(that.mFuture)
         : that.mFuture == null) && (mScheduledFuture != null ? mScheduledFuture.equals(

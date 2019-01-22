@@ -3,85 +3,25 @@ package dm.shakespeare.actor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Closeable;
-import java.util.Collection;
-import java.util.Set;
-
 /**
- * Created by davide-maestroni on 09/10/2018.
+ * Created by davide-maestroni on 01/08/2019.
  */
 public interface Actor {
 
   @NotNull
-  Actor forward(Object message, @NotNull Envelop envelop, @NotNull Actor sender);
+  Actor addObserver(@NotNull Actor observer);
+
+  void dismiss(boolean mayInterruptIfRunning);
 
   @NotNull
   String getId();
 
-  void remove();
+  @NotNull
+  Actor removeObserver(@NotNull Actor observer);
 
   @NotNull
-  Actor tell(Object message, @NotNull Actor sender);
+  Actor tell(Object message, @Nullable Options options, @NotNull Actor sender);
 
   @NotNull
-  Actor tellAll(@NotNull Iterable<?> messages, @NotNull Actor sender);
-
-  @NotNull
-  <T> Conversation<T> thread(@NotNull String threadId,
-      @NotNull Collection<? extends Class<? extends ThreadMessage>> messageFilters,
-      @NotNull Actor sender);
-
-  interface ActorSet extends Set<Actor> {
-
-    @NotNull
-    ActorSet forward(Object message, @NotNull Envelop envelop, @NotNull Actor sender);
-
-    void remove();
-
-    @NotNull
-    ActorSet tell(Object message, @NotNull Actor sender);
-
-    @NotNull
-    ActorSet tellAll(@NotNull Iterable<?> messages, @NotNull Actor sender);
-
-    @NotNull
-    <T> Conversation<T> thread(@NotNull String threadId,
-        @NotNull Collection<? extends Class<? extends ThreadMessage>> messageFilters,
-        @NotNull Actor sender);
-  }
-
-  interface Conversation<T> extends Closeable {
-
-    void abort();
-
-    void close();
-
-    @NotNull
-    Conversation forward(Object message, @NotNull Envelop envelop);
-
-    @NotNull
-    ActorSet getRecipients();
-
-    @NotNull
-    String getThreadId();
-
-    @NotNull
-    Conversation<T> tell(T message);
-
-    @NotNull
-    Conversation<T> tellAll(@NotNull Iterable<? extends T> messages);
-  }
-
-  interface Envelop {
-
-    long getReceivedAt();
-
-    @NotNull
-    Actor getSender();
-
-    long getSentAt();
-
-    @Nullable
-    String getThreadId();
-  }
+  Actor tellAll(@NotNull Iterable<?> messages, @Nullable Options options, @NotNull Actor sender);
 }

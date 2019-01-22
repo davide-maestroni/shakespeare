@@ -7,8 +7,7 @@ import java.util.concurrent.ScheduledExecutorService;
 /**
  * Created by davide-maestroni on 01/13/2019.
  */
-public class ActorScheduledExecutorService extends ThrottledScheduledExecutorService
-    implements QueuedExecutorService {
+public class ActorScheduledExecutorService extends ThrottledScheduledExecutorService {
 
   ActorScheduledExecutorService(@NotNull final ScheduledExecutorService executor) {
     super(executor, 1);

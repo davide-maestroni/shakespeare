@@ -42,7 +42,6 @@ public class Iterables {
     for (final T element : iterable) {
       collection.add(element);
     }
-
     return ConstantConditions.notNull("collection", collection);
   }
 
@@ -52,7 +51,6 @@ public class Iterables {
     if (iterable instanceof List) {
       return (List<T>) iterable;
     }
-
     return toList(iterable);
   }
 
@@ -62,7 +60,6 @@ public class Iterables {
     if (iterable instanceof Set) {
       return (Set<T>) iterable;
     }
-
     return toSet(iterable);
   }
 
@@ -85,7 +82,6 @@ public class Iterables {
         }
       }
     }
-
     return false;
   }
 
@@ -94,7 +90,6 @@ public class Iterables {
     if (iterable instanceof Collection) {
       return ((Collection<?>) iterable).containsAll(collection);
     }
-
     final ArrayList<Object> objects = new ArrayList<Object>(collection);
     for (final Object object : iterable) {
       boolean found = false;
@@ -112,7 +107,6 @@ public class Iterables {
         return false;
       }
     }
-
     return true;
   }
 
@@ -125,13 +119,11 @@ public class Iterables {
     if (iterable instanceof List) {
       return ((List<T>) iterable).get(index);
     }
-
     final Iterator<T> iterator = iterable.iterator();
     int i = 0;
     while (++i < index) {
       iterator.next();
     }
-
     return iterator.next();
   }
 
@@ -165,7 +157,6 @@ public class Iterables {
         }
       }
     }
-
     return false;
   }
 
@@ -175,7 +166,6 @@ public class Iterables {
     if (iterable instanceof Collection) {
       return ((Collection<Object>) iterable).removeAll(collection);
     }
-
     boolean found = false;
     for (final Object element : collection) {
       if (element != null) {
@@ -199,7 +189,6 @@ public class Iterables {
         }
       }
     }
-
     return found;
   }
 
@@ -208,7 +197,6 @@ public class Iterables {
     if (iterable instanceof Collection) {
       return ((Collection<?>) iterable).retainAll(collection);
     }
-
     ConstantConditions.notNull("collection", collection);
     boolean isModified = false;
     final Iterator<?> iterator = iterable.iterator();
@@ -218,7 +206,6 @@ public class Iterables {
         isModified = true;
       }
     }
-
     return isModified;
   }
 
@@ -233,7 +220,6 @@ public class Iterables {
         ++size;
       }
     }
-
     return size;
   }
 
@@ -245,10 +231,8 @@ public class Iterables {
       for (int i = 0; iterator.hasNext(); ++i) {
         array[i] = iterator.next();
       }
-
       return array;
     }
-
     final ArrayList<Object> list = new ArrayList<Object>();
     addAll(iterable, list);
     return list.toArray();
@@ -268,7 +252,6 @@ public class Iterables {
           array = (T[]) Array.newInstance(arrayClass.getComponentType(), size);
         }
       }
-
       final Iterator<?> iterator = iterable.iterator();
       for (int i = 0; iterator.hasNext(); ++i) {
         array[i] = (T) iterator.next();
@@ -277,10 +260,8 @@ public class Iterables {
       if (array.length > size) {
         array[size] = null;
       }
-
       return array;
     }
-
     final ArrayList<T> list = new ArrayList<T>();
     addAll(iterable, list);
     return list.toArray(array);
@@ -301,7 +282,6 @@ public class Iterables {
     if (iterable == null) {
       return "null";
     }
-
     final Iterator<?> iterator = iterable.iterator();
     if (iterator.hasNext()) {
       final StringBuilder builder = new StringBuilder();
@@ -311,11 +291,9 @@ public class Iterables {
         if (!iterator.hasNext()) {
           return builder.append(']').toString();
         }
-
         builder.append(',').append(' ');
       }
     }
-
     return "[]";
   }
 }

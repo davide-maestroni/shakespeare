@@ -33,7 +33,6 @@ class PriorityExecutorService extends AbstractExecutorService {
   PriorityExecutorService(@NotNull final ExecutorService executor, final int priority) {
     mExecutor = ConstantConditions.notNull("executor", executor);
     mPriority = priority;
-
     synchronized (sContexts) {
       final WeakIdentityHashMap<ExecutorService, PriorityContext> contexts = sContexts;
       PriorityContext context = contexts.get(executor);
@@ -57,7 +56,6 @@ class PriorityExecutorService extends AbstractExecutorService {
           new WrappedRunnable(ConstantConditions.notNull("command", command), mPriority,
               context.age--));
     }
-
     mExecutor.execute(mRunnable);
   }
 
@@ -74,7 +72,6 @@ class PriorityExecutorService extends AbstractExecutorService {
       runnables = new ArrayList<Runnable>(queue);
       queue.clear();
     }
-
     return runnables;
   }
 

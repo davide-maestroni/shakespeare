@@ -4,17 +4,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.regex.Pattern;
 
-import dm.shakespeare.actor.Actor.ActorSet;
 import dm.shakespeare.function.Tester;
 
 /**
  * Created by davide-maestroni on 09/10/2018.
  */
 public interface Stage {
-
-  // TODO: 22/09/2018 plugin
-
-  void addMonitor(@NotNull Actor monitor);
 
   @NotNull
   ActorSet findAll(@NotNull Pattern idPattern);
@@ -35,10 +30,8 @@ public interface Stage {
   ActorSet getAll();
 
   @NotNull
-  String getName();
+  Actor newActor(@NotNull Script script);
 
   @NotNull
-  ActorBuilder newActor();
-
-  void removeMonitor(@NotNull Actor monitor);
+  Actor newActor(@NotNull String id, @NotNull Script script);
 }

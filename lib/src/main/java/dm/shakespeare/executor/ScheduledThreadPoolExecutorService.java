@@ -81,7 +81,6 @@ class ScheduledThreadPoolExecutorService extends ScheduledThreadPoolExecutor {
       return (remainingTime > 0) && mExecutor.awaitTermination(remainingTime,
           TimeUnit.MILLISECONDS);
     }
-
     return false;
   }
 

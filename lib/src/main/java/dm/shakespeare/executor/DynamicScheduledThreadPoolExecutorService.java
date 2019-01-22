@@ -92,7 +92,6 @@ class DynamicScheduledThreadPoolExecutorService extends ScheduledThreadPoolExecu
       } catch (final InterruptedException ignored) {
         return false;
       }
-
       return true;
     }
   }

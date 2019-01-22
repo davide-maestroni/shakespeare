@@ -186,7 +186,6 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
     if (isEmpty()) {
       return null;
     }
-
     return removeFirst();
   }
 

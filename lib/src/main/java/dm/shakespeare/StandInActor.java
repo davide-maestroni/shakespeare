@@ -1,58 +1,50 @@
 package dm.shakespeare;
 
 import org.jetbrains.annotations.NotNull;
-
-import java.util.Collection;
+import org.jetbrains.annotations.Nullable;
 
 import dm.shakespeare.actor.Actor;
-import dm.shakespeare.actor.ThreadMessage;
+import dm.shakespeare.actor.Options;
+import dm.shakespeare.message.Delivery;
 
 /**
- * Created by davide-maestroni on 06/10/2018.
+ * Created by davide-maestroni on 01/14/2019.
  */
 class StandInActor implements Actor {
 
-  private static final StandInActor sInstance = new StandInActor();
-
-  private final String mId;
-
-  private StandInActor() {
-    mId = getClass().getName();
-  }
-
   @NotNull
-  static StandInActor defaultInstance() {
-    return sInstance;
-  }
-
-  @NotNull
-  public Actor forward(final Object message, @NotNull final Envelop envelop,
-      @NotNull final Actor sender) {
+  public Actor addObserver(@NotNull final Actor observer) {
     return this;
+  }
+
+  public void dismiss(final boolean mayInterruptIfRunning) {
   }
 
   @NotNull
   public String getId() {
-    return mId;
-  }
-
-  public void remove() {
+    return getClass().getName();
   }
 
   @NotNull
-  public Actor tell(final Object message, @NotNull final Actor sender) {
+  public Actor removeObserver(@NotNull final Actor observer) {
     return this;
   }
 
   @NotNull
-  public Actor tellAll(@NotNull final Iterable<?> messages, @NotNull final Actor sender) {
-    return this;
-  }
-
-  @NotNull
-  public <T> Conversation<T> thread(@NotNull final String threadId,
-      @NotNull final Collection<? extends Class<? extends ThreadMessage>> messageFilters,
+  public Actor tell(final Object message, @Nullable final Options options,
       @NotNull final Actor sender) {
-    return new StandInConversation<T>(sender);
+    if ((options != null) && (options.getReceiptId() != null)) {
+      sender.tell(new Delivery(message, options), options.threadOnly(), this);
+    }
+    return this;
+  }
+
+  @NotNull
+  public Actor tellAll(@NotNull final Iterable<?> messages, @Nullable final Options options,
+      @NotNull final Actor sender) {
+    for (final Object message : messages) {
+      tell(message, options, sender);
+    }
+    return this;
   }
 }
