@@ -7,7 +7,7 @@ import java.io.Serializable;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Script;
-import dm.shakespeare.config.BuildConfig;
+import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 
 /**

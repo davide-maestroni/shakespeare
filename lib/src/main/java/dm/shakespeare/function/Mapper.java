@@ -19,7 +19,7 @@ package dm.shakespeare.function;
 /**
  * Created by davide-maestroni on 07/20/2017.
  */
-public interface Mapper<V, R> {
+public interface Mapper<T, R> {
 
-  R apply(V value) throws Exception;
+  R apply(T value) throws Exception;
 }

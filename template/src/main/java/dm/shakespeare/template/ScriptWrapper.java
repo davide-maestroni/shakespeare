@@ -6,8 +6,8 @@ import java.util.concurrent.ExecutorService;
 
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Script;
-import dm.shakespeare.config.BuildConfig;
 import dm.shakespeare.log.Logger;
+import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 
 /**

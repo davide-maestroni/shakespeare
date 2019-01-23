@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Davide Maestroni
+ * Copyright 2017 Davide Maestroni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,19 +42,23 @@ compileTestJava {
   targetCompatibility = javaVersion
 }
 
+ext {
+  libVersion = '0.1'
+}
+
 dependencies {
   compile 'com.intellij:annotations:12.0'
   testCompile 'junit:junit:4.12'
   testCompile 'org.assertj:assertj-core:2.4.1'
 }
 
-buildConfig {
-  packageName 'dm.shakespeare.config'
-  buildConfigField 'long', 'VERSION_HASH_CODE', project.version.hashCode() + 'L'
+project.conditionalDependencies {
+  compile name: 'lib', version: libVersion
 }
 
-javadoc {
-  options.overview("${project.projectDir}/docs/overview.html")
+buildConfig {
+  packageName 'dm.shakespeare.plot.config'
+  buildConfigField 'long', 'VERSION_HASH_CODE', project.version.hashCode() + 'L'
 }
 
 jacocoTestReport {
@@ -73,6 +77,5 @@ findbugs {
 }
 
 tasks.withType(FindBugs) {
-  excludeFilter = file('findbugs.xml')
 //  ignoreFailures true
 }

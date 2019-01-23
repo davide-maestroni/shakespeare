@@ -19,7 +19,7 @@ import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
 import dm.shakespeare.actor.Script;
-import dm.shakespeare.config.BuildConfig;
+import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.DoubleQueue;
 

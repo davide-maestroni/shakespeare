@@ -19,7 +19,7 @@ package dm.shakespeare.function;
 /**
  * Created by davide-maestroni on 02/19/2018.
  */
-public interface Tester<V> {
+public interface Tester<T> {
 
-  boolean test(V value) throws Exception;
+  boolean test(T value) throws Exception;
 }

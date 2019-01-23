@@ -19,7 +19,7 @@ package dm.shakespeare.function;
 /**
  * Created by davide-maestroni on 07/20/2017.
  */
-public interface Observer<V> {
+public interface Observer<T> {
 
-  void accept(V value) throws Exception;
+  void accept(T value) throws Exception;
 }

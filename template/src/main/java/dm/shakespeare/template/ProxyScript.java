@@ -2,6 +2,8 @@ package dm.shakespeare.template;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.NotSerializableException;
+import java.io.ObjectStreamException;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.WeakHashMap;
@@ -15,11 +17,11 @@ import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
 import dm.shakespeare.actor.Script;
-import dm.shakespeare.config.BuildConfig;
 import dm.shakespeare.executor.ExecutorServices;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.Failure;
 import dm.shakespeare.message.IllegalRecipientException;
+import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -63,8 +65,8 @@ public class ProxyScript extends Script {
         } else if (actor.equals(sender)) {
           if (options.getReceiptId() != null) {
             safeTell(sender, new Failure(message, options,
-                    new IllegalRecipientException("an actor can't proxy itself")), options
-                    .threadOnly(),
+                    new IllegalRecipientException("an actor can't proxy itself")),
+                options.threadOnly(),
                 context);
           }
 
@@ -113,6 +115,11 @@ public class ProxyScript extends Script {
     recipient.tell(message, options.asSentAt(sentAt), context.getSelf());
   }
 
+  @NotNull
+  private Object writeReplace() throws ObjectStreamException {
+    throw new NotSerializableException("object is not serializable: " + this);
+  }
+
   private static class SenderScript extends Script {
 
     private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
@@ -123,6 +130,11 @@ public class ProxyScript extends Script {
     private SenderScript(@NotNull final Actor proxy, @NotNull final Actor proxied) {
       mProxy = proxy;
       mProxied = proxied;
+    }
+
+    @NotNull
+    private Object writeReplace() throws ObjectStreamException {
+      throw new NotSerializableException("object is not serializable: " + this);
     }
 
     @NotNull

@@ -12,13 +12,13 @@ import dm.shakespeare.actor.BehaviorBuilder.Handler;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
 import dm.shakespeare.actor.Script;
-import dm.shakespeare.config.BuildConfig;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.DeadLetter;
 import dm.shakespeare.message.Failure;
 import dm.shakespeare.message.IllegalRecipientException;
 import dm.shakespeare.message.Receipt;
 import dm.shakespeare.template.SupervisedScript.SupervisedRecovery.RecoveryType;
+import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.DoubleQueue;
 

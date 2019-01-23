@@ -11,7 +11,6 @@ import java.util.Set;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.BehaviorBuilder;
 import dm.shakespeare.actor.Script;
-import dm.shakespeare.config.BuildConfig;
 import dm.shakespeare.template.annotation.OnAny;
 import dm.shakespeare.template.annotation.OnMatch;
 import dm.shakespeare.template.annotation.OnMessage;
@@ -20,6 +19,7 @@ import dm.shakespeare.template.annotation.OnParams;
 import dm.shakespeare.template.annotation.OnSender;
 import dm.shakespeare.template.annotation.OnStart;
 import dm.shakespeare.template.annotation.OnStop;
+import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
