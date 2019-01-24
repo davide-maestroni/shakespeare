@@ -29,8 +29,6 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class ProxyScript extends Script {
 
-  private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
-
   private final WeakReference<Actor> mActor;
   private final HashMap<Actor, WeakReference<Actor>> mProxyToSenderMap =
       new HashMap<Actor, WeakReference<Actor>>();

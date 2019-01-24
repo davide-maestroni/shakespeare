@@ -17,13 +17,8 @@
 
 <FindBugsFilter>
   <Match>
-    <Class name="dm.shakespeare.util.TimeUnits"/>
-    <Method name="~waitSince.*"/>
-    <Bug pattern="WA_NOT_IN_LOOP"/>
-  </Match>
-  <Match>
-    <Class name="dm.shakespeare.executor.TimeoutExecutorService"/>
-    <Method name="timeout"/>
-    <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/>
+    <Class name="dm.shakespeare.template.SerializableScriptWrapper"/>
+    <Method name="writeObject"/>
+    <Bug pattern="DMI_NONSERIALIZABLE_OBJECT_WRITTEN"/>
   </Match>
 </FindBugsFilter>

@@ -18,7 +18,7 @@ import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
-import dm.shakespeare.actor.Script;
+import dm.shakespeare.actor.SerializableScript;
 import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.DoubleQueue;
@@ -26,7 +26,7 @@ import dm.shakespeare.util.DoubleQueue;
 /**
  * Created by davide-maestroni on 01/17/2019.
  */
-public class ReflectionScript extends Script {
+public class ReflectionScript extends SerializableScript {
 
   private static final ThreadLocal<DoubleQueue<Context>> CONTEXTS =
       new ThreadLocal<DoubleQueue<Context>>() {

@@ -10,7 +10,7 @@ import java.util.Set;
 
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.BehaviorBuilder;
-import dm.shakespeare.actor.Script;
+import dm.shakespeare.actor.SerializableScript;
 import dm.shakespeare.template.annotation.OnAny;
 import dm.shakespeare.template.annotation.OnMatch;
 import dm.shakespeare.template.annotation.OnMessage;
@@ -25,7 +25,7 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 01/17/2019.
  */
-public class AnnotationScript extends Script {
+public class AnnotationScript extends SerializableScript {
 
   private static final HashMap<Class<? extends Annotation>, AnnotationHandler<?>>
       sAnnotationHandlers = new HashMap<Class<? extends Annotation>, AnnotationHandler<?>>() {{

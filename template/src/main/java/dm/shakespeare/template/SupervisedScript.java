@@ -25,7 +25,7 @@ import dm.shakespeare.util.DoubleQueue;
 /**
  * Created by davide-maestroni on 01/16/2019.
  */
-public class SupervisedScript extends ScriptWrapper {
+public class SupervisedScript extends SerializableScriptWrapper {
 
   private static final Supervise SUPERVISE = new Supervise();
   private static final Unsupervise UNSUPERVISE = new Unsupervise();

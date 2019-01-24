@@ -3,7 +3,6 @@ package dm.shakespeare.actor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Serializable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -12,7 +11,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.actor.BehaviorBuilder.Handler;
-import dm.shakespeare.config.BuildConfig;
 import dm.shakespeare.executor.ExecutorServices;
 import dm.shakespeare.function.Mapper;
 import dm.shakespeare.function.Observer;
@@ -22,7 +20,7 @@ import dm.shakespeare.log.Logger;
 /**
  * Created by davide-maestroni on 01/08/2019.
  */
-public abstract class Script implements Serializable {
+public abstract class Script {
 
   private static final ScheduledExecutorService DEFAULT_EXECUTOR =
       ExecutorServices.newDynamicScheduledThreadPool(new ThreadFactory() {
@@ -33,8 +31,6 @@ public abstract class Script implements Serializable {
           return new Thread(runnable, "shakespeare-thread-" + mCount.getAndIncrement());
         }
       });
-
-  private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 
   @NotNull
   public static <T> Handler<T> accept(@NotNull final Observer<T> observer) {

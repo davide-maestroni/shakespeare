@@ -13,7 +13,7 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 01/16/2019.
  */
-public class PoisonableScript extends ScriptWrapper {
+public class PoisonableScript extends SerializableScriptWrapper {
 
   private static final PoisonPill POISON_PILL = new PoisonPill();
 

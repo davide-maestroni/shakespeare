@@ -77,5 +77,6 @@ findbugs {
 }
 
 tasks.withType(FindBugs) {
+  excludeFilter = file('findbugs.xml')
 //  ignoreFailures true
 }
