@@ -17,8 +17,8 @@
 plugins {
   id 'java'
   id 'jacoco'
-  id 'findbugs'
-  id 'com.github.ben-manes.versions'
+  id 'com.github.spotbugs' version '1.6.9'
+  id 'com.github.ben-manes.versions' version '0.20.0'
 }
 
 apply from: '../extra.gradle'
@@ -44,6 +44,10 @@ project.conditionalDependencies {
   compile name: 'lib', version: libVersion
 }
 
+jacoco {
+  toolVersion project.getProperty('jacocoVersion')
+}
+
 jacocoTestReport {
   reports {
     xml.enabled = true // Coveralls plugin depends on xml format report
@@ -51,14 +55,16 @@ jacocoTestReport {
   }
 }
 
-jacoco {
-  toolVersion project.getProperty('jacocoVersion')
-}
-
-findbugs {
-  toolVersion project.getProperty('findbugsVersion')
-}
-
-tasks.withType(FindBugs) {
+spotbugs {
+  effort = 'max'
+  reportLevel = 'low'
   ignoreFailures true
+  toolVersion project.getProperty('spotbugsVersion')
+}
+
+tasks.withType(com.github.spotbugs.SpotBugsTask) {
+  reports {
+    xml.enabled false
+    html.enabled = true
+  }
 }

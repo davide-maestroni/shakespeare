@@ -82,19 +82,6 @@ afterEvaluate { project ->
       }
     }
 
-    if (project.plugins.hasPlugin('findbugs')) {
-      project.tasks.withType(FindBugs) {
-        effort = 'max'
-        reportLevel = 'low'
-        reports {
-          xml.enabled = false
-          html.enabled = true
-        }
-      }
-
-      project.tasks.findbugsTest.onlyIf { false }
-    }
-
     project.javadoc {
       title = "${project.archivesBaseName} ${version}"
       source project.configurations.compile.collect { zipTree(it) }
