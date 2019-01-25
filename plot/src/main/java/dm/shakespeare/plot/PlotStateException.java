@@ -8,11 +8,10 @@ import dm.shakespeare.message.Failure;
 /**
  * Created by davide-maestroni on 01/25/2019.
  */
-public class UnexpectedStateException extends Exception {
+public class PlotStateException extends Exception {
 
   @NotNull
   public static Throwable getError(@NotNull final Bounce message) {
-    return (message instanceof Failure) ? ((Failure) message).getCause()
-        : new UnexpectedStateException();
+    return (message instanceof Failure) ? ((Failure) message).getCause() : new PlotStateException();
   }
 }

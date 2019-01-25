@@ -153,6 +153,9 @@ public abstract class Line<T> {
             actor.tell(GET, new Options().withReceiptId(""), context.getSelf());
           }
           context.setBehavior(new InputBehavior());
+
+        } else if (message == CANCEL) {
+          fail(new LineFailure(new PlotCancelledException()), context);
         }
       }
     }
@@ -165,6 +168,9 @@ public abstract class Line<T> {
         if (message == GET) {
           // TODO: 25/01/2019 loop detection?
           mSenders.put(envelop.getSender(), envelop.getOptions().getThread());
+
+        } else if (message == CANCEL) {
+          fail(new LineFailure(new PlotCancelledException()), context);
 
         } else if (message instanceof LineFailure) {
           try {
@@ -187,7 +193,7 @@ public abstract class Line<T> {
 
         } else if (message instanceof Bounce) {
           final LineFailure lineFailure =
-              new LineFailure(UnexpectedStateException.getError((Bounce) message));
+              new LineFailure(PlotStateException.getError((Bounce) message));
           try {
             final Actor failureActor = getFailureActor(lineFailure);
             if (failureActor != null) {
@@ -240,11 +246,14 @@ public abstract class Line<T> {
       @SuppressWarnings("unchecked")
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) {
-        if (message instanceof LineFailure) {
+        if (message == CANCEL) {
+          fail(new LineFailure(new PlotCancelledException()), context);
+
+        } else if (message instanceof LineFailure) {
           fail((LineFailure) message, context);
 
         } else if (message instanceof Bounce) {
-          final Throwable error = UnexpectedStateException.getError((Bounce) message);
+          final Throwable error = PlotStateException.getError((Bounce) message);
           fail(new LineFailure(error), context);
 
         } else if (envelop.getSender().equals(mOutputActor)) {

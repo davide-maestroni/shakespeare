@@ -28,7 +28,7 @@ class ReadLineScript<T> extends Script {
 
       public void handle(final Bounce message, @NotNull final Envelop envelop,
           @NotNull final Context context) throws Exception {
-        mLineObserver.onError(UnexpectedStateException.getError(message));
+        mLineObserver.onError(PlotStateException.getError(message));
         context.dismissSelf();
       }
     }).onMessage(LineFailure.class, new Handler<LineFailure>() {
