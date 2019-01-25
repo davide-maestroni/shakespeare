@@ -26,6 +26,7 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public abstract class Line<T> {
 
+  static final Object CANCEL = new Object();
   static final Object GET = new Object();
 
   private static final Observer<?> NO_OP = new Observer<Object>() {
@@ -66,6 +67,11 @@ public abstract class Line<T> {
   public void read(@Nullable final Observer<? super T> valueObserver,
       @Nullable final Observer<? super Throwable> errorObserver) {
     read(new DefaultLineObserver<T>(valueObserver, errorObserver));
+  }
+
+  @NotNull
+  public <R> Line<R> then(@NotNull UnaryFunction<? super T, ? extends Line<R>> messageHandler) {
+    return when(this, messageHandler);
   }
 
   @NotNull
@@ -110,6 +116,8 @@ public abstract class Line<T> {
 
     @NotNull
     abstract Actor getOutputActor(@NotNull Object[] inputs) throws Exception;
+
+    // TODO: 25/01/2019 onStop()??
 
     private static class FailureBehavior extends AbstractBehavior {
 
