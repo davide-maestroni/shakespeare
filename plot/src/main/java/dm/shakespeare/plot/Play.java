@@ -52,11 +52,16 @@ public class Play {
   }
 
   @NotNull
-  public <T> Line<T> runLine(@NotNull final NullaryFunction<? extends Line<T>> function) throws
-      Exception {
+  public <T> Line<T> runLine(@NotNull final NullaryFunction<? extends Line<T>> function) {
     PlayContext.set(mPlayContext);
     try {
       return function.call();
+
+    } catch (final Throwable t) {
+      if (t instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      return Line.ofError(t);
 
     } finally {
       PlayContext.unset();
