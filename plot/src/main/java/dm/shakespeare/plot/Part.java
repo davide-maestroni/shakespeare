@@ -43,10 +43,12 @@ public abstract class Part<T> extends Line<Iterable<T>> {
     return null;
   }
 
-  abstract void readAll(@NotNull LineObserver<? super T> lineObserver);
+  public void readAll(@Nullable Observer<? super T> valueObserver,
+      @Nullable Observer<? super Throwable> errorObserver) {
+    readAll(new DefaultLineObserver<T>(valueObserver, errorObserver));
+  }
 
-  abstract void readAll(@Nullable Observer<? super T> valueObserver,
-      @Nullable Observer<? super Throwable> errorObserver);
+  abstract void readAll(@NotNull LineObserver<? super T> lineObserver);
 
   public interface PartCorrector<T, R> extends PartHandler<T, R> {
 

@@ -90,6 +90,27 @@ public abstract class Line<T> {
     void onMessage(T message) throws Exception;
   }
 
+  static class DefaultLineObserver<T> implements LineObserver<T> {
+
+    private final Observer<Object> mErrorObserver;
+    private final Observer<Object> mValueObserver;
+
+    @SuppressWarnings("unchecked")
+    DefaultLineObserver(@Nullable Observer<? super T> valueObserver,
+        @Nullable Observer<? super Throwable> errorObserver) {
+      mValueObserver = (Observer<Object>) ((valueObserver != null) ? valueObserver : NO_OP);
+      mErrorObserver = (Observer<Object>) ((errorObserver != null) ? errorObserver : NO_OP);
+    }
+
+    public void onError(@NotNull final Throwable error) throws Exception {
+      mErrorObserver.accept(error);
+    }
+
+    public void onMessage(final T message) throws Exception {
+      mValueObserver.accept(message);
+    }
+  }
+
   private abstract static class AbstractLine<T> extends Line<T> {
 
     private final Actor mActor;
@@ -303,27 +324,6 @@ public abstract class Line<T> {
     @NotNull
     List<Actor> getInputActors() {
       return mActors;
-    }
-  }
-
-  private static class DefaultLineObserver<T> implements LineObserver<T> {
-
-    private final Observer<Object> mErrorObserver;
-    private final Observer<Object> mValueObserver;
-
-    @SuppressWarnings("unchecked")
-    private DefaultLineObserver(@Nullable Observer<? super T> valueObserver,
-        @Nullable Observer<? super Throwable> errorObserver) {
-      mValueObserver = (Observer<Object>) ((valueObserver != null) ? valueObserver : NO_OP);
-      mErrorObserver = (Observer<Object>) ((errorObserver != null) ? errorObserver : NO_OP);
-    }
-
-    public void onError(@NotNull final Throwable error) throws Exception {
-      mErrorObserver.accept(error);
-    }
-
-    public void onMessage(final T message) throws Exception {
-      mValueObserver.accept(message);
     }
   }
 
