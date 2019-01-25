@@ -3,35 +3,315 @@ package dm.shakespeare.plot;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map.Entry;
+
+import dm.shakespeare.LocalStage;
+import dm.shakespeare.actor.AbstractBehavior;
+import dm.shakespeare.actor.Actor;
+import dm.shakespeare.actor.Behavior;
+import dm.shakespeare.actor.Behavior.Context;
+import dm.shakespeare.actor.BehaviorBuilder.Handler;
+import dm.shakespeare.actor.Envelop;
+import dm.shakespeare.actor.Options;
 import dm.shakespeare.function.Observer;
+import dm.shakespeare.message.Bounce;
 import dm.shakespeare.plot.function.UnaryFunction;
+import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Created by davide-maestroni on 01/22/2019.
  */
 public abstract class Line<T> {
 
+  static final Object GET = new Object();
+
+  private static final Observer<?> NO_OP = new Observer<Object>() {
+
+    public void accept(final Object value) {
+    }
+  };
+
+  private static final LocalStage sStage = new LocalStage();
+
   @NotNull
-  public static <T1 extends Throwable, R> Line<R> correct(@NotNull Class<T1> firstError,
-      @NotNull UnaryFunction<? super T1, ? extends Line<R>> errorHandler) {
-    return null;
+  public static <T> Line<T> ofError(@NotNull final Throwable error) {
+    return new ErrorLine<T>(error);
+  }
+
+  @NotNull
+  public static <T> Line<T> ofValue(final T value) {
+    return new ValueLine<T>(value);
   }
 
   @NotNull
   public static <T1, R> Line<R> when(@NotNull Line<T1> firstLine,
       @NotNull UnaryFunction<? super T1, ? extends Line<R>> messageHandler) {
+    return new UnaryLine<T1, R>(firstLine, messageHandler);
+  }
+
+  @NotNull
+  public <T1 extends Throwable, R> Line<R> correct(@NotNull Class<T1> firstError,
+      @NotNull UnaryFunction<? super T1, ? extends Line<R>> errorHandler) {
     return null;
   }
 
-  abstract void read(@NotNull LineObserver<? super T> lineObserver);
+  public void read(@NotNull final LineObserver<? super T> lineObserver) {
+    final Actor actor = sStage.newActor(new ReadLineScript<T>(lineObserver));
+    getActor().tell(GET, new Options().withReceiptId(actor.getId()), actor);
+  }
 
-  abstract void read(@Nullable Observer<? super T> valueObserver,
-      @Nullable Observer<? super Throwable> errorObserver);
+  public void read(@Nullable final Observer<? super T> valueObserver,
+      @Nullable final Observer<? super Throwable> errorObserver) {
+    read(new DefaultLineObserver<T>(valueObserver, errorObserver));
+  }
+
+  @NotNull
+  abstract Actor getActor();
 
   public interface LineObserver<T> {
 
     void onError(@NotNull Throwable error) throws Exception;
 
     void onMessage(T message) throws Exception;
+  }
+
+  private abstract static class AbstractLine<T> extends Line<T> {
+
+    private final Actor mActor;
+    private final Object[] mInputs;
+    private final HashMap<Actor, String> mSenders = new HashMap<Actor, String>();
+
+    private int mInputCount;
+    private Actor mOutputActor;
+
+    private AbstractLine(final int numInputs) {
+      mInputs = new Object[numInputs];
+      final PlayContext playContext = PlayContext.get();
+      mActor = playContext.getStage().newActor(new PlayScript(playContext) {
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return new InitBehavior();
+        }
+      });
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
+    }
+
+    @NotNull
+    abstract List<Actor> getInputActors();
+
+    @NotNull
+    abstract Actor getOutputActor(@NotNull Object[] inputs) throws Exception;
+
+    private static class FailureBehavior extends AbstractBehavior {
+
+      private final LineFailure mFailure;
+
+      private FailureBehavior(@NotNull final Throwable error) {
+        mFailure = new LineFailure(error);
+      }
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          envelop.getSender().tell(mFailure, envelop.getOptions().threadOnly(), context.getSelf());
+        }
+      }
+    }
+
+    private static class ValueBehavior extends AbstractBehavior {
+
+      private final Object mValue;
+
+      private ValueBehavior(final Object value) {
+        mValue = value;
+      }
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          envelop.getSender().tell(mValue, envelop.getOptions().threadOnly(), context.getSelf());
+        }
+      }
+    }
+
+    private class InitBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          mSenders.put(envelop.getSender(), envelop.getOptions().getThread());
+          for (final Actor actor : getInputActors()) {
+            actor.tell(GET, new Options().withReceiptId(""), context.getSelf());
+          }
+          context.setBehavior(new InputBehavior());
+        }
+      }
+    }
+
+    private class InputBehavior extends AbstractBehavior {
+
+      @SuppressWarnings("unchecked")
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) throws Exception {
+        if (message == GET) {
+          // TODO: 25/01/2019 loop detection?
+          mSenders.put(envelop.getSender(), envelop.getOptions().getThread());
+
+        } else if (message instanceof LineFailure) {
+          context.setBehavior(new FailureBehavior(((LineFailure) message).getCause()));
+
+        } else if (message instanceof Bounce) {
+          context.setBehavior(
+              new FailureBehavior(UnexpectedStateException.getError((Bounce) message)));
+
+        } else {
+          final int index = getInputActors().indexOf(envelop.getSender());
+          if (index >= 0) {
+            final Object[] inputs = mInputs;
+            inputs[index] = message;
+            if (++mInputCount == inputs.length) {
+              (mOutputActor = getOutputActor(inputs)).tell(GET, new Options().withReceiptId(""),
+                  context.getSelf());
+              context.setBehavior(new OutputBehavior());
+            }
+          }
+        }
+      }
+    }
+
+    private class OutputBehavior extends AbstractBehavior {
+
+      @SuppressWarnings("unchecked")
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message instanceof LineFailure) {
+          context.setBehavior(new FailureBehavior(((LineFailure) message).getCause()));
+
+        } else if (message instanceof Bounce) {
+          context.setBehavior(
+              new FailureBehavior(UnexpectedStateException.getError((Bounce) message)));
+
+        } else if (envelop.getSender().equals(mOutputActor)) {
+          for (final Entry<Actor, String> entry : mSenders.entrySet()) {
+            entry.getKey()
+                .tell(message, new Options().withThread(entry.getValue()), context.getSelf());
+          }
+          context.setBehavior(new ValueBehavior(message));
+        }
+      }
+    }
+  }
+
+  private static class DefaultLineObserver<T> implements LineObserver<T> {
+
+    private final Observer<Object> mErrorObserver;
+    private final Observer<Object> mValueObserver;
+
+    @SuppressWarnings("unchecked")
+    private DefaultLineObserver(@Nullable Observer<? super T> valueObserver,
+        @Nullable Observer<? super Throwable> errorObserver) {
+      mValueObserver = (Observer<Object>) ((valueObserver != null) ? valueObserver : NO_OP);
+      mErrorObserver = (Observer<Object>) ((errorObserver != null) ? errorObserver : NO_OP);
+    }
+
+    public void onError(@NotNull final Throwable error) throws Exception {
+      mErrorObserver.accept(error);
+    }
+
+    public void onMessage(final T message) throws Exception {
+      mValueObserver.accept(message);
+    }
+  }
+
+  private static class ErrorLine<T> extends Line<T> {
+
+    private final Actor mActor;
+
+    private ErrorLine(@NotNull final Throwable error) {
+      final LineFailure failure = new LineFailure(error);
+      final PlayContext playContext = PlayContext.get();
+      mActor = playContext.getStage().newActor(new PlayScript(playContext) {
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return newBehavior().onMessageEqualTo(GET, new Handler<Object>() {
+
+            public void handle(final Object message, @NotNull final Envelop envelop,
+                @NotNull final Context context) {
+              envelop.getSender()
+                  .tell(failure, envelop.getOptions().threadOnly(), context.getSelf());
+            }
+          }).build();
+        }
+      });
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
+    }
+  }
+
+  private static class UnaryLine<T1, R> extends AbstractLine<R> {
+
+    private final List<Actor> mActors;
+    private final UnaryFunction<? super T1, ? extends Line<R>> mMessageHandler;
+
+    @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
+    private UnaryLine(@NotNull final Line<T1> firstLine,
+        @NotNull final UnaryFunction<? super T1, ? extends Line<R>> messageHandler) {
+      super(1);
+      mActors = Arrays.asList(firstLine.getActor());
+      mMessageHandler = ConstantConditions.notNull("messageHandler", messageHandler);
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return mActors;
+    }
+
+    @NotNull
+    @SuppressWarnings("unchecked")
+    Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
+      return mMessageHandler.call((T1) inputs[0]).getActor();
+    }
+  }
+
+  private static class ValueLine<T> extends Line<T> {
+
+    private final Actor mActor;
+
+    private ValueLine(final T value) {
+      final PlayContext playContext = PlayContext.get();
+      mActor = playContext.getStage().newActor(new PlayScript(playContext) {
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return newBehavior().onMessageEqualTo(GET, new Handler<Object>() {
+
+            public void handle(final Object message, @NotNull final Envelop envelop,
+                @NotNull final Context context) {
+              envelop.getSender().tell(value, envelop.getOptions().threadOnly(), context.getSelf());
+            }
+          }).build();
+        }
+      });
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
+    }
   }
 }
