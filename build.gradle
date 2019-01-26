@@ -24,9 +24,9 @@ buildscript {
     }
   }
   dependencies {
-    classpath 'com.android.tools.build:gradle:3.0.1'
+    classpath 'com.android.tools.build:gradle:3.3.0'
     classpath "org.jacoco:org.jacoco.core:${project.getProperty('jacocoVersion')}"
-    classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.6.3'
+    classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.8.2'
   }
 }
 
@@ -62,9 +62,9 @@ gradle.projectsEvaluated {
     def sources = files()
     publishedProjects.each {
       if (it.plugins.hasPlugin('java')) {
-        sources += files(it.sourceSets.main.allSource.srcDirs)
+        sources.from(files(it.sourceSets.main.allSource.srcDirs))
       } else {
-        sources += files(it.android.sourceSets.main.java.srcDirs)
+        sources.from(files(it.android.sourceSets.main.java.srcDirs))
       }
     }
     sourceDirs = sources.flatten()
@@ -81,21 +81,21 @@ gradle.projectsEvaluated {
     def execs = files()
     publishedProjects.each {
       if (it.plugins.hasPlugin('java')) {
-        additionalSources += files(it.sourceSets.main.allJava.srcDirs)
-        sources += files(it.sourceSets.main.allSource.srcDirs)
-        classes += files(it.sourceSets.main.output)
-        execs += files(it.jacocoTestReport.executionData)
+        additionalSources.from(files(it.sourceSets.main.allJava.srcDirs))
+        sources.from(files(it.sourceSets.main.allSource.srcDirs))
+        classes.from(files(it.sourceSets.main.output))
+        execs.from(files(it.jacocoTestReport.executionData))
       } else {
-        sources += files(it.android.sourceSets.main.java.srcDirs)
-        classes += fileTree(dir: "${it.buildDir}/intermediates/classes/debug", exclude: ['**/R*.class', '**/BuildConfig.class'])
-        execs += fileTree("${it.buildDir}/outputs/code-coverage/connected")
+        sources.from(files(it.android.sourceSets.main.java.srcDirs))
+        classes.from(fileTree(dir: "${it.buildDir}/intermediates/classes/debug", exclude: ['**/R*.class', '**/BuildConfig.class']))
+        execs.from(fileTree("${it.buildDir}/outputs/code-coverage/connected"))
       }
     }
 
-    additionalSourceDirs = additionalSources
-    sourceDirectories = sources
-    classDirectories = classes
-    executionData = execs
+    additionalSourceDirs.from(additionalSources)
+    sourceDirectories.from(sources)
+    classDirectories.from(classes)
+    executionData.from(execs)
 
     reports {
       html.enabled = true // human readable
