@@ -15,6 +15,8 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class Play {
 
+  // TODO: 26/01/2019 memory leak
+
   private static final LineFunction<?> LINE_FUNCTION = new LineFunction<Object>();
 
   private final PlayContext mPlayContext;
@@ -44,7 +46,7 @@ public class Play {
   public <T> Line<T> runLine(@NotNull final Line<T> line) {
     PlayContext.set(mPlayContext);
     try {
-      return line.then((LineFunction<T>) LINE_FUNCTION);
+      return line.translate((LineFunction<T>) LINE_FUNCTION);
 
     } finally {
       PlayContext.unset();

@@ -268,12 +268,12 @@ public class Iterables {
   }
 
   @NotNull
-  public static <T> List<T> toList(@NotNull final Iterable<T> iterable) {
+  public static <T> List<T> toList(@NotNull final Iterable<? extends T> iterable) {
     return addAll(iterable, new ArrayList<T>());
   }
 
   @NotNull
-  public static <T> Set<T> toSet(@NotNull final Iterable<T> iterable) {
+  public static <T> Set<T> toSet(@NotNull final Iterable<? extends T> iterable) {
     return addAll(iterable, new HashSet<T>());
   }
 

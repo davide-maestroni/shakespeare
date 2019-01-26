@@ -3,6 +3,7 @@ package dm.shakespeare.plot;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,6 +24,7 @@ import dm.shakespeare.function.Observer;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.plot.function.UnaryFunction;
 import dm.shakespeare.util.ConstantConditions;
+import dm.shakespeare.util.Iterables;
 
 /**
  * Created by davide-maestroni on 01/22/2019.
@@ -51,23 +53,38 @@ public abstract class Line<T> {
   }
 
   @NotNull
-  public static <T1, R> Line<R> when(@NotNull final Line<T1> firstLine,
+  public static <T1, R> Line<R> when(@NotNull final Line<? extends T1> firstLine,
       @NotNull final UnaryFunction<? super T1, ? extends Line<R>> messageHandler) {
     return new UnaryLine<T1, R>(firstLine, messageHandler);
   }
 
   @NotNull
-  @SuppressWarnings({"unchecked", "ArraysAsListWithZeroOrOneArgument"})
-  public <T1 extends Throwable, R> Line<R> correct(@NotNull final Class<T1> firstError,
+  public static <T, R> Line<R> when(@NotNull final Iterable<? extends Line<? extends T>> lines,
+      @NotNull final UnaryFunction<? super List<T>, ? extends Line<R>> messageHandler) {
+    return new GenericLine<T, R>(lines, messageHandler);
+  }
+
+  @NotNull
+  @SuppressWarnings("unchecked")
+  public <T1 extends Throwable, R> Line<R> correct(@NotNull final Class<? extends T1> firstError,
       @NotNull final UnaryFunction<? super T1, ? extends Line<R>> errorHandler) {
-    return new CorrectLine<R>(getActor(),
-        new HashSet<Class<? extends Throwable>>(Arrays.asList(firstError)),
+    final HashSet<Class<? extends Throwable>> errors = new HashSet<Class<? extends Throwable>>();
+    errors.add(firstError);
+    return new CorrectLine<R>(getActor(), errors,
         (UnaryFunction<? super Throwable, ? extends Line<R>>) errorHandler);
   }
 
-  public void read(@NotNull final LineObserver<? super T> lineObserver) {
-    final Actor actor = sStage.newActor(new ReadLineScript<T>(lineObserver));
-    getActor().tell(GET, new Options().withReceiptId(actor.getId()), actor);
+  @NotNull
+  @SuppressWarnings("unchecked")
+  public <T extends Throwable, R> Line<R> correct(
+      @NotNull final Iterable<? extends Class<? extends T>> errors,
+      @NotNull final UnaryFunction<? super T, ? extends Line<R>> errorHandler) {
+    return new CorrectLine<R>(getActor(), Iterables.<Class<? extends Throwable>>toSet(errors),
+        (UnaryFunction<? super Throwable, ? extends Line<R>>) errorHandler);
+  }
+
+  public boolean isMemorized() {
+    return true;
   }
 
   public void read(@Nullable final Observer<? super T> valueObserver,
@@ -75,8 +92,14 @@ public abstract class Line<T> {
     read(new DefaultLineObserver<T>(valueObserver, errorObserver));
   }
 
+  public void read(@NotNull final LineObserver<? super T> lineObserver) {
+    final Actor actor = sStage.newActor(new ReadLineScript<T>(lineObserver));
+    getActor().tell(GET, new Options().withReceiptId(actor.getId()), actor);
+  }
+
   @NotNull
-  public <R> Line<R> then(@NotNull UnaryFunction<? super T, ? extends Line<R>> messageHandler) {
+  public <R> Line<R> translate(
+      @NotNull UnaryFunction<? super T, ? extends Line<R>> messageHandler) {
     return when(this, messageHandler);
   }
 
@@ -170,8 +193,10 @@ public abstract class Line<T> {
           @NotNull final Context context) {
         if (message == GET) {
           mSenders.put(envelop.getSender(), envelop.getOptions().getThread());
+          final Actor self = context.getSelf();
+          final Options options = new Options().withReceiptId(self.getId());
           for (final Actor actor : getInputActors()) {
-            actor.tell(GET, new Options().withReceiptId(""), context.getSelf());
+            actor.tell(GET, options, self);
           }
           context.setBehavior(new InputBehavior());
 
@@ -197,8 +222,9 @@ public abstract class Line<T> {
           try {
             final Actor failureActor = getFailureActor((LineFailure) message);
             if (failureActor != null) {
-              (mOutputActor = failureActor).tell(GET, new Options().withReceiptId(""),
-                  context.getSelf());
+              final Actor self = context.getSelf();
+              final Options options = new Options().withReceiptId(self.getId());
+              (mOutputActor = failureActor).tell(GET, options, self);
               context.setBehavior(new OutputBehavior());
 
             } else {
@@ -218,8 +244,9 @@ public abstract class Line<T> {
           try {
             final Actor failureActor = getFailureActor(lineFailure);
             if (failureActor != null) {
-              (mOutputActor = failureActor).tell(GET, new Options().withReceiptId(""),
-                  context.getSelf());
+              final Actor self = context.getSelf();
+              final Options options = new Options().withReceiptId(self.getId());
+              (mOutputActor = failureActor).tell(GET, options, self);
               context.setBehavior(new OutputBehavior());
 
             } else {
@@ -242,8 +269,9 @@ public abstract class Line<T> {
               try {
                 final Actor outputActor = getOutputActor(inputs);
                 if (outputActor != null) {
-                  (mOutputActor = outputActor).tell(GET, new Options().withReceiptId(""),
-                      context.getSelf());
+                  final Actor self = context.getSelf();
+                  final Options options = new Options().withReceiptId(self.getId());
+                  (mOutputActor = outputActor).tell(GET, options, self);
                   context.setBehavior(new OutputBehavior());
 
                 } else {
@@ -373,13 +401,51 @@ public abstract class Line<T> {
     }
   }
 
+  private static class GenericLine<T, R> extends AbstractLine<R> {
+
+    private final List<Actor> mActors;
+    private final UnaryFunction<? super List<T>, ? extends Line<R>> mMessageHandler;
+
+    private GenericLine(@NotNull final Iterable<? extends Line<? extends T>> lines,
+        @NotNull final UnaryFunction<? super List<T>, ? extends Line<R>> messageHandler) {
+      super(1);
+      final ArrayList<Actor> actors = new ArrayList<Actor>();
+      for (final Line<? extends T> line : lines) {
+        actors.add(line.getActor());
+      }
+      mActors = actors;
+      mMessageHandler = ConstantConditions.notNull("messageHandler", messageHandler);
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return mActors;
+    }
+
+    @NotNull
+    @SuppressWarnings("unchecked")
+    Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
+      PlayContext.set(getContext());
+      try {
+        final ArrayList<T> inputList = new ArrayList<T>();
+        for (final Object input : inputs) {
+          inputList.add((T) input);
+        }
+        return mMessageHandler.call(inputList).getActor();
+
+      } finally {
+        PlayContext.unset();
+      }
+    }
+  }
+
   private static class UnaryLine<T1, R> extends AbstractLine<R> {
 
     private final List<Actor> mActors;
     private final UnaryFunction<? super T1, ? extends Line<R>> mMessageHandler;
 
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
-    private UnaryLine(@NotNull final Line<T1> firstLine,
+    private UnaryLine(@NotNull final Line<? extends T1> firstLine,
         @NotNull final UnaryFunction<? super T1, ? extends Line<R>> messageHandler) {
       super(1);
       mActors = Arrays.asList(firstLine.getActor());

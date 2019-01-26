@@ -12,43 +12,51 @@ import dm.shakespeare.plot.function.UnaryFunction;
  */
 public abstract class Part<T> extends Line<Iterable<T>> {
 
+  static final Object BREAK = new Object();
+  static final Object NEXT = new Object();
+
   @NotNull
   public static <T1, R> Part<R> from(@NotNull Line<T1> firstLine,
-      @NotNull UnaryFunction<? super T1, ? extends Part<R>> messageHandler) {
+      @NotNull final UnaryFunction<? super T1, ? extends Part<R>> messageHandler) {
     return null;
   }
 
   @NotNull
   public static <T, R> Part<R> scroll(
-      @NotNull NullaryFunction<? extends Part<? extends Boolean>> loopTester,
-      @NotNull UnaryFunction<? super T, ? extends Part<R>> messageHandler) {
+      @NotNull final NullaryFunction<? extends Part<? extends Boolean>> loopTester,
+      @NotNull final UnaryFunction<? super T, ? extends Part<? extends R>> messageHandler) {
     return null;
   }
 
   @NotNull
   public static <T, R> Part<R> scroll(
-      @NotNull NullaryFunction<? extends Part<? extends Boolean>> loopTester,
-      @NotNull UnaryFunction<? super T, ? extends Part<? extends R>> messageHandler,
-      @NotNull UnaryFunction<? super Throwable, ? extends Part<? extends R>> errorHandler) {
+      @NotNull final NullaryFunction<? extends Part<? extends Boolean>> loopTester,
+      @NotNull final UnaryFunction<? super T, ? extends Part<? extends R>> messageHandler,
+      @NotNull final UnaryFunction<? super Throwable, ? extends Part<? extends R>> errorHandler) {
     return null;
   }
 
   @NotNull
-  public static <T, R> Part<R> scroll(@NotNull PartHandler<? super T, R> partHandler) {
+  public static <T, R> Part<R> scroll(@NotNull final PartHandler<? super T, R> partHandler) {
     return null;
   }
 
   @NotNull
-  public static <T, R> Part<R> scroll(@NotNull PartCorrector<? super T, R> partHandler) {
+  public static <T, R> Part<R> scroll(@NotNull final PartCorrector<? super T, R> partHandler) {
     return null;
   }
 
-  public void readAll(@Nullable Observer<? super T> valueObserver,
-      @Nullable Observer<? super Throwable> errorObserver) {
+  @NotNull
+  public static <T> Part<T> unfold(@NotNull final Line<? extends Iterable<T>> line) {
+    return null;
+  }
+
+  public void readAll(@Nullable final Observer<? super T> valueObserver,
+      @Nullable final Observer<? super Throwable> errorObserver) {
     readAll(new DefaultLineObserver<T>(valueObserver, errorObserver));
   }
 
-  abstract void readAll(@NotNull LineObserver<? super T> lineObserver);
+  abstract void readAll(@NotNull final LineObserver<? super T> lineObserver);
 
   public interface PartCorrector<T, R> extends PartHandler<T, R> {
 
@@ -58,6 +66,8 @@ public abstract class Part<T> extends Line<Iterable<T>> {
   public interface PartHandler<T, R> {
 
     Part<? extends Boolean> nextMessage() throws Exception;
+
+    Part<R> onEnd() throws Exception;
 
     Part<R> onMessage(T message) throws Exception;
   }
