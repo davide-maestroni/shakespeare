@@ -16,12 +16,6 @@ public abstract class Part<T> extends Line<Iterable<T>> {
   static final Object NEXT = new Object();
 
   @NotNull
-  public static <T1, R> Part<R> from(@NotNull Line<T1> firstLine,
-      @NotNull final UnaryFunction<? super T1, ? extends Part<R>> messageHandler) {
-    return null;
-  }
-
-  @NotNull
   public static <T, R> Part<R> scroll(
       @NotNull final NullaryFunction<? extends Part<? extends Boolean>> loopTester,
       @NotNull final UnaryFunction<? super T, ? extends Part<? extends R>> messageHandler) {

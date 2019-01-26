@@ -53,13 +53,13 @@ public abstract class Line<T> {
   }
 
   @NotNull
-  public static <T1, R> Line<R> when(@NotNull final Line<? extends T1> firstLine,
+  public static <T1, R> Line<R> translate(@NotNull final Line<? extends T1> firstLine,
       @NotNull final UnaryFunction<? super T1, ? extends Line<R>> messageHandler) {
     return new UnaryLine<T1, R>(firstLine, messageHandler);
   }
 
   @NotNull
-  public static <T, R> Line<R> when(@NotNull final Iterable<? extends Line<? extends T>> lines,
+  public static <T, R> Line<R> translate(@NotNull final Iterable<? extends Line<? extends T>> lines,
       @NotNull final UnaryFunction<? super List<T>, ? extends Line<R>> messageHandler) {
     return new GenericLine<T, R>(lines, messageHandler);
   }
@@ -100,7 +100,7 @@ public abstract class Line<T> {
   @NotNull
   public <R> Line<R> translate(
       @NotNull UnaryFunction<? super T, ? extends Line<R>> messageHandler) {
-    return when(this, messageHandler);
+    return translate(this, messageHandler);
   }
 
   @NotNull
@@ -138,6 +138,7 @@ public abstract class Line<T> {
 
     private final Actor mActor;
     private final Object[] mInputs;
+    private final Options mOptions;
     private final PlayContext mPlayContext;
     private final HashMap<Actor, String> mSenders = new HashMap<Actor, String>();
 
@@ -147,14 +148,15 @@ public abstract class Line<T> {
     private AbstractLine(final int numInputs) {
       mInputs = new Object[numInputs];
       final PlayContext playContext = (mPlayContext = PlayContext.get());
-      mActor = playContext.getStage().newActor(new PlayScript(playContext) {
+      final Actor actor = (mActor = playContext.getStage().newActor(new PlayScript(playContext) {
 
         @NotNull
         @Override
         public Behavior getBehavior(@NotNull final String id) {
           return new InitBehavior();
         }
-      });
+      }));
+      mOptions = new Options().withReceiptId(actor.getId());
     }
 
     @NotNull
@@ -194,9 +196,8 @@ public abstract class Line<T> {
         if (message == GET) {
           mSenders.put(envelop.getSender(), envelop.getOptions().getThread());
           final Actor self = context.getSelf();
-          final Options options = new Options().withReceiptId(self.getId());
           for (final Actor actor : getInputActors()) {
-            actor.tell(GET, options, self);
+            actor.tell(GET, mOptions, self);
           }
           context.setBehavior(new InputBehavior());
 
@@ -223,8 +224,7 @@ public abstract class Line<T> {
             final Actor failureActor = getFailureActor((LineFailure) message);
             if (failureActor != null) {
               final Actor self = context.getSelf();
-              final Options options = new Options().withReceiptId(self.getId());
-              (mOutputActor = failureActor).tell(GET, options, self);
+              (mOutputActor = failureActor).tell(GET, mOptions, self);
               context.setBehavior(new OutputBehavior());
 
             } else {
@@ -245,8 +245,7 @@ public abstract class Line<T> {
             final Actor failureActor = getFailureActor(lineFailure);
             if (failureActor != null) {
               final Actor self = context.getSelf();
-              final Options options = new Options().withReceiptId(self.getId());
-              (mOutputActor = failureActor).tell(GET, options, self);
+              (mOutputActor = failureActor).tell(GET, mOptions, self);
               context.setBehavior(new OutputBehavior());
 
             } else {
@@ -270,8 +269,7 @@ public abstract class Line<T> {
                 final Actor outputActor = getOutputActor(inputs);
                 if (outputActor != null) {
                   final Actor self = context.getSelf();
-                  final Options options = new Options().withReceiptId(self.getId());
-                  (mOutputActor = outputActor).tell(GET, options, self);
+                  (mOutputActor = outputActor).tell(GET, mOptions, self);
                   context.setBehavior(new OutputBehavior());
 
                 } else {
