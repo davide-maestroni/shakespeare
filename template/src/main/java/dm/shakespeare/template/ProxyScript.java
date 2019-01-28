@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
 
-import dm.shakespeare.LocalStage;
+import dm.shakespeare.BackStage;
 import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
@@ -86,8 +86,7 @@ public class ProxyScript extends Script {
           final Actor self = context.getSelf();
           if (!senderToProxyMap.containsKey(sender)) {
             proxyToSenderMap.keySet().retainAll(senderToProxyMap.values());
-            final Actor proxy =
-                new LocalStage().newActor(sender.getId(), new SenderScript(self, actor));
+            final Actor proxy = BackStage.newActor(sender.getId(), new SenderScript(self, actor));
             senderToProxyMap.put(sender, proxy);
             proxyToSenderMap.put(proxy, new WeakReference<Actor>(sender));
           }

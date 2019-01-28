@@ -11,7 +11,7 @@ import dm.shakespeare.message.Failure;
 public class PlotStateException extends Exception {
 
   @NotNull
-  public static Throwable getError(@NotNull final Bounce message) {
+  public static Throwable getOrNew(@NotNull final Bounce message) {
     return (message instanceof Failure) ? ((Failure) message).getCause() : new PlotStateException();
   }
 }

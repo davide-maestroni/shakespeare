@@ -7,16 +7,16 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 01/25/2019.
  */
-class LineFailure {
+class Incident {
 
-  private final Throwable mError;
+  private final Throwable mObstacle;
 
-  LineFailure(@NotNull final Throwable error) {
-    mError = ConstantConditions.notNull("error", error);
+  Incident(@NotNull final Throwable obstacle) {
+    mObstacle = ConstantConditions.notNull("obstacle", obstacle);
   }
 
   @NotNull
   Throwable getCause() {
-    return mError;
+    return mObstacle;
   }
 }

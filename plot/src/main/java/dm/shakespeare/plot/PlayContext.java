@@ -5,7 +5,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.ExecutorService;
 
-import dm.shakespeare.actor.Stage;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.DoubleQueue;
@@ -26,11 +25,8 @@ class PlayContext {
 
   private final ExecutorService mExecutor;
   private final Logger mLogger;
-  private final Stage mStage;
 
-  PlayContext(@NotNull final Stage stage, @Nullable final ExecutorService executor,
-      @Nullable final Logger logger) {
-    mStage = ConstantConditions.notNull("stage", stage);
+  PlayContext(@Nullable final ExecutorService executor, @Nullable final Logger logger) {
     mExecutor = executor;
     mLogger = logger;
   }
@@ -61,10 +57,5 @@ class PlayContext {
   @Nullable
   Logger getLogger() {
     return mLogger;
-  }
-
-  @NotNull
-  Stage getStage() {
-    return mStage;
   }
 }

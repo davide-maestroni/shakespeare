@@ -15,10 +15,6 @@ abstract class PlayScript extends Script {
 
   private final PlayContext mPlayContext;
 
-  PlayScript() {
-    mPlayContext = PlayContext.get();
-  }
-
   PlayScript(@NotNull final PlayContext playContext) {
     mPlayContext = ConstantConditions.notNull("playContext", playContext);
   }

@@ -8,18 +8,18 @@ import dm.shakespeare.actor.BehaviorBuilder.Handler;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Script;
 import dm.shakespeare.message.Bounce;
-import dm.shakespeare.plot.Line.LineObserver;
+import dm.shakespeare.plot.Event.EventObserver;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Created by davide-maestroni on 01/25/2019.
  */
-class ReadLineScript<T> extends Script {
+class EventObserverScript<T> extends Script {
 
-  private final LineObserver<? super T> mLineObserver;
+  private final EventObserver<? super T> mEventObserver;
 
-  ReadLineScript(@NotNull final LineObserver<? super T> lineObserver) {
-    mLineObserver = ConstantConditions.notNull("lineObserver", lineObserver);
+  EventObserverScript(@NotNull final EventObserver<? super T> eventObserver) {
+    mEventObserver = ConstantConditions.notNull("eventObserver", eventObserver);
   }
 
   @NotNull
@@ -28,14 +28,14 @@ class ReadLineScript<T> extends Script {
 
       public void handle(final Bounce message, @NotNull final Envelop envelop,
           @NotNull final Context context) throws Exception {
-        mLineObserver.onError(PlotStateException.getError(message));
+        mEventObserver.onIncident(PlotStateException.getOrNew(message));
         context.dismissSelf();
       }
-    }).onMessage(LineFailure.class, new Handler<LineFailure>() {
+    }).onMessage(Incident.class, new Handler<Incident>() {
 
-      public void handle(final LineFailure message, @NotNull final Envelop envelop,
+      public void handle(final Incident message, @NotNull final Envelop envelop,
           @NotNull final Context context) throws Exception {
-        mLineObserver.onError(message.getCause());
+        mEventObserver.onIncident(message.getCause());
         context.dismissSelf();
       }
     }).onNoMatch(new Handler<Object>() {
@@ -43,7 +43,7 @@ class ReadLineScript<T> extends Script {
       @SuppressWarnings("unchecked")
       public void handle(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) throws Exception {
-        mLineObserver.onMessage((T) message);
+        mEventObserver.onResolution((T) message);
         context.dismissSelf();
       }
     }).build();
