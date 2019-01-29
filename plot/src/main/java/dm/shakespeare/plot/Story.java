@@ -15,7 +15,40 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   static final Object BREAK = new Object();
   static final Object NEXT = new Object();
 
-  // TODO: 27/01/2019 stack(?) stories
+  @NotNull
+  public static <T> Story<T> crossOver(
+      @NotNull final Iterable<? extends Story<? extends T>> stories) {
+    return null;
+  }
+
+  @NotNull
+  public static <T> Story<T> crossOverEventually(
+      @NotNull final Iterable<? extends Story<? extends T>> stories) {
+    return null;
+  }
+
+  @NotNull
+  public static <T> Story<T> crossOverGreedily(
+      @NotNull final Iterable<? extends Story<? extends T>> stories) {
+    return null;
+  }
+
+  @NotNull
+  public static <T> Story<T> lineUp(@NotNull final Iterable<? extends Event<? extends T>> events) {
+    return null;
+  }
+
+  @NotNull
+  public static <T> Story<T> lineUpEventually(
+      @NotNull final Iterable<? extends Event<? extends T>> events) {
+    return null;
+  }
+
+  @NotNull
+  public static <T> Story<T> lineUpGreedily(
+      @NotNull final Iterable<? extends Event<? extends T>> events) {
+    return null;
+  }
 
   @NotNull
   public static <T> Story<T> ofEvent(@NotNull final Event<T> event) {
@@ -29,23 +62,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public static <T> Story<T> ofResolutions(@NotNull final Iterable<T> results) {
-    return null;
-  }
-
-  @NotNull
-  public static <T> Story<T> stack(@NotNull final Iterable<? extends Event<? extends T>> events) {
-    return null;
-  }
-
-  @NotNull
-  public static <T> Story<T> stackEventually(
-      @NotNull final Iterable<? extends Event<? extends T>> events) {
-    return null;
-  }
-
-  @NotNull
-  public static <T> Story<T> stackGreedily(
-      @NotNull final Iterable<? extends Event<? extends T>> events) {
     return null;
   }
 

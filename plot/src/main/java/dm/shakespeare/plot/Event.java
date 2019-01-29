@@ -40,8 +40,6 @@ public abstract class Event<T> {
     }
   };
 
-  // TODO: 28/01/2019 incident/resolution???
-
   @NotNull
   public static <T> Event<T> ofIncident(@NotNull final Throwable obstacle) {
     return new IncidentEvent<T>(obstacle);
