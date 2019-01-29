@@ -2,9 +2,8 @@ package dm.shakespeare.plot;
 
 import org.jetbrains.annotations.NotNull;
 
+import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Behavior;
-import dm.shakespeare.actor.Behavior.Context;
-import dm.shakespeare.actor.BehaviorBuilder.Handler;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Script;
 import dm.shakespeare.message.Bounce;
@@ -24,28 +23,24 @@ class EventObserverScript<T> extends Script {
 
   @NotNull
   public Behavior getBehavior(@NotNull final String id) {
-    return newBehavior().onMessage(Bounce.class, new Handler<Bounce>() {
-
-      public void handle(final Bounce message, @NotNull final Envelop envelop,
-          @NotNull final Context context) throws Exception {
-        mEventObserver.onIncident(PlotStateException.getOrNew(message));
-        context.dismissSelf();
-      }
-    }).onMessage(Incident.class, new Handler<Incident>() {
-
-      public void handle(final Incident message, @NotNull final Envelop envelop,
-          @NotNull final Context context) throws Exception {
-        mEventObserver.onIncident(message.getCause());
-        context.dismissSelf();
-      }
-    }).onNoMatch(new Handler<Object>() {
+    return new AbstractBehavior() {
 
       @SuppressWarnings("unchecked")
-      public void handle(final Object message, @NotNull final Envelop envelop,
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) throws Exception {
-        mEventObserver.onResolution((T) message);
-        context.dismissSelf();
+        if (message instanceof Incident) {
+          mEventObserver.onIncident(((Incident) message).getCause());
+          context.dismissSelf();
+
+        } else if (message instanceof Bounce) {
+          mEventObserver.onIncident(PlotStateException.getOrNew((Bounce) message));
+          context.dismissSelf();
+
+        } else {
+          mEventObserver.onResolution((T) message);
+          context.dismissSelf();
+        }
       }
-    }).build();
+    };
   }
 }

@@ -17,7 +17,6 @@ import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Behavior.Context;
-import dm.shakespeare.actor.BehaviorBuilder.Handler;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
 import dm.shakespeare.function.Observer;
@@ -138,9 +137,8 @@ public abstract class Event<T> {
 
     private final Actor mActor;
     private final Object[] mInputs;
-    private final Options mOptions;
     private final PlayContext mPlayContext;
-    private final HashMap<Actor, String> mSenders = new HashMap<Actor, String>();
+    private final HashMap<String, Actor> mSenders = new HashMap<String, Actor>();
 
     private int mInputCount;
     private Actor mOutputActor;
@@ -148,15 +146,14 @@ public abstract class Event<T> {
     private AbstractEvent(final int numInputs) {
       mInputs = new Object[numInputs];
       final PlayContext playContext = (mPlayContext = PlayContext.get());
-      final Actor actor = (mActor = BackStage.newActor(new PlayScript(playContext) {
+      mActor = BackStage.newActor(new PlayScript(playContext) {
 
         @NotNull
         @Override
         public Behavior getBehavior(@NotNull final String id) {
           return new InitBehavior();
         }
-      }));
-      mOptions = new Options().withReceiptId(actor.getId());
+      });
     }
 
     @NotNull
@@ -183,9 +180,9 @@ public abstract class Event<T> {
     }
 
     private void fail(@NotNull final Incident incident, @NotNull final Context context) {
-      for (final Entry<Actor, String> entry : mSenders.entrySet()) {
-        entry.getKey()
-            .tell(incident, new Options().withThread(entry.getValue()), context.getSelf());
+      final Actor self = context.getSelf();
+      for (final Entry<String, Actor> entry : mSenders.entrySet()) {
+        entry.getValue().tell(incident, new Options().withThread(entry.getKey()), self);
       }
       context.setBehavior(new IncidentBehavior(incident.getCause()));
     }
@@ -195,10 +192,12 @@ public abstract class Event<T> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) {
         if (message == GET) {
-          mSenders.put(envelop.getSender(), envelop.getOptions().getThread());
+          mSenders.put(envelop.getOptions().getThread(), envelop.getSender());
           final Actor self = context.getSelf();
+          final StringBuilder builder = new StringBuilder();
           for (final Actor actor : getInputActors()) {
-            actor.tell(GET, mOptions, self);
+            actor.tell(GET, new Options().withReceiptId(actor.getId())
+                .withThread(actor.getId() + builder.append('#').toString()), self);
           }
           context.setBehavior(new InputBehavior());
 
@@ -215,7 +214,7 @@ public abstract class Event<T> {
           @NotNull final Context context) {
         if (message == GET) {
           // TODO: 25/01/2019 loop detection?
-          mSenders.put(envelop.getSender(), envelop.getOptions().getThread());
+          mSenders.put(envelop.getOptions().getThread(), envelop.getSender());
 
         } else if (message == CANCEL) {
           fail(new Incident(new PlotCancelledException()), context);
@@ -225,7 +224,8 @@ public abstract class Event<T> {
             final Actor incidentActor = getIncidentActor((Incident) message);
             if (incidentActor != null) {
               final Actor self = context.getSelf();
-              (mOutputActor = incidentActor).tell(GET, mOptions, self);
+              (mOutputActor = incidentActor).tell(GET,
+                  new Options().withReceiptId(self.getId()).withThread(self.getId()), self);
               context.setBehavior(new OutputBehavior());
 
             } else {
@@ -245,7 +245,8 @@ public abstract class Event<T> {
             final Actor incidentActor = getIncidentActor(incident);
             if (incidentActor != null) {
               final Actor self = context.getSelf();
-              (mOutputActor = incidentActor).tell(GET, mOptions, self);
+              (mOutputActor = incidentActor).tell(GET,
+                  new Options().withReceiptId(self.getId()).withThread(self.getId()), self);
               context.setBehavior(new OutputBehavior());
 
             } else {
@@ -260,26 +261,32 @@ public abstract class Event<T> {
           }
 
         } else {
-          final int index = getInputActors().indexOf(envelop.getSender());
-          if (index >= 0) {
+          final Actor self = context.getSelf();
+          final String actorId = self.getId();
+          final String thread = envelop.getOptions().getThread();
+          if ((thread != null) && thread.startsWith(actorId)) {
+            // TODO: 29/01/2019 handle duplication
+            final int index = thread.length() - actorId.length() - 1;
             final Object[] inputs = mInputs;
-            inputs[index] = message;
-            if (++mInputCount == inputs.length) {
-              try {
-                final Actor outputActor = getOutputActor(inputs);
-                if (outputActor != null) {
-                  final Actor self = context.getSelf();
-                  (mOutputActor = outputActor).tell(GET, mOptions, self);
-                  context.setBehavior(new OutputBehavior());
+            if ((index >= 0) && (index < inputs.length)) {
+              inputs[index] = message;
+              if (++mInputCount == inputs.length) {
+                try {
+                  final Actor outputActor = getOutputActor(inputs);
+                  if (outputActor != null) {
+                    (mOutputActor = outputActor).tell(GET,
+                        new Options().withReceiptId(actorId).withThread(self.getId()), self);
+                    context.setBehavior(new OutputBehavior());
 
-                } else {
-                  context.setBehavior(new ResolutionBehavior(message));
-                }
+                  } else {
+                    context.setBehavior(new ResolutionBehavior(message));
+                  }
 
-              } catch (final Throwable t) {
-                fail(new Incident(t), context);
-                if (t instanceof InterruptedException) {
-                  Thread.currentThread().interrupt();
+                } catch (final Throwable t) {
+                  fail(new Incident(t), context);
+                  if (t instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                  }
                 }
               }
             }
@@ -304,11 +311,13 @@ public abstract class Event<T> {
           fail(new Incident(obstacle), context);
 
         } else if (envelop.getSender().equals(mOutputActor)) {
-          for (final Entry<Actor, String> entry : mSenders.entrySet()) {
-            entry.getKey()
-                .tell(message, new Options().withThread(entry.getValue()), context.getSelf());
+          final Actor self = context.getSelf();
+          if (self.getId().equals(envelop.getOptions().getThread())) {
+            for (final Entry<String, Actor> entry : mSenders.entrySet()) {
+              entry.getValue().tell(message, new Options().withThread(entry.getKey()), self);
+            }
+            context.setBehavior(new ResolutionBehavior(message));
           }
-          context.setBehavior(new ResolutionBehavior(message));
         }
       }
     }
@@ -379,14 +388,16 @@ public abstract class Event<T> {
         @NotNull
         @Override
         public Behavior getBehavior(@NotNull final String id) {
-          return newBehavior().onMessageEqualTo(GET, new Handler<Object>() {
+          return new AbstractBehavior() {
 
-            public void handle(final Object message, @NotNull final Envelop envelop,
+            public void onMessage(final Object message, @NotNull final Envelop envelop,
                 @NotNull final Context context) {
-              envelop.getSender()
-                  .tell(incident, envelop.getOptions().threadOnly(), context.getSelf());
+              if (message == GET) {
+                envelop.getSender()
+                    .tell(incident, envelop.getOptions().threadOnly(), context.getSelf());
+              }
             }
-          }).build();
+          };
         }
       });
     }
@@ -423,14 +434,16 @@ public abstract class Event<T> {
         @NotNull
         @Override
         public Behavior getBehavior(@NotNull final String id) {
-          return newBehavior().onMessageEqualTo(GET, new Handler<Object>() {
+          return new AbstractBehavior() {
 
-            public void handle(final Object message, @NotNull final Envelop envelop,
+            public void onMessage(final Object message, @NotNull final Envelop envelop,
                 @NotNull final Context context) {
-              envelop.getSender()
-                  .tell(result, envelop.getOptions().threadOnly(), context.getSelf());
+              if (message == GET) {
+                envelop.getSender()
+                    .tell(result, envelop.getOptions().threadOnly(), context.getSelf());
+              }
             }
-          }).build();
+          };
         }
       });
     }
