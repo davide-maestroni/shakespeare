@@ -21,6 +21,7 @@ import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
 import dm.shakespeare.function.Observer;
 import dm.shakespeare.message.Bounce;
+import dm.shakespeare.message.Receipt;
 import dm.shakespeare.plot.function.UnaryFunction;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.Iterables;
@@ -33,11 +34,19 @@ public abstract class Event<T> {
   static final Object CANCEL = new Object();
   static final Object GET = new Object();
 
+  private static final Event<Boolean> FALSE_EVENT = ofResolution(Boolean.FALSE);
   private static final Observer<?> NO_OP = new Observer<Object>() {
 
     public void accept(final Object value) {
     }
   };
+  private static final Event<?> NULL_EVENT = ofResolution(null);
+  private static final Event<Boolean> TRUE_EVENT = ofResolution(Boolean.TRUE);
+
+  @NotNull
+  public static Event<Boolean> ofFalse() {
+    return FALSE_EVENT;
+  }
 
   @NotNull
   public static <T> Event<T> ofIncident(@NotNull final Throwable obstacle) {
@@ -45,8 +54,19 @@ public abstract class Event<T> {
   }
 
   @NotNull
+  @SuppressWarnings("unchecked")
+  public static <T> Event<T> ofNull() {
+    return (Event<T>) NULL_EVENT;
+  }
+
+  @NotNull
   public static <T> Event<T> ofResolution(final T result) {
     return new ResolutionEvent<T>(result);
+  }
+
+  @NotNull
+  public static Event<Boolean> ofTrue() {
+    return TRUE_EVENT;
   }
 
   @NotNull
@@ -72,7 +92,8 @@ public abstract class Event<T> {
 
   public void observe(@NotNull final EventObserver<? super T> eventObserver) {
     final Actor actor = BackStage.newActor(new EventObserverScript<T>(eventObserver));
-    getActor().tell(GET, new Options().withReceiptId(actor.getId()), actor);
+    getActor().tell(GET, new Options().withReceiptId(actor.getId()).withThread(actor.getId()),
+        actor);
   }
 
   @NotNull
@@ -260,7 +281,7 @@ public abstract class Event<T> {
             }
           }
 
-        } else {
+        } else if (!(message instanceof Receipt)) {
           final Actor self = context.getSelf();
           final String actorId = self.getId();
           final String thread = envelop.getOptions().getThread();
@@ -301,6 +322,8 @@ public abstract class Event<T> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) {
         if (message == CANCEL) {
+          mOutputActor.tell(CANCEL, new Options().withThread(context.getSelf().getId()),
+              context.getSelf());
           fail(new Incident(new PlotCancelledException()), context);
 
         } else if (message instanceof Incident) {
@@ -310,7 +333,7 @@ public abstract class Event<T> {
           final Throwable obstacle = PlotStateException.getOrNew((Bounce) message);
           fail(new Incident(obstacle), context);
 
-        } else if (envelop.getSender().equals(mOutputActor)) {
+        } else if (!(message instanceof Receipt) && envelop.getSender().equals(mOutputActor)) {
           final Actor self = context.getSelf();
           if (self.getId().equals(envelop.getOptions().getThread())) {
             for (final Entry<String, Actor> entry : mSenders.entrySet()) {
@@ -373,6 +396,9 @@ public abstract class Event<T> {
         @NotNull final Context context) {
       if (message == GET) {
         envelop.getSender().tell(mIncident, envelop.getOptions().threadOnly(), context.getSelf());
+
+      } else if (message == CANCEL) {
+        context.setBehavior(new IncidentBehavior(new PlotCancelledException()));
       }
     }
   }
@@ -395,6 +421,9 @@ public abstract class Event<T> {
               if (message == GET) {
                 envelop.getSender()
                     .tell(incident, envelop.getOptions().threadOnly(), context.getSelf());
+
+              } else if (message == CANCEL) {
+                context.setBehavior(new IncidentBehavior(new PlotCancelledException()));
               }
             }
           };
@@ -420,6 +449,9 @@ public abstract class Event<T> {
         @NotNull final Context context) {
       if (message == GET) {
         envelop.getSender().tell(mResult, envelop.getOptions().threadOnly(), context.getSelf());
+
+      } else if (message == CANCEL) {
+        context.setBehavior(new IncidentBehavior(new PlotCancelledException()));
       }
     }
   }
@@ -441,6 +473,9 @@ public abstract class Event<T> {
               if (message == GET) {
                 envelop.getSender()
                     .tell(result, envelop.getOptions().threadOnly(), context.getSelf());
+
+              } else if (message == CANCEL) {
+                context.setBehavior(new IncidentBehavior(new PlotCancelledException()));
               }
             }
           };

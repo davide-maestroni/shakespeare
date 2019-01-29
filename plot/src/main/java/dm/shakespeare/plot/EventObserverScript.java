@@ -7,6 +7,7 @@ import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Script;
 import dm.shakespeare.message.Bounce;
+import dm.shakespeare.message.Receipt;
 import dm.shakespeare.plot.Event.EventObserver;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -36,7 +37,7 @@ class EventObserverScript<T> extends Script {
           mEventObserver.onIncident(PlotStateException.getOrNew((Bounce) message));
           context.dismissSelf();
 
-        } else {
+        } else if (!(message instanceof Receipt)) {
           mEventObserver.onResolution((T) message);
           context.dismissSelf();
         }
