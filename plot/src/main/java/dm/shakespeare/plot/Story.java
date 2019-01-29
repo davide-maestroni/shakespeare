@@ -102,6 +102,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
+  public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+      @NotNull final UnaryFunction<? super List<T>, ? extends Story<? extends R>> resolutionHandler,
+      @NotNull final NullaryFunction<? extends Story<? extends R>> endHandler) {
+    return null;
+  }
+
+  @NotNull
   public static <T1, R> Story<R> when(@NotNull final Story<? extends T1> firstStory,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
       @NotNull final UnaryFunction<? super T1, ? extends Story<? extends R>> resolutionHandler,
@@ -121,7 +129,17 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <R> Story<R> resolve(
+  public <T1, R> Story<R> resolve(@NotNull final Class<? extends T1> firstType,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+      @NotNull final UnaryFunction<? super T1, ? extends Story<? extends R>> resolutionHandler,
+      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends R>> incidentHandler,
+      @NotNull final NullaryFunction<? extends Story<? extends R>> endHandler) {
+    return null;
+  }
+
+  @NotNull
+  public <T extends Throwable, R> Story<R> resolve(
+      @NotNull final Iterable<? extends Class<? extends T>> incidentTypes,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
       @NotNull final UnaryFunction<? super T, ? extends Story<? extends R>> resolutionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends R>> incidentHandler,

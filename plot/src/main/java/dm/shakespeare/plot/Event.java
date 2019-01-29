@@ -98,21 +98,21 @@ public abstract class Event<T> {
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <T extends Throwable, R> Event<R> resolve(
-      @NotNull final Iterable<? extends Class<? extends T>> incidentTypes,
-      @NotNull final UnaryFunction<? super T, ? extends Event<R>> incidentHandler) {
-    return new ResolveEvent<R>(getActor(),
-        Iterables.<Class<? extends Throwable>>toSet(incidentTypes),
-        (UnaryFunction<? super Throwable, ? extends Event<R>>) incidentHandler);
-  }
-
-  @NotNull
-  @SuppressWarnings("unchecked")
   public <T1 extends Throwable, R> Event<R> resolve(@NotNull final Class<? extends T1> firstType,
       @NotNull final UnaryFunction<? super T1, ? extends Event<R>> incidentHandler) {
     final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
     types.add(firstType);
     return new ResolveEvent<R>(getActor(), types,
+        (UnaryFunction<? super Throwable, ? extends Event<R>>) incidentHandler);
+  }
+
+  @NotNull
+  @SuppressWarnings("unchecked")
+  public <T extends Throwable, R> Event<R> resolve(
+      @NotNull final Iterable<? extends Class<? extends T>> incidentTypes,
+      @NotNull final UnaryFunction<? super T, ? extends Event<R>> incidentHandler) {
+    return new ResolveEvent<R>(getActor(),
+        Iterables.<Class<? extends Throwable>>toSet(incidentTypes),
         (UnaryFunction<? super Throwable, ? extends Event<R>>) incidentHandler);
   }
 
