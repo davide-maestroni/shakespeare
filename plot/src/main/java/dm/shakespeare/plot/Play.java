@@ -4,7 +4,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
+import dm.shakespeare.executor.ExecutorServices;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.plot.function.NullaryFunction;
 import dm.shakespeare.plot.function.UnaryFunction;
@@ -27,7 +29,10 @@ public class Play {
   }
 
   public Play(@NotNull final ExecutorService executor) {
-    mPlayContext = new PlayContext(ConstantConditions.notNull("executor", executor), null);
+    mPlayContext = new PlayContext(
+        (executor instanceof ScheduledExecutorService) ? ExecutorServices.asActorExecutor(
+            (ScheduledExecutorService) executor) : ExecutorServices.asActorExecutor(executor),
+        null);
   }
 
   public Play(@NotNull final ExecutorService executor, @NotNull final Logger logger) {

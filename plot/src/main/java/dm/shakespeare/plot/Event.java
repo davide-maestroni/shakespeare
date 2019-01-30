@@ -92,8 +92,8 @@ public abstract class Event<T> {
 
   public void observe(@NotNull final EventObserver<? super T> eventObserver) {
     final Actor actor = BackStage.newActor(new EventObserverScript<T>(eventObserver));
-    getActor().tell(GET, new Options().withReceiptId(actor.getId()).withThread(actor.getId()),
-        actor);
+    final String threadId = actor.getId();
+    getActor().tell(GET, new Options().withReceiptId(threadId).withThread(threadId), actor);
   }
 
   @NotNull
@@ -215,10 +215,11 @@ public abstract class Event<T> {
         if (message == GET) {
           mSenders.put(envelop.getOptions().getThread(), envelop.getSender());
           final Actor self = context.getSelf();
+          final String actorId = self.getId();
           final StringBuilder builder = new StringBuilder();
           for (final Actor actor : getInputActors()) {
-            actor.tell(GET, new Options().withReceiptId(actor.getId())
-                .withThread(actor.getId() + builder.append('#').toString()), self);
+            final String threadId = actorId + builder.append('#').toString();
+            actor.tell(GET, new Options().withReceiptId(threadId).withThread(threadId), self);
           }
           context.setBehavior(new InputBehavior());
 
@@ -245,8 +246,9 @@ public abstract class Event<T> {
             final Actor incidentActor = getIncidentActor((Incident) message);
             if (incidentActor != null) {
               final Actor self = context.getSelf();
+              final String threadId = self.getId();
               (mOutputActor = incidentActor).tell(GET,
-                  new Options().withReceiptId(self.getId()).withThread(self.getId()), self);
+                  new Options().withReceiptId(threadId).withThread(threadId), self);
               context.setBehavior(new OutputBehavior());
 
             } else {
@@ -266,8 +268,9 @@ public abstract class Event<T> {
             final Actor incidentActor = getIncidentActor(incident);
             if (incidentActor != null) {
               final Actor self = context.getSelf();
+              final String threadId = self.getId();
               (mOutputActor = incidentActor).tell(GET,
-                  new Options().withReceiptId(self.getId()).withThread(self.getId()), self);
+                  new Options().withReceiptId(threadId).withThread(threadId), self);
               context.setBehavior(new OutputBehavior());
 
             } else {
@@ -283,11 +286,11 @@ public abstract class Event<T> {
 
         } else if (!(message instanceof Receipt)) {
           final Actor self = context.getSelf();
-          final String actorId = self.getId();
+          final String threadId = self.getId();
           final String thread = envelop.getOptions().getThread();
-          if ((thread != null) && thread.startsWith(actorId)) {
+          if ((thread != null) && thread.startsWith(threadId)) {
             // TODO: 29/01/2019 handle duplication
-            final int index = thread.length() - actorId.length() - 1;
+            final int index = thread.length() - threadId.length() - 1;
             final Object[] inputs = mInputs;
             if ((index >= 0) && (index < inputs.length)) {
               inputs[index] = message;
@@ -296,7 +299,7 @@ public abstract class Event<T> {
                   final Actor outputActor = getOutputActor(inputs);
                   if (outputActor != null) {
                     (mOutputActor = outputActor).tell(GET,
-                        new Options().withReceiptId(actorId).withThread(self.getId()), self);
+                        new Options().withReceiptId(threadId).withThread(threadId), self);
                     context.setBehavior(new OutputBehavior());
 
                   } else {
@@ -376,7 +379,8 @@ public abstract class Event<T> {
         for (final Object input : inputs) {
           inputList.add((T) input);
         }
-        return mResolutionHandler.call(inputList).getActor();
+        final Event<R> event = mResolutionHandler.call(inputList);
+        return ((event != null) ? event : ofNull()).getActor();
 
       } finally {
         PlayContext.unset();
@@ -396,9 +400,6 @@ public abstract class Event<T> {
         @NotNull final Context context) {
       if (message == GET) {
         envelop.getSender().tell(mIncident, envelop.getOptions().threadOnly(), context.getSelf());
-
-      } else if (message == CANCEL) {
-        context.setBehavior(new IncidentBehavior(new PlotCancelledException()));
       }
     }
   }
@@ -408,25 +409,13 @@ public abstract class Event<T> {
     private final Actor mActor;
 
     private IncidentEvent(@NotNull final Throwable obstacle) {
-      final Incident incident = new Incident(obstacle);
+      ConstantConditions.notNull("obstacle", obstacle);
       mActor = BackStage.newActor(new PlayScript(PlayContext.get()) {
 
         @NotNull
         @Override
         public Behavior getBehavior(@NotNull final String id) {
-          return new AbstractBehavior() {
-
-            public void onMessage(final Object message, @NotNull final Envelop envelop,
-                @NotNull final Context context) {
-              if (message == GET) {
-                envelop.getSender()
-                    .tell(incident, envelop.getOptions().threadOnly(), context.getSelf());
-
-              } else if (message == CANCEL) {
-                context.setBehavior(new IncidentBehavior(new PlotCancelledException()));
-              }
-            }
-          };
+          return new IncidentBehavior(obstacle);
         }
       });
     }
@@ -449,9 +438,6 @@ public abstract class Event<T> {
         @NotNull final Context context) {
       if (message == GET) {
         envelop.getSender().tell(mResult, envelop.getOptions().threadOnly(), context.getSelf());
-
-      } else if (message == CANCEL) {
-        context.setBehavior(new IncidentBehavior(new PlotCancelledException()));
       }
     }
   }
@@ -466,19 +452,7 @@ public abstract class Event<T> {
         @NotNull
         @Override
         public Behavior getBehavior(@NotNull final String id) {
-          return new AbstractBehavior() {
-
-            public void onMessage(final Object message, @NotNull final Envelop envelop,
-                @NotNull final Context context) {
-              if (message == GET) {
-                envelop.getSender()
-                    .tell(result, envelop.getOptions().threadOnly(), context.getSelf());
-
-              } else if (message == CANCEL) {
-                context.setBehavior(new IncidentBehavior(new PlotCancelledException()));
-              }
-            }
-          };
+          return new ResolutionBehavior(result);
         }
       });
     }
@@ -512,7 +486,8 @@ public abstract class Event<T> {
         if (incidentType.isInstance(obstacle)) {
           PlayContext.set(getContext());
           try {
-            return mIncidentHandler.call(obstacle).getActor();
+            final Event<T> event = mIncidentHandler.call(obstacle);
+            return ((event != null) ? event : ofNull()).getActor();
 
           } finally {
             PlayContext.unset();
@@ -551,7 +526,8 @@ public abstract class Event<T> {
     Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
       PlayContext.set(getContext());
       try {
-        return mResolutionHandler.call((T1) inputs[0]).getActor();
+        final Event<R> event = mResolutionHandler.call((T1) inputs[0]);
+        return ((event != null) ? event : ofNull()).getActor();
 
       } finally {
         PlayContext.unset();
