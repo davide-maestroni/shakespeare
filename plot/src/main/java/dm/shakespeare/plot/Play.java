@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
+import dm.shakespeare.actor.Script;
 import dm.shakespeare.executor.ExecutorServices;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.plot.function.NullaryFunction;
@@ -17,7 +18,6 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class Play {
 
-  private static final EndFunction<?> END_FUNCTION = new EndFunction<Object>();
   private static final EventFunction<?> EVENT_FUNCTION = new EventFunction<Object>();
   private static final LoopFunction LOOP_FUNCTION = new LoopFunction();
   private static final StoryFunction<?> STORY_FUNCTION = new StoryFunction<Object>();
@@ -25,23 +25,27 @@ public class Play {
   private final PlayContext mPlayContext;
 
   public Play() {
-    mPlayContext = new PlayContext(null, null);
+    mPlayContext = new PlayContext(asActorExecutor(Script.defaultExecutor()), null);
   }
 
   public Play(@NotNull final ExecutorService executor) {
-    mPlayContext = new PlayContext(
-        (executor instanceof ScheduledExecutorService) ? ExecutorServices.asActorExecutor(
-            (ScheduledExecutorService) executor) : ExecutorServices.asActorExecutor(executor),
-        null);
+    mPlayContext = new PlayContext(asActorExecutor(executor), null);
   }
 
   public Play(@NotNull final ExecutorService executor, @NotNull final Logger logger) {
-    mPlayContext = new PlayContext(ConstantConditions.notNull("executor", executor),
-        ConstantConditions.notNull("logger", logger));
+    mPlayContext =
+        new PlayContext(asActorExecutor(executor), ConstantConditions.notNull("logger", logger));
   }
 
   public Play(@NotNull final Logger logger) {
-    mPlayContext = new PlayContext(null, ConstantConditions.notNull("logger", logger));
+    mPlayContext = new PlayContext(asActorExecutor(Script.defaultExecutor()),
+        ConstantConditions.notNull("logger", logger));
+  }
+
+  @NotNull
+  private static ExecutorService asActorExecutor(@NotNull final ExecutorService executor) {
+    return (executor instanceof ScheduledExecutorService) ? ExecutorServices.asActorExecutor(
+        (ScheduledExecutorService) executor) : ExecutorServices.asActorExecutor(executor);
   }
 
   @NotNull
@@ -60,12 +64,14 @@ public class Play {
   public <T> Event<T> performEvent(@NotNull final NullaryFunction<? extends Event<T>> function) {
     PlayContext.set(mPlayContext);
     try {
-      return function.call();
+      return Event.ofNull().then(new UnaryFunction<Object, Event<T>>() {
+
+        public Event<T> call(final Object first) throws Exception {
+          return function.call();
+        }
+      });
 
     } catch (final Throwable t) {
-      if (t instanceof InterruptedException) {
-        Thread.currentThread().interrupt();
-      }
       return Event.ofIncident(t);
 
     } finally {
@@ -79,8 +85,7 @@ public class Play {
     PlayContext.set(mPlayContext);
     try {
       return story.then(LOOP_FUNCTION,
-          (UnaryFunction<? super T, ? extends Story<? extends T>>) STORY_FUNCTION,
-          (NullaryFunction<? extends Story<? extends T>>) END_FUNCTION);
+          (UnaryFunction<? super T, ? extends Story<T>>) STORY_FUNCTION);
 
     } finally {
       PlayContext.unset();
@@ -91,23 +96,19 @@ public class Play {
   public <T> Story<T> performStory(@NotNull final NullaryFunction<? extends Story<T>> function) {
     PlayContext.set(mPlayContext);
     try {
-      return function.call();
+      return Story.ofEvent(Event.<T>ofNull())
+          .then(LOOP_FUNCTION, new UnaryFunction<Object, Story<T>>() {
+
+            public Story<T> call(final Object first) throws Exception {
+              return function.call();
+            }
+          });
 
     } catch (final Throwable t) {
-      if (t instanceof InterruptedException) {
-        Thread.currentThread().interrupt();
-      }
       return Story.ofIncidents(Collections.singleton(t));
 
     } finally {
       PlayContext.unset();
-    }
-  }
-
-  private static class EndFunction<T> implements NullaryFunction<Story<T>> {
-
-    public Story<T> call() {
-      return Story.ofEmpty();
     }
   }
 

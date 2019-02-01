@@ -19,6 +19,7 @@ import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
+import dm.shakespeare.executor.ExecutorServices;
 import dm.shakespeare.function.Observer;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.Receipt;
@@ -32,6 +33,8 @@ import dm.shakespeare.util.Iterables;
 public abstract class Event<T> {
 
   static final Object CANCEL = new Object();
+  static final PlayContext CONSTANT_CONTEXT =
+      new PlayContext(ExecutorServices.trampolineExecutor(), null);
   static final Object GET = new Object();
 
   private static final Event<Boolean> FALSE_EVENT = ofResolution(Boolean.FALSE);
@@ -79,10 +82,6 @@ public abstract class Event<T> {
   public static <T, R> Event<R> when(@NotNull final Iterable<? extends Event<? extends T>> events,
       @NotNull final UnaryFunction<? super List<T>, ? extends Event<R>> resolutionHandler) {
     return new GenericEvent<T, R>(events, resolutionHandler);
-  }
-
-  public boolean isMemorized() {
-    return true;
   }
 
   public void observe(@Nullable final Observer<? super T> resolutionObserver,
@@ -162,7 +161,7 @@ public abstract class Event<T> {
     private final HashMap<String, Actor> mSenders = new HashMap<String, Actor>();
 
     private int mInputCount;
-    private Actor mOutputActor;
+    private Actor mOutputActor; // TODO: 01/02/2019 optimize by different threads for I/O
 
     private AbstractEvent(final int numInputs) {
       mInputs = new Object[numInputs];
@@ -410,7 +409,7 @@ public abstract class Event<T> {
 
     private IncidentEvent(@NotNull final Throwable obstacle) {
       ConstantConditions.notNull("obstacle", obstacle);
-      mActor = BackStage.newActor(new PlayScript(PlayContext.get()) {
+      mActor = BackStage.newActor(new PlayScript(CONSTANT_CONTEXT) {
 
         @NotNull
         @Override
@@ -447,7 +446,7 @@ public abstract class Event<T> {
     private final Actor mActor;
 
     private ResolutionEvent(final T result) {
-      mActor = BackStage.newActor(new PlayScript(PlayContext.get()) {
+      mActor = BackStage.newActor(new PlayScript(CONSTANT_CONTEXT) {
 
         @NotNull
         @Override

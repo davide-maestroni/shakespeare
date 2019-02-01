@@ -43,6 +43,11 @@ public abstract class Script {
   }
 
   @NotNull
+  public static ExecutorService defaultExecutor() {
+    return DEFAULT_EXECUTOR;
+  }
+
+  @NotNull
   public static BehaviorBuilder newBehavior() {
     return new DefaultBehaviorBuilder();
   }
