@@ -136,8 +136,8 @@ public abstract class Event<T> {
     private final Observer<Object> mResolutionObserver;
 
     @SuppressWarnings("unchecked")
-    DefaultEventObserver(@Nullable Observer<? super T> resolutionObserver,
-        @Nullable Observer<? super Throwable> incidentObserver) {
+    DefaultEventObserver(@Nullable final Observer<? super T> resolutionObserver,
+        @Nullable final Observer<? super Throwable> incidentObserver) {
       mResolutionObserver =
           (Observer<Object>) ((resolutionObserver != null) ? resolutionObserver : NO_OP);
       mIncidentObserver =
@@ -225,6 +225,7 @@ public abstract class Event<T> {
         } else if (message == CANCEL) {
           fail(new Incident(new PlotCancelledException()), context);
         }
+        envelop.preventReceipt();
       }
     }
 
@@ -315,6 +316,7 @@ public abstract class Event<T> {
             }
           }
         }
+        envelop.preventReceipt();
       }
     }
 
@@ -344,6 +346,7 @@ public abstract class Event<T> {
             context.setBehavior(new ResolutionBehavior(message));
           }
         }
+        envelop.preventReceipt();
       }
     }
   }
@@ -400,6 +403,7 @@ public abstract class Event<T> {
       if (message == GET) {
         envelop.getSender().tell(mIncident, envelop.getOptions().threadOnly(), context.getSelf());
       }
+      envelop.preventReceipt();
     }
   }
 
@@ -438,6 +442,7 @@ public abstract class Event<T> {
       if (message == GET) {
         envelop.getSender().tell(mResult, envelop.getOptions().threadOnly(), context.getSelf());
       }
+      envelop.preventReceipt();
     }
   }
 
