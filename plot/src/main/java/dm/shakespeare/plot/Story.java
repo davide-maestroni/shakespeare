@@ -59,9 +59,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   public static <T> Story<T> crossOverGreedily(
       @NotNull final Iterable<? extends Story<? extends T>> stories) {
-    for (final Story<? extends T> story : stories) {
-    }
-    return new CrossOverEventuallyStory<T>(new UnboundMemory(), stories);
+    final ArrayList<Story<? extends T>> storyList = new ArrayList<Story<? extends T>>();
+    storyList.add(when(stories, new FirstLoop<List<T>, T>()));
+    Iterables.addAll(stories, storyList);
+    return new CrossOverStory<T>(new UnboundMemory(), storyList);
   }
 
   @NotNull
@@ -121,6 +122,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
       @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> resolutionHandler) {
     return new GenericStory<T, R>(new UnboundMemory(), stories, loopHandler, resolutionHandler);
+  }
+
+  @NotNull
+  public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
+      @NotNull final EventLooper<? super List<T>, R> eventLooper) {
+    return when(stories, new LooperLoopHandler(eventLooper),
+        new LooperEventHandler<List<T>, R>(eventLooper));
   }
 
   @NotNull
@@ -200,6 +208,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   public interface Memory {
+
+    // TODO: 04/02/2019 iterator() => Implements iterable
 
     Object get(int index);
 
@@ -527,6 +537,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           final String thread = envelop.getOptions().getThread();
           if ((thread != null) && thread.startsWith(inputThread)) {
             if (message == END) {
+              final Actor self = context.getSelf();
+              final StringBuilder builder = new StringBuilder();
+              for (final Actor actor : getInputActors()) {
+                final String threadId = mInputThread + builder.append('#').toString();
+                actor.tell(BREAK, new Options().withThread(threadId), self);
+              }
               end(context);
 
             } else if (message instanceof Incident) {
@@ -552,11 +568,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                       context.setBehavior(new OutputBehavior());
 
                     } else {
-                      final Memory memory = mMemory;
-                      memory.put(inputs[0]);
-                      for (final SenderOffset sender : mNextSenders.values()) {
-                        sender.tellNext(memory, self);
-                      }
                       loop(++mLoopCount, context);
                     }
 
@@ -698,7 +709,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (mOutputThreadId.equals(envelop.getOptions().getThread())) {
           // pass on incidents
           if (message == END) {
-            mOutputActor.tell(BREAK, new Options().withThread(mOutputThreadId), context.getSelf());
+            mOutputActor.tell(BREAK, envelop.getOptions().threadOnly(), context.getSelf());
             mOutputActor = null;
             loop(++mLoopCount, context);
 
@@ -916,8 +927,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           final String thread = envelop.getOptions().getThread();
           if ((thread != null) && thread.startsWith(mInputThread)) {
             if (message == END) {
+              final Actor sender = envelop.getSender();
+              sender.tell(BREAK, envelop.getOptions().threadOnly(), context.getSelf());
               final List<Actor> inputActors = mInputActors;
-              inputActors.remove(envelop.getSender());
+              inputActors.remove(sender);
               if (inputActors.isEmpty()) {
                 end(context);
 
@@ -1194,9 +1207,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else if (mInputThreadId.equals(envelop.getOptions().getThread())) {
           if (message == END) {
+            final Actor self = context.getSelf();
+            mInputActor.tell(BREAK, envelop.getOptions().threadOnly(), self);
             final Actor inputActor = setInput(++mInputCount);
             if (inputActor != null) {
-              inputActor.tell(NEXT, mOptions.withThread(mInputThreadId), context.getSelf());
+              inputActor.tell(NEXT, mOptions.withThread(mInputThreadId), self);
 
             } else {
               end(context);
@@ -1407,6 +1422,25 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
+  private static class FirstLoop<T, R> implements EventLooper<T, R> {
+
+    private boolean mIsFirst;
+
+    @Nullable
+    public Event<? extends Boolean> loop() {
+      if (mIsFirst) {
+        mIsFirst = false;
+        return Event.ofTrue();
+      }
+      return null;
+    }
+
+    @Nullable
+    public Story<R> resolve(final T event) {
+      return null;
+    }
+  }
+
   private static class GenericStory<T, R> extends AbstractStory<R> {
 
     private final List<Actor> mActors;
@@ -1509,14 +1543,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   private static class LooperEventHandler<T, R> implements UnaryFunction<T, Story<R>> {
 
-    private final EventLooper<? super T, R> mEventLooper;
+    private final EventLooper<? super T, ? extends R> mEventLooper;
 
-    LooperEventHandler(@NotNull final EventLooper<? super T, R> eventLooper) {
+    LooperEventHandler(@NotNull final EventLooper<? super T, ? extends R> eventLooper) {
       mEventLooper = ConstantConditions.notNull("eventLooper", eventLooper);
     }
 
+    @SuppressWarnings("unchecked")
     public Story<R> call(final T first) throws Exception {
-      return mEventLooper.resolve(first);
+      return (Story<R>) mEventLooper.resolve(first);
     }
   }
 
@@ -1618,6 +1653,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         }
       }
       return super.getIncidentActor(incident);
+    }
+
+    @Nullable
+    @Override
+    Actor getOutputActor(@NotNull final Object[] inputs) {
+      // TODO: 04/02/2019 ofSingleton???
+      return Story.ofResolutions(Collections.singleton(inputs[0])).getActor();
     }
 
     @NotNull

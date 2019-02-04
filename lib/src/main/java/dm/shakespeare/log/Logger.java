@@ -33,8 +33,6 @@ import dm.shakespeare.util.ConstantConditions;
 @SuppressWarnings("WeakerAccess")
 public class Logger {
 
-  private static final Locale DEFAULT_LOCALE = Locale.getDefault();
-
   private final Locale mLocale;
   private final LogPrinter mPrinter;
 
@@ -51,7 +49,7 @@ public class Logger {
 
   @NotNull
   public static Logger newLogger(@NotNull final LogPrinter printer) {
-    return new Logger(printer, DEFAULT_LOCALE);
+    return new Logger(printer, Locale.getDefault());
   }
 
   @NotNull

@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
@@ -61,6 +62,12 @@ public class Iterables {
       return (Set<T>) iterable;
     }
     return toSet(iterable);
+  }
+
+  @NotNull
+  public static <T> Iterable<T> concat(
+      @NotNull final Iterable<? extends Iterable<? extends T>> iterables) {
+    return new ConcatIterable<T>(iterables);
   }
 
   public static boolean contains(@NotNull final Iterable<?> iterable, final Object element) {
@@ -295,5 +302,67 @@ public class Iterables {
       }
     }
     return "[]";
+  }
+
+  private static class ConcatIterable<T> implements Iterable<T> {
+
+    private final Iterable<? extends Iterable<? extends T>> mIterables;
+
+    private ConcatIterable(@NotNull final Iterable<? extends Iterable<? extends T>> iterables) {
+      mIterables = ConstantConditions.notNullElements("iterables", iterables);
+    }
+
+    @NotNull
+    public Iterator<T> iterator() {
+      return new ConcatIterator<T>(mIterables.iterator());
+    }
+  }
+
+  private static class ConcatIterator<T> implements Iterator<T> {
+
+    private final Iterator<? extends Iterable<? extends T>> mIterables;
+    private Iterator<? extends T> mIterator = null;
+
+    private ConcatIterator(@NotNull final Iterator<? extends Iterable<? extends T>> iterator) {
+      mIterables = iterator;
+    }
+
+    public boolean hasNext() {
+      final Iterator<? extends Iterable<? extends T>> iterables = mIterables;
+      if (mIterator == null) {
+        if (iterables.hasNext()) {
+          mIterator = iterables.next().iterator();
+
+        } else {
+          return false;
+        }
+      }
+      while (!mIterator.hasNext()) {
+        if (iterables.hasNext()) {
+          mIterator = iterables.next().iterator();
+
+        } else {
+          return false;
+        }
+      }
+      return mIterator.hasNext();
+    }
+
+    public T next() {
+      if (mIterator == null) {
+        final Iterator<? extends Iterable<? extends T>> iterables = mIterables;
+        if (iterables.hasNext()) {
+          mIterator = iterables.next().iterator();
+
+        } else {
+          throw new NoSuchElementException();
+        }
+      }
+      return mIterator.next();
+    }
+
+    public void remove() {
+      throw new UnsupportedOperationException("remove");
+    }
   }
 }
