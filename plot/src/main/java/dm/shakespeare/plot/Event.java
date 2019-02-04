@@ -125,8 +125,9 @@ public abstract class Event<T> {
   }
 
   @NotNull
-  public <R> Event<R> then(@NotNull UnaryFunction<? super T, ? extends Event<R>> messageHandler) {
-    return when(this, messageHandler);
+  public <R> Event<R> then(
+      @NotNull UnaryFunction<? super T, ? extends Event<R>> resolutionHandler) {
+    return when(this, resolutionHandler);
   }
 
   @NotNull
