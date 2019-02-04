@@ -4,10 +4,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
 
-import dm.shakespeare.actor.Script;
-import dm.shakespeare.executor.ExecutorServices;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.plot.function.NullaryFunction;
 import dm.shakespeare.plot.function.UnaryFunction;
@@ -22,47 +19,40 @@ public class Play {
   private static final LoopFunction LOOP_FUNCTION = new LoopFunction();
   private static final StoryFunction<?> STORY_FUNCTION = new StoryFunction<Object>();
 
-  private final PlayContext mPlayContext;
+  private final Setting mSetting;
 
   public Play() {
-    mPlayContext = new PlayContext(asActorExecutor(Script.defaultExecutor()), null);
+    mSetting = new Setting(null, null);
   }
 
   public Play(@NotNull final ExecutorService executor) {
-    mPlayContext = new PlayContext(asActorExecutor(executor), null);
+    mSetting = new Setting(ConstantConditions.notNull("executor", executor), null);
   }
 
   public Play(@NotNull final ExecutorService executor, @NotNull final Logger logger) {
-    mPlayContext =
-        new PlayContext(asActorExecutor(executor), ConstantConditions.notNull("logger", logger));
-  }
-
-  public Play(@NotNull final Logger logger) {
-    mPlayContext = new PlayContext(asActorExecutor(Script.defaultExecutor()),
+    mSetting = new Setting(ConstantConditions.notNull("executor", executor),
         ConstantConditions.notNull("logger", logger));
   }
 
-  @NotNull
-  private static ExecutorService asActorExecutor(@NotNull final ExecutorService executor) {
-    return (executor instanceof ScheduledExecutorService) ? ExecutorServices.asActorExecutor(
-        (ScheduledExecutorService) executor) : ExecutorServices.asActorExecutor(executor);
+  public Play(@NotNull final Logger logger) {
+    mSetting = new Setting(null, ConstantConditions.notNull("logger", logger));
   }
 
   @NotNull
   @SuppressWarnings("unchecked")
   public <T> Event<T> performEvent(@NotNull final Event<T> event) {
-    PlayContext.set(mPlayContext);
+    Setting.set(mSetting);
     try {
       return event.then((EventFunction<T>) EVENT_FUNCTION);
 
     } finally {
-      PlayContext.unset();
+      Setting.unset();
     }
   }
 
   @NotNull
   public <T> Event<T> performEvent(@NotNull final NullaryFunction<? extends Event<T>> function) {
-    PlayContext.set(mPlayContext);
+    Setting.set(mSetting);
     try {
       return Event.ofNull().then(new UnaryFunction<Object, Event<T>>() {
 
@@ -75,26 +65,26 @@ public class Play {
       return Event.ofIncident(t);
 
     } finally {
-      PlayContext.unset();
+      Setting.unset();
     }
   }
 
   @NotNull
   @SuppressWarnings("unchecked")
   public <T> Story<T> performStory(@NotNull final Story<T> story) {
-    PlayContext.set(mPlayContext);
+    Setting.set(mSetting);
     try {
       return story.then(LOOP_FUNCTION,
           (UnaryFunction<? super T, ? extends Story<T>>) STORY_FUNCTION);
 
     } finally {
-      PlayContext.unset();
+      Setting.unset();
     }
   }
 
   @NotNull
   public <T> Story<T> performStory(@NotNull final NullaryFunction<? extends Story<T>> function) {
-    PlayContext.set(mPlayContext);
+    Setting.set(mSetting);
     try {
       return Story.ofEvent(Event.<T>ofNull())
           .then(LOOP_FUNCTION, new UnaryFunction<Object, Story<T>>() {
@@ -108,7 +98,7 @@ public class Play {
       return Story.ofIncidents(Collections.singleton(t));
 
     } finally {
-      PlayContext.unset();
+      Setting.unset();
     }
   }
 

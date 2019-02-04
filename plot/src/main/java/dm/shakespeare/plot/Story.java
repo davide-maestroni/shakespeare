@@ -7,9 +7,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Set;
 
 import dm.shakespeare.BackStage;
 import dm.shakespeare.actor.AbstractBehavior;
@@ -37,7 +38,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   static final Object END = new Object();
   static final Object NEXT = new Object();
 
-  private static final Story<?> EMPTY_STORY = ofResolutions(Collections.emptyList());
   private static final Action NO_OP = new Action() {
 
     public void run() {
@@ -80,9 +80,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  @SuppressWarnings("unchecked")
   public static <T> Story<T> ofEmpty() {
-    return (Story<T>) EMPTY_STORY;
+    return ofResolutions(Collections.<T>emptyList());
   }
 
   @NotNull
@@ -97,7 +96,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public static <T> Story<T> ofResolutions(@NotNull final Iterable<T> results) {
-    return new ResolutionStory<T>(results);
+    final Setting setting = Setting.get();
+    Story<T> story = setting.get(results);
+    if (story == null) {
+      story = new ResolutionStory<T>(results);
+      setting.put(results, story);
+    }
+    return story;
   }
 
   @NotNull
@@ -113,7 +118,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
       @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> resolutionHandler) {
-    return null;
+    return new GenericStory<T, R>(new UnboundMemory(), stories, loopHandler, resolutionHandler);
   }
 
   @NotNull
@@ -143,20 +148,25 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <T1, R> Story<R> resolve(@NotNull final Class<? extends T1> firstType,
+  @SuppressWarnings("unchecked")
+  public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
-      @NotNull final UnaryFunction<? super T1, ? extends Story<? extends R>> resolutionHandler,
-      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends R>> incidentHandler) {
-    return null;
+      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
+    final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
+    types.add(firstType);
+    return new ResolveStory<T>(new UnboundMemory(), getActor(), types, loopHandler,
+        (UnaryFunction<? super Throwable, ? extends Story<T>>) incidentHandler);
   }
 
   @NotNull
-  public <T extends Throwable, R> Story<R> resolve(
-      @NotNull final Iterable<? extends Class<? extends T>> incidentTypes,
+  @SuppressWarnings("unchecked")
+  public <E extends Throwable> Story<T> resolve(
+      @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
-      @NotNull final UnaryFunction<? super T, ? extends Story<? extends R>> resolutionHandler,
-      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends R>> incidentHandler) {
-    return null;
+      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
+    return new ResolveStory<T>(new UnboundMemory(), getActor(),
+        Iterables.<Class<? extends Throwable>>toSet(incidentTypes), loopHandler,
+        (UnaryFunction<? super Throwable, ? extends Story<T>>) incidentHandler);
   }
 
   @NotNull
@@ -231,7 +241,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final Memory mMemory;
     private final Options mOptions;
     private final String mOutputThread;
-    private final PlayContext mPlayContext;
+    private final Setting mSetting;
 
     private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private int mInputCount;
@@ -247,8 +257,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mMemory = ConstantConditions.notNull("memory", memory);
       mLoopHandler = ConstantConditions.notNull("loopHandler", loopHandler);
       mInputs = new Object[numInputs];
-      final PlayContext playContext = (mPlayContext = PlayContext.get());
-      final String actorId = (mActor = BackStage.newActor(new PlayScript(playContext) {
+      final Setting setting = (mSetting = Setting.get());
+      final String actorId = (mActor = BackStage.newActor(new PlayScript(setting) {
 
         @NotNull
         @Override
@@ -267,11 +277,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       return mActor;
     }
 
-    @NotNull
-    PlayContext getContext() {
-      return mPlayContext;
-    }
-
     @Nullable
     Actor getIncidentActor(@NotNull final Incident incident) throws Exception {
       return null;
@@ -281,8 +286,25 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     abstract List<Actor> getInputActors();
 
     @Nullable
+    Actor getLoopActor() throws Exception {
+      Setting.set(getSetting());
+      try {
+        final Event<? extends Boolean> event = mLoopHandler.call();
+        return (event != null) ? event.getActor() : null;
+
+      } finally {
+        Setting.unset();
+      }
+    }
+
+    @Nullable
     Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
       return null;
+    }
+
+    @NotNull
+    Setting getSetting() {
+      return mSetting;
     }
 
     private void end(@NotNull final Context context) {
@@ -339,10 +361,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private void loop(final int loopCount, @NotNull final Context context) {
       try {
-        final Event<? extends Boolean> event = mLoopHandler.call();
-        if (event != null) {
+        final Actor loopActor = getLoopActor();
+        if (loopActor != null) {
           setThreadIds(loopCount);
-          event.getActor().tell(GET, mOptions.withThread(mLoopThreadId), context.getSelf());
+          loopActor.tell(GET, mOptions.withThread(mLoopThreadId), context.getSelf());
           context.setBehavior(new LoopBehavior());
 
         } else {
@@ -570,10 +592,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             } else if (!(message instanceof Receipt)) {
               if (Boolean.TRUE.equals(message)) {
                 final Actor self = context.getSelf();
-                final String inputThread = mInputThread;
                 final StringBuilder builder = new StringBuilder();
                 for (final Actor actor : getInputActors()) {
-                  final String threadId = inputThread + builder.append('#').toString();
+                  final String threadId = mInputThread + builder.append('#').toString();
                   actor.tell(NEXT, mOptions.withThread(threadId), self);
                 }
                 context.setBehavior(new InputBehavior());
@@ -619,27 +640,23 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == CANCEL) {
           fail(new Incident(new PlotCancelledException()), context);
 
-        } else {
-          final String thread = envelop.getOptions().getThread();
-          if (mOutputThreadId.equals(thread)) {
-            // pass on incidents
-            if (message == END) {
-              mOutputActor.tell(BREAK, new Options().withThread(mOutputThreadId),
-                  context.getSelf());
-              mOutputActor = null;
-              loop(++mLoopCount, context);
+        } else if (mOutputThreadId.equals(envelop.getOptions().getThread())) {
+          // pass on incidents
+          if (message == END) {
+            mOutputActor.tell(BREAK, new Options().withThread(mOutputThreadId), context.getSelf());
+            mOutputActor = null;
+            loop(++mLoopCount, context);
 
-            } else if (message instanceof Bounce) {
-              final Incident incident = new Incident(PlotStateException.getOrNew((Bounce) message));
-              fail(incident, context);
+          } else if (message instanceof Bounce) {
+            final Incident incident = new Incident(PlotStateException.getOrNew((Bounce) message));
+            fail(incident, context);
 
-            } else if (!(message instanceof Receipt)) {
-              final Memory memory = mMemory;
-              memory.put(message);
-              final Actor self = context.getSelf();
-              for (final SenderOffset sender : mNextSenders.values()) {
-                sender.tellNext(memory, self);
-              }
+          } else if (!(message instanceof Receipt)) {
+            final Memory memory = mMemory;
+            memory.put(message);
+            final Actor self = context.getSelf();
+            for (final SenderOffset sender : mNextSenders.values()) {
+              sender.tellNext(memory, self);
             }
           }
         }
@@ -674,29 +691,25 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == CANCEL) {
           fail(new Incident(new PlotCancelledException()), context);
 
-        } else {
-          final String thread = envelop.getOptions().getThread();
-          if (mOutputThreadId.equals(thread)) {
-            // pass on incidents
-            if (message == END) {
-              mOutputActor.tell(BREAK, new Options().withThread(mOutputThreadId),
-                  context.getSelf());
-              mOutputActor = null;
-              loop(++mLoopCount, context);
+        } else if (mOutputThreadId.equals(envelop.getOptions().getThread())) {
+          // pass on incidents
+          if (message == END) {
+            mOutputActor.tell(BREAK, new Options().withThread(mOutputThreadId), context.getSelf());
+            mOutputActor = null;
+            loop(++mLoopCount, context);
 
-            } else if (message instanceof Bounce) {
-              final Incident incident = new Incident(PlotStateException.getOrNew((Bounce) message));
-              fail(incident, context);
+          } else if (message instanceof Bounce) {
+            final Incident incident = new Incident(PlotStateException.getOrNew((Bounce) message));
+            fail(incident, context);
 
-            } else if (!(message instanceof Receipt)) {
-              final Memory memory = mMemory;
-              memory.put(message);
-              final Actor self = context.getSelf();
-              for (final SenderOffset sender : mNextSenders.values()) {
-                sender.tellNext(memory, self);
-              }
-              context.setBehavior(new NextBehavior());
+          } else if (!(message instanceof Receipt)) {
+            final Memory memory = mMemory;
+            memory.put(message);
+            final Actor self = context.getSelf();
+            for (final SenderOffset sender : mNextSenders.values()) {
+              sender.tellNext(memory, self);
             }
+            context.setBehavior(new NextBehavior());
           }
         }
         envelop.preventReceipt();
@@ -715,7 +728,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private EventStory(@NotNull final Event<T> event) {
       mEventActor = event.getActor();
-      final String actorId = (mActor = BackStage.newActor(new PlayScript(CONSTANT_CONTEXT) {
+      final String actorId = (mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
 
         @NotNull
         @Override
@@ -848,6 +861,47 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
+  private static class GenericStory<T, R> extends AbstractStory<R> {
+
+    private final List<Actor> mActors;
+    private final UnaryFunction<? super List<T>, ? extends Story<R>> mResolutionHandler;
+
+    private GenericStory(@NotNull final Memory memory,
+        @NotNull final Iterable<? extends Story<? extends T>> stories,
+        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+        @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> resolutionHandler) {
+      super(memory, loopHandler, Iterables.size(stories));
+      final ArrayList<Actor> actors = new ArrayList<Actor>();
+      for (final Story<? extends T> story : stories) {
+        actors.add(story.getActor());
+      }
+      mActors = actors;
+      mResolutionHandler = ConstantConditions.notNull("resolutionHandler", resolutionHandler);
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return mActors;
+    }
+
+    @NotNull
+    @SuppressWarnings("unchecked")
+    Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
+      Setting.set(getSetting());
+      try {
+        final ArrayList<T> inputList = new ArrayList<T>();
+        for (final Object input : inputs) {
+          inputList.add((T) input);
+        }
+        final Story<R> story = mResolutionHandler.call(inputList);
+        return ((story != null) ? story : ofEmpty()).getActor();
+
+      } finally {
+        Setting.unset();
+      }
+    }
+  }
+
   private static class IncidentStory<T> extends Story<T> {
 
     private final Actor mActor;
@@ -858,7 +912,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         incidents.add(new Incident(obstacle));
       }
       ConstantConditions.positive("obstacles size", incidents.size());
-      mActor = BackStage.newActor(new PlayScript(CONSTANT_CONTEXT) {
+      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
 
         private final HashMap<String, Iterator<Incident>> mThreads =
             new HashMap<String, Iterator<Incident>>();
@@ -910,7 +964,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private ResolutionStory(@NotNull final Iterable<T> results) {
       final List<T> list = Collections.unmodifiableList(Iterables.toList(results));
-      mActor = BackStage.newActor(new PlayScript(CONSTANT_CONTEXT) {
+      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
 
         private final HashMap<String, Iterator<T>> mThreads = new HashMap<String, Iterator<T>>();
 
@@ -954,6 +1008,47 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
+  private static class ResolveStory<T> extends AbstractStory<T> {
+
+    private final List<Actor> mActors;
+    private final UnaryFunction<? super Throwable, ? extends Story<T>> mIncidentHandler;
+    private final Set<Class<? extends Throwable>> mIncidentTypes;
+
+    private ResolveStory(@NotNull final Memory memory, @NotNull final Actor eventActor,
+        @NotNull final Set<Class<? extends Throwable>> incidentTypes,
+        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+        @NotNull final UnaryFunction<? super Throwable, ? extends Story<T>> incidentHandler) {
+      super(memory, loopHandler, 1);
+      mActors = Collections.singletonList(eventActor);
+      mIncidentTypes = ConstantConditions.notNullElements("incidentTypes", incidentTypes);
+      mIncidentHandler = ConstantConditions.notNull("incidentHandler", incidentHandler);
+    }
+
+    @Nullable
+    @Override
+    Actor getIncidentActor(@NotNull final Incident incident) throws Exception {
+      final Throwable obstacle = incident.getCause();
+      for (final Class<? extends Throwable> incidentType : mIncidentTypes) {
+        if (incidentType.isInstance(obstacle)) {
+          Setting.set(getSetting());
+          try {
+            final Story<T> story = mIncidentHandler.call(obstacle);
+            return ((story != null) ? story : ofEmpty()).getActor();
+
+          } finally {
+            Setting.unset();
+          }
+        }
+      }
+      return super.getIncidentActor(incident);
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return mActors;
+    }
+  }
+
   private static class Sender {
 
     private final Options mOptions;
@@ -972,6 +1067,34 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @NotNull
     Actor getSender() {
       return mSender;
+    }
+  }
+
+  private static class SenderIterator extends Sender {
+
+    private Iterator<?> mIterator;
+    private boolean mWaitNext = true;
+
+    private SenderIterator(@NotNull final Actor sender, @NotNull final Options options) {
+      super(sender, options);
+    }
+
+    void setIterator(@NotNull final Iterator<?> iterator) {
+      mIterator = iterator;
+    }
+
+    boolean tellNext(@NotNull final Actor self) {
+      final Iterator<?> iterator = mIterator;
+      if (mWaitNext && iterator.hasNext()) {
+        mWaitNext = false;
+        getSender().tell(iterator.next(), getOptions(), self);
+        return true;
+      }
+      return false;
+    }
+
+    void waitNext() {
+      mWaitNext = true;
     }
   }
 
@@ -1022,55 +1145,88 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @NotNull
     @SuppressWarnings("unchecked")
     Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
-      PlayContext.set(getContext());
+      Setting.set(getSetting());
       try {
         final Story<R> story = mResolutionHandler.call((T1) inputs[0]);
         return ((story != null) ? story : ofEmpty()).getActor();
 
       } finally {
-        PlayContext.unset();
+        Setting.unset();
       }
     }
   }
 
   private static class UnfoldStory<T> extends Story<T> {
 
-    // TODO: 03/02/2019 FIX IT!!!
-
     private final Actor mActor;
     private final Actor mEventActor;
-    private final HashMap<String, Iterator<? extends T>> mThreads =
-        new HashMap<String, Iterator<? extends T>>();
+    private final Options mOptions;
 
-    private HashMap<String, Actor> mGetSenders = new HashMap<String, Actor>();
-    private HashMap<String, Actor> mNextSenders = new HashMap<String, Actor>();
+    private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
+    private HashMap<String, SenderIterator> mNextSenders = new HashMap<String, SenderIterator>();
     private Iterable<? extends T> mResults;
 
     private UnfoldStory(@NotNull final Event<? extends Iterable<T>> event) {
       mEventActor = event.getActor();
-      mActor = BackStage.newActor(new PlayScript(CONSTANT_CONTEXT) {
+      final String actorId = (mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
 
         @NotNull
         @Override
         public Behavior getBehavior(@NotNull final String id) {
           return new InitBehavior();
         }
-      });
+      })).getId();
+      mOptions = new Options().withReceiptId(actorId).withThread(actorId);
     }
 
     private void fail(@NotNull final Incident incident, @NotNull final Context context) {
       final Actor self = context.getSelf();
-      for (final Entry<String, Actor> entry : mGetSenders.entrySet()) {
-        entry.getValue().tell(incident, new Options().withThread(entry.getKey()), self);
+      for (final Sender sender : mGetSenders.values()) {
+        sender.getSender().tell(incident, sender.getOptions(), self);
       }
       mGetSenders = null;
-      for (final Entry<String, Actor> entry : mNextSenders.entrySet()) {
-        final Options options = new Options().withThread(entry.getKey());
-        // TODO: 01/02/2019 FIX END
-        entry.getValue().tell(incident, options, self).tell(END, options, self);
+      final Iterator<Object> iterator = Collections.emptyIterator();
+      for (final SenderIterator sender : mNextSenders.values()) {
+        sender.setIterator(iterator);
+        sender.getSender().tell(incident, sender.getOptions(), self);
       }
-      mNextSenders = null;
-      //context.setBehavior(new IncidentBehavior(incident.getCause()));
+      context.setBehavior(new IncidentBehavior(incident));
+    }
+
+    private class IncidentBehavior extends AbstractBehavior {
+
+      private final Incident mIncident;
+
+      private IncidentBehavior(@NotNull final Incident incident) {
+        mIncident = incident;
+      }
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          envelop.getSender().tell(mIncident, envelop.getOptions().threadOnly(), context.getSelf());
+
+        } else if (message == NEXT) {
+          final Options options = envelop.getOptions();
+          final String thread = options.getThread();
+          SenderIterator sender = mNextSenders.get(thread);
+          if (sender != null) {
+            sender.getSender().tell(END, sender.getOptions(), context.getSelf());
+
+          } else {
+            sender = new SenderIterator(envelop.getSender(), options.threadOnly());
+            mNextSenders.put(thread, sender);
+            sender.getSender().tell(mIncident, sender.getOptions(), context.getSelf());
+          }
+
+        } else if (message == CANCEL) {
+          fail(new Incident(new PlotCancelledException()), context);
+
+        } else if (message == BREAK) {
+          mNextSenders.remove(envelop.getOptions().getThread());
+        }
+        envelop.preventReceipt();
+      }
     }
 
     private class InitBehavior extends AbstractBehavior {
@@ -1078,17 +1234,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) {
         if (message == GET) {
-          final Actor self = context.getSelf();
-          final String threadId = self.getId();
-          mGetSenders.put(envelop.getOptions().getThread(), envelop.getSender());
-          mEventActor.tell(GET, new Options().withReceiptId(threadId).withThread(threadId), self);
+          final Options options = envelop.getOptions().threadOnly();
+          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mEventActor.tell(GET, mOptions, context.getSelf());
           context.setBehavior(new InputBehavior());
 
         } else if (message == NEXT) {
-          final Actor self = context.getSelf();
-          final String threadId = self.getId();
-          mNextSenders.put(envelop.getOptions().getThread(), envelop.getSender());
-          mEventActor.tell(GET, new Options().withReceiptId(threadId).withThread(threadId), self);
+          final Options options = envelop.getOptions().threadOnly();
+          mNextSenders.put(options.getThread(), new SenderIterator(envelop.getSender(), options));
+          mEventActor.tell(GET, mOptions, context.getSelf());
           context.setBehavior(new InputBehavior());
 
         } else if (message == CANCEL) {
@@ -1099,6 +1253,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           fail(new Incident(new PlotCancelledException()), context);
         }
+        envelop.preventReceipt();
       }
     }
 
@@ -1108,10 +1263,20 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) {
         if (message == GET) {
-          mGetSenders.put(envelop.getOptions().getThread(), envelop.getSender());
+          final Options options = envelop.getOptions().threadOnly();
+          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
-          mNextSenders.put(envelop.getOptions().getThread(), envelop.getSender());
+          final Options options = envelop.getOptions();
+          final String thread = options.getThread();
+          SenderIterator sender = mNextSenders.get(thread);
+          if (sender != null) {
+            sender.waitNext();
+
+          } else {
+            sender = new SenderIterator(envelop.getSender(), options.threadOnly());
+            mNextSenders.put(thread, sender);
+          }
 
         } else if (message == CANCEL) {
           final Actor eventActor = mEventActor;
@@ -1124,36 +1289,33 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == BREAK) {
           mNextSenders.remove(envelop.getOptions().getThread());
 
-        } else if (message instanceof Incident) {
-          fail((Incident) message, context);
-
-        } else if (message instanceof Bounce) {
-          fail(new Incident(PlotStateException.getOrNew((Bounce) message)), context);
-
-        } else if (!(message instanceof Receipt)) {
+        } else {
           final Actor self = context.getSelf();
           final String actorId = self.getId();
-          final String thread = envelop.getOptions().getThread();
-          if ((thread != null) && thread.startsWith(actorId)) {
-            final Iterable<? extends T> results = (mResults = (Iterable<? extends T>) message);
-            for (final Entry<String, Actor> entry : mGetSenders.entrySet()) {
-              entry.getValue().tell(message, new Options().withThread(entry.getKey()), self);
+          if (actorId.equals(envelop.getOptions().getThread())) {
+            if (message instanceof Incident) {
+              fail((Incident) message, context);
+
+            } else if (message instanceof Bounce) {
+              fail(new Incident(PlotStateException.getOrNew((Bounce) message)), context);
+
+            } else if (!(message instanceof Receipt)) {
+              final Iterable<? extends T> results = (mResults = (Iterable<? extends T>) message);
+              for (final Sender sender : mGetSenders.values()) {
+                sender.getSender().tell(results, sender.getOptions(), self);
+              }
+              mGetSenders = null;
+              for (final SenderIterator sender : mNextSenders.values()) {
+                sender.setIterator(results.iterator());
+                if (!sender.tellNext(self)) {
+                  sender.getSender().tell(END, sender.getOptions(), self);
+                }
+              }
+              context.setBehavior(new OutputBehavior());
             }
-            mGetSenders = null;
-            @SuppressWarnings(
-                "UnnecessaryLocalVariable") final HashMap<String, Iterator<? extends T>> threads =
-                mThreads;
-            for (final Entry<String, Actor> entry : mNextSenders.entrySet()) {
-              final Options options = new Options().withThread(entry.getKey());
-              final Iterator<? extends T> iterator = results.iterator();
-              threads.put(entry.getKey(), iterator);
-              entry.getValue()
-                  .tell(iterator.hasNext() ? iterator.next() : END, options, context.getSelf());
-            }
-            mNextSenders = null;
           }
-          context.setBehavior(new OutputBehavior());
         }
+        envelop.preventReceipt();
       }
     }
 
@@ -1165,24 +1327,28 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           envelop.getSender().tell(mResults, envelop.getOptions().threadOnly(), context.getSelf());
 
         } else if (message == NEXT) {
-          final HashMap<String, Iterator<? extends T>> threads = mThreads;
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          Iterator<? extends T> iterator = threads.get(thread);
-          if (iterator == null) {
-            iterator = mResults.iterator();
-            threads.put(thread, iterator);
+          SenderIterator sender = mNextSenders.get(thread);
+          if (sender != null) {
+            sender.waitNext();
+
+          } else {
+            sender = new SenderIterator(envelop.getSender(), options.threadOnly());
+            mNextSenders.put(thread, sender);
           }
-          envelop.getSender()
-              .tell(iterator.hasNext() ? iterator.next() : END, options.threadOnly(),
-                  context.getSelf());
+          final Actor self = context.getSelf();
+          if (!sender.tellNext(self)) {
+            sender.getSender().tell(END, sender.getOptions(), self);
+          }
 
         } else if (message == CANCEL) {
           fail(new Incident(new PlotCancelledException()), context);
 
         } else if (message == BREAK) {
-          mThreads.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThread());
         }
+        envelop.preventReceipt();
       }
     }
 
