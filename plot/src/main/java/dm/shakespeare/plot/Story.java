@@ -831,15 +831,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private ConflictsStory(@NotNull final Iterable<? extends Throwable> incidents) {
-      final ArrayList<Conflict> conflicts = new ArrayList<Conflict>();
-      for (final Throwable incident : incidents) {
-        conflicts.add(new Conflict(incident));
-      }
-      ConstantConditions.positive("incidents size", conflicts.size());
+      ConstantConditions.notNull("incidents", incidents);
       mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
 
-        private final HashMap<String, Iterator<Conflict>> mThreads =
-            new HashMap<String, Iterator<Conflict>>();
+        private final HashMap<String, Iterator<? extends Throwable>> mThreads =
+            new HashMap<String, Iterator<? extends Throwable>>();
 
         @NotNull
         @Override
@@ -850,20 +846,21 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 @NotNull final Context context) {
               if (message == GET) {
                 envelop.getSender()
-                    .tell(Iterables.first(conflicts), envelop.getOptions().threadOnly(),
-                        context.getSelf());
+                    .tell(new Conflict(Iterables.first(incidents)),
+                        envelop.getOptions().threadOnly(), context.getSelf());
 
               } else if (message == NEXT) {
-                final HashMap<String, Iterator<Conflict>> threads = mThreads;
+                final HashMap<String, Iterator<? extends Throwable>> threads = mThreads;
                 final Options options = envelop.getOptions().threadOnly();
                 final String thread = options.getThread();
-                Iterator<Conflict> iterator = threads.get(thread);
+                Iterator<? extends Throwable> iterator = threads.get(thread);
                 if (iterator == null) {
-                  iterator = conflicts.iterator();
+                  iterator = incidents.iterator();
                   threads.put(thread, iterator);
                 }
                 envelop.getSender()
-                    .tell(iterator.hasNext() ? iterator.next() : END, options, context.getSelf());
+                    .tell(iterator.hasNext() ? new Conflict(iterator.next()) : END, options,
+                        context.getSelf());
 
               } else if ((message == CANCEL) || (message == BREAK)) {
                 // TODO: 01/02/2019 CANCEL != BREAK
