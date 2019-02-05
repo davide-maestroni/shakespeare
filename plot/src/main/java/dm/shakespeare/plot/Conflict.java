@@ -7,16 +7,16 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 01/25/2019.
  */
-class Incident {
+class Conflict {
 
-  private final Throwable mObstacle;
+  private final Throwable mIncident;
 
-  Incident(@NotNull final Throwable obstacle) {
-    mObstacle = ConstantConditions.notNull("obstacle", obstacle);
+  Conflict(@NotNull final Throwable incident) {
+    mIncident = ConstantConditions.notNull("incident", incident);
   }
 
   @NotNull
   Throwable getCause() {
-    return mObstacle;
+    return mIncident;
   }
 }

@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.WeakReference;
+import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -28,8 +29,7 @@ class Setting {
         }
       };
 
-  private final WeakIdentityHashMap<Object, WeakReference<Object>> mCache =
-      new WeakIdentityHashMap<Object, WeakReference<Object>>();
+  private final HashMap<Class<?>, Cache> mCaches = new HashMap<Class<?>, Cache>();
   private final ExecutorService mExecutor;
   private final Logger mLogger;
 
@@ -65,15 +65,14 @@ class Setting {
         (ScheduledExecutorService) executor) : ExecutorServices.asActorExecutor(executor);
   }
 
-  @Nullable
-  @SuppressWarnings("unchecked")
-  <T> T get(@NotNull final Object key) {
-    final WeakReference<Object> reference = mCache.get(key);
-    Object value = (reference != null) ? reference.get() : null;
-    if (value == null) {
-      mCache.remove(key);
+  @NotNull
+  Cache getCache(@NotNull final Class<?> type) {
+    Cache cache = mCaches.get(type);
+    if (cache == null) {
+      cache = new Cache();
+      mCaches.put(type, cache);
     }
-    return (T) value;
+    return cache;
   }
 
   @Nullable
@@ -94,7 +93,27 @@ class Setting {
     return mTrampolineExecutor;
   }
 
-  <T> void put(@NotNull final Object key, final T value) {
-    mCache.put(key, new WeakReference<Object>(value));
+  class Cache {
+
+    private final WeakIdentityHashMap<Object, WeakReference<Object>> mData =
+        new WeakIdentityHashMap<Object, WeakReference<Object>>();
+
+    private Cache() {
+    }
+
+    @Nullable
+    @SuppressWarnings("unchecked")
+    <T> T get(@NotNull final Object key) {
+      final WeakReference<Object> reference = mData.get(key);
+      Object value = (reference != null) ? reference.get() : null;
+      if (value == null) {
+        mData.remove(key);
+      }
+      return (T) value;
+    }
+
+    <T> void put(@NotNull final Object key, final T value) {
+      mData.put(key, new WeakReference<Object>(value));
+    }
   }
 }

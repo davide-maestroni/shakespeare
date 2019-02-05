@@ -29,8 +29,8 @@ class EventObserverScript<T> extends Script {
       @SuppressWarnings("unchecked")
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) throws Exception {
-        if (message instanceof Incident) {
-          mEventObserver.onIncident(((Incident) message).getCause());
+        if (message instanceof Conflict) {
+          mEventObserver.onIncident(((Conflict) message).getCause());
           context.dismissSelf();
 
         } else if (message instanceof Bounce) {
