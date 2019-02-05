@@ -22,6 +22,7 @@ import dm.shakespeare.function.Observer;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.Receipt;
 import dm.shakespeare.plot.Setting.Cache;
+import dm.shakespeare.plot.function.Action;
 import dm.shakespeare.plot.function.UnaryFunction;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.Iterables;
@@ -94,6 +95,11 @@ public abstract class Event<T> {
     return new GenericEvent<T, R>(events, resolutionHandler);
   }
 
+  @NotNull
+  public Event<T> eventually(@NotNull final Action eventualAction) {
+    return new EventualEvent<T>(this, eventualAction);
+  }
+
   public void observe(@Nullable final Observer<? super T> resolutionObserver,
       @Nullable final Observer<? super Throwable> conflictObserver) {
     observe(new DefaultEventObserver<T>(resolutionObserver, conflictObserver));
@@ -127,7 +133,7 @@ public abstract class Event<T> {
 
   @NotNull
   public <R> Event<R> then(
-      @NotNull UnaryFunction<? super T, ? extends Event<R>> resolutionHandler) {
+      @NotNull final UnaryFunction<? super T, ? extends Event<R>> resolutionHandler) {
     return when(this, resolutionHandler);
   }
 
@@ -395,6 +401,49 @@ public abstract class Event<T> {
     @NotNull
     Actor getActor() {
       return mActor;
+    }
+  }
+
+  private static class EventualEvent<T> extends AbstractEvent<T> {
+
+    private final List<Actor> mActors;
+    private final Action mEventualAction;
+
+    private EventualEvent(@NotNull final Event<T> event, @NotNull final Action eventualAction) {
+      super(1);
+      mActors = Collections.singletonList(event.getActor());
+      mEventualAction = ConstantConditions.notNull("eventualAction", eventualAction);
+    }
+
+    @Nullable
+    @Override
+    Actor getConflictActor(@NotNull final Conflict conflict) throws Exception {
+      Setting.set(getSetting());
+      try {
+        mEventualAction.run();
+        return ofConflict(conflict.getCause()).getActor();
+
+      } finally {
+        Setting.unset();
+      }
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return mActors;
+    }
+
+    @Nullable
+    @Override
+    Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
+      Setting.set(getSetting());
+      try {
+        mEventualAction.run();
+        return ofResolution(inputs[0]).getActor();
+
+      } finally {
+        Setting.unset();
+      }
     }
   }
 
