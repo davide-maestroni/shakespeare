@@ -37,11 +37,11 @@ class StoryObserverScript<T> extends Script {
         mSender = envelop.getSender();
         final Actor self = context.getSelf();
         if (message instanceof Conflict) {
-          mStoryObserver.onIncident(((Conflict) message).getCause());
+          mStoryObserver.onConflict(((Conflict) message).getCause());
           envelop.getSender().tell(Story.NEXT, options, self);
 
         } else if (message instanceof Bounce) {
-          mStoryObserver.onIncident(PlotStateException.getOrNew((Bounce) message));
+          mStoryObserver.onConflict(PlotStateException.getOrNew((Bounce) message));
           context.dismissSelf();
 
         } else if (message == Story.END) {

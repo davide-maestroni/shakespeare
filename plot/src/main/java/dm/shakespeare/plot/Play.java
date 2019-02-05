@@ -62,7 +62,7 @@ public class Play {
       });
 
     } catch (final Throwable t) {
-      return Event.ofIncident(t);
+      return Event.ofConflict(t);
 
     } finally {
       Setting.unset();
@@ -95,7 +95,7 @@ public class Play {
           });
 
     } catch (final Throwable t) {
-      return Story.ofIncidents(Collections.singleton(t));
+      return Story.ofSingleConflict(t);
 
     } finally {
       Setting.unset();
