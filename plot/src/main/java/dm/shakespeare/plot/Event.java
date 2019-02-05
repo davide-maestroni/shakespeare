@@ -171,11 +171,11 @@ public abstract class Event<T> {
     private final Object[] mInputs;
     private final Options mOptions;
     private final String mOutputThread;
-    private final HashMap<String, Sender> mSenders = new HashMap<String, Sender>();
     private final Setting mSetting;
 
     private int mInputCount;
     private Actor mOutputActor;
+    private HashMap<String, Sender> mSenders = new HashMap<String, Sender>();
 
     private AbstractEvent(final int numInputs) {
       mInputs = new Object[numInputs];
@@ -236,11 +236,21 @@ public abstract class Event<T> {
       }
     }
 
+    private void done(final Object message, @NotNull final Context context) {
+      final Actor self = context.getSelf();
+      for (final Sender sender : mSenders.values()) {
+        sender.getSender().tell(message, sender.getOptions(), self);
+      }
+      mSenders = null;
+      context.setBehavior(new ResolutionBehavior(message));
+    }
+
     private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
       final Actor self = context.getSelf();
       for (final Sender sender : mSenders.values()) {
         sender.getSender().tell(conflict, sender.getOptions(), self);
       }
+      mSenders = null;
       context.setBehavior(new ConflictBehavior(conflict.getCause()));
     }
 
@@ -304,7 +314,7 @@ public abstract class Event<T> {
                       context.setBehavior(new OutputBehavior());
 
                     } else {
-                      context.setBehavior(new ResolutionBehavior(message));
+                      done(message, context);
                     }
 
                   } catch (final Throwable t) {
@@ -341,11 +351,7 @@ public abstract class Event<T> {
             fail(new Conflict(incident), context);
 
           } else if (!(message instanceof Receipt)) {
-            final Actor self = context.getSelf();
-            for (final Sender sender : mSenders.values()) {
-              sender.getSender().tell(message, sender.getOptions(), self);
-            }
-            context.setBehavior(new ResolutionBehavior(message));
+            done(message, context);
           }
         }
         envelop.preventReceipt();

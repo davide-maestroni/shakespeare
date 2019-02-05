@@ -42,6 +42,7 @@ dependencies {
 
 project.conditionalDependencies {
   compile name: 'lib', version: libVersion
+  compile name: 'plot', version: libVersion
 }
 
 jacoco {
