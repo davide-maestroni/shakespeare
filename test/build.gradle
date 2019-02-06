@@ -57,7 +57,7 @@ project.conditionalDependencies {
 }
 
 buildConfig {
-  packageName 'dm.shakespeare.test.config'
+  packageName "dm.shakespeare.${project.name}.config"
   buildConfigField 'long', 'VERSION_HASH_CODE', project.version.hashCode() + 'L'
 }
 

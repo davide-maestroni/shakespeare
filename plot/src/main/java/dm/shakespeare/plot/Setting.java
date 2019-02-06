@@ -93,7 +93,7 @@ class Setting {
     return mTrampolineExecutor;
   }
 
-  class Cache {
+  static class Cache {
 
     private final WeakIdentityHashMap<Object, WeakReference<Object>> mData =
         new WeakIdentityHashMap<Object, WeakReference<Object>>();

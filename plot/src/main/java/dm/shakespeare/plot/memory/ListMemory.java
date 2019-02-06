@@ -5,6 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import dm.shakespeare.plot.Story.Memory;
 import dm.shakespeare.util.ConstantConditions;
@@ -42,7 +43,14 @@ public class ListMemory implements Memory {
     }
 
     public Object next() {
-      return mData.get(mIndex++);
+      try {
+        final Object next = mData.get(mIndex);
+        ++mIndex;
+        return next;
+
+      } catch (final IndexOutOfBoundsException e) {
+        throw new NoSuchElementException();
+      }
     }
 
     public void remove() {
