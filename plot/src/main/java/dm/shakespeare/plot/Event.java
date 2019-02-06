@@ -48,6 +48,11 @@ public abstract class Event<T> {
   }
 
   @NotNull
+  public static <T> Event<T> ofEvent(@NotNull final Event<T> event) {
+    return new EventEvent<T>(event);
+  }
+
+  @NotNull
   public static Event<Boolean> ofFalse() {
     return ofResolution(Boolean.FALSE);
   }
@@ -100,17 +105,6 @@ public abstract class Event<T> {
     return new EventualEvent<T>(this, eventualAction);
   }
 
-  public void observe(@Nullable final Observer<? super T> resolutionObserver,
-      @Nullable final Observer<? super Throwable> conflictObserver) {
-    observe(new DefaultEventObserver<T>(resolutionObserver, conflictObserver));
-  }
-
-  public void observe(@NotNull final EventObserver<? super T> eventObserver) {
-    final Actor actor = BackStage.newActor(new EventObserverScript<T>(eventObserver));
-    final String threadId = actor.getId();
-    getActor().tell(GET, new Options().withReceiptId(threadId).withThread(threadId), actor);
-  }
-
   @NotNull
   @SuppressWarnings("unchecked")
   public <E1 extends Throwable> Event<T> resolve(@NotNull final Class<? extends E1> firstType,
@@ -135,6 +129,17 @@ public abstract class Event<T> {
   public <R> Event<R> then(
       @NotNull final UnaryFunction<? super T, ? extends Event<R>> resolutionHandler) {
     return when(this, resolutionHandler);
+  }
+
+  public void watch(@NotNull final EventObserver<? super T> eventObserver) {
+    final Actor actor = BackStage.newActor(new EventObserverScript<T>(eventObserver));
+    final String threadId = actor.getId();
+    getActor().tell(GET, new Options().withReceiptId(threadId).withThread(threadId), actor);
+  }
+
+  public void watch(@Nullable final Observer<? super T> resolutionObserver,
+      @Nullable final Observer<? super Throwable> conflictObserver) {
+    watch(new DefaultEventObserver<T>(resolutionObserver, conflictObserver));
   }
 
   @NotNull
@@ -401,6 +406,21 @@ public abstract class Event<T> {
     @NotNull
     Actor getActor() {
       return mActor;
+    }
+  }
+
+  private static class EventEvent<T> extends AbstractEvent<T> {
+
+    private final List<Actor> mActors;
+
+    private EventEvent(@NotNull final Event<T> event) {
+      super(1);
+      mActors = Collections.singletonList(event.getActor());
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return mActors;
     }
   }
 
