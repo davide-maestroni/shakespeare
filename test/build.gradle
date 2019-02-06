@@ -1,0 +1,88 @@
+/*
+ * Copyright 2017 Davide Maestroni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+plugins {
+  id 'java-library'
+  id 'jacoco'
+  id 'com.github.spotbugs' version '1.6.9'
+  id 'de.fuerstenau.buildconfig' version '1.1.8'
+  id 'com.github.ben-manes.versions' version '0.20.0'
+}
+
+apply from: '../extra.gradle'
+
+group = project.getProperty('groupName')
+version = project.getProperty('releaseVersion')
+archivesBaseName = "${project.parent.name}-${project.name}"
+
+compileJava {
+  def javaVersion = JavaVersion.VERSION_1_5
+  project.setBootstrapClasspath(javaVersion, options)
+  sourceCompatibility = javaVersion
+  targetCompatibility = javaVersion
+}
+
+compileTestJava {
+  def javaVersion = JavaVersion.VERSION_1_7
+  project.setBootstrapClasspath(javaVersion, options)
+  sourceCompatibility = javaVersion
+  targetCompatibility = javaVersion
+}
+
+ext {
+  libVersion = '0.1'
+}
+
+dependencies {
+  compile 'com.intellij:annotations:12.0'
+  testCompile 'junit:junit:4.12'
+  testCompile 'org.assertj:assertj-core:2.4.1'
+}
+
+project.conditionalDependencies {
+  compile name: 'lib', version: libVersion
+}
+
+buildConfig {
+  packageName 'dm.shakespeare.test.config'
+  buildConfigField 'long', 'VERSION_HASH_CODE', project.version.hashCode() + 'L'
+}
+
+jacoco {
+  toolVersion project.getProperty('jacocoVersion')
+}
+
+jacocoTestReport {
+  reports {
+    xml.enabled = true // Coveralls plugin depends on xml format report
+    html.enabled = true
+  }
+}
+
+spotbugs {
+  effort = 'max'
+  reportLevel = 'low'
+//  excludeFilter = file('spotbugs.xml')
+//  ignoreFailures true
+  toolVersion project.getProperty('spotbugsVersion')
+}
+
+tasks.withType(com.github.spotbugs.SpotBugsTask) {
+  reports {
+    xml.enabled false
+    html.enabled = true
+  }
+}
