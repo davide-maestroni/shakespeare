@@ -63,6 +63,7 @@ public abstract class Event<T> {
   }
 
   @NotNull
+  @SuppressWarnings("unchecked")
   public static <T> Event<T> ofResolution(final T result) {
     Event<T> event;
     final Cache cache = Setting.get().getCache(Event.class);
@@ -98,6 +99,21 @@ public abstract class Event<T> {
   public static <T, R> Event<R> when(@NotNull final Iterable<? extends Event<? extends T>> events,
       @NotNull final UnaryFunction<? super List<T>, ? extends Event<R>> resolutionHandler) {
     return new GenericEvent<T, R>(events, resolutionHandler);
+  }
+
+  static boolean isFalse(@Nullable final Event<?> event) {
+    final Cache cache = Setting.get().getCache(Event.class);
+    return cache.get(Boolean.FALSE) == event;
+  }
+
+  static boolean isNull(@Nullable final Event<?> event) {
+    final Cache cache = Setting.get().getCache(Event.class);
+    return cache.get(NULL) == event;
+  }
+
+  static boolean isTrue(@Nullable final Event<?> event) {
+    final Cache cache = Setting.get().getCache(Event.class);
+    return cache.get(Boolean.TRUE) == event;
   }
 
   @NotNull
