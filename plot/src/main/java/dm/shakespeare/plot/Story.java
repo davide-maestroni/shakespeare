@@ -217,8 +217,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   public void watchAll(@NotNull final StoryObserver<? super T> storyObserver) {
     final Actor actor = BackStage.newActor(new StoryObserverScript<T>(storyObserver));
-    final String threadId = actor.getId();
-    getActor().tell(NEXT, new Options().withReceiptId(threadId).withThread(threadId), actor);
+    final String actorId = actor.getId();
+    getActor().tell(NEXT, new Options().withReceiptId(actorId).withThread(actorId), actor);
   }
 
   public void watchAll(@Nullable final Observer<? super T> resolutionObserver,
@@ -230,8 +230,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public void watchAll(@NotNull final EventObserver<? super T> eventObserver) {
     final Actor actor =
         BackStage.newActor(new StoryObserverScript<T>(new EventStoryObserver<T>(eventObserver)));
-    final String threadId = actor.getId();
-    getActor().tell(NEXT, new Options().withReceiptId(threadId).withThread(threadId), actor);
+    final String actorId = actor.getId();
+    getActor().tell(NEXT, new Options().withReceiptId(actorId).withThread(actorId), actor);
   }
 
   public interface EventLooper<T, R> {
@@ -2340,10 +2340,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   private static class UnfoldStory<T> extends Story<T> {
 
-    // TODO: 01/02/2019 CANCEL != BREAK
-
     private final Actor mActor;
     private final Actor mEventActor;
+    private final String mInputThreadId;
     private final HashMap<String, SenderIterator> mNextSenders =
         new HashMap<String, SenderIterator>();
     private final Options mOptions;
@@ -2362,6 +2361,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           return new InitBehavior();
         }
       })).getId();
+      mInputThreadId = actorId;
       mOptions = new Options().withReceiptId(actorId).withThread(actorId);
     }
 
@@ -2444,9 +2444,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
 
         } else {
-          final Actor self = context.getSelf();
-          final String actorId = self.getId();
-          if (actorId.equals(envelop.getOptions().getThread())) {
+          if (mInputThreadId.equals(envelop.getOptions().getThread())) {
             if (message instanceof Conflict) {
               fail((Conflict) message, context);
 
@@ -2455,6 +2453,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
             } else if (!(message instanceof Receipt)) {
               if (!mIsCancelled) {
+                final Actor self = context.getSelf();
                 final Iterable<? extends T> results = (mResults = (Iterable<? extends T>) message);
                 for (final Sender sender : mGetSenders.values()) {
                   sender.getSender().tell(results, sender.getOptions(), self);
