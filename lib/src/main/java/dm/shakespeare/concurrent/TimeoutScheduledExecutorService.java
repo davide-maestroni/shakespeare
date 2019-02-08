@@ -1,4 +1,4 @@
-package dm.shakespeare.executor;
+package dm.shakespeare.concurrent;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by davide-maestroni on 06/06/2018.
  */
-class TimeoutScheduledExecutorService extends dm.shakespeare.executor.TimeoutExecutorService
+class TimeoutScheduledExecutorService extends TimeoutExecutorService
     implements ScheduledExecutorService {
 
   private final ScheduledExecutorService mExecutor;

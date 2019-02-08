@@ -17,7 +17,7 @@ import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
 import dm.shakespeare.actor.Script;
-import dm.shakespeare.executor.ExecutorServices;
+import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.Failure;
 import dm.shakespeare.message.IllegalRecipientException;

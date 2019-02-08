@@ -9,7 +9,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
 import dm.shakespeare.actor.Script;
-import dm.shakespeare.executor.ExecutorServices;
+import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.DoubleQueue;

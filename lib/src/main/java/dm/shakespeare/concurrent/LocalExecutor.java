@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.executor;
+package dm.shakespeare.concurrent;
 
 import org.jetbrains.annotations.NotNull;
 
