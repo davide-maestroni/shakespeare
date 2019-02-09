@@ -303,14 +303,14 @@ public abstract class Event<T> {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
-          tellInputActors(message, context);
+          tellInputActors(GET, context);
           context.setBehavior(new InputBehavior());
 
         } else if (message == CANCEL) {
+          mIsCancelled = true;
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
-          mIsCancelled = true;
-          tellInputActors(message, context);
+          tellInputActors(CANCEL, context);
           context.setBehavior(new InputBehavior());
         }
         envelop.preventReceipt();
@@ -328,12 +328,9 @@ public abstract class Event<T> {
           mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
 
         } else if (message == CANCEL) {
+          mIsCancelled = true;
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
-          if (!mIsCancelled) {
-            mIsCancelled = true;
-            tellInputActors(message, context);
-          }
 
         } else {
           final String inputThread = mInputThread;
@@ -347,29 +344,34 @@ public abstract class Event<T> {
               conflict(conflict, context);
 
             } else if (!(message instanceof Receipt)) {
-              final int index = thread.length() - inputThread.length() - 1;
-              final Object[] inputs = mInputs;
-              if ((index >= 0) && (index < inputs.length)) {
-                inputs[index] = message;
-                if (++mInputCount == inputs.length) {
-                  try {
-                    final Actor outputActor = getOutputActor(inputs);
-                    if (outputActor != null) {
-                      (mOutputActor = outputActor).tell(mIsCancelled ? CANCEL : GET,
-                          mOptions.withThread(mOutputThread), context.getSelf());
-                      context.setBehavior(new OutputBehavior());
+              if (!mIsCancelled) {
+                final int index = thread.length() - inputThread.length() - 1;
+                final Object[] inputs = mInputs;
+                if ((index >= 0) && (index < inputs.length)) {
+                  inputs[index] = message;
+                  if (++mInputCount == inputs.length) {
+                    try {
+                      final Actor outputActor = getOutputActor(inputs);
+                      if (outputActor != null) {
+                        (mOutputActor = outputActor).tell(GET, mOptions.withThread(mOutputThread),
+                            context.getSelf());
+                        context.setBehavior(new OutputBehavior());
 
-                    } else {
-                      done(message, context);
-                    }
+                      } else {
+                        done(message, context);
+                      }
 
-                  } catch (final Throwable t) {
-                    fail(new Conflict(t), context);
-                    if (t instanceof InterruptedException) {
-                      Thread.currentThread().interrupt();
+                    } catch (final Throwable t) {
+                      fail(new Conflict(t), context);
+                      if (t instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
+                      }
                     }
                   }
                 }
+
+              } else {
+                conflict(new Conflict(new PlotCancelledException()), context);
               }
             }
           }
@@ -388,13 +390,9 @@ public abstract class Event<T> {
           mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
 
         } else if (message == CANCEL) {
+          mIsCancelled = true;
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
-          if (!mIsCancelled) {
-            mIsCancelled = true;
-            tellInputActors(message, context);
-            mOutputActor.tell(CANCEL, mOptions.withThread(mOutputThread), context.getSelf());
-          }
 
         } else if (mOutputThread.equals(envelop.getOptions().getThread())) {
           if (message instanceof Conflict) {
@@ -423,8 +421,13 @@ public abstract class Event<T> {
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Context context) {
-      if ((message == GET) || (message == CANCEL)) {
+      if (message == GET) {
         envelop.getSender().tell(mConflict, envelop.getOptions().threadOnly(), context.getSelf());
+
+      } else if (message == CANCEL) {
+        envelop.getSender()
+            .tell(new Conflict(new PlotCancelledException()), envelop.getOptions().threadOnly(),
+                context.getSelf());
       }
       envelop.preventReceipt();
     }
