@@ -179,6 +179,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     return new UnaryStory<T1, R>(new ListMemory(), firstStory, loopHandler, resolutionHandler);
   }
 
+  private static boolean isEmpty(@Nullable final Story<?> story) {
+    final Cache cache = Setting.get().getCache(Story.class);
+    return (cache.get(Collections.EMPTY_LIST) == story) || (cache.get(Collections.EMPTY_SET)
+        == story);
+  }
+
   @NotNull
   public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
       @NotNull final EventLooper<? super Throwable, ? extends T> eventLooper) {
@@ -386,6 +392,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
 
     private void done(@NotNull final Context context) {
+      // TODO: 10/02/2019 eventually
       final Memory memory = mMemory;
       Object results = memory;
       for (final Object result : memory) {
@@ -414,6 +421,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       if (outputActor != null) {
         outputActor.tell(BREAK, mOptions.withThread(mOutputThreadId), context.getSelf());
       }
+      // TODO: 10/02/2019 eventually
       final Actor self = context.getSelf();
       for (final Sender sender : mGetSenders.values()) {
         sender.getSender().tell(conflict, sender.getOptions(), self);
@@ -919,7 +927,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       for (final Story<? extends T> story : stories) {
         inputActors.add(story.getActor());
       }
-      ConstantConditions.positive("stories size", inputActors.size());
+      ConstantConditions.positive("stories size", inputActors.size()); // TODO: 10/02/2019 ???
       mInputActors = inputActors;
       final String actorId = (mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
 
@@ -1155,7 +1163,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private int mInputCount;
     private String mInputThreadId;
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     private CrossOverStory(@NotNull final Memory memory,
         @NotNull final Iterable<? extends Story<? extends T>> stories) {
       mMemory = ConstantConditions.notNull("memory", memory);
@@ -1220,7 +1227,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private Actor nextInput(final int count) {
       mInputThreadId = mInputThread + "#" + count;
       final Iterator<? extends Story<? extends T>> stories = mStories;
-      return (mInputActor = stories.hasNext() ? stories.next().getActor() : null);
+      Actor inputActor = null;
+      while (stories.hasNext()) {
+        final Story<? extends T> story = stories.next();
+        if (!isEmpty(story)) {
+          inputActor = story.getActor();
+          break;
+        }
+      }
+      return (mInputActor = inputActor);
     }
 
     private class CancelBehavior extends AbstractBehavior {
@@ -1511,7 +1526,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       return mActors;
     }
 
-    @NotNull
+    @Nullable
     @SuppressWarnings("unchecked")
     Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
       Setting.set(getSetting());
@@ -1521,7 +1536,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           inputList.add((T) input);
         }
         final Story<R> story = mResolutionHandler.call(inputList);
-        return ((story != null) ? story : ofEmpty()).getActor();
+        if ((story == null) || isEmpty(story)) {
+          return null;
+        }
+        return story.getActor();
 
       } finally {
         Setting.unset();
@@ -1854,7 +1872,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private int mInputCount;
     private String mInputThreadId;
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     private LineUpStory(@NotNull final Memory memory,
         @NotNull final Iterable<? extends Event<? extends T>> events) {
       mMemory = ConstantConditions.notNull("memory", memory);
@@ -2335,13 +2352,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       return mActors;
     }
 
-    @NotNull
+    @Nullable
     @SuppressWarnings("unchecked")
     Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
       Setting.set(getSetting());
       try {
         final Story<R> story = mResolutionHandler.call((T1) inputs[0]);
-        return ((story != null) ? story : ofEmpty()).getActor();
+        if ((story == null) || isEmpty(story)) {
+          return null;
+        }
+        return story.getActor();
 
       } finally {
         Setting.unset();
@@ -2443,7 +2463,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private class InputBehavior extends AbstractBehavior {
 
-      @SuppressWarnings("unchecked")
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) {
         if (message == GET) {

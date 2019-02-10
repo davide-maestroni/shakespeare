@@ -70,7 +70,6 @@ public abstract class Event<T> {
   }
 
   @NotNull
-  @SuppressWarnings("unchecked")
   public static <T> Event<T> ofResolution(final T result) {
     Event<T> event;
     final Cache cache = Setting.get().getCache(Event.class);
@@ -270,21 +269,23 @@ public abstract class Event<T> {
     }
 
     private void done(final Object message, @NotNull final Context context) {
+      // TODO: 10/02/2019 eventually
       final Actor self = context.getSelf();
       for (final Sender sender : mSenders.values()) {
         sender.getSender().tell(message, sender.getOptions(), self);
       }
       mSenders = null;
-      context.setBehavior(new ResolutionBehavior(message));
+      context.setBehavior(new DoneBehavior(message));
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
+      // TODO: 10/02/2019 eventually
       final Actor self = context.getSelf();
       for (final Sender sender : mSenders.values()) {
         sender.getSender().tell(conflict, sender.getOptions(), self);
       }
       mSenders = null;
-      context.setBehavior(new ConflictBehavior(conflict.getCause()));
+      context.setBehavior(new DoneBehavior(conflict));
     }
 
     private void tellInputActors(final Object message, @NotNull final Context context) {
@@ -338,7 +339,6 @@ public abstract class Event<T> {
 
     private class InputBehavior extends AbstractBehavior {
 
-      @SuppressWarnings("unchecked")
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) {
         if (message == GET) {
@@ -415,7 +415,6 @@ public abstract class Event<T> {
 
     private class OutputBehavior extends AbstractBehavior {
 
-      @SuppressWarnings("unchecked")
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) {
         if (message == GET) {
@@ -443,35 +442,18 @@ public abstract class Event<T> {
     }
   }
 
-  private static class ConflictBehavior extends AbstractBehavior {
-
-    private final Conflict mConflict;
-
-    private ConflictBehavior(@NotNull final Throwable incident) {
-      mConflict = new Conflict(incident);
-    }
-
-    public void onMessage(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) {
-      if (message == GET) {
-        envelop.getSender().tell(mConflict, envelop.getOptions().threadOnly(), context.getSelf());
-      }
-      envelop.preventReceipt();
-    }
-  }
-
   private static class ConflictEvent<T> extends Event<T> {
 
     private final Actor mActor;
 
     private ConflictEvent(@NotNull final Throwable incident) {
-      ConstantConditions.notNull("incident", incident);
+      final Conflict conflict = new Conflict(incident);
       mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
 
         @NotNull
         @Override
         public Behavior getBehavior(@NotNull final String id) {
-          return new ConflictBehavior(incident);
+          return new DoneBehavior(conflict);
         }
       });
     }
@@ -479,6 +461,23 @@ public abstract class Event<T> {
     @NotNull
     Actor getActor() {
       return mActor;
+    }
+  }
+
+  private static class DoneBehavior extends AbstractBehavior {
+
+    private final Object mResult;
+
+    private DoneBehavior(final Object result) {
+      mResult = result;
+    }
+
+    public void onMessage(final Object message, @NotNull final Envelop envelop,
+        @NotNull final Context context) {
+      if (message == GET) {
+        envelop.getSender().tell(mResult, envelop.getOptions().threadOnly(), context.getSelf());
+      }
+      envelop.preventReceipt();
     }
   }
 
@@ -616,23 +615,6 @@ public abstract class Event<T> {
     }
   }
 
-  private static class ResolutionBehavior extends AbstractBehavior {
-
-    private final Object mResult;
-
-    private ResolutionBehavior(final Object result) {
-      mResult = result;
-    }
-
-    public void onMessage(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) {
-      if (message == GET) {
-        envelop.getSender().tell(mResult, envelop.getOptions().threadOnly(), context.getSelf());
-      }
-      envelop.preventReceipt();
-    }
-  }
-
   private static class ResolutionEvent<T> extends Event<T> {
 
     private final Actor mActor;
@@ -643,7 +625,7 @@ public abstract class Event<T> {
         @NotNull
         @Override
         public Behavior getBehavior(@NotNull final String id) {
-          return new ResolutionBehavior(result);
+          return new DoneBehavior(result);
         }
       });
     }
