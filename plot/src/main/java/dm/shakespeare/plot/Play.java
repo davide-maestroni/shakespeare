@@ -46,10 +46,11 @@ public class Play {
   }
 
   @NotNull
-  public <T> Event<T> performEvent(@NotNull final NullaryFunction<? extends Event<T>> function) {
+  public <T> Event<T> performEvent(
+      @NotNull final NullaryFunction<? extends Event<T>> eventCreator) {
     Setting.set(mSetting);
     try {
-      return function.call();
+      return Event.ofEvent(eventCreator);
 
     } catch (final Throwable t) {
       return Event.ofConflict(t);
@@ -72,10 +73,11 @@ public class Play {
   }
 
   @NotNull
-  public <T> Story<T> performStory(@NotNull final NullaryFunction<? extends Story<T>> function) {
+  public <T> Story<T> performStory(
+      @NotNull final NullaryFunction<? extends Story<T>> storyCreator) {
     Setting.set(mSetting);
     try {
-      return function.call();
+      return Story.ofStory(storyCreator);
 
     } catch (final Throwable t) {
       return Story.ofSingleConflict(t);

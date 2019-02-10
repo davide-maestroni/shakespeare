@@ -16,6 +16,11 @@ class Conflict {
   }
 
   @NotNull
+  static Conflict ofCancel() {
+    return new Conflict(new PlotCancelledException());
+  }
+
+  @NotNull
   Throwable getCause() {
     return mIncident;
   }
