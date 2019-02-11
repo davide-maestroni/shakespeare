@@ -2,12 +2,15 @@ package dm.shakespeare.plot;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.ExecutorService;
+
 import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
 import dm.shakespeare.actor.Script;
+import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.Receipt;
 import dm.shakespeare.plot.Story.StoryObserver;
@@ -62,5 +65,11 @@ class StoryObserverScript<T> extends Script {
         }
       }
     };
+  }
+
+  @NotNull
+  @Override
+  public ExecutorService getExecutor(@NotNull final String id) {
+    return ExecutorServices.trampolineExecutor();
   }
 }

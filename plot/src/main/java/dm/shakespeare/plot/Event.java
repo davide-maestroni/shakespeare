@@ -312,7 +312,20 @@ public abstract class Event<T> {
           final String thread = envelop.getOptions().getThread();
           if ((thread != null) && thread.startsWith(mInputThread)) {
             if (++mInputCount == mInputs.length) {
-              fail(Conflict.ofCancel(), context);
+              final Conflict conflict = Conflict.ofCancel();
+              try {
+                final Actor conflictActor = getConflictActor(conflict);
+                if (conflictActor != null) {
+                  conflictActor.tell(CANCEL, mOptions.withThread(mOutputThread), context.getSelf());
+                }
+                fail(conflict, context);
+
+              } catch (final Throwable t) {
+                fail(new Conflict(t), context);
+                if (t instanceof InterruptedException) {
+                  Thread.currentThread().interrupt();
+                }
+              }
             }
           }
         }
