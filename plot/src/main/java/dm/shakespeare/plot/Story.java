@@ -2565,6 +2565,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             mGetSenders = null;
             for (final SenderIterator sender : mNextSenders.values()) {
               sender.setIterator(results.iterator());
+              sender.tellNext(self);
             }
             context.setBehavior(new DoneBehavior(results, results, mNextSenders));
           }
