@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import dm.shakespeare.BackStage;
@@ -1002,7 +1003,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final List<Actor> mInputActors;
     private final String mInputThread;
     private final Memory mMemory;
-    private final HashSet<Actor> mNextActors = new HashSet<Actor>();
+    private final HashMap<Actor, String> mNextActors = new HashMap<Actor, String>();
     private final HashMap<String, SenderIterator> mNextSenders =
         new HashMap<String, SenderIterator>();
     private final Options mOptions;
@@ -1017,14 +1018,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       for (final Story<? extends T> story : stories) {
         inputActors.add(story.getActor());
       }
-      ConstantConditions.positive("stories size", inputActors.size()); // TODO: 10/02/2019 ???
       mInputActors = inputActors;
       final String actorId = (mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
 
         @NotNull
         @Override
         public Behavior getBehavior(@NotNull final String id) {
-          return new InitBehavior();
+          return !mInputActors.isEmpty() ? new InitBehavior()
+              : new DoneBehavior(Collections.emptyList(), Collections.emptyList(), mNextSenders);
         }
       })).getId();
       mInputThread = actorId + ":input";
@@ -1107,8 +1108,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else {
           final String thread = envelop.getOptions().getThread();
           if ((thread != null) && thread.startsWith(mInputThread)) {
-            final HashSet<Actor> nextActors = mNextActors;
-            nextActors.add(envelop.getSender());
+            final HashMap<Actor, String> nextActors = mNextActors;
+            nextActors.put(envelop.getSender(), thread);
             if (nextActors.size() == mInputActors.size()) {
               fail(Conflict.ofCancel(), context);
             }
@@ -1164,8 +1165,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             mNextSenders.put(thread, sender);
           }
 
-          if (!sender.tellNext(context.getSelf()) && (mNextActors.size() == mInputActors.size())) {
-            tellInputActors(NEXT, context);
+          final HashMap<Actor, String> nextActors = mNextActors;
+          if (!sender.tellNext(context.getSelf()) && !nextActors.isEmpty()) {
+            for (final Entry<Actor, String> entry : nextActors.entrySet()) {
+              entry.getKey().tell(NEXT, mOptions.withThread(entry.getValue()), context.getSelf());
+            }
+            nextActors.clear();
           }
 
         } else if (message == BREAK) {
@@ -1210,18 +1215,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               }
 
               if (!mGetSenders.isEmpty()) {
-                final Actor sender = envelop.getSender();
-                final StringBuilder builder = new StringBuilder();
-                for (final Actor actor : mInputActors) {
-                  builder.append('#');
-                  if (actor.equals(sender)) {
-                    final String threadId = mInputThread + builder.toString();
-                    actor.tell(NEXT, mOptions.withThread(threadId), self);
-                  }
-                }
+                envelop.getSender().tell(NEXT, mOptions.withThread(thread), self);
 
               } else {
-                mNextActors.add(envelop.getSender());
+                mNextActors.put(envelop.getSender(), thread);
               }
             }
           }
@@ -1619,7 +1616,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   private static class GenericStory<T, R> extends AbstractStory<R> {
 
-    private final List<Actor> mActors;
+    private final List<Actor> mInputActors;
     private final UnaryFunction<? super List<T>, ? extends Story<R>> mResolutionHandler;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -1628,18 +1625,18 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
         @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> resolutionHandler) {
       super(memory, loopHandler, Iterables.size(stories));
-      final ArrayList<Actor> actors = new ArrayList<Actor>();
+      final ArrayList<Actor> inputActors = new ArrayList<Actor>();
       for (final Story<? extends T> story : stories) {
-        actors.add(story.getActor());
+        inputActors.add(story.getActor());
       }
-      ConstantConditions.positive("stories size", actors.size());
-      mActors = actors;
+      ConstantConditions.positive("stories size", inputActors.size());
+      mInputActors = inputActors;
       mResolutionHandler = ConstantConditions.notNull("resolutionHandler", resolutionHandler);
     }
 
     @NotNull
     List<Actor> getInputActors() {
-      return mActors;
+      return mInputActors;
     }
 
     @Nullable
@@ -1788,14 +1785,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       for (final Event<? extends T> event : events) {
         inputActors.add(event.getActor());
       }
-      ConstantConditions.positive("events size", inputActors.size());
       mInputActors = inputActors;
       final String actorId = (mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
 
         @NotNull
         @Override
         public Behavior getBehavior(@NotNull final String id) {
-          return new InitBehavior();
+          return !mInputActors.isEmpty() ? new InitBehavior()
+              : new DoneBehavior(Collections.emptyList(), Collections.emptyList(), mNextSenders);
         }
       })).getId();
       mInputThread = actorId + ":input";
@@ -2348,9 +2345,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   private static class ResolveStory<T> extends AbstractStory<T> {
 
-    private final List<Actor> mActors;
     private final UnaryFunction<? super Throwable, ? extends Story<T>> mConflictHandler;
     private final Set<Class<? extends Throwable>> mConflictTypes;
+    private final List<Actor> mInputActors;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private ResolveStory(@NotNull final Memory memory, @NotNull final Actor eventActor,
@@ -2358,7 +2355,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
         @NotNull final UnaryFunction<? super Throwable, ? extends Story<T>> conflictHandler) {
       super(memory, loopHandler, 1);
-      mActors = Collections.singletonList(eventActor);
+      mInputActors = Collections.singletonList(eventActor);
       ConstantConditions.positive("conflictTypes size", conflictTypes.size());
       mConflictTypes = ConstantConditions.notNullElements("conflictTypes", conflictTypes);
       mConflictHandler = ConstantConditions.notNull("conflictHandler", conflictHandler);
@@ -2391,7 +2388,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     @NotNull
     List<Actor> getInputActors() {
-      return mActors;
+      return mInputActors;
     }
   }
 
@@ -2451,7 +2448,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   private static class UnaryStory<T1, R> extends AbstractStory<R> {
 
-    private final List<Actor> mActors;
+    private final List<Actor> mInputActors;
     private final UnaryFunction<? super T1, ? extends Story<R>> mResolutionHandler;
 
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
@@ -2459,13 +2456,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
         @NotNull final UnaryFunction<? super T1, ? extends Story<R>> resolutionHandler) {
       super(memory, loopHandler, 1);
-      mActors = Arrays.asList(firstStory.getActor());
+      mInputActors = Arrays.asList(firstStory.getActor());
       mResolutionHandler = ConstantConditions.notNull("resolutionHandler", resolutionHandler);
     }
 
     @NotNull
     List<Actor> getInputActors() {
-      return mActors;
+      return mInputActors;
     }
 
     @Nullable
