@@ -52,6 +52,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           return ByteBuffer.allocate(8 << 10);
         }
       };
+  private static final NullaryFunction<Event<Boolean>> INDEFINITE_LOOP =
+      new NullaryFunction<Event<Boolean>>() {
+
+        public Event<Boolean> call() {
+          return Event.ofTrue();
+        }
+      };
   private static final Action NO_OP = new Action() {
 
     public void run() {
@@ -183,6 +190,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     final Cache cache = Setting.get().getCache(Story.class);
     return (cache.get(Collections.EMPTY_LIST) == story) || (cache.get(Collections.EMPTY_SET)
         == story);
+  }
+
+  @NotNull
+  @Override
+  public Story<T> eventually(@NotNull final Action eventualAction) {
+    return new EventualStory<T>(new ListMemory(), this, eventualAction);
   }
 
   @NotNull
@@ -344,9 +357,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mOptions = new Options().withReceiptId(actorId);
     }
 
-    @NotNull
-    Actor getActor() {
-      return mActor;
+    void endAction() throws Exception {
     }
 
     @Nullable
@@ -392,8 +403,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
 
     private void done(@NotNull final Context context) {
-      // TODO: 10/02/2019 eventually
       final Memory memory = mMemory;
+      try {
+        endAction();
+
+      } catch (final Throwable t) {
+        memory.put(new Conflict(t));
+        if (t instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
+      }
       Object results = memory;
       for (final Object result : memory) {
         if (result instanceof Conflict) {
@@ -415,13 +434,22 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       context.setBehavior(new DoneBehavior(results, memory, nextSenders));
     }
 
-    private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
+    private void fail(@NotNull Conflict conflict, @NotNull final Context context) {
       tellInputActors(BREAK, context);
       final Actor outputActor = mOutputActor;
       if (outputActor != null) {
         outputActor.tell(BREAK, mOptions.withThread(mOutputThreadId), context.getSelf());
       }
-      // TODO: 10/02/2019 eventually
+
+      try {
+        endAction();
+
+      } catch (final Throwable t) {
+        conflict = new Conflict(t);
+        if (t instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
+      }
       final Actor self = context.getSelf();
       for (final Sender sender : mGetSenders.values()) {
         sender.getSender().tell(conflict, sender.getOptions(), self);
@@ -857,6 +885,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         }
         envelop.preventReceipt();
       }
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
     }
   }
 
@@ -1511,15 +1544,36 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
+  private static class EventualStory<T> extends AbstractStory<T> {
+
+    private final List<Actor> mActors;
+    private final Action mEventualAction;
+
+    private EventualStory(@NotNull final Memory memory, @NotNull final Story<T> story,
+        @NotNull final Action eventualAction) {
+      super(memory, INDEFINITE_LOOP, 1);
+      mActors = Collections.singletonList(story.getActor());
+      mEventualAction = ConstantConditions.notNull("eventualAction", eventualAction);
+    }
+
+    @Override
+    void endAction() throws Exception {
+      Setting.set(getSetting());
+      try {
+        mEventualAction.run();
+
+      } finally {
+        Setting.unset();
+      }
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return mActors;
+    }
+  }
+
   private static class FunctionStory<T> extends AbstractStory<T> {
-
-    private static final NullaryFunction<Event<Boolean>> INDEFINITE_LOOP =
-        new NullaryFunction<Event<Boolean>>() {
-
-          public Event<Boolean> call() {
-            return Event.ofTrue();
-          }
-        };
 
     private final NullaryFunction<? extends Story<T>> mStoryCreator;
 

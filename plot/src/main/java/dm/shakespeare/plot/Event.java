@@ -226,6 +226,9 @@ public abstract class Event<T> {
       mOptions = new Options().withReceiptId(actorId);
     }
 
+    void endAction() throws Exception {
+    }
+
     @NotNull
     Actor getActor() {
       return mActor;
@@ -268,8 +271,16 @@ public abstract class Event<T> {
       }
     }
 
-    private void done(final Object message, @NotNull final Context context) {
-      // TODO: 10/02/2019 eventually
+    private void done(Object message, @NotNull final Context context) {
+      try {
+        endAction();
+
+      } catch (final Throwable t) {
+        message = new Conflict(t);
+        if (t instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
+      }
       final Actor self = context.getSelf();
       for (final Sender sender : mSenders.values()) {
         sender.getSender().tell(message, sender.getOptions(), self);
@@ -278,8 +289,16 @@ public abstract class Event<T> {
       context.setBehavior(new DoneBehavior(message));
     }
 
-    private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
-      // TODO: 10/02/2019 eventually
+    private void fail(@NotNull Conflict conflict, @NotNull final Context context) {
+      try {
+        endAction();
+
+      } catch (final Throwable t) {
+        conflict = new Conflict(t);
+        if (t instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
+      }
       final Actor self = context.getSelf();
       for (final Sender sender : mSenders.values()) {
         sender.getSender().tell(conflict, sender.getOptions(), self);
@@ -520,13 +539,11 @@ public abstract class Event<T> {
       mEventualAction = ConstantConditions.notNull("eventualAction", eventualAction);
     }
 
-    @Nullable
     @Override
-    Actor getConflictActor(@NotNull final Conflict conflict) throws Exception {
+    void endAction() throws Exception {
       Setting.set(getSetting());
       try {
         mEventualAction.run();
-        return ofConflict(conflict.getCause()).getActor();
 
       } finally {
         Setting.unset();
@@ -536,19 +553,6 @@ public abstract class Event<T> {
     @NotNull
     List<Actor> getInputActors() {
       return mActors;
-    }
-
-    @Nullable
-    @Override
-    Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
-      Setting.set(getSetting());
-      try {
-        mEventualAction.run();
-        return ofResolution(inputs[0]).getActor();
-
-      } finally {
-        Setting.unset();
-      }
     }
   }
 
