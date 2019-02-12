@@ -141,6 +141,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
+  public static <T> Story<T> ofSingleEvent(@NotNull final Event<T> event) {
+    return new EventStory<T>(event);
+  }
+
+  @NotNull
   public static <T> Story<T> ofSingleResolution(final T result) {
     final Cache cache = Setting.get().getCache(Story.class);
     Story<T> story = cache.get(result);
@@ -229,12 +234,24 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <R> Story<R> then(@NotNull final EventLooper<? super T, ? extends R> eventLooper) {
-    return then(new LooperLoopHandler(eventLooper), new LooperEventHandler<T, R>(eventLooper));
+  public <R> Story<R> thenParallely(final int maxConcurrency,
+      @NotNull final UnaryFunction<? super T, ? extends Story<R>> resolutionHandler) {
+    return null;
   }
 
   @NotNull
-  public <R> Story<R> then(
+  public <R> Story<R> thenParallelyOrdered(final int maxConcurrency,
+      @NotNull final UnaryFunction<? super T, ? extends Story<R>> resolutionHandler) {
+    return null;
+  }
+
+  @NotNull
+  public <R> Story<R> thenWhile(@NotNull final EventLooper<? super T, ? extends R> eventLooper) {
+    return thenWhile(new LooperLoopHandler(eventLooper), new LooperEventHandler<T, R>(eventLooper));
+  }
+
+  @NotNull
+  public <R> Story<R> thenWhile(
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
       @NotNull final UnaryFunction<? super T, ? extends Story<R>> resolutionHandler) {
     return when(this, loopHandler, resolutionHandler);
@@ -525,14 +542,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            mNextSenders.put(thread, sender);
+            nextSenders.put(thread, sender);
           }
           sender.tellNext(context.getSelf());
 
@@ -603,14 +621,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            mNextSenders.put(thread, sender);
+            nextSenders.put(thread, sender);
           }
           sender.tellNext(context.getSelf());
 
@@ -709,14 +728,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            mNextSenders.put(thread, sender);
+            nextSenders.put(thread, sender);
           }
           sender.tellNext(context.getSelf());
 
@@ -766,14 +786,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            mNextSenders.put(thread, sender);
+            nextSenders.put(thread, sender);
           }
           final Actor self = context.getSelf();
           if (!sender.tellNext(self)) {
@@ -805,14 +826,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            mNextSenders.put(thread, sender);
+            nextSenders.put(thread, sender);
           }
           final Actor self = context.getSelf();
           if (!sender.tellNext(self)) {
@@ -841,14 +863,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            mNextSenders.put(thread, sender);
+            nextSenders.put(thread, sender);
           }
           sender.tellNext(context.getSelf());
 
@@ -1091,14 +1114,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            mNextSenders.put(thread, sender);
+            nextSenders.put(thread, sender);
           }
           sender.tellNext(context.getSelf());
 
@@ -1155,16 +1179,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            mNextSenders.put(thread, sender);
+            nextSenders.put(thread, sender);
           }
-
           final HashMap<Actor, String> nextActors = mNextActors;
           if (!sender.tellNext(context.getSelf()) && !nextActors.isEmpty()) {
             for (final Entry<Actor, String> entry : nextActors.entrySet()) {
@@ -1332,14 +1356,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            mNextSenders.put(thread, sender);
+            nextSenders.put(thread, sender);
           }
           sender.tellNext(context.getSelf());
 
@@ -1400,14 +1425,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            mNextSenders.put(thread, sender);
+            nextSenders.put(thread, sender);
           }
           sender.tellNext(context.getSelf());
 
@@ -1466,14 +1492,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            mNextSenders.put(thread, sender);
+            nextSenders.put(thread, sender);
           }
           final Actor self = context.getSelf();
           if (!sender.tellNext(self)) {
@@ -1520,14 +1547,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         final Actor self = context.getSelf();
         final Options options = envelop.getOptions().threadOnly();
         final String thread = options.getThread();
-        SenderIterator sender = mNextSenders.get(thread);
+        final Map<String, SenderIterator> nextSenders = mNextSenders;
+        SenderIterator sender = nextSenders.get(thread);
         if (sender != null) {
           sender.waitNext();
 
         } else {
           sender = new SenderIterator(envelop.getSender(), options);
           sender.setIterator(mResults.iterator());
-          mNextSenders.put(thread, sender);
+          nextSenders.put(thread, sender);
         }
 
         if (!sender.tellNext(self)) {
@@ -1538,6 +1566,160 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         mNextSenders.remove(envelop.getOptions().getThread());
       }
       envelop.preventReceipt();
+    }
+  }
+
+  private static class EventStory<T> extends Story<T> {
+
+    private final Actor mActor;
+    private final Actor mInputActor;
+    private final HashMap<String, SenderIterator> mNextSenders =
+        new HashMap<String, SenderIterator>();
+    private final Options mOptions;
+
+    private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
+
+    private EventStory(@NotNull final Event<T> event) {
+      mInputActor = event.getActor();
+      final String actorId = (mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return new InitBehavior();
+        }
+      })).getId();
+      mOptions = new Options().withReceiptId(actorId).withThread(actorId);
+    }
+
+    private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
+      final Actor self = context.getSelf();
+      for (final Sender sender : mGetSenders.values()) {
+        sender.getSender().tell(conflict, sender.getOptions(), self);
+      }
+      mGetSenders = null;
+      final Set<Conflict> conflicts = Collections.singleton(conflict);
+      for (final SenderIterator sender : mNextSenders.values()) {
+        sender.setIterator(conflicts.iterator());
+      }
+      context.setBehavior(new DoneBehavior(conflict, conflicts, mNextSenders));
+    }
+
+    private class CancelBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final Options options = envelop.getOptions().threadOnly();
+          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+
+        } else if (message == NEXT) {
+          final Options options = envelop.getOptions().threadOnly();
+          final String thread = options.getThread();
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
+          if (sender != null) {
+            sender.waitNext();
+
+          } else {
+            sender = new SenderIterator(envelop.getSender(), options.threadOnly());
+            nextSenders.put(thread, sender);
+          }
+
+        } else if (message == BREAK) {
+          mNextSenders.remove(envelop.getOptions().getThread());
+
+        } else {
+          if (context.getSelf().getId().equals(envelop.getOptions().getThread())) {
+            fail(Conflict.ofCancel(), context);
+          }
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    private class InitBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final Options options = envelop.getOptions().threadOnly();
+          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mInputActor.tell(GET, mOptions, context.getSelf());
+          context.setBehavior(new InputBehavior());
+
+        } else if (message == NEXT) {
+          final Options options = envelop.getOptions().threadOnly();
+          mNextSenders.put(options.getThread(), new SenderIterator(envelop.getSender(), options));
+          mInputActor.tell(GET, mOptions, context.getSelf());
+          context.setBehavior(new InputBehavior());
+
+        } else if (message == CANCEL) {
+          mInputActor.tell(CANCEL, mOptions, context.getSelf());
+          fail(Conflict.ofCancel(), context);
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    private class InputBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final Options options = envelop.getOptions().threadOnly();
+          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+
+        } else if (message == NEXT) {
+          final Options options = envelop.getOptions().threadOnly();
+          final String thread = options.getThread();
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
+          if (sender != null) {
+            sender.waitNext();
+
+          } else {
+            sender = new SenderIterator(envelop.getSender(), options.threadOnly());
+            nextSenders.put(thread, sender);
+          }
+
+        } else if (message == BREAK) {
+          mNextSenders.remove(envelop.getOptions().getThread());
+
+        } else if (message == CANCEL) {
+          mInputActor.tell(CANCEL, mOptions, context.getSelf());
+          context.setBehavior(new CancelBehavior());
+
+        } else {
+          final Actor self = context.getSelf();
+          if (self.getId().equals(envelop.getOptions().getThread())) {
+            if (message instanceof Conflict) {
+              fail((Conflict) message, context);
+
+            } else if (message instanceof Bounce) {
+              fail(new Conflict(PlotStateException.getOrNew((Bounce) message)), context);
+
+            } else {
+              for (final Sender sender : mGetSenders.values()) {
+                sender.getSender().tell(message, sender.getOptions(), self);
+              }
+              mGetSenders = null;
+              final Set<Object> results = Collections.singleton(message);
+              for (final SenderIterator sender : mNextSenders.values()) {
+                sender.setIterator(results.iterator());
+                sender.tellNext(self);
+              }
+              context.setBehavior(new DoneBehavior(results, results, mNextSenders));
+            }
+          }
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
     }
   }
 
@@ -1857,14 +2039,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            mNextSenders.put(thread, sender);
+            nextSenders.put(thread, sender);
           }
           sender.tellNext(context.getSelf());
 
@@ -1919,14 +2102,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            mNextSenders.put(thread, sender);
+            nextSenders.put(thread, sender);
           }
           sender.tellNext(context.getSelf());
 
@@ -2055,14 +2239,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            mNextSenders.put(thread, sender);
+            nextSenders.put(thread, sender);
           }
           sender.tellNext(context.getSelf());
 
@@ -2123,14 +2308,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            mNextSenders.put(thread, sender);
+            nextSenders.put(thread, sender);
           }
           sender.tellNext(context.getSelf());
 
@@ -2184,14 +2370,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            mNextSenders.put(thread, sender);
+            nextSenders.put(thread, sender);
           }
           final Actor self = context.getSelf();
           if (!sender.tellNext(self)) {
@@ -2534,12 +2721,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          final SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          final SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
-            mNextSenders.put(thread, new SenderIterator(envelop.getSender(), options.threadOnly()));
+            nextSenders.put(thread, new SenderIterator(envelop.getSender(), options.threadOnly()));
           }
 
         } else if (message == BREAK) {
@@ -2568,6 +2756,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           context.setBehavior(new InputBehavior());
 
         } else if (message == CANCEL) {
+          mInputActor.tell(CANCEL, mOptions, context.getSelf());
           fail(Conflict.ofCancel(), context);
         }
         envelop.preventReceipt();
@@ -2585,12 +2774,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
           final String thread = options.getThread();
-          final SenderIterator sender = mNextSenders.get(thread);
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          final SenderIterator sender = nextSenders.get(thread);
           if (sender != null) {
             sender.waitNext();
 
           } else {
-            mNextSenders.put(thread, new SenderIterator(envelop.getSender(), options.threadOnly()));
+            nextSenders.put(thread, new SenderIterator(envelop.getSender(), options.threadOnly()));
           }
 
         } else if (message == BREAK) {
