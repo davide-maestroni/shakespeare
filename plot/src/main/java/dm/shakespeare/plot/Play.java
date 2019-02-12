@@ -2,7 +2,6 @@ package dm.shakespeare.plot;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 
 import dm.shakespeare.log.Logger;
@@ -34,38 +33,11 @@ public class Play {
   }
 
   @NotNull
-  @SuppressWarnings("unchecked")
-  public <T> Event<T> performEvent(@NotNull final Event<T> event) {
-    Setting.set(mSetting);
-    try {
-      return Event.ofEvent(event);
-
-    } finally {
-      Setting.unset();
-    }
-  }
-
-  @NotNull
   public <T> Event<T> performEvent(
       @NotNull final NullaryFunction<? extends Event<T>> eventCreator) {
     Setting.set(mSetting);
     try {
       return Event.ofEvent(eventCreator);
-
-    } catch (final Throwable t) {
-      return Event.ofConflict(t);
-
-    } finally {
-      Setting.unset();
-    }
-  }
-
-  @NotNull
-  @SuppressWarnings("unchecked")
-  public <T> Story<T> performStory(@NotNull final Story<T> story) {
-    Setting.set(mSetting);
-    try {
-      return Story.crossOver(Collections.singleton(story));
 
     } finally {
       Setting.unset();
@@ -78,9 +50,6 @@ public class Play {
     Setting.set(mSetting);
     try {
       return Story.ofStory(storyCreator);
-
-    } catch (final Throwable t) {
-      return Story.ofSingleConflict(t);
 
     } finally {
       Setting.unset();

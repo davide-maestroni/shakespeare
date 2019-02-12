@@ -2,6 +2,7 @@ package dm.shakespeare.plot;
 
 import org.jetbrains.annotations.NotNull;
 
+import dm.shakespeare.message.Bounce;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -13,6 +14,11 @@ class Conflict {
 
   Conflict(@NotNull final Throwable incident) {
     mIncident = ConstantConditions.notNull("incident", incident);
+  }
+
+  @NotNull
+  static Conflict ofBounce(@NotNull final Bounce message) {
+    return new Conflict(PlotStateException.getOrNew(message));
   }
 
   @NotNull

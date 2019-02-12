@@ -49,11 +49,6 @@ public abstract class Event<T> {
   }
 
   @NotNull
-  public static <T> Event<T> ofEvent(@NotNull final Event<T> event) {
-    return new EventEvent<T>(event);
-  }
-
-  @NotNull
   public static <T> Event<T> ofEvent(
       @NotNull final NullaryFunction<? extends Event<T>> eventCreator) {
     return new FunctionEvent<T>(eventCreator);
@@ -510,21 +505,6 @@ public abstract class Event<T> {
         envelop.getSender().tell(mResult, envelop.getOptions().threadOnly(), context.getSelf());
       }
       envelop.preventReceipt();
-    }
-  }
-
-  private static class EventEvent<T> extends AbstractEvent<T> {
-
-    private final List<Actor> mActors;
-
-    private EventEvent(@NotNull final Event<T> event) {
-      super(1);
-      mActors = Collections.singletonList(event.getActor());
-    }
-
-    @NotNull
-    List<Actor> getInputActors() {
-      return mActors;
     }
   }
 
