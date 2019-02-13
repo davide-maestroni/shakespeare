@@ -41,6 +41,8 @@ import java.util.Queue;
  */
 public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
 
+  // TODO: 13/02/2019 CircularQueue??
+
   private static final int DEFAULT_SIZE = 1 << 3;
 
   private Object[] mData;
@@ -115,7 +117,7 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
   @NotNull
   @Override
   public Iterator<E> iterator() {
-    return new DoubleQueueIterator<E>(this);
+    return new DoubleQueueIterator();
   }
 
   @Override
@@ -280,6 +282,19 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
     return (E) output;
   }
 
+  // TODO: 08/08/2017 javadoc
+  @SuppressWarnings("unchecked")
+  public E set(final int index, @Nullable final E element) {
+    if ((index < 0) || (index >= size())) {
+      throw new IndexOutOfBoundsException();
+    }
+    final Object[] data = mData;
+    final int pos = (mFirst + index) & mMask;
+    final E old = (E) data[pos];
+    data[pos] = element;
+    return old;
+  }
+
   /**
    * Removes all the elements from this queue and put them into the specified array, starting from
    * {@code dstPos} position.
@@ -418,9 +433,8 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
   /**
    * Queue iterator implementation.
    */
-  private static class DoubleQueueIterator<E> implements Iterator<E> {
+  private class DoubleQueueIterator implements Iterator<E> {
 
-    private final DoubleQueue<E> mQueue;
     private boolean mIsRemoved;
     private int mOriginalFirst;
     private int mOriginalLast;
@@ -429,10 +443,9 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
     /**
      * Constructor.
      */
-    private DoubleQueueIterator(@NotNull final DoubleQueue<E> queue) {
-      mQueue = queue;
-      mPointer = (mOriginalFirst = queue.mFirst);
-      mOriginalLast = queue.mLast;
+    private DoubleQueueIterator() {
+      mPointer = (mOriginalFirst = mFirst);
+      mOriginalLast = mLast;
     }
 
     public boolean hasNext() {
@@ -446,13 +459,12 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
       if (pointer == originalLast) {
         throw new NoSuchElementException();
       }
-      final DoubleQueue<E> queue = mQueue;
-      if ((queue.mFirst != mOriginalFirst) || (queue.mLast != originalLast)) {
+      if ((mFirst != mOriginalFirst) || (mLast != originalLast)) {
         throw new ConcurrentModificationException();
       }
       mIsRemoved = false;
-      mPointer = (pointer + 1) & queue.mMask;
-      return (E) queue.mData[pointer];
+      mPointer = (pointer + 1) & mMask;
+      return (E) mData[pointer];
     }
 
     public void remove() {
@@ -464,17 +476,16 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
       if (pointer == originalFirst) {
         throw new IllegalStateException();
       }
-      final DoubleQueue<E> queue = mQueue;
-      if ((queue.mFirst != originalFirst) || (queue.mLast != mOriginalLast)) {
+      if ((mFirst != originalFirst) || (mLast != mOriginalLast)) {
         throw new ConcurrentModificationException();
       }
-      final int mask = queue.mMask;
+      final int mask = mMask;
       final int index = (pointer - 1) & mask;
-      if (queue.removeElement(index)) {
-        mOriginalFirst = queue.mFirst;
+      if (removeElement(index)) {
+        mOriginalFirst = mFirst;
 
       } else {
-        mOriginalLast = queue.mLast;
+        mOriginalLast = mLast;
         mPointer = (mPointer - 1) & mask;
       }
       mIsRemoved = true;
