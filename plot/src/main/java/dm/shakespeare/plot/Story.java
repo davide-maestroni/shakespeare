@@ -67,13 +67,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   };
 
   @NotNull
-  public static <T> Story<T> ofConflicts(@NotNull final Iterable<? extends Throwable> incidents) {
-    return new ConflictsStory<T>(incidents);
+  public static <T> Story<T> ofEmpty() {
+    return ofResults(Collections.<T>emptyList());
   }
 
   @NotNull
-  public static <T> Story<T> ofEmpty() {
-    return ofResolutions(Collections.<T>emptyList());
+  public static <T> Story<T> ofIncidents(@NotNull final Iterable<? extends Throwable> incidents) {
+    return new IncidentsStory<T>(incidents);
   }
 
   @NotNull
@@ -97,24 +97,19 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public static Story<ByteBuffer> ofInputStream(@NotNull final Memory memory,
       @NotNull final InputStream inputStream,
       @NotNull final NullaryFunction<? extends ByteBuffer> bufferCreator) {
-    return new ResolutionsStory<ByteBuffer>(
+    return new ResultsStory<ByteBuffer>(
         new InputStreamIterable(memory, inputStream, bufferCreator));
   }
 
   @NotNull
-  public static <T> Story<T> ofResolutions(@NotNull final Iterable<T> results) {
+  public static <T> Story<T> ofResults(@NotNull final Iterable<T> results) {
     final Cache cache = Setting.get().getCache(Story.class);
     Story<T> story = cache.get(results);
     if (story == null) {
-      story = new ResolutionsStory<T>(results);
+      story = new ResultsStory<T>(results);
       cache.put(results, story);
     }
     return story;
-  }
-
-  @NotNull
-  public static <T> Story<T> ofSingleConflict(@NotNull final Throwable incident) {
-    return new ConflictStory<T>(incident);
   }
 
   @NotNull
@@ -123,11 +118,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public static <T> Story<T> ofSingleResolution(final T result) {
+  public static <T> Story<T> ofSingleIncident(@NotNull final Throwable incident) {
+    return new IncidentStory<T>(incident);
+  }
+
+  @NotNull
+  public static <T> Story<T> ofSingleResult(final T result) {
     final Cache cache = Setting.get().getCache(Story.class);
     Story<T> story = cache.get(result);
     if (story == null) {
-      story = new ResolutionStory<T>(result);
+      story = new ResultStory<T>(result);
       cache.put(result, story);
     }
     return story;
@@ -217,8 +217,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <R> Story<R> thenParallelyOrdered(final int maxConcurrency,
-      @NotNull final UnaryFunction<? super T, ? extends Story<R>> resolutionHandler) {
+  public <R> Story<R> thenParallelyOrdered(final int maxConcurrency, final int maxEventWindow,
+      @NotNull final UnaryFunction<? super T, ? extends Event<R>> resolutionHandler) {
     return null;
   }
 
@@ -894,109 +894,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
-  private static class ConflictStory<T> extends Story<T> {
-
-    private final Actor mActor;
-
-    private ConflictStory(@NotNull final Throwable incident) {
-      final Conflict conflict = new Conflict(incident);
-      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
-
-        private final HashSet<String> mThreads = new HashSet<String>();
-
-        @NotNull
-        @Override
-        public Behavior getBehavior(@NotNull final String id) {
-          return new AbstractBehavior() {
-
-            public void onMessage(final Object message, @NotNull final Envelop envelop,
-                @NotNull final Context context) {
-              if (message == GET) {
-                envelop.getSender()
-                    .tell(conflict, envelop.getOptions().threadOnly(), context.getSelf());
-
-              } else if (message == NEXT) {
-                final HashSet<String> threads = mThreads;
-                final Options options = envelop.getOptions().threadOnly();
-                final String thread = options.getThread();
-                if (!threads.contains(thread)) {
-                  envelop.getSender().tell(conflict, options, context.getSelf());
-                  threads.add(thread);
-
-                } else {
-                  envelop.getSender()
-                      .tell(END, envelop.getOptions().threadOnly(), context.getSelf());
-                }
-
-              } else if (message == BREAK) {
-                mThreads.remove(envelop.getOptions().getThread());
-              }
-              envelop.preventReceipt();
-            }
-          };
-        }
-      });
-    }
-
-    @NotNull
-    Actor getActor() {
-      return mActor;
-    }
-  }
-
-  private static class ConflictsStory<T> extends Story<T> {
-
-    private final Actor mActor;
-
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    private ConflictsStory(@NotNull final Iterable<? extends Throwable> incidents) {
-      ConstantConditions.notNull("incidents", incidents);
-      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
-
-        private final HashMap<String, Iterator<? extends Throwable>> mThreads =
-            new HashMap<String, Iterator<? extends Throwable>>();
-
-        @NotNull
-        @Override
-        public Behavior getBehavior(@NotNull final String id) {
-          return new AbstractBehavior() {
-
-            public void onMessage(final Object message, @NotNull final Envelop envelop,
-                @NotNull final Context context) {
-              if (message == GET) {
-                envelop.getSender()
-                    .tell(new Conflict(Iterables.first(incidents)),
-                        envelop.getOptions().threadOnly(), context.getSelf());
-
-              } else if (message == NEXT) {
-                final HashMap<String, Iterator<? extends Throwable>> threads = mThreads;
-                final Options options = envelop.getOptions().threadOnly();
-                final String thread = options.getThread();
-                Iterator<? extends Throwable> iterator = threads.get(thread);
-                if (iterator == null) {
-                  iterator = incidents.iterator();
-                  threads.put(thread, iterator);
-                }
-                envelop.getSender()
-                    .tell(iterator.hasNext() ? new Conflict(iterator.next()) : END, options,
-                        context.getSelf());
-
-              } else if (message == BREAK) {
-                mThreads.remove(envelop.getOptions().getThread());
-              }
-              envelop.preventReceipt();
-            }
-          };
-        }
-      });
-    }
-
-    @NotNull
-    Actor getActor() {
-      return mActor;
-    }
-  }
-
   private static class DoneBehavior extends AbstractBehavior {
 
     private final Map<String, SenderIterator> mNextSenders;
@@ -1254,7 +1151,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
 
         } catch (final Throwable t) {
-          story = ofSingleConflict(t);
+          story = ofSingleIncident(t);
           if (t instanceof InterruptedException) {
             Thread.currentThread().interrupt();
           }
@@ -1311,6 +1208,109 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       } finally {
         Setting.unset();
       }
+    }
+  }
+
+  private static class IncidentStory<T> extends Story<T> {
+
+    private final Actor mActor;
+
+    private IncidentStory(@NotNull final Throwable incident) {
+      final Conflict conflict = new Conflict(incident);
+      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
+
+        private final HashSet<String> mThreads = new HashSet<String>();
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return new AbstractBehavior() {
+
+            public void onMessage(final Object message, @NotNull final Envelop envelop,
+                @NotNull final Context context) {
+              if (message == GET) {
+                envelop.getSender()
+                    .tell(conflict, envelop.getOptions().threadOnly(), context.getSelf());
+
+              } else if (message == NEXT) {
+                final HashSet<String> threads = mThreads;
+                final Options options = envelop.getOptions().threadOnly();
+                final String thread = options.getThread();
+                if (!threads.contains(thread)) {
+                  envelop.getSender().tell(conflict, options, context.getSelf());
+                  threads.add(thread);
+
+                } else {
+                  envelop.getSender()
+                      .tell(END, envelop.getOptions().threadOnly(), context.getSelf());
+                }
+
+              } else if (message == BREAK) {
+                mThreads.remove(envelop.getOptions().getThread());
+              }
+              envelop.preventReceipt();
+            }
+          };
+        }
+      });
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
+    }
+  }
+
+  private static class IncidentsStory<T> extends Story<T> {
+
+    private final Actor mActor;
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    private IncidentsStory(@NotNull final Iterable<? extends Throwable> incidents) {
+      ConstantConditions.notNull("incidents", incidents);
+      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
+
+        private final HashMap<String, Iterator<? extends Throwable>> mThreads =
+            new HashMap<String, Iterator<? extends Throwable>>();
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return new AbstractBehavior() {
+
+            public void onMessage(final Object message, @NotNull final Envelop envelop,
+                @NotNull final Context context) {
+              if (message == GET) {
+                envelop.getSender()
+                    .tell(new Conflict(Iterables.first(incidents)),
+                        envelop.getOptions().threadOnly(), context.getSelf());
+
+              } else if (message == NEXT) {
+                final HashMap<String, Iterator<? extends Throwable>> threads = mThreads;
+                final Options options = envelop.getOptions().threadOnly();
+                final String thread = options.getThread();
+                Iterator<? extends Throwable> iterator = threads.get(thread);
+                if (iterator == null) {
+                  iterator = incidents.iterator();
+                  threads.put(thread, iterator);
+                }
+                envelop.getSender()
+                    .tell(iterator.hasNext() ? new Conflict(iterator.next()) : END, options,
+                        context.getSelf());
+
+              } else if (message == BREAK) {
+                mThreads.remove(envelop.getOptions().getThread());
+              }
+              envelop.preventReceipt();
+            }
+          };
+        }
+      });
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
     }
   }
 
@@ -1839,106 +1839,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
-  private static class ResolutionStory<T> extends Story<T> {
-
-    private final Actor mActor;
-
-    private ResolutionStory(final T result) {
-      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
-
-        private final HashSet<String> mThreads = new HashSet<String>();
-
-        @NotNull
-        @Override
-        public Behavior getBehavior(@NotNull final String id) {
-          return new AbstractBehavior() {
-
-            public void onMessage(final Object message, @NotNull final Envelop envelop,
-                @NotNull final Context context) {
-              if (message == GET) {
-                envelop.getSender()
-                    .tell(result, envelop.getOptions().threadOnly(), context.getSelf());
-
-              } else if (message == NEXT) {
-                final HashSet<String> threads = mThreads;
-                final Options options = envelop.getOptions().threadOnly();
-                final String thread = options.getThread();
-                if (!threads.contains(thread)) {
-                  envelop.getSender()
-                      .tell(result, envelop.getOptions().threadOnly(), context.getSelf());
-                  threads.add(thread);
-
-                } else {
-                  envelop.getSender()
-                      .tell(END, envelop.getOptions().threadOnly(), context.getSelf());
-                }
-
-              } else if (message == BREAK) {
-                mThreads.remove(envelop.getOptions().getThread());
-              }
-              envelop.preventReceipt();
-            }
-          };
-        }
-      });
-    }
-
-    @NotNull
-    Actor getActor() {
-      return mActor;
-    }
-  }
-
-  private static class ResolutionsStory<T> extends Story<T> {
-
-    private final Actor mActor;
-
-    private ResolutionsStory(@NotNull final Iterable<T> results) {
-      ConstantConditions.notNull("results", results);
-      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
-
-        private final HashMap<String, Iterator<T>> mThreads = new HashMap<String, Iterator<T>>();
-
-        @NotNull
-        @Override
-        public Behavior getBehavior(@NotNull final String id) {
-          return new AbstractBehavior() {
-
-            public void onMessage(final Object message, @NotNull final Envelop envelop,
-                @NotNull final Context context) {
-              if (message == GET) {
-                envelop.getSender()
-                    .tell(Iterables.toList(results), envelop.getOptions().threadOnly(),
-                        context.getSelf());
-
-              } else if (message == NEXT) {
-                final HashMap<String, Iterator<T>> threads = mThreads;
-                final Options options = envelop.getOptions().threadOnly();
-                final String thread = options.getThread();
-                Iterator<T> iterator = threads.get(thread);
-                if (iterator == null) {
-                  iterator = results.iterator();
-                  threads.put(thread, iterator);
-                }
-                envelop.getSender()
-                    .tell(iterator.hasNext() ? iterator.next() : END, options, context.getSelf());
-
-              } else if (message == BREAK) {
-                mThreads.remove(envelop.getOptions().getThread());
-              }
-              envelop.preventReceipt();
-            }
-          };
-        }
-      });
-    }
-
-    @NotNull
-    Actor getActor() {
-      return mActor;
-    }
-  }
-
   private static class ResolveStory<T> extends AbstractStory<T> {
 
     private final UnaryFunction<? super Throwable, ? extends Story<T>> mConflictHandler;
@@ -1985,6 +1885,106 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @NotNull
     List<Actor> getInputActors() {
       return mInputActors;
+    }
+  }
+
+  private static class ResultStory<T> extends Story<T> {
+
+    private final Actor mActor;
+
+    private ResultStory(final T result) {
+      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
+
+        private final HashSet<String> mThreads = new HashSet<String>();
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return new AbstractBehavior() {
+
+            public void onMessage(final Object message, @NotNull final Envelop envelop,
+                @NotNull final Context context) {
+              if (message == GET) {
+                envelop.getSender()
+                    .tell(result, envelop.getOptions().threadOnly(), context.getSelf());
+
+              } else if (message == NEXT) {
+                final HashSet<String> threads = mThreads;
+                final Options options = envelop.getOptions().threadOnly();
+                final String thread = options.getThread();
+                if (!threads.contains(thread)) {
+                  envelop.getSender()
+                      .tell(result, envelop.getOptions().threadOnly(), context.getSelf());
+                  threads.add(thread);
+
+                } else {
+                  envelop.getSender()
+                      .tell(END, envelop.getOptions().threadOnly(), context.getSelf());
+                }
+
+              } else if (message == BREAK) {
+                mThreads.remove(envelop.getOptions().getThread());
+              }
+              envelop.preventReceipt();
+            }
+          };
+        }
+      });
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
+    }
+  }
+
+  private static class ResultsStory<T> extends Story<T> {
+
+    private final Actor mActor;
+
+    private ResultsStory(@NotNull final Iterable<T> results) {
+      ConstantConditions.notNull("results", results);
+      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
+
+        private final HashMap<String, Iterator<T>> mThreads = new HashMap<String, Iterator<T>>();
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return new AbstractBehavior() {
+
+            public void onMessage(final Object message, @NotNull final Envelop envelop,
+                @NotNull final Context context) {
+              if (message == GET) {
+                envelop.getSender()
+                    .tell(Iterables.toList(results), envelop.getOptions().threadOnly(),
+                        context.getSelf());
+
+              } else if (message == NEXT) {
+                final HashMap<String, Iterator<T>> threads = mThreads;
+                final Options options = envelop.getOptions().threadOnly();
+                final String thread = options.getThread();
+                Iterator<T> iterator = threads.get(thread);
+                if (iterator == null) {
+                  iterator = results.iterator();
+                  threads.put(thread, iterator);
+                }
+                envelop.getSender()
+                    .tell(iterator.hasNext() ? iterator.next() : END, options, context.getSelf());
+
+              } else if (message == BREAK) {
+                mThreads.remove(envelop.getOptions().getThread());
+              }
+              envelop.preventReceipt();
+            }
+          };
+        }
+      });
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
     }
   }
 

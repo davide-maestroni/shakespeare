@@ -44,11 +44,6 @@ public abstract class Event<T> {
   private static final Object NULL = new Object();
 
   @NotNull
-  public static <T> Event<T> ofConflict(@NotNull final Throwable incident) {
-    return new ConflictEvent<T>(incident);
-  }
-
-  @NotNull
   public static <T> Event<T> ofEvent(
       @NotNull final NullaryFunction<? extends Event<T>> eventCreator) {
     return new FunctionEvent<T>(eventCreator);
@@ -56,29 +51,34 @@ public abstract class Event<T> {
 
   @NotNull
   public static Event<Boolean> ofFalse() {
-    return ofResolution(Boolean.FALSE);
+    return ofResult(Boolean.FALSE);
+  }
+
+  @NotNull
+  public static <T> Event<T> ofIncident(@NotNull final Throwable incident) {
+    return new IncidentEvent<T>(incident);
   }
 
   @NotNull
   public static <T> Event<T> ofNull() {
-    return ofResolution(null);
+    return ofResult(null);
   }
 
   @NotNull
-  public static <T> Event<T> ofResolution(final T result) {
+  public static <T> Event<T> ofResult(final T result) {
     Event<T> event;
     final Cache cache = Setting.get().getCache(Event.class);
     if (result == null) {
       event = cache.get(NULL);
       if (event == null) {
-        event = new ResolutionEvent<T>(null);
+        event = new ResultEvent<T>(null);
         cache.put(NULL, event);
       }
 
     } else {
       event = cache.get(result);
       if (event == null) {
-        event = new ResolutionEvent<T>(result);
+        event = new ResultEvent<T>(result);
         cache.put(result, event);
       }
     }
@@ -87,7 +87,7 @@ public abstract class Event<T> {
 
   @NotNull
   public static Event<Boolean> ofTrue() {
-    return ofResolution(Boolean.TRUE);
+    return ofResult(Boolean.TRUE);
   }
 
   @NotNull
@@ -469,28 +469,6 @@ public abstract class Event<T> {
     }
   }
 
-  private static class ConflictEvent<T> extends Event<T> {
-
-    private final Actor mActor;
-
-    private ConflictEvent(@NotNull final Throwable incident) {
-      final Conflict conflict = new Conflict(incident);
-      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
-
-        @NotNull
-        @Override
-        public Behavior getBehavior(@NotNull final String id) {
-          return new DoneBehavior(conflict);
-        }
-      });
-    }
-
-    @NotNull
-    Actor getActor() {
-      return mActor;
-    }
-  }
-
   private static class DoneBehavior extends AbstractBehavior {
 
     private final Object mResult;
@@ -559,7 +537,7 @@ public abstract class Event<T> {
           }
 
         } catch (final Throwable t) {
-          event = ofConflict(t);
+          event = ofIncident(t);
           if (t instanceof InterruptedException) {
             Thread.currentThread().interrupt();
           }
@@ -612,17 +590,18 @@ public abstract class Event<T> {
     }
   }
 
-  private static class ResolutionEvent<T> extends Event<T> {
+  private static class IncidentEvent<T> extends Event<T> {
 
     private final Actor mActor;
 
-    private ResolutionEvent(final T result) {
+    private IncidentEvent(@NotNull final Throwable incident) {
+      final Conflict conflict = new Conflict(incident);
       mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
 
         @NotNull
         @Override
         public Behavior getBehavior(@NotNull final String id) {
-          return new DoneBehavior(result);
+          return new DoneBehavior(conflict);
         }
       });
     }
@@ -670,6 +649,27 @@ public abstract class Event<T> {
     @NotNull
     List<Actor> getInputActors() {
       return mActors;
+    }
+  }
+
+  private static class ResultEvent<T> extends Event<T> {
+
+    private final Actor mActor;
+
+    private ResultEvent(final T result) {
+      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return new DoneBehavior(result);
+        }
+      });
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
     }
   }
 
