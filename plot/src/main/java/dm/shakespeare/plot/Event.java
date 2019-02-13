@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import dm.shakespeare.BackStage;
@@ -117,6 +118,12 @@ public abstract class Event<T> {
     return cache.get(Boolean.TRUE) == event;
   }
 
+  @SuppressWarnings("ConstantConditions")
+  private static boolean isSameThread(@Nullable final String expectedThread,
+      @Nullable final String actualThread) {
+    return expectedThread.equals(actualThread);
+  }
+
   @NotNull
   public Event<T> eventually(@NotNull final Action eventualAction) {
     return new EventualEvent<T>(this, eventualAction);
@@ -195,10 +202,11 @@ public abstract class Event<T> {
   private abstract static class AbstractEvent<T> extends Event<T> {
 
     private final Actor mActor;
+    private final HashMap<Actor, Options> mInputActors = new HashMap<Actor, Options>();
     private final String mInputThread;
     private final Object[] mInputs;
     private final Options mOptions;
-    private final String mOutputThread;
+    private final Options mOutputOptions;
     private final Setting mSetting;
 
     private Conflict mConflict;
@@ -216,9 +224,9 @@ public abstract class Event<T> {
           return new InitBehavior();
         }
       })).getId();
+      final Options options = (mOptions = new Options().withReceiptId(actorId));
       mInputThread = actorId + ":input";
-      mOutputThread = actorId + ":output";
-      mOptions = new Options().withReceiptId(actorId);
+      mOutputOptions = options.withThread(actorId + ":output");
     }
 
     void endAction() throws Exception {
@@ -251,7 +259,7 @@ public abstract class Event<T> {
       try {
         final Actor conflictActor = getConflictActor(conflict);
         if (conflictActor != null) {
-          conflictActor.tell(GET, mOptions.withThread(mOutputThread), context.getSelf());
+          conflictActor.tell(GET, mOutputOptions, context.getSelf());
           context.setBehavior(new OutputBehavior());
 
         } else {
@@ -304,10 +312,21 @@ public abstract class Event<T> {
 
     private void tellInputActors(final Object message, @NotNull final Context context) {
       final Actor self = context.getSelf();
-      final StringBuilder builder = new StringBuilder();
-      for (final Actor actor : getInputActors()) {
-        final String threadId = mInputThread + builder.append('#').toString();
-        actor.tell(message, mOptions.withThread(threadId), self);
+      final HashMap<Actor, Options> inputActors = mInputActors;
+      if (inputActors.isEmpty()) {
+        @SuppressWarnings("UnnecessaryLocalVariable") final Options options = mOptions;
+        final StringBuilder builder = new StringBuilder();
+        for (final Actor actor : getInputActors()) {
+          final String threadId = mInputThread + builder.append('#').toString();
+          final Options inputOptions = options.withThread(threadId);
+          inputActors.put(actor, inputOptions);
+          actor.tell(message, inputOptions, self);
+        }
+
+      } else {
+        for (final Entry<Actor, Options> entry : inputActors.entrySet()) {
+          entry.getKey().tell(message, entry.getValue(), self);
+        }
       }
     }
 
@@ -319,25 +338,28 @@ public abstract class Event<T> {
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
 
-        } else if (mOutputThread.equals(envelop.getOptions().getThread())) {
-          fail(Conflict.ofCancel(), context);
-
         } else {
-          final String thread = envelop.getOptions().getThread();
-          if ((thread != null) && thread.startsWith(mInputThread)) {
-            if (++mInputCount == mInputs.length) {
-              final Conflict conflict = Conflict.ofCancel();
-              try {
-                final Actor conflictActor = getConflictActor(conflict);
-                if (conflictActor != null) {
-                  conflictActor.tell(CANCEL, mOptions.withThread(mOutputThread), context.getSelf());
-                }
-                fail(conflict, context);
+          final Options outputOptions = mOutputOptions;
+          if (isSameThread(outputOptions.getThread(), envelop.getOptions().getThread())) {
+            fail(Conflict.ofCancel(), context);
 
-              } catch (final Throwable t) {
-                fail(new Conflict(t), context);
-                if (t instanceof InterruptedException) {
-                  Thread.currentThread().interrupt();
+          } else {
+            final String thread = envelop.getOptions().getThread();
+            if ((thread != null) && thread.startsWith(mInputThread)) {
+              if (++mInputCount == mInputs.length) {
+                final Conflict conflict = Conflict.ofCancel();
+                try {
+                  final Actor conflictActor = getConflictActor(conflict);
+                  if (conflictActor != null) {
+                    conflictActor.tell(CANCEL, outputOptions, context.getSelf());
+                  }
+                  fail(conflict, context);
+
+                } catch (final Throwable t) {
+                  fail(new Conflict(t), context);
+                  if (t instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                  }
                 }
               }
             }
@@ -391,7 +413,7 @@ public abstract class Event<T> {
               }
 
             } else if (message instanceof Bounce) {
-              final Conflict conflict = new Conflict(PlotStateException.getOrNew((Bounce) message));
+              final Conflict conflict = Conflict.ofBounce((Bounce) message);
               if (mConflict == null) {
                 mConflict = conflict;
               }
@@ -413,8 +435,7 @@ public abstract class Event<T> {
                     try {
                       final Actor outputActor = getOutputActor(inputs);
                       if (outputActor != null) {
-                        outputActor.tell(GET, mOptions.withThread(mOutputThread),
-                            context.getSelf());
+                        outputActor.tell(GET, mOutputOptions, context.getSelf());
                         context.setBehavior(new OutputBehavior());
 
                       } else {
@@ -431,7 +452,7 @@ public abstract class Event<T> {
                 }
 
               } else {
-                conflict(new Conflict(new PlotCancelledException()), context);
+                conflict(Conflict.ofCancel(), context);
               }
             }
           }
@@ -452,16 +473,17 @@ public abstract class Event<T> {
           tellInputActors(CANCEL, context);
           context.setBehavior(new CancelBehavior());
 
-        } else if (mOutputThread.equals(envelop.getOptions().getThread())) {
-          if (message instanceof Conflict) {
-            fail((Conflict) message, context);
+        } else {
+          if (isSameThread(mOutputOptions.getThread(), envelop.getOptions().getThread())) {
+            if (message instanceof Conflict) {
+              fail((Conflict) message, context);
 
-          } else if (message instanceof Bounce) {
-            final Throwable incident = PlotStateException.getOrNew((Bounce) message);
-            fail(new Conflict(incident), context);
+            } else if (message instanceof Bounce) {
+              fail(Conflict.ofBounce((Bounce) message), context);
 
-          } else if (!(message instanceof Receipt)) {
-            done(message, context);
+            } else if (!(message instanceof Receipt)) {
+              done(message, context);
+            }
           }
         }
         envelop.preventReceipt();

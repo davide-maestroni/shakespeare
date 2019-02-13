@@ -39,9 +39,7 @@ import java.util.Queue;
  *
  * @param <E> the element type.
  */
-public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
-
-  // TODO: 13/02/2019 CircularQueue??
+public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
 
   private static final int DEFAULT_SIZE = 1 << 3;
 
@@ -54,7 +52,7 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
   /**
    * Constructor.
    */
-  public DoubleQueue() {
+  public CQueue() {
     mData = new Object[DEFAULT_SIZE];
     mMask = DEFAULT_SIZE - 1;
   }
@@ -65,7 +63,7 @@ public class DoubleQueue<E> extends AbstractCollection<E> implements Queue<E> {
    * @param minCapacity the minimum capacity.
    * @throws IllegalArgumentException if the specified capacity is less than 1.
    */
-  public DoubleQueue(final int minCapacity) {
+  public CQueue(final int minCapacity) {
     final int msb = Integer.highestOneBit(ConstantConditions.positive("minCapacity", minCapacity));
     final int initialCapacity = (minCapacity == msb) ? msb : msb << 1;
     mData = new Object[initialCapacity];

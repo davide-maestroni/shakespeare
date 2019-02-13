@@ -19,8 +19,8 @@ import dm.shakespeare.message.IllegalRecipientException;
 import dm.shakespeare.message.Receipt;
 import dm.shakespeare.template.SupervisedScript.SupervisedRecovery.RecoveryType;
 import dm.shakespeare.template.config.BuildConfig;
+import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
-import dm.shakespeare.util.DoubleQueue;
 
 /**
  * Created by davide-maestroni on 01/16/2019.
@@ -131,7 +131,7 @@ public class SupervisedScript extends SerializableScriptWrapper {
     private final String mReceiptId = toString();
 
     private Behavior mBehavior;
-    private DoubleQueue<DelayedMessage> mDelayedMessages = new DoubleQueue<DelayedMessage>();
+    private CQueue<DelayedMessage> mDelayedMessages = new CQueue<DelayedMessage>();
     private Throwable mFailure;
     private String mFailureId;
     private DelayedMessage mFailureMessage;
@@ -176,7 +176,7 @@ public class SupervisedScript extends SerializableScriptWrapper {
     }
 
     private void bounceDelayed(@NotNull final Context context) {
-      final DoubleQueue<DelayedMessage> delayedMessages = mDelayedMessages;
+      final CQueue<DelayedMessage> delayedMessages = mDelayedMessages;
       for (final DelayedMessage delayedMessage : delayedMessages) {
         final Envelop envelop = delayedMessage.getEnvelop();
         final Options options = envelop.getOptions();
@@ -185,7 +185,7 @@ public class SupervisedScript extends SerializableScriptWrapper {
               options.threadOnly(), context);
         }
       }
-      mDelayedMessages = new DoubleQueue<DelayedMessage>();
+      mDelayedMessages = new CQueue<DelayedMessage>();
     }
 
     private void resetFailure(@NotNull final Context context) {
@@ -330,7 +330,7 @@ public class SupervisedScript extends SerializableScriptWrapper {
 
       public void handle(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) throws Exception {
-        final DoubleQueue<DelayedMessage> delayedMessages = mDelayedMessages;
+        final CQueue<DelayedMessage> delayedMessages = mDelayedMessages;
         if (!delayedMessages.isEmpty()) {
           final DelayedMessage delayedMessage = delayedMessages.removeFirst();
           if (message != DUMMY_MESSAGE) {
@@ -339,7 +339,7 @@ public class SupervisedScript extends SerializableScriptWrapper {
           super.handle(delayedMessage.getMessage(), delayedMessage.getEnvelop(), context);
           return;
         }
-        mDelayedMessages = new DoubleQueue<DelayedMessage>();
+        mDelayedMessages = new CQueue<DelayedMessage>();
         mHandler = new DefaultHandler();
         super.handle(message, envelop, context);
       }

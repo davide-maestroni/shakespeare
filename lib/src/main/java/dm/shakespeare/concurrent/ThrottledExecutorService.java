@@ -9,8 +9,8 @@ import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
-import dm.shakespeare.util.DoubleQueue;
 
 /**
  * Created by davide-maestroni on 06/06/2018.
@@ -20,7 +20,7 @@ class ThrottledExecutorService extends AbstractExecutorService implements Queued
   private final ExecutorService mExecutor;
   private final int mMaxConcurrency;
   private final Object mMutex = new Object();
-  private final DoubleQueue<Runnable> mQueue = new DoubleQueue<Runnable>();
+  private final CQueue<Runnable> mQueue = new CQueue<Runnable>();
   private final ThrottledRunnable mRunnable = new ThrottledRunnable();
 
   private int mPendingCount;
@@ -61,7 +61,7 @@ class ThrottledExecutorService extends AbstractExecutorService implements Queued
     mExecutor.shutdownNow();
     final ArrayList<Runnable> runnables;
     synchronized (mMutex) {
-      final DoubleQueue<Runnable> queue = mQueue;
+      final CQueue<Runnable> queue = mQueue;
       runnables = new ArrayList<Runnable>(queue);
       queue.clear();
     }

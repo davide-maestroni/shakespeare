@@ -8,22 +8,22 @@ import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
-import dm.shakespeare.util.DoubleQueue;
 
 /**
  * Created by davide-maestroni on 02/08/2019.
  */
 public class TestExecutorService extends AbstractExecutorService {
 
-  private final DoubleQueue<Runnable> mRunnables = new DoubleQueue<Runnable>();
+  private final CQueue<Runnable> mRunnables = new CQueue<Runnable>();
 
   private boolean mIsShutdown;
 
   @SuppressWarnings("ResultOfMethodCallIgnored")
   public int consume(final int maxTasks) {
     ConstantConditions.positive("maxTasks", maxTasks);
-    final DoubleQueue<Runnable> runnables = mRunnables;
+    final CQueue<Runnable> runnables = mRunnables;
     int count = 0;
     while ((count < maxTasks) && !runnables.isEmpty()) {
       runnables.removeFirst().run();
@@ -33,7 +33,7 @@ public class TestExecutorService extends AbstractExecutorService {
   }
 
   public int consumeAll() {
-    final DoubleQueue<Runnable> runnables = mRunnables;
+    final CQueue<Runnable> runnables = mRunnables;
     int count = 0;
     while (!runnables.isEmpty()) {
       runnables.removeFirst().run();

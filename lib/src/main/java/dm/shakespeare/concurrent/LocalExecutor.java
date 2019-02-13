@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
 
 import dm.shakespeare.log.LogPrinters;
 import dm.shakespeare.log.Logger;
-import dm.shakespeare.util.DoubleQueue;
+import dm.shakespeare.util.CQueue;
 
 /**
  * Class maintaining a queue of commands which is local to the calling thread.
@@ -37,7 +37,7 @@ class LocalExecutor {
   private static final Logger sLogger =
       Logger.newLogger(LogPrinters.javaLoggingPrinter(LocalExecutor.class.getName()));
 
-  private final DoubleQueue<Runnable> mCommands = new DoubleQueue<Runnable>(INITIAL_CAPACITY);
+  private final CQueue<Runnable> mCommands = new CQueue<Runnable>(INITIAL_CAPACITY);
 
   private boolean mIsRunning;
 
@@ -57,7 +57,7 @@ class LocalExecutor {
   }
 
   private void addCommand(@NotNull final Runnable command) {
-    final DoubleQueue<Runnable> commands = mCommands;
+    final CQueue<Runnable> commands = mCommands;
     if (!mIsRunning) {
       mIsRunning = true;
       try {
@@ -88,7 +88,7 @@ class LocalExecutor {
 
   private void run() {
     mIsRunning = true;
-    final DoubleQueue<Runnable> commands = mCommands;
+    final CQueue<Runnable> commands = mCommands;
     try {
       while (!commands.isEmpty()) {
         try {

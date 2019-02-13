@@ -20,20 +20,20 @@ import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
 import dm.shakespeare.actor.SerializableScript;
 import dm.shakespeare.template.config.BuildConfig;
+import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
-import dm.shakespeare.util.DoubleQueue;
 
 /**
  * Created by davide-maestroni on 01/17/2019.
  */
 public class ReflectionScript extends SerializableScript {
 
-  private static final ThreadLocal<DoubleQueue<Context>> CONTEXTS =
-      new ThreadLocal<DoubleQueue<Context>>() {
+  private static final ThreadLocal<CQueue<Context>> CONTEXTS =
+      new ThreadLocal<CQueue<Context>>() {
 
         @Override
-        protected DoubleQueue<Context> initialValue() {
-          return new DoubleQueue<Context>();
+        protected CQueue<Context> initialValue() {
+          return new CQueue<Context>();
         }
       };
   private static final HashMap<Class<?>, Object> DEFAULT_RETURN_VALUES =
@@ -47,12 +47,12 @@ public class ReflectionScript extends SerializableScript {
         put(float.class, (float) 0);
         put(double.class, (double) 0);
       }};
-  private static final ThreadLocal<DoubleQueue<Envelop>> ENVELOPS =
-      new ThreadLocal<DoubleQueue<Envelop>>() {
+  private static final ThreadLocal<CQueue<Envelop>> ENVELOPS =
+      new ThreadLocal<CQueue<Envelop>>() {
 
         @Override
-        protected DoubleQueue<Envelop> initialValue() {
-          return new DoubleQueue<Envelop>();
+        protected CQueue<Envelop> initialValue() {
+          return new CQueue<Envelop>();
         }
       };
 

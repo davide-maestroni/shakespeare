@@ -11,8 +11,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import dm.shakespeare.actor.Script;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.log.Logger;
+import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
-import dm.shakespeare.util.DoubleQueue;
 import dm.shakespeare.util.WeakIdentityHashMap;
 
 /**
@@ -20,12 +20,12 @@ import dm.shakespeare.util.WeakIdentityHashMap;
  */
 class Setting {
 
-  private static final ThreadLocal<DoubleQueue<Setting>> sLocalSetting =
-      new ThreadLocal<DoubleQueue<Setting>>() {
+  private static final ThreadLocal<CQueue<Setting>> sLocalSetting =
+      new ThreadLocal<CQueue<Setting>>() {
 
         @Override
-        protected DoubleQueue<Setting> initialValue() {
-          return new DoubleQueue<Setting>();
+        protected CQueue<Setting> initialValue() {
+          return new CQueue<Setting>();
         }
       };
 
