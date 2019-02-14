@@ -11,6 +11,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import dm.shakespeare.BackStage;
 import dm.shakespeare.actor.AbstractBehavior;
@@ -21,7 +23,6 @@ import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
 import dm.shakespeare.function.Observer;
 import dm.shakespeare.message.Bounce;
-import dm.shakespeare.message.Receipt;
 import dm.shakespeare.plot.Setting.Cache;
 import dm.shakespeare.plot.function.Action;
 import dm.shakespeare.plot.function.NullaryFunction;
@@ -135,7 +136,7 @@ public abstract class Event<T> {
       @NotNull final UnaryFunction<? super E1, ? extends Event<T>> conflictHandler) {
     final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
     types.add(firstType);
-    return new ResolveEvent<T>(getActor(), types,
+    return new ResolveEvent<T>(this, types,
         (UnaryFunction<? super Throwable, ? extends Event<T>>) conflictHandler);
   }
 
@@ -144,9 +145,13 @@ public abstract class Event<T> {
   public <E extends Throwable> Event<T> resolve(
       @NotNull final Iterable<? extends Class<? extends E>> conflictTypes,
       @NotNull final UnaryFunction<? super E, ? extends Event<T>> conflictHandler) {
-    return new ResolveEvent<T>(getActor(),
-        Iterables.<Class<? extends Throwable>>toSet(conflictTypes),
+    return new ResolveEvent<T>(this, Iterables.<Class<? extends Throwable>>toSet(conflictTypes),
         (UnaryFunction<? super Throwable, ? extends Event<T>>) conflictHandler);
+  }
+
+  @NotNull
+  public Event<T> scheduleWithDelay(final long delay, @NotNull final TimeUnit unit) {
+    return new ScheduleWithDelayEvent<T>(this, delay, unit);
   }
 
   @NotNull
@@ -422,7 +427,7 @@ public abstract class Event<T> {
                 conflict(conflict, context);
               }
 
-            } else if (!(message instanceof Receipt)) {
+            } else {
               final int index = thread.length() - inputThread.length() - 1;
               final Object[] inputs = mInputs;
               if ((index >= 0) && (index < inputs.length)) {
@@ -481,7 +486,7 @@ public abstract class Event<T> {
             } else if (message instanceof Bounce) {
               fail(Conflict.ofBounce((Bounce) message), context);
 
-            } else if (!(message instanceof Receipt)) {
+            } else {
               done(message, context);
             }
           }
@@ -640,11 +645,11 @@ public abstract class Event<T> {
     private final UnaryFunction<? super Throwable, ? extends Event<T>> mConflictHandler;
     private final Set<Class<? extends Throwable>> mConflictTypes;
 
-    private ResolveEvent(@NotNull final Actor eventActor,
+    private ResolveEvent(@NotNull final Event<? extends T> event,
         @NotNull final Set<Class<? extends Throwable>> conflictTypes,
         @NotNull final UnaryFunction<? super Throwable, ? extends Event<T>> conflictHandler) {
       super(1);
-      mActors = Collections.singletonList(eventActor);
+      mActors = Collections.singletonList(event.getActor());
       mConflictTypes = ConstantConditions.notNullElements("conflictTypes", conflictTypes);
       mConflictHandler = ConstantConditions.notNull("conflictHandler", conflictHandler);
     }
@@ -687,6 +692,136 @@ public abstract class Event<T> {
           return new DoneBehavior(result);
         }
       });
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
+    }
+  }
+
+  private static class ScheduleWithDelayEvent<T> extends Event<T> implements Runnable {
+
+    private final Actor mActor;
+    private final long mDelay;
+    private final Actor mInputActor;
+    private final Options mInputOptions;
+    private final TimeUnit mUnit;
+
+    private boolean mInputPending;
+    private ScheduledFuture<?> mScheduledFuture;
+    private HashMap<String, Sender> mSenders = new HashMap<String, Sender>();
+
+    private ScheduleWithDelayEvent(@NotNull final Event<? extends T> event, final long delay,
+        @NotNull final TimeUnit unit) {
+      mInputActor = event.getActor();
+      mDelay = ConstantConditions.positive("delay", delay);
+      mUnit = ConstantConditions.notNull("unit", unit);
+      final String actorId = (mActor = BackStage.newActor(new PlayScript(Setting.get()) {
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return new InitBehavior();
+        }
+      })).getId();
+      mInputOptions = new Options().withReceiptId(actorId).withThread(actorId + ":input");
+    }
+
+    public void run() {
+      mInputPending = true;
+      mInputActor.tell(GET, mInputOptions, mActor);
+    }
+
+    private void done(Object message, @NotNull final Context context) {
+      final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
+      if (scheduledFuture != null) {
+        scheduledFuture.cancel(false);
+      }
+      final Actor self = context.getSelf();
+      for (final Sender sender : mSenders.values()) {
+        sender.getSender().tell(message, sender.getOptions(), self);
+      }
+      mSenders = null;
+      context.setBehavior(new DoneBehavior(message));
+    }
+
+    private void fail(@NotNull Conflict conflict, @NotNull final Context context) {
+      final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
+      if (scheduledFuture != null) {
+        scheduledFuture.cancel(false);
+      }
+      final Actor self = context.getSelf();
+      for (final Sender sender : mSenders.values()) {
+        sender.getSender().tell(conflict, sender.getOptions(), self);
+      }
+      mSenders = null;
+      context.setBehavior(new DoneBehavior(conflict));
+    }
+
+    private class CancelBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final Options options = envelop.getOptions().threadOnly();
+          mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+
+        } else if (isSameThread(mInputOptions.getThread(), envelop.getOptions().getThread())) {
+          fail(Conflict.ofCancel(), context);
+        }
+      }
+    }
+
+    private class InitBehavior extends AbstractBehavior {
+
+      public void onMessage(Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final Options options = envelop.getOptions().threadOnly();
+          mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mScheduledFuture =
+              context.getScheduledExecutor().schedule(ScheduleWithDelayEvent.this, mDelay, mUnit);
+          context.setBehavior(new InputBehavior());
+
+        } else if (message == CANCEL) {
+          mInputActor.tell(CANCEL, mInputOptions, mActor);
+          fail(Conflict.ofCancel(), context);
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    private class InputBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final Options options = envelop.getOptions().threadOnly();
+          mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+
+        } else if (message == CANCEL) {
+          mInputActor.tell(CANCEL, mInputOptions, mActor);
+          if (mInputPending) {
+            context.setBehavior(new CancelBehavior());
+
+          } else {
+            fail(Conflict.ofCancel(), context);
+          }
+
+        } else if (isSameThread(mInputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (message instanceof Conflict) {
+            fail((Conflict) message, context);
+
+          } else if (message instanceof Bounce) {
+            fail(Conflict.ofBounce((Bounce) message), context);
+
+          } else {
+            done(message, context);
+          }
+        }
+        envelop.preventReceipt();
+      }
     }
 
     @NotNull

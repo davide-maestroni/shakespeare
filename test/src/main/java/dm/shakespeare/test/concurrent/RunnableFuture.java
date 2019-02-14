@@ -1,30 +1,30 @@
-package dm.shakespeare.concurrent;
+package dm.shakespeare.test.concurrent;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import dm.shakespeare.util.ConstantConditions;
-import dm.shakespeare.util.TimeUnits;
 
 /**
- * Created by davide-maestroni on 09/24/2018.
+ * Created by davide-maestroni on 02/14/2019.
  */
 class RunnableFuture extends AbstractFuture<Object> {
 
+  private final List<AbstractFuture<?>> mFutures;
   private final long mPeriod;
   private final Runnable mRunnable;
 
-  RunnableFuture(@NotNull final ExecutorService executor, @NotNull final Runnable runnable,
+  RunnableFuture(@NotNull final List<AbstractFuture<?>> futures, @NotNull final Runnable runnable,
       final long timestamp) {
-    this(executor, runnable, timestamp, 0);
+    this(futures, runnable, timestamp, 0);
   }
 
-  RunnableFuture(@NotNull final ExecutorService executor, @NotNull final Runnable runnable,
+  RunnableFuture(@NotNull final List<AbstractFuture<?>> futures, @NotNull final Runnable runnable,
       final long timestamp, final long period) {
-    super(executor, timestamp);
+    super(timestamp);
+    mFutures = ConstantConditions.notNull("futures", futures);
     mRunnable = ConstantConditions.notNull("runnable", runnable);
     mPeriod = period;
   }
@@ -54,29 +54,26 @@ class RunnableFuture extends AbstractFuture<Object> {
     return (mPeriod == that.mPeriod) && mRunnable.equals(that.mRunnable);
   }
 
-  @NotNull
-  @SuppressWarnings("unchecked")
-  Future<Object> submitTo(@NotNull final ExecutorService executor) {
-    return (Future<Object>) executor.submit(new Runnable() {
-
-      public void run() {
-        mRunnable.run();
-        updateTimestamp();
-      }
-    });
+  Object getValue() {
+    mRunnable.run();
+    if (updateTimestamp()) {
+      mFutures.add(this);
+    }
+    return null;
   }
 
-  private void updateTimestamp() {
+  private boolean updateTimestamp() {
     long period = mPeriod;
     if (period == 0) {
-      return;
+      return false;
     }
 
     if (period > 0) {
-      getTimestamp().addAndGet(period);
+      setTimestamp(getTimestamp() + period);
 
     } else {
-      getTimestamp().set(TimeUnits.toTimestampNanos(-period, TimeUnit.NANOSECONDS));
+      setTimestamp(AbstractFuture.toTimestampNanos(-period, TimeUnit.NANOSECONDS));
     }
+    return true;
   }
 }

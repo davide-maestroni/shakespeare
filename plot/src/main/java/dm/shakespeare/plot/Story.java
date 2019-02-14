@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import dm.shakespeare.BackStage;
 import dm.shakespeare.actor.AbstractBehavior;
@@ -42,7 +44,6 @@ import dm.shakespeare.util.Iterables;
 public abstract class Story<T> extends Event<Iterable<T>> {
 
   // TODO: 05/02/2019 PROGRESS???
-  // TODO: 13/02/2019 save options
 
   static final Object BREAK = new Object();
   static final Object END = new Object();
@@ -203,7 +204,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> conflictHandler) {
     final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
     types.add(firstType);
-    return new ResolveStory<T>(new ListMemory(), getActor(), types, loopHandler,
+    return new ResolveStory<T>(new ListMemory(), this, types, loopHandler,
         (UnaryFunction<? super Throwable, ? extends Story<T>>) conflictHandler);
   }
 
@@ -213,9 +214,21 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       @NotNull final Iterable<? extends Class<? extends E>> conflictTypes,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> conflictHandler) {
-    return new ResolveStory<T>(new ListMemory(), getActor(),
+    return new ResolveStory<T>(new ListMemory(), this,
         Iterables.<Class<? extends Throwable>>toSet(conflictTypes), loopHandler,
         (UnaryFunction<? super Throwable, ? extends Story<T>>) conflictHandler);
+  }
+
+  @NotNull
+  public Story<T> scheduleAtFixedRate(final long initialDelay, final long period,
+      @NotNull final TimeUnit unit) {
+    return new ScheduleAtFixedRateStory<T>(new ListMemory(), this, initialDelay, period, unit);
+  }
+
+  @NotNull
+  public Story<T> scheduleWithFixedDelay(final long initialDelay, final long delay,
+      @NotNull final TimeUnit unit) {
+    return new ScheduleWithFixedDelayStory<T>(new ListMemory(), this, initialDelay, delay, unit);
   }
 
   @NotNull
@@ -770,7 +783,45 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       }
     }
 
-    private class NextBehavior extends AbstractBehavior {
+    private class NextLoopBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final Options options = envelop.getOptions().threadOnly();
+          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          loop(++mLoopCount, context);
+
+        } else if (message == NEXT) {
+          final Options options = envelop.getOptions();
+          final String thread = options.getThread();
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
+          if (sender != null) {
+            sender.waitNext();
+
+          } else {
+            sender = new SenderIterator(envelop.getSender(), options.threadOnly());
+            sender.setIterator(mMemory.iterator());
+            nextSenders.put(thread, sender);
+          }
+          final Actor self = context.getSelf();
+          if (!sender.tellNext(self)) {
+            loop(++mLoopCount, context);
+          }
+
+        } else if (message == BREAK) {
+          mNextSenders.remove(envelop.getOptions().getThread());
+
+        } else if (message == CANCEL) {
+          tellInputActors(CANCEL, context);
+          fail(Conflict.ofCancel(), context);
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    private class NextOutputBehavior extends AbstractBehavior {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) {
@@ -804,44 +855,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else if (message == CANCEL) {
           mOutputActor.tell(BREAK, mOutputOptions, context.getSelf());
-          tellInputActors(CANCEL, context);
-          fail(Conflict.ofCancel(), context);
-        }
-        envelop.preventReceipt();
-      }
-    }
-
-    private class NextLoopBehavior extends AbstractBehavior {
-
-      public void onMessage(final Object message, @NotNull final Envelop envelop,
-          @NotNull final Context context) {
-        if (message == GET) {
-          final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
-          loop(++mLoopCount, context);
-
-        } else if (message == NEXT) {
-          final Options options = envelop.getOptions();
-          final String thread = options.getThread();
-          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
-          if (sender != null) {
-            sender.waitNext();
-
-          } else {
-            sender = new SenderIterator(envelop.getSender(), options.threadOnly());
-            sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
-          }
-          final Actor self = context.getSelf();
-          if (!sender.tellNext(self)) {
-            loop(++mLoopCount, context);
-          }
-
-        } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
-
-        } else if (message == CANCEL) {
           tellInputActors(CANCEL, context);
           fail(Conflict.ofCancel(), context);
         }
@@ -902,7 +915,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 mOutputActor.tell(NEXT, outputOptions, self);
 
               } else {
-                context.setBehavior(new NextBehavior());
+                context.setBehavior(new NextOutputBehavior());
               }
             }
           }
@@ -1522,7 +1535,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private boolean mInputsPending;
     private long mOutputCount;
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     private ParallelOrderedStory(@NotNull final Memory memory,
         @NotNull final Story<? extends T> story, final int maxConcurrency, final int maxEventWindow,
         @NotNull final UnaryFunction<? super T, ? extends Event<R>> resolutionHandler) {
@@ -1913,7 +1925,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private boolean mInputsPending;
     private long mOutputCount;
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     private ParallelStory(@NotNull final Memory memory, @NotNull final Story<? extends T> story,
         final int maxConcurrency,
         @NotNull final UnaryFunction<? super T, ? extends Story<R>> resolutionHandler) {
@@ -2329,12 +2340,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final List<Actor> mInputActors;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    private ResolveStory(@NotNull final Memory memory, @NotNull final Actor eventActor,
+    private ResolveStory(@NotNull final Memory memory, @NotNull final Story<? extends T> story,
         @NotNull final Set<Class<? extends Throwable>> conflictTypes,
         @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
         @NotNull final UnaryFunction<? super Throwable, ? extends Story<T>> conflictHandler) {
       super(memory, loopHandler, 1);
-      mInputActors = Collections.singletonList(eventActor);
+      mInputActors = Collections.singletonList(story.getActor());
       ConstantConditions.positive("conflictTypes size", conflictTypes.size());
       mConflictTypes = ConstantConditions.notNullElements("conflictTypes", conflictTypes);
       mConflictHandler = ConstantConditions.notNull("conflictHandler", conflictHandler);
@@ -2471,6 +2482,446 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
+  private static class ScheduleAtFixedRateStory<T> extends Story<T> implements Runnable {
+
+    private final Actor mActor;
+    private final long mInitialDelay;
+    private final Actor mInputActor;
+    private final Options mInputOptions;
+    private final Memory mMemory;
+    private final HashMap<String, SenderIterator> mNextSenders =
+        new HashMap<String, SenderIterator>();
+    private final long mPeriod;
+    private final TimeUnit mUnit;
+
+    private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
+    private boolean mInputsPending;
+    private ScheduledFuture<?> mScheduledFuture;
+
+    private ScheduleAtFixedRateStory(@NotNull final Memory memory,
+        @NotNull final Story<? extends T> story, final long initialDelay, final long period,
+        @NotNull final TimeUnit unit) {
+      mMemory = ConstantConditions.notNull("memory", memory);
+      mInputActor = story.getActor();
+      mInitialDelay = Math.max(initialDelay, 0);
+      mPeriod = ConstantConditions.positive("period", period);
+      mUnit = ConstantConditions.notNull("unit", unit);
+      final String actorId = (mActor = BackStage.newActor(new PlayScript(Setting.get()) {
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return new InitBehavior();
+        }
+      })).getId();
+      mInputOptions = new Options().withReceiptId(actorId).withThread(actorId + ":input");
+    }
+
+    public void run() {
+      mInputsPending = true;
+      mInputActor.tell(NEXT, mInputOptions, mActor);
+    }
+
+    private void done(@NotNull final Context context) {
+      final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
+      if (scheduledFuture != null) {
+        scheduledFuture.cancel(false);
+      }
+      final Memory memory = mMemory;
+      Object results = memory;
+      for (final Object result : memory) {
+        if (result instanceof Conflict) {
+          results = result;
+          break;
+        }
+      }
+      final Actor self = context.getSelf();
+      for (final Sender sender : mGetSenders.values()) {
+        sender.getSender().tell(results, sender.getOptions(), self);
+      }
+      mGetSenders = null;
+      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+      for (final SenderIterator sender : nextSenders.values()) {
+        if (sender.isWaitNext() && !sender.tellNext(self)) {
+          sender.getSender().tell(END, sender.getOptions(), self);
+        }
+      }
+      context.setBehavior(new DoneBehavior(results, memory, nextSenders));
+    }
+
+    private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
+      final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
+      if (scheduledFuture != null) {
+        scheduledFuture.cancel(false);
+      }
+      final Actor self = context.getSelf();
+      for (final Sender sender : mGetSenders.values()) {
+        sender.getSender().tell(conflict, sender.getOptions(), self);
+      }
+      mGetSenders = null;
+      final Memory memory = mMemory;
+      memory.put(conflict);
+      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+      for (final SenderIterator sender : nextSenders.values()) {
+        sender.tellNext(self);
+      }
+      context.setBehavior(new DoneBehavior(conflict, memory, nextSenders));
+    }
+
+    private class CancelBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final Options options = envelop.getOptions().threadOnly();
+          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+
+        } else if (message == NEXT) {
+          final Options options = envelop.getOptions();
+          final String thread = options.getThread();
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
+          if (sender != null) {
+            sender.waitNext();
+
+          } else {
+            sender = new SenderIterator(envelop.getSender(), options.threadOnly());
+            sender.setIterator(mMemory.iterator());
+            nextSenders.put(thread, sender);
+          }
+          sender.tellNext(context.getSelf());
+
+        } else if (message == BREAK) {
+          mNextSenders.remove(envelop.getOptions().getThread());
+
+        } else {
+          final Options inputOptions = mInputOptions;
+          if (isSameThread(inputOptions.getThread(), envelop.getOptions().getThread())) {
+            mInputActor.tell(BREAK, inputOptions, context.getSelf());
+            fail(Conflict.ofCancel(), context);
+          }
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    private class InitBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final Options options = envelop.getOptions().threadOnly();
+          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mScheduledFuture = context.getScheduledExecutor()
+              .scheduleAtFixedRate(ScheduleAtFixedRateStory.this, mInitialDelay, mPeriod, mUnit);
+          context.setBehavior(new InputBehavior());
+
+        } else if (message == NEXT) {
+          final Options options = envelop.getOptions().threadOnly();
+          final SenderIterator sender = new SenderIterator(envelop.getSender(), options);
+          sender.setIterator(mMemory.iterator());
+          mNextSenders.put(options.getThread(), sender);
+          mScheduledFuture = context.getScheduledExecutor()
+              .scheduleAtFixedRate(ScheduleAtFixedRateStory.this, mInitialDelay, mPeriod, mUnit);
+          context.setBehavior(new InputBehavior());
+
+        } else if (message == CANCEL) {
+          mInputActor.tell(CANCEL, mInputOptions, context.getSelf());
+          fail(Conflict.ofCancel(), context);
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    private class InputBehavior extends AbstractBehavior {
+
+      public void onMessage(Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final Options options = envelop.getOptions().threadOnly();
+          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+
+        } else if (message == NEXT) {
+          final Options options = envelop.getOptions();
+          final String thread = options.getThread();
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
+          if (sender != null) {
+            sender.waitNext();
+
+          } else {
+            sender = new SenderIterator(envelop.getSender(), options.threadOnly());
+            sender.setIterator(mMemory.iterator());
+            nextSenders.put(thread, sender);
+          }
+          sender.tellNext(context.getSelf());
+
+        } else if (message == BREAK) {
+          mNextSenders.remove(envelop.getOptions().getThread());
+
+        } else if (message == CANCEL) {
+          mInputActor.tell(CANCEL, mInputOptions, context.getSelf());
+          if (mInputsPending) {
+            context.setBehavior(new CancelBehavior());
+
+          } else {
+            fail(Conflict.ofCancel(), context);
+          }
+
+        } else {
+          final Options inputOptions = mInputOptions;
+          if (isSameThread(inputOptions.getThread(), envelop.getOptions().getThread())) {
+            if (message == END) {
+              mInputActor.tell(BREAK, inputOptions, context.getSelf());
+              done(context);
+
+            } else if (message instanceof Conflict) {
+              mInputActor.tell(BREAK, inputOptions, context.getSelf());
+              fail((Conflict) message, context);
+
+            } else if (message instanceof Bounce) {
+              fail(Conflict.ofBounce((Bounce) message), context);
+
+            } else {
+              mMemory.put(message);
+              final Actor self = context.getSelf();
+              for (final SenderIterator sender : mNextSenders.values()) {
+                sender.tellNext(self);
+              }
+            }
+          }
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
+    }
+  }
+
+  private static class ScheduleWithFixedDelayStory<T> extends Story<T> implements Runnable {
+
+    private final Actor mActor;
+    private final long mDelay;
+    private final long mInitialDelay;
+    private final Actor mInputActor;
+    private final Options mInputOptions;
+    private final Memory mMemory;
+    private final HashMap<String, SenderIterator> mNextSenders =
+        new HashMap<String, SenderIterator>();
+    private final TimeUnit mUnit;
+
+    private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
+    private boolean mInputsPending;
+    private ScheduledFuture<?> mScheduledFuture;
+
+    private ScheduleWithFixedDelayStory(@NotNull final Memory memory,
+        @NotNull final Story<? extends T> story, final long initialDelay, final long delay,
+        @NotNull final TimeUnit unit) {
+      mMemory = ConstantConditions.notNull("memory", memory);
+      mInputActor = story.getActor();
+      mInitialDelay = Math.max(initialDelay, 0);
+      mDelay = ConstantConditions.positive("delay", delay);
+      mUnit = ConstantConditions.notNull("unit", unit);
+      final String actorId = (mActor = BackStage.newActor(new PlayScript(Setting.get()) {
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return new InitBehavior();
+        }
+      })).getId();
+      mInputOptions = new Options().withReceiptId(actorId).withThread(actorId + ":input");
+    }
+
+    private void done(@NotNull final Context context) {
+      final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
+      if (scheduledFuture != null) {
+        scheduledFuture.cancel(false);
+      }
+      final Memory memory = mMemory;
+      Object results = memory;
+      for (final Object result : memory) {
+        if (result instanceof Conflict) {
+          results = result;
+          break;
+        }
+      }
+      final Actor self = context.getSelf();
+      for (final Sender sender : mGetSenders.values()) {
+        sender.getSender().tell(results, sender.getOptions(), self);
+      }
+      mGetSenders = null;
+      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+      for (final SenderIterator sender : nextSenders.values()) {
+        if (sender.isWaitNext() && !sender.tellNext(self)) {
+          sender.getSender().tell(END, sender.getOptions(), self);
+        }
+      }
+      context.setBehavior(new DoneBehavior(results, memory, nextSenders));
+    }
+
+    private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
+      final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
+      if (scheduledFuture != null) {
+        scheduledFuture.cancel(false);
+      }
+      final Actor self = context.getSelf();
+      for (final Sender sender : mGetSenders.values()) {
+        sender.getSender().tell(conflict, sender.getOptions(), self);
+      }
+      mGetSenders = null;
+      final Memory memory = mMemory;
+      memory.put(conflict);
+      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+      for (final SenderIterator sender : nextSenders.values()) {
+        sender.tellNext(self);
+      }
+      context.setBehavior(new DoneBehavior(conflict, memory, nextSenders));
+    }
+
+    private class CancelBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final Options options = envelop.getOptions().threadOnly();
+          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+
+        } else if (message == NEXT) {
+          final Options options = envelop.getOptions();
+          final String thread = options.getThread();
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
+          if (sender != null) {
+            sender.waitNext();
+
+          } else {
+            sender = new SenderIterator(envelop.getSender(), options.threadOnly());
+            sender.setIterator(mMemory.iterator());
+            nextSenders.put(thread, sender);
+          }
+          sender.tellNext(context.getSelf());
+
+        } else if (message == BREAK) {
+          mNextSenders.remove(envelop.getOptions().getThread());
+
+        } else {
+          final Options inputOptions = mInputOptions;
+          if (isSameThread(inputOptions.getThread(), envelop.getOptions().getThread())) {
+            mInputActor.tell(BREAK, inputOptions, context.getSelf());
+            fail(Conflict.ofCancel(), context);
+          }
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    private class InitBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final Options options = envelop.getOptions().threadOnly();
+          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mScheduledFuture = context.getScheduledExecutor()
+              .schedule(ScheduleWithFixedDelayStory.this, mInitialDelay, mUnit);
+          context.setBehavior(new InputBehavior());
+
+        } else if (message == NEXT) {
+          final Options options = envelop.getOptions().threadOnly();
+          final SenderIterator sender = new SenderIterator(envelop.getSender(), options);
+          sender.setIterator(mMemory.iterator());
+          mNextSenders.put(options.getThread(), sender);
+          mScheduledFuture = context.getScheduledExecutor()
+              .schedule(ScheduleWithFixedDelayStory.this, mInitialDelay, mUnit);
+          context.setBehavior(new InputBehavior());
+
+        } else if (message == CANCEL) {
+          mInputActor.tell(CANCEL, mInputOptions, context.getSelf());
+          fail(Conflict.ofCancel(), context);
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    private class InputBehavior extends AbstractBehavior {
+
+      public void onMessage(Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final Options options = envelop.getOptions().threadOnly();
+          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+
+        } else if (message == NEXT) {
+          final Options options = envelop.getOptions();
+          final String thread = options.getThread();
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
+          if (sender != null) {
+            sender.waitNext();
+
+          } else {
+            sender = new SenderIterator(envelop.getSender(), options.threadOnly());
+            sender.setIterator(mMemory.iterator());
+            nextSenders.put(thread, sender);
+          }
+          sender.tellNext(context.getSelf());
+
+        } else if (message == BREAK) {
+          mNextSenders.remove(envelop.getOptions().getThread());
+
+        } else if (message == CANCEL) {
+          mInputActor.tell(CANCEL, mInputOptions, context.getSelf());
+          if (mInputsPending) {
+            context.setBehavior(new CancelBehavior());
+
+          } else {
+            fail(Conflict.ofCancel(), context);
+          }
+
+        } else {
+          final Options inputOptions = mInputOptions;
+          if (isSameThread(inputOptions.getThread(), envelop.getOptions().getThread())) {
+            if (message == END) {
+              mInputActor.tell(BREAK, inputOptions, context.getSelf());
+              done(context);
+
+            } else if (message instanceof Conflict) {
+              mInputActor.tell(BREAK, inputOptions, context.getSelf());
+              fail((Conflict) message, context);
+
+            } else if (message instanceof Bounce) {
+              fail(Conflict.ofBounce((Bounce) message), context);
+
+            } else {
+              mMemory.put(message);
+              final Actor self = context.getSelf();
+              for (final SenderIterator sender : mNextSenders.values()) {
+                sender.tellNext(self);
+              }
+              mScheduledFuture = context.getScheduledExecutor()
+                  .schedule(ScheduleWithFixedDelayStory.this, mDelay, mUnit);
+            }
+          }
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    public void run() {
+      mInputsPending = true;
+      mInputActor.tell(NEXT, mInputOptions, mActor);
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
+    }
+  }
+
   private static class Sender {
 
     private final Options mOptions;
@@ -2509,7 +2960,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mIterator = iterator;
     }
 
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     boolean tellNext(@NotNull final Actor self) {
       final Iterator<?> iterator = mIterator;
       if (mWaitNext && iterator.hasNext()) {

@@ -75,7 +75,6 @@ jacocoTestReport {
 spotbugs {
   effort = 'max'
   reportLevel = 'low'
-  ignoreFailures true
   toolVersion project.getProperty('spotbugsVersion')
 }
 

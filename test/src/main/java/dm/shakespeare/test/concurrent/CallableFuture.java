@@ -1,23 +1,20 @@
-package dm.shakespeare.concurrent;
+package dm.shakespeare.test.concurrent;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 09/24/2018.
+ * Created by davide-maestroni on 02/14/2019.
  */
 class CallableFuture<V> extends AbstractFuture<V> {
 
   private final Callable<V> mCallable;
 
-  CallableFuture(@NotNull final ExecutorService executor, @NotNull final Callable<V> callable,
-      final long timestamp) {
-    super(executor, timestamp);
+  CallableFuture(@NotNull final Callable<V> callable, final long timestamp) {
+    super(timestamp);
     mCallable = ConstantConditions.notNull("callable", callable);
   }
 
@@ -45,8 +42,7 @@ class CallableFuture<V> extends AbstractFuture<V> {
     return mCallable.equals(that.mCallable);
   }
 
-  @NotNull
-  Future<V> submitTo(@NotNull final ExecutorService executor) {
-    return executor.submit(mCallable);
+  V getValue() throws Exception {
+    return mCallable.call();
   }
 }
