@@ -176,9 +176,9 @@ public abstract class Event<T> {
 
   public interface EventObserver<T> {
 
-    void onConflict(@NotNull Throwable incident) throws Exception;
+    void onIncident(@NotNull Throwable incident) throws Exception;
 
-    void onResolution(T result) throws Exception;
+    void onResult(T result) throws Exception;
   }
 
   static class DefaultEventObserver<T> implements EventObserver<T> {
@@ -195,11 +195,11 @@ public abstract class Event<T> {
           (Observer<Object>) ((conflictObserver != null) ? conflictObserver : NO_OP);
     }
 
-    public void onConflict(@NotNull final Throwable incident) throws Exception {
+    public void onIncident(@NotNull final Throwable incident) throws Exception {
       mConflictObserver.accept(incident);
     }
 
-    public void onResolution(final T result) throws Exception {
+    public void onResult(final T result) throws Exception {
       mResolutionObserver.accept(result);
     }
   }

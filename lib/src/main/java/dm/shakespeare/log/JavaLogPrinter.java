@@ -1,7 +1,6 @@
 package dm.shakespeare.log;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -12,6 +11,8 @@ import dm.shakespeare.util.ConstantConditions;
  * Created by davide-maestroni on 02/04/2019.
  */
 class JavaLogPrinter implements LogPrinter {
+
+  private static final String FORMAT = "[%s] %s";
 
   private final Logger mLogger;
 
@@ -31,15 +32,15 @@ class JavaLogPrinter implements LogPrinter {
     return mLogger.isLoggable(Level.WARNING);
   }
 
-  public void dbg(@Nullable final String message, @Nullable final Throwable throwable) {
-    mLogger.log(Level.FINE, message, throwable);
+  public void dbg(@NotNull final LogMessage message) {
+    mLogger.log(Level.FINE, message.formatMessage(FORMAT), message.getThrowable());
   }
 
-  public void err(@Nullable final String message, @Nullable final Throwable throwable) {
-    mLogger.log(Level.SEVERE, message, throwable);
+  public void err(@NotNull final LogMessage message) {
+    mLogger.log(Level.SEVERE, message.formatMessage(FORMAT), message.getThrowable());
   }
 
-  public void wrn(@Nullable final String message, @Nullable final Throwable throwable) {
-    mLogger.log(Level.WARNING, message, throwable);
+  public void wrn(@NotNull final LogMessage message) {
+    mLogger.log(Level.WARNING, message.formatMessage(FORMAT), message.getThrowable());
   }
 }

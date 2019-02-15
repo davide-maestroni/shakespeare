@@ -19,8 +19,6 @@ package dm.shakespeare.log;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Locale;
 
 import dm.shakespeare.util.ConstantConditions;
@@ -49,27 +47,12 @@ public class Logger {
 
   @NotNull
   public static Logger newLogger(@NotNull final LogPrinter printer) {
-    return new Logger(printer, Locale.getDefault());
+    return new Logger(printer, Locale.ENGLISH);
   }
 
   @NotNull
   public static Logger newLogger(@NotNull final LogPrinter printer, @NotNull final Locale locale) {
     return new Logger(printer, locale);
-  }
-
-  /**
-   * Prints the stack trace of the specified throwable into a string.
-   *
-   * @param throwable the throwable instance.
-   * @return the printed stack trace.
-   */
-  @NotNull
-  public static String printStackTrace(@NotNull final Throwable throwable) {
-    final StringWriter writer = new StringWriter();
-    final PrintWriter printWriter = new PrintWriter(writer);
-    throwable.printStackTrace(printWriter);
-    printWriter.close();
-    return writer.toString();
   }
 
   /**
@@ -80,7 +63,7 @@ public class Logger {
   public void dbg(@Nullable final String message) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogDbg()) {
-      printer.dbg(message, null);
+      printer.dbg(new LogMessage(mLocale, null, message));
     }
   }
 
@@ -93,7 +76,7 @@ public class Logger {
   public void dbg(@NotNull final String format, @Nullable final Object arg1) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogDbg()) {
-      printer.dbg(String.format(mLocale, format, arg1), null);
+      printer.dbg(new LogMessage(mLocale, null, format, arg1));
     }
   }
 
@@ -108,7 +91,7 @@ public class Logger {
       @Nullable final Object arg2) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogDbg()) {
-      printer.dbg(String.format(mLocale, format, arg1, arg2), null);
+      printer.dbg(new LogMessage(mLocale, null, format, arg1, arg2));
     }
   }
 
@@ -124,7 +107,7 @@ public class Logger {
       @Nullable final Object arg2, @Nullable final Object arg3) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogDbg()) {
-      printer.dbg(String.format(mLocale, format, arg1, arg2, arg3), null);
+      printer.dbg(new LogMessage(mLocale, null, format, arg1, arg2, arg3));
     }
   }
 
@@ -141,7 +124,7 @@ public class Logger {
       @Nullable final Object arg2, @Nullable final Object arg3, @Nullable final Object arg4) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogDbg()) {
-      printer.dbg(String.format(mLocale, format, arg1, arg2, arg3, arg4), null);
+      printer.dbg(new LogMessage(mLocale, null, format, arg1, arg2, arg3, arg4));
     }
   }
 
@@ -154,7 +137,7 @@ public class Logger {
   public void dbg(@NotNull final String format, @Nullable final Object... args) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogDbg()) {
-      printer.dbg(String.format(mLocale, format, args), null);
+      printer.dbg(new LogMessage(mLocale, null, format, args));
     }
   }
 
@@ -166,7 +149,7 @@ public class Logger {
   public void dbg(@Nullable final Throwable throwable) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogDbg()) {
-      printer.dbg("", throwable);
+      printer.dbg(new LogMessage(mLocale, throwable, null));
     }
   }
 
@@ -179,7 +162,7 @@ public class Logger {
   public void dbg(@Nullable final Throwable throwable, @Nullable final String message) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogDbg()) {
-      printer.dbg(message, throwable);
+      printer.dbg(new LogMessage(mLocale, throwable, message));
     }
   }
 
@@ -194,7 +177,7 @@ public class Logger {
       @Nullable final Object arg1) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogDbg()) {
-      printer.dbg(String.format(mLocale, format, arg1), throwable);
+      printer.dbg(new LogMessage(mLocale, throwable, format, arg1));
     }
   }
 
@@ -210,7 +193,7 @@ public class Logger {
       @Nullable final Object arg1, @Nullable final Object arg2) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogDbg()) {
-      printer.dbg(String.format(mLocale, format, arg1, arg2), throwable);
+      printer.dbg(new LogMessage(mLocale, throwable, format, arg1, arg2));
     }
   }
 
@@ -227,7 +210,7 @@ public class Logger {
       @Nullable final Object arg1, @Nullable final Object arg2, @Nullable final Object arg3) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogDbg()) {
-      printer.dbg(String.format(mLocale, format, arg1, arg2, arg3), throwable);
+      printer.dbg(new LogMessage(mLocale, throwable, format, arg1, arg2, arg3));
     }
   }
 
@@ -246,7 +229,7 @@ public class Logger {
       @Nullable final Object arg4) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogDbg()) {
-      printer.dbg(String.format(mLocale, format, arg1, arg2, arg3, arg4), throwable);
+      printer.dbg(new LogMessage(mLocale, throwable, format, arg1, arg2, arg3, arg4));
     }
   }
 
@@ -261,7 +244,7 @@ public class Logger {
       @Nullable final Object... args) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogDbg()) {
-      printer.dbg(String.format(mLocale, format, args), throwable);
+      printer.dbg(new LogMessage(mLocale, throwable, format, args));
     }
   }
 
@@ -273,7 +256,7 @@ public class Logger {
   public void err(@Nullable final String message) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogErr()) {
-      printer.err(message, null);
+      printer.err(new LogMessage(mLocale, null, message));
     }
   }
 
@@ -286,7 +269,7 @@ public class Logger {
   public void err(@NotNull final String format, @Nullable final Object arg1) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogErr()) {
-      printer.err(String.format(mLocale, format, arg1), null);
+      printer.err(new LogMessage(mLocale, null, format, arg1));
     }
   }
 
@@ -301,7 +284,7 @@ public class Logger {
       @Nullable final Object arg2) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogErr()) {
-      printer.err(String.format(mLocale, format, arg1, arg2), null);
+      printer.err(new LogMessage(mLocale, null, format, arg1, arg2));
     }
   }
 
@@ -317,7 +300,7 @@ public class Logger {
       @Nullable final Object arg2, @Nullable final Object arg3) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogErr()) {
-      printer.err(String.format(mLocale, format, arg1, arg2, arg3), null);
+      printer.err(new LogMessage(mLocale, null, format, arg1, arg2, arg3));
     }
   }
 
@@ -334,7 +317,7 @@ public class Logger {
       @Nullable final Object arg2, @Nullable final Object arg3, @Nullable final Object arg4) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogErr()) {
-      printer.err(String.format(mLocale, format, arg1, arg2, arg3, arg4), null);
+      printer.err(new LogMessage(mLocale, null, format, arg1, arg2, arg3, arg4));
     }
   }
 
@@ -347,7 +330,7 @@ public class Logger {
   public void err(@NotNull final String format, @Nullable final Object... args) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogErr()) {
-      printer.err(String.format(mLocale, format, args), null);
+      printer.err(new LogMessage(mLocale, null, format, args));
     }
   }
 
@@ -359,7 +342,7 @@ public class Logger {
   public void err(@NotNull final Throwable throwable) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogErr()) {
-      printer.err("", throwable);
+      printer.err(new LogMessage(mLocale, throwable, null));
     }
   }
 
@@ -372,7 +355,7 @@ public class Logger {
   public void err(@NotNull final Throwable throwable, @Nullable final String message) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogErr()) {
-      printer.err(message, throwable);
+      printer.err(new LogMessage(mLocale, throwable, message));
     }
   }
 
@@ -387,7 +370,7 @@ public class Logger {
       @Nullable final Object arg1) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogErr()) {
-      printer.err(String.format(mLocale, format, arg1), throwable);
+      printer.err(new LogMessage(mLocale, throwable, format, arg1));
     }
   }
 
@@ -403,7 +386,7 @@ public class Logger {
       @Nullable final Object arg1, @Nullable final Object arg2) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogErr()) {
-      printer.err(String.format(mLocale, format, arg1, arg2), throwable);
+      printer.err(new LogMessage(mLocale, throwable, format, arg1, arg2));
     }
   }
 
@@ -420,7 +403,7 @@ public class Logger {
       @Nullable final Object arg1, @Nullable final Object arg2, @Nullable final Object arg3) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogErr()) {
-      printer.err(String.format(mLocale, format, arg1, arg2, arg3), throwable);
+      printer.err(new LogMessage(mLocale, throwable, format, arg1, arg2, arg3));
     }
   }
 
@@ -439,7 +422,7 @@ public class Logger {
       @Nullable final Object arg4) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogErr()) {
-      printer.err(String.format(mLocale, format, arg1, arg2, arg3, arg4), throwable);
+      printer.err(new LogMessage(mLocale, throwable, format, arg1, arg2, arg3, arg4));
     }
   }
 
@@ -454,7 +437,7 @@ public class Logger {
       @Nullable final Object... args) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogErr()) {
-      printer.err(String.format(mLocale, format, args), throwable);
+      printer.err(new LogMessage(mLocale, throwable, format, args));
     }
   }
 
@@ -481,7 +464,7 @@ public class Logger {
   public void wrn(@Nullable final String message) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogWrn()) {
-      printer.wrn(message, null);
+      printer.wrn(new LogMessage(mLocale, null, message));
     }
   }
 
@@ -494,7 +477,7 @@ public class Logger {
   public void wrn(@NotNull final String format, @Nullable final Object arg1) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogWrn()) {
-      printer.wrn(String.format(mLocale, format, arg1), null);
+      printer.wrn(new LogMessage(mLocale, null, format, arg1));
     }
   }
 
@@ -509,7 +492,7 @@ public class Logger {
       @Nullable final Object arg2) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogWrn()) {
-      printer.wrn(String.format(mLocale, format, arg1, arg2), null);
+      printer.wrn(new LogMessage(mLocale, null, format, arg1, arg2));
     }
   }
 
@@ -525,7 +508,7 @@ public class Logger {
       @Nullable final Object arg2, @Nullable final Object arg3) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogWrn()) {
-      printer.wrn(String.format(mLocale, format, arg1, arg2, arg3), null);
+      printer.wrn(new LogMessage(mLocale, null, format, arg1, arg2, arg3));
     }
   }
 
@@ -542,7 +525,7 @@ public class Logger {
       @Nullable final Object arg2, @Nullable final Object arg3, @Nullable final Object arg4) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogWrn()) {
-      printer.wrn(String.format(mLocale, format, arg1, arg2, arg3, arg4), null);
+      printer.wrn(new LogMessage(mLocale, null, format, arg1, arg2, arg3, arg4));
     }
   }
 
@@ -555,7 +538,7 @@ public class Logger {
   public void wrn(@NotNull final String format, @Nullable final Object... args) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogWrn()) {
-      printer.wrn(String.format(mLocale, format, args), null);
+      printer.wrn(new LogMessage(mLocale, null, format, args));
     }
   }
 
@@ -567,7 +550,7 @@ public class Logger {
   public void wrn(@NotNull final Throwable throwable) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogWrn()) {
-      printer.wrn("", throwable);
+      printer.wrn(new LogMessage(mLocale, throwable, null));
     }
   }
 
@@ -580,7 +563,7 @@ public class Logger {
   public void wrn(@NotNull final Throwable throwable, @Nullable final String message) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogWrn()) {
-      printer.wrn(message, throwable);
+      printer.wrn(new LogMessage(mLocale, throwable, message));
     }
   }
 
@@ -595,7 +578,7 @@ public class Logger {
       @Nullable final Object arg1) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogWrn()) {
-      printer.wrn(String.format(mLocale, format, arg1), throwable);
+      printer.wrn(new LogMessage(mLocale, throwable, format, arg1));
     }
   }
 
@@ -611,7 +594,7 @@ public class Logger {
       @Nullable final Object arg1, @Nullable final Object arg2) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogWrn()) {
-      printer.wrn(String.format(mLocale, format, arg1, arg2), throwable);
+      printer.wrn(new LogMessage(mLocale, throwable, format, arg1, arg2));
     }
   }
 
@@ -628,7 +611,7 @@ public class Logger {
       @Nullable final Object arg1, @Nullable final Object arg2, @Nullable final Object arg3) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogWrn()) {
-      printer.wrn(String.format(mLocale, format, arg1, arg2, arg3), throwable);
+      printer.wrn(new LogMessage(mLocale, throwable, format, arg1, arg2, arg3));
     }
   }
 
@@ -647,7 +630,7 @@ public class Logger {
       @Nullable final Object arg4) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogWrn()) {
-      printer.wrn(String.format(mLocale, format, arg1, arg2, arg3, arg4), throwable);
+      printer.wrn(new LogMessage(mLocale, throwable, format, arg1, arg2, arg3, arg4));
     }
   }
 
@@ -662,7 +645,7 @@ public class Logger {
       @Nullable final Object... args) {
     final LogPrinter printer = mPrinter;
     if (printer.canLogWrn()) {
-      printer.wrn(String.format(mLocale, format, args), throwable);
+      printer.wrn(new LogMessage(mLocale, throwable, format, args));
     }
   }
 }

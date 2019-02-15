@@ -33,15 +33,15 @@ class EventObserverScript<T> extends Script {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) throws Exception {
         if (message instanceof Conflict) {
-          mEventObserver.onConflict(((Conflict) message).getCause());
+          mEventObserver.onIncident(((Conflict) message).getCause());
           context.dismissSelf();
 
         } else if (message instanceof Bounce) {
-          mEventObserver.onConflict(PlotStateException.getOrNew((Bounce) message));
+          mEventObserver.onIncident(PlotStateException.getOrNew((Bounce) message));
           context.dismissSelf();
 
         } else if (!(message instanceof Receipt)) {
-          mEventObserver.onResolution((T) message);
+          mEventObserver.onResult((T) message);
           context.dismissSelf();
         }
       }

@@ -44,6 +44,7 @@ import dm.shakespeare.util.Iterables;
 public abstract class Story<T> extends Event<Iterable<T>> {
 
   // TODO: 05/02/2019 PROGRESS???
+  // TODO: 15/02/2019 generator, pass on, cache, untriggered actors, serialization
 
   static final Object BREAK = new Object();
   static final Object END = new Object();
@@ -211,11 +212,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   @SuppressWarnings("unchecked")
   public <E extends Throwable> Story<T> resolve(
-      @NotNull final Iterable<? extends Class<? extends E>> conflictTypes,
+      @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> conflictHandler) {
     return new ResolveStory<T>(new ListMemory(), this,
-        Iterables.<Class<? extends Throwable>>toSet(conflictTypes), loopHandler,
+        Iterables.<Class<? extends Throwable>>toSet(incidentTypes), loopHandler,
         (UnaryFunction<? super Throwable, ? extends Story<T>>) conflictHandler);
   }
 
@@ -234,12 +235,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   public <R> Story<R> thenParallely(final int maxConcurrency,
       @NotNull final UnaryFunction<? super T, ? extends Story<R>> resolutionHandler) {
+    // TODO: 15/02/2019 rename: thenMerge? thenBlend?
     return new ParallelStory<T, R>(new ListMemory(), this, maxConcurrency, resolutionHandler);
   }
 
   @NotNull
   public <R> Story<R> thenParallelyOrdered(final int maxConcurrency, final int maxEventWindow,
       @NotNull final UnaryFunction<? super T, ? extends Event<R>> resolutionHandler) {
+    // TODO: 15/02/2019 rename: thenLink??
     return new ParallelOrderedStory<T, R>(new ListMemory(), this, maxConcurrency, maxEventWindow,
         resolutionHandler);
   }
@@ -318,12 +321,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mEventObserver = ConstantConditions.notNull("eventObserver", eventObserver);
     }
 
-    public void onConflict(@NotNull final Throwable incident) throws Exception {
-      mEventObserver.onConflict(incident);
+    public void onIncident(@NotNull final Throwable incident) throws Exception {
+      mEventObserver.onIncident(incident);
     }
 
-    public void onResolution(final T result) throws Exception {
-      mEventObserver.onResolution(result);
+    public void onResult(final T result) throws Exception {
+      mEventObserver.onResult(result);
     }
 
     public void onEnd() {
@@ -2336,18 +2339,18 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   private static class ResolveStory<T> extends AbstractStory<T> {
 
     private final UnaryFunction<? super Throwable, ? extends Story<T>> mConflictHandler;
-    private final Set<Class<? extends Throwable>> mConflictTypes;
+    private final Set<Class<? extends Throwable>> mIncidentTypes;
     private final List<Actor> mInputActors;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private ResolveStory(@NotNull final Memory memory, @NotNull final Story<? extends T> story,
-        @NotNull final Set<Class<? extends Throwable>> conflictTypes,
+        @NotNull final Set<Class<? extends Throwable>> incidentTypes,
         @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
         @NotNull final UnaryFunction<? super Throwable, ? extends Story<T>> conflictHandler) {
       super(memory, loopHandler, 1);
       mInputActors = Collections.singletonList(story.getActor());
-      ConstantConditions.positive("conflictTypes size", conflictTypes.size());
-      mConflictTypes = ConstantConditions.notNullElements("conflictTypes", conflictTypes);
+      ConstantConditions.positive("incidentTypes size", incidentTypes.size());
+      mIncidentTypes = ConstantConditions.notNullElements("incidentTypes", incidentTypes);
       mConflictHandler = ConstantConditions.notNull("conflictHandler", conflictHandler);
     }
 
@@ -2355,7 +2358,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @Override
     Actor getConflictActor(@NotNull final Conflict conflict) throws Exception {
       final Throwable incident = conflict.getCause();
-      for (final Class<? extends Throwable> conflictType : mConflictTypes) {
+      for (final Class<? extends Throwable> conflictType : mIncidentTypes) {
         if (conflictType.isInstance(incident)) {
           Setting.set(getSetting());
           try {

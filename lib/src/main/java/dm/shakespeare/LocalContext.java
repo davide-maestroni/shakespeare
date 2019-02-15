@@ -58,6 +58,7 @@ class LocalContext implements Context {
   }
 
   public void dismissSelf() {
+    mLogger.dbg("[%s] dismissing self", mActor);
     mDismissed = true;
     if (mDismissRunnable == null) {
       mDismissRunnable = new Runnable() {
@@ -116,6 +117,7 @@ class LocalContext implements Context {
   }
 
   public void restartSelf() {
+    mLogger.dbg("[%s] restarting self", mActor);
     if (mRestartRunnable == null) {
       mRestartRunnable = new Runnable() {
 
@@ -129,6 +131,7 @@ class LocalContext implements Context {
           }
 
           if (Thread.currentThread().isInterrupted()) {
+            mLogger.wrn("[%s] thread has been interrupted!", mActor);
             mBehaviorWrapper.onStop(LocalContext.this);
           }
         }
@@ -138,6 +141,7 @@ class LocalContext implements Context {
   }
 
   public void setBehavior(@NotNull final Behavior behavior) {
+    mLogger.dbg("[%s] setting new behavior: %s", mActor, behavior);
     mBehavior = ConstantConditions.notNull("behavior", behavior);
   }
 
@@ -180,6 +184,7 @@ class LocalContext implements Context {
     }
 
     if (Thread.currentThread().isInterrupted()) {
+      mLogger.wrn("[%s] thread has been interrupted!", mActor);
       mBehaviorWrapper.onStop(this);
     }
   }
@@ -205,6 +210,7 @@ class LocalContext implements Context {
     }
 
     if (Thread.currentThread().isInterrupted()) {
+      mLogger.wrn("[%s] thread has been interrupted!", mActor);
       mBehaviorWrapper.onStop(this);
     }
   }
@@ -214,21 +220,25 @@ class LocalContext implements Context {
   }
 
   void reply(@NotNull final Actor actor, final Object message, @Nullable final Options options) {
+    final Actor self = mActor;
+    mLogger.dbg("[%s] replying: %s - options: %s", self, message, options);
     try {
-      actor.tell(message, options, mActor);
+      actor.tell(message, options, self);
 
     } catch (final RejectedExecutionException e) {
-      mLogger.err(e, "ignoring exception");
+      mLogger.err(e, "[%s] ignoring exception", self);
     }
   }
 
   void replyAll(@NotNull final Actor actor, @NotNull final Iterable<?> messages,
       @Nullable final Options options) {
+    final Actor self = mActor;
+    mLogger.dbg("[%s] replying all: %s - options: %s", self, messages, options);
     try {
-      actor.tellAll(messages, options, mActor);
+      actor.tellAll(messages, options, self);
 
     } catch (final RejectedExecutionException e) {
-      mLogger.err(e, "ignoring exception");
+      mLogger.err(e, "[%s] ignoring exception", self);
     }
   }
 
@@ -275,6 +285,7 @@ class LocalContext implements Context {
       super.onStart(context);
       super.onMessage(message, envelop, context);
       if (Thread.currentThread().isInterrupted()) {
+        mLogger.wrn("[%s] thread has been interrupted!", mActor);
         onStop(context);
       }
     }
@@ -288,6 +299,7 @@ class LocalContext implements Context {
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Context context) {
+      mLogger.dbg("[%s] handling new message: %s - envelop: %s", mActor, message, envelop);
       final Options options = envelop.getOptions();
       if (isDismissed()) {
         if (options.getReceiptId() != null) {
@@ -327,6 +339,7 @@ class LocalContext implements Context {
     }
 
     public void onStart(@NotNull final Context context) {
+      mLogger.dbg("[%s] staring actor", mActor);
       try {
         mBehavior.onStart(context);
 
@@ -344,12 +357,13 @@ class LocalContext implements Context {
       if (mStopped) {
         return;
       }
+      mLogger.dbg("[%s] stopping actor", mActor);
       setStopped();
       try {
         mBehavior.onStop(context);
 
       } catch (final Throwable t) {
-        mLogger.wrn(t, "suppressed exception");
+        mLogger.wrn(t, "[%s] ignoring exception", mActor);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }
@@ -371,7 +385,7 @@ class LocalContext implements Context {
       } catch (final Throwable t) {
         setStopped();
         cancelTasks();
-        mLogger.wrn(t, "suppressed exception");
+        mLogger.wrn(t, "[%s] ignoring exception", mActor);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }

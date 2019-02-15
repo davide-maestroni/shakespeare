@@ -40,11 +40,11 @@ class StoryObserverScript<T> extends Script {
         mSender = envelop.getSender();
         final Actor self = context.getSelf();
         if (message instanceof Conflict) {
-          mStoryObserver.onConflict(((Conflict) message).getCause());
+          mStoryObserver.onIncident(((Conflict) message).getCause());
           envelop.getSender().tell(Story.NEXT, options, self);
 
         } else if (message instanceof Bounce) {
-          mStoryObserver.onConflict(PlotStateException.getOrNew((Bounce) message));
+          mStoryObserver.onIncident(PlotStateException.getOrNew((Bounce) message));
           context.dismissSelf();
 
         } else if (message == Story.END) {
@@ -52,7 +52,7 @@ class StoryObserverScript<T> extends Script {
           context.dismissSelf();
 
         } else if (!(message instanceof Receipt)) {
-          mStoryObserver.onResolution((T) message);
+          mStoryObserver.onResult((T) message);
           envelop.getSender().tell(Story.NEXT, options, self);
         }
       }

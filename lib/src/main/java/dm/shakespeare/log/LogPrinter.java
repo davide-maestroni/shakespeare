@@ -16,7 +16,7 @@
 
 package dm.shakespeare.log;
 
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Interface defining a log printer object responsible for formatting and writing the log messages.
@@ -53,24 +53,21 @@ public interface LogPrinter {
   /**
    * Logs a debug message.
    *
-   * @param message   the message.
-   * @param throwable the optional throwable or null.
+   * @param message the message instance.
    */
-  void dbg(@Nullable String message, @Nullable Throwable throwable);
+  void dbg(@NotNull LogMessage message);
 
   /**
    * Logs an error message.
    *
-   * @param message   the message.
-   * @param throwable the optional throwable or null.
+   * @param message the message instance.
    */
-  void err(@Nullable String message, @Nullable Throwable throwable);
+  void err(@NotNull LogMessage message);
 
   /**
    * Logs a warning message.
    *
-   * @param message   the message.
-   * @param throwable the optional throwable or null.
+   * @param message the message instance.
    */
-  void wrn(@Nullable String message, @Nullable Throwable throwable);
+  void wrn(@NotNull LogMessage message);
 }
