@@ -12,6 +12,8 @@ import java.util.Locale;
  */
 public class LogMessage {
 
+  private static final int DEFAULT_MAX_SIZE = 1024;
+
   private final Object[] mArgs;
   private final Thread mCallingThread;
   private final String mFormat;
@@ -38,6 +40,12 @@ public class LogMessage {
     mFormat = format;
     mArgs = args;
     mCallingThread = Thread.currentThread();
+  }
+
+  @Nullable
+  public static String abbreviate(@Nullable final String message, final int maxSize) {
+    return (message != null) ?
+        message.substring(0, Math.min(message.length(), Math.max(maxSize - 3, 0))) + "..." : null;
   }
 
   /**
@@ -73,7 +81,8 @@ public class LogMessage {
 
   @Nullable
   public String formatMessage(@NotNull final Locale locale, @NotNull final String format) {
-    return String.format(locale, format, mCallingThread, formatMessage(locale), printStackTrace());
+    return String.format(locale, format, mCallingThread,
+        abbreviate(formatMessage(locale), DEFAULT_MAX_SIZE), printStackTrace());
   }
 
   @Nullable
@@ -110,5 +119,10 @@ public class LogMessage {
   public String printStackTrace() {
     final Throwable throwable = mThrowable;
     return (throwable != null) ? printStackTrace(throwable) : null;
+  }
+
+  @Override
+  public String toString() {
+    return formatMessage();
   }
 }

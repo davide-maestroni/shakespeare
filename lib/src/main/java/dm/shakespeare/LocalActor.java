@@ -52,7 +52,7 @@ class LocalActor implements Actor {
 
   @NotNull
   public Actor addObserver(@NotNull final Actor observer) {
-    mLogger.dbg("[%s] adding observer: %s", this, observer);
+    mLogger.dbg("[%s] adding observer: observer=%s", this, observer);
     mContext.getActorExecutor().executeNext(new Runnable() {
 
       public void run() {
@@ -63,7 +63,7 @@ class LocalActor implements Actor {
   }
 
   public void dismiss(final boolean mayInterruptIfRunning) {
-    mLogger.dbg("[%s] dismissing: %s", this, mayInterruptIfRunning);
+    mLogger.dbg("[%s] dismissing: mayInterruptIfRunning=%s", this, mayInterruptIfRunning);
     mContext.dismiss(mayInterruptIfRunning);
   }
 
@@ -74,7 +74,7 @@ class LocalActor implements Actor {
 
   @NotNull
   public Actor removeObserver(@NotNull final Actor observer) {
-    mLogger.dbg("[%s] removing observer: %s", this, observer);
+    mLogger.dbg("[%s] removing observer: observer=%s", this, observer);
     mContext.getActorExecutor().executeNext(new Runnable() {
 
       public void run() {
@@ -87,11 +87,12 @@ class LocalActor implements Actor {
   @NotNull
   public Actor tell(final Object message, @Nullable final Options options,
       @NotNull final Actor sender) {
-    mLogger.dbg("[%s] sending: %s - options: %s - sender: %s", this, message, options, sender);
+    mLogger.dbg("[%s] sending: options=%s - sender=%s - message=%s", this, options, sender,
+        message);
     final QuotaNotifier quotaNotifier = mQuotaNotifier;
     if (quotaNotifier.exceedsQuota(1)) {
-      mLogger.wrn("[%s] quota exceeded: %s - options: %s - sender: %s", this, message, options,
-          sender);
+      mLogger.wrn("[%s] quota exceeded: options=%s - sender=%s - message=%s", this, options, sender,
+          message);
       quotaNotifier.quotaExceeded(message, new BounceEnvelop(sender, options));
 
     } else {
@@ -103,11 +104,12 @@ class LocalActor implements Actor {
             mContext.message(message, this);
           }
         });
-        mLogger.dbg("[%s] sent: %s - options: %s - sender: %s", this, message, options, sender);
+        mLogger.dbg("[%s] sent: options=%s - sender=%s - message=%s", this, options, sender,
+            message);
 
       } catch (final RejectedExecutionException e) {
-        mLogger.wrn(e, "[%s] failed to send: %s - options: %s - sender: %s", this, message, options,
-            sender);
+        mLogger.wrn(e, "[%s] failed to send: options=%s - sender=%s - message=%s", this, options,
+            sender, message);
         quotaNotifier.quotaExceeded(message, new BounceEnvelop(sender, options));
       }
     }
@@ -117,11 +119,12 @@ class LocalActor implements Actor {
   @NotNull
   public Actor tellAll(@NotNull final Iterable<?> messages, @Nullable final Options options,
       @NotNull final Actor sender) {
-    mLogger.dbg("[%s] sending all: %s - options: %s - sender: %s", this, messages, options, sender);
+    mLogger.dbg("[%s] sending all: options=%s - sender=%s - message=%s", this, options, sender,
+        messages);
     final QuotaNotifier quotaNotifier = mQuotaNotifier;
     if (quotaNotifier.exceedsQuota(Iterables.size(messages))) {
-      mLogger.wrn("[%s] quota exceeded all: %s - options: %s - sender: %s", this, messages, options,
-          sender);
+      mLogger.wrn("[%s] quota exceeded all: options=%s - sender=%s - message=%s", this, options,
+          sender, messages);
       quotaNotifier.quotaExceeded(messages, new BounceEnvelop(sender, options));
 
     } else {
@@ -133,16 +136,21 @@ class LocalActor implements Actor {
             mContext.messages(messages, this);
           }
         });
-        mLogger.dbg("[%s] sent all: %s - options: %s - sender: %s", this, messages, options,
-            sender);
+        mLogger.dbg("[%s] sent all: options=%s - sender=%s - message=%s", this, options, sender,
+            messages);
 
       } catch (final RejectedExecutionException e) {
-        mLogger.wrn(e, "[%s] failed to send all: %s - options: %s - sender: %s", this, messages,
-            options, sender);
+        mLogger.wrn(e, "[%s] failed to send all: options=%s - sender=%s - message=%s", this,
+            options, sender, messages);
         quotaNotifier.quotaExceeded(messages, new BounceEnvelop(sender, options));
       }
     }
     return this;
+  }
+
+  @Override
+  public String toString() {
+    return super.toString() + ":" + mId;
   }
 
   private interface QuotaNotifier {

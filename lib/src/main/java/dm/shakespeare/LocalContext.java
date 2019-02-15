@@ -141,7 +141,7 @@ class LocalContext implements Context {
   }
 
   public void setBehavior(@NotNull final Behavior behavior) {
-    mLogger.dbg("[%s] setting new behavior: %s", mActor, behavior);
+    mLogger.dbg("[%s] setting new behavior: behavior=%s", mActor, behavior);
     mBehavior = ConstantConditions.notNull("behavior", behavior);
   }
 
@@ -221,7 +221,7 @@ class LocalContext implements Context {
 
   void reply(@NotNull final Actor actor, final Object message, @Nullable final Options options) {
     final Actor self = mActor;
-    mLogger.dbg("[%s] replying: %s - options: %s", self, message, options);
+    mLogger.dbg("[%s] replying: actor=%s - options=%s - message=%s", self, actor, options, message);
     try {
       actor.tell(message, options, self);
 
@@ -233,7 +233,8 @@ class LocalContext implements Context {
   void replyAll(@NotNull final Actor actor, @NotNull final Iterable<?> messages,
       @Nullable final Options options) {
     final Actor self = mActor;
-    mLogger.dbg("[%s] replying all: %s - options: %s", self, messages, options);
+    mLogger.dbg("[%s] replying all: actor=%s - options=%s - message=%s", self, actor, options,
+        messages);
     try {
       actor.tellAll(messages, options, self);
 
@@ -299,7 +300,7 @@ class LocalContext implements Context {
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Context context) {
-      mLogger.dbg("[%s] handling new message: %s - envelop: %s", mActor, message, envelop);
+      mLogger.dbg("[%s] handling new message: envelop=%s - message=%s", mActor, envelop, message);
       final Options options = envelop.getOptions();
       if (isDismissed()) {
         if (options.getReceiptId() != null) {
@@ -346,7 +347,7 @@ class LocalContext implements Context {
       } catch (final Throwable t) {
         setStopped();
         cancelTasks();
-        mLogger.wrn(t, "suppressed exception");
+        mLogger.wrn(t, "[%s] ignoring exception", mActor);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }

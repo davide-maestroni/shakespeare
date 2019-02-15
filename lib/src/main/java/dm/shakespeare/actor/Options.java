@@ -56,6 +56,12 @@ public class Options implements Serializable {
     return new Options(mThread, null, 0);
   }
 
+  @Override
+  public String toString() {
+    return "Options{" + "mReceiptId='" + mReceiptId + '\'' + ", mThread='" + mThread + '\''
+        + ", mTimeOffset=" + mTimeOffset + '}';
+  }
+
   @NotNull
   public Options withReceiptId(@Nullable final String receiptId) {
     return new Options(mThread, receiptId, mTimeOffset);

@@ -161,9 +161,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
-      @NotNull final EventLooper<? super List<T>, R> eventLooper) {
-    return when(stories, new LooperLoopHandler(eventLooper),
-        new LooperEventHandler<List<T>, R>(eventLooper));
+      @NotNull final StoryLooper<? super List<T>, R> storyLooper) {
+    return when(stories, new LooperLoopHandler(storyLooper),
+        new LooperResolutionHandler<List<T>, R>(storyLooper));
   }
 
   @NotNull
@@ -193,9 +193,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
-      @NotNull final EventLooper<? super Throwable, ? extends T> eventLooper) {
-    return resolve(firstType, new LooperLoopHandler(eventLooper),
-        new LooperEventHandler<Throwable, T>(eventLooper));
+      @NotNull final StoryLooper<? super Throwable, ? extends T> storyLooper) {
+    return resolve(firstType, new LooperLoopHandler(storyLooper),
+        new LooperResolutionHandler<Throwable, T>(storyLooper));
   }
 
   @NotNull
@@ -233,23 +233,22 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <R> Story<R> thenParallely(final int maxConcurrency,
+  public <R> Story<R> thenBlend(final int maxConcurrency,
       @NotNull final UnaryFunction<? super T, ? extends Story<R>> resolutionHandler) {
-    // TODO: 15/02/2019 rename: thenMerge? thenBlend?
     return new ParallelStory<T, R>(new ListMemory(), this, maxConcurrency, resolutionHandler);
   }
 
   @NotNull
-  public <R> Story<R> thenParallelyOrdered(final int maxConcurrency, final int maxEventWindow,
+  public <R> Story<R> thenJoin(final int maxConcurrency, final int maxEventWindow,
       @NotNull final UnaryFunction<? super T, ? extends Event<R>> resolutionHandler) {
-    // TODO: 15/02/2019 rename: thenLink??
     return new ParallelOrderedStory<T, R>(new ListMemory(), this, maxConcurrency, maxEventWindow,
         resolutionHandler);
   }
 
   @NotNull
-  public <R> Story<R> thenWhile(@NotNull final EventLooper<? super T, ? extends R> eventLooper) {
-    return thenWhile(new LooperLoopHandler(eventLooper), new LooperEventHandler<T, R>(eventLooper));
+  public <R> Story<R> thenWhile(@NotNull final StoryLooper<? super T, ? extends R> storyLooper) {
+    return thenWhile(new LooperLoopHandler(storyLooper),
+        new LooperResolutionHandler<T, R>(storyLooper));
   }
 
   @NotNull
@@ -278,18 +277,18 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     getActor().tell(NEXT, new Options().withReceiptId(actorId).withThread(actorId), actor);
   }
 
-  public interface EventLooper<T, R> {
+  public interface Memory extends Iterable<Object> {
+
+    void put(Object value);
+  }
+
+  public interface StoryLooper<T, R> {
 
     @Nullable
     Event<? extends Boolean> loop() throws Exception;
 
     @Nullable
     Story<R> resolve(T event) throws Exception;
-  }
-
-  public interface Memory extends Iterable<Object> {
-
-    void put(Object value);
   }
 
   public interface StoryObserver<T> extends EventObserver<T> {
@@ -1457,30 +1456,30 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
-  private static class LooperEventHandler<T, R> implements UnaryFunction<T, Story<R>> {
+  private static class LooperLoopHandler implements NullaryFunction<Event<? extends Boolean>> {
 
-    private final EventLooper<? super T, ? extends R> mEventLooper;
+    private final StoryLooper<?, ?> mStoryLooper;
 
-    LooperEventHandler(@NotNull final EventLooper<? super T, ? extends R> eventLooper) {
-      mEventLooper = ConstantConditions.notNull("eventLooper", eventLooper);
+    LooperLoopHandler(@NotNull final StoryLooper<?, ?> storyLooper) {
+      mStoryLooper = ConstantConditions.notNull("storyLooper", storyLooper);
+    }
+
+    public Event<? extends Boolean> call() throws Exception {
+      return mStoryLooper.loop();
+    }
+  }
+
+  private static class LooperResolutionHandler<T, R> implements UnaryFunction<T, Story<R>> {
+
+    private final StoryLooper<? super T, ? extends R> mStoryLooper;
+
+    LooperResolutionHandler(@NotNull final StoryLooper<? super T, ? extends R> storyLooper) {
+      mStoryLooper = ConstantConditions.notNull("storyLooper", storyLooper);
     }
 
     @SuppressWarnings("unchecked")
     public Story<R> call(final T first) throws Exception {
-      return (Story<R>) mEventLooper.resolve(first);
-    }
-  }
-
-  private static class LooperLoopHandler implements NullaryFunction<Event<? extends Boolean>> {
-
-    private final EventLooper<?, ?> mEventLooper;
-
-    LooperLoopHandler(@NotNull final EventLooper<?, ?> eventLooper) {
-      mEventLooper = ConstantConditions.notNull("eventLooper", eventLooper);
-    }
-
-    public Event<? extends Boolean> call() throws Exception {
-      return mEventLooper.loop();
+      return (Story<R>) mStoryLooper.resolve(first);
     }
   }
 

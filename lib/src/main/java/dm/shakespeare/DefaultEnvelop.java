@@ -75,5 +75,11 @@ abstract class DefaultEnvelop implements Envelop, Runnable {
     open();
   }
 
+  @Override
+  public String toString() {
+    return "DefaultEnvelop{" + "mOptions=" + mOptions + ", mSender=" + mSender + ", mSentAt="
+        + mSentAt + ", mPreventReceipt=" + mPreventReceipt + ", mReceivedAt=" + mReceivedAt + '}';
+  }
+
   abstract void open();
 }
