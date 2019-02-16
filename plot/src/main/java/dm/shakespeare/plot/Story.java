@@ -352,12 +352,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public Story<T> thenWatchEach(@Nullable final Observer<? super T> resolutionObserver,
-      @Nullable final Observer<? super Throwable> conflictObserver) {
-    return thenWatchEach(new DefaultEventObserver<T>(resolutionObserver, conflictObserver));
-  }
-
-  @NotNull
   public Story<T> thenWatchEach(@NotNull final Memory memory,
       @NotNull final EventObserver<? super T> eventObserver) {
     return new WatchStory<T>(memory, this, eventObserver);
@@ -368,6 +362,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       @Nullable final Observer<? super T> resolutionObserver,
       @Nullable final Observer<? super Throwable> conflictObserver) {
     return thenWatchEach(memory, new DefaultEventObserver<T>(resolutionObserver, conflictObserver));
+  }
+
+  @NotNull
+  public Story<T> thenWatchEach(@Nullable final Observer<? super T> resolutionObserver,
+      @Nullable final Observer<? super Throwable> conflictObserver) {
+    return thenWatchEach(new DefaultEventObserver<T>(resolutionObserver, conflictObserver));
   }
 
   @NotNull
