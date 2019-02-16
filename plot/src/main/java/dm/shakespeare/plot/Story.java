@@ -242,7 +242,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     getActor().tell(NEXT, new Options().withReceiptId(actorId).withThread(actorId), actor);
   }
 
-  // TODO: 16/02/2019 memory
+  @NotNull
+  @SuppressWarnings("unchecked")
+  public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> conflictHandler) {
+    return resolve(new ListMemory(), firstType, loopHandler, conflictHandler);
+  }
 
   @NotNull
   public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
@@ -253,22 +259,40 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
-      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> conflictHandler) {
-    final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
-    types.add(firstType);
-    return new ResolveStory<T>(new ListMemory(), this, types, loopHandler,
-        (UnaryFunction<? super Throwable, ? extends Story<T>>) conflictHandler);
-  }
-
-  @NotNull
-  @SuppressWarnings("unchecked")
   public <E extends Throwable> Story<T> resolve(
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> conflictHandler) {
-    return new ResolveStory<T>(new ListMemory(), this,
+    return resolve(new ListMemory(), incidentTypes, loopHandler, conflictHandler);
+  }
+
+  @NotNull
+  @SuppressWarnings("unchecked")
+  public <E1 extends Throwable> Story<T> resolve(@NotNull final Memory memory,
+      @NotNull final Class<? extends E1> firstType,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> conflictHandler) {
+    final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
+    types.add(firstType);
+    return new ResolveStory<T>(memory, this, types, loopHandler,
+        (UnaryFunction<? super Throwable, ? extends Story<T>>) conflictHandler);
+  }
+
+  @NotNull
+  public <E1 extends Throwable> Story<T> resolve(@NotNull final Memory memory,
+      @NotNull final Class<? extends E1> firstType,
+      @NotNull final StoryLooper<? super Throwable, ? extends T> storyLooper) {
+    return resolve(memory, firstType, new LooperLoopHandler(storyLooper),
+        new LooperResolutionHandler<Throwable, T>(storyLooper));
+  }
+
+  @NotNull
+  @SuppressWarnings("unchecked")
+  public <E extends Throwable> Story<T> resolve(@NotNull final Memory memory,
+      @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> conflictHandler) {
+    return new ResolveStory<T>(memory, this,
         Iterables.<Class<? extends Throwable>>toSet(incidentTypes), loopHandler,
         (UnaryFunction<? super Throwable, ? extends Story<T>>) conflictHandler);
   }
@@ -276,31 +300,55 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   public Story<T> scheduleAtFixedRate(final long initialDelay, final long period,
       @NotNull final TimeUnit unit) {
-    return new ScheduleAtFixedRateStory<T>(new ListMemory(), this, initialDelay, period, unit);
+    return scheduleAtFixedRate(new ListMemory(), initialDelay, period, unit);
+  }
+
+  @NotNull
+  public Story<T> scheduleAtFixedRate(@NotNull final Memory memory, final long initialDelay,
+      final long period, @NotNull final TimeUnit unit) {
+    return new ScheduleAtFixedRateStory<T>(memory, this, initialDelay, period, unit);
   }
 
   @NotNull
   public Story<T> scheduleWithFixedDelay(final long initialDelay, final long delay,
       @NotNull final TimeUnit unit) {
-    return new ScheduleWithFixedDelayStory<T>(new ListMemory(), this, initialDelay, delay, unit);
+    return scheduleWithFixedDelay(new ListMemory(), initialDelay, delay, unit);
+  }
+
+  @NotNull
+  public Story<T> scheduleWithFixedDelay(@NotNull final Memory memory, final long initialDelay,
+      final long delay, @NotNull final TimeUnit unit) {
+    return new ScheduleWithFixedDelayStory<T>(memory, this, initialDelay, delay, unit);
   }
 
   @NotNull
   public <R> Story<R> thenBlend(final int maxConcurrency,
       @NotNull final UnaryFunction<? super T, ? extends Story<R>> resolutionHandler) {
-    return new BlendStory<T, R>(new ListMemory(), this, maxConcurrency, resolutionHandler);
+    return thenBlend(new ListMemory(), maxConcurrency, resolutionHandler);
+  }
+
+  @NotNull
+  public <R> Story<R> thenBlend(@NotNull final Memory memory, final int maxConcurrency,
+      @NotNull final UnaryFunction<? super T, ? extends Story<R>> resolutionHandler) {
+    return new BlendStory<T, R>(memory, this, maxConcurrency, resolutionHandler);
   }
 
   @NotNull
   public <R> Story<R> thenJoin(final int maxConcurrency, final int maxEventWindow,
       @NotNull final UnaryFunction<? super T, ? extends Event<R>> resolutionHandler) {
-    return new JoinStory<T, R>(new ListMemory(), this, maxConcurrency, maxEventWindow,
-        resolutionHandler);
+    return thenJoin(new ListMemory(), maxConcurrency, maxEventWindow, resolutionHandler);
+  }
+
+  @NotNull
+  public <R> Story<R> thenJoin(@NotNull final Memory memory, final int maxConcurrency,
+      final int maxEventWindow,
+      @NotNull final UnaryFunction<? super T, ? extends Event<R>> resolutionHandler) {
+    return new JoinStory<T, R>(memory, this, maxConcurrency, maxEventWindow, resolutionHandler);
   }
 
   @NotNull
   public Story<T> thenWatchEach(@NotNull final EventObserver<? super T> eventObserver) {
-    return new WatchStory<T>(new ListMemory(), this, eventObserver);
+    return thenWatchEach(new ListMemory(), eventObserver);
   }
 
   @NotNull
@@ -310,8 +358,29 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <R> Story<R> thenWhile(@NotNull final StoryLooper<? super T, ? extends R> storyLooper) {
-    return thenWhile(new LooperLoopHandler(storyLooper),
+  public Story<T> thenWatchEach(@NotNull final Memory memory,
+      @NotNull final EventObserver<? super T> eventObserver) {
+    return new WatchStory<T>(memory, this, eventObserver);
+  }
+
+  @NotNull
+  public Story<T> thenWatchEach(@NotNull final Memory memory,
+      @Nullable final Observer<? super T> resolutionObserver,
+      @Nullable final Observer<? super Throwable> conflictObserver) {
+    return thenWatchEach(memory, new DefaultEventObserver<T>(resolutionObserver, conflictObserver));
+  }
+
+  @NotNull
+  public <R> Story<R> thenWhile(@NotNull final Memory memory,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+      @NotNull final UnaryFunction<? super T, ? extends Story<R>> resolutionHandler) {
+    return when(memory, this, loopHandler, resolutionHandler);
+  }
+
+  @NotNull
+  public <R> Story<R> thenWhile(@NotNull final Memory memory,
+      @NotNull final StoryLooper<? super T, ? extends R> storyLooper) {
+    return thenWhile(memory, new LooperLoopHandler(storyLooper),
         new LooperResolutionHandler<T, R>(storyLooper));
   }
 
@@ -320,6 +389,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
       @NotNull final UnaryFunction<? super T, ? extends Story<R>> resolutionHandler) {
     return when(this, loopHandler, resolutionHandler);
+  }
+
+  @NotNull
+  public <R> Story<R> thenWhile(@NotNull final StoryLooper<? super T, ? extends R> storyLooper) {
+    return thenWhile(new LooperLoopHandler(storyLooper),
+        new LooperResolutionHandler<T, R>(storyLooper));
   }
 
   public interface Memory extends Iterable<Object> {
