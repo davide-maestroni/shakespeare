@@ -12,8 +12,6 @@ import java.util.Locale;
  */
 public class LogMessage {
 
-  private static final int DEFAULT_MAX_SIZE = 1024;
-
   private final Object[] mArgs;
   private final Thread mCallingThread;
   private final String mFormat;
@@ -64,6 +62,39 @@ public class LogMessage {
   }
 
   @Nullable
+  public String formatLogMessage(@NotNull final Locale locale, @NotNull final String format,
+      final int maxMessageSize) {
+    return String.format(locale, format, mCallingThread,
+        abbreviate(formatMessage(locale), maxMessageSize), printStackTrace());
+  }
+
+  @Nullable
+  public String formatLogMessage(@NotNull final Locale locale, @NotNull final String format,
+      final int maxMessageSize, @Nullable final Object... additionalArgs) {
+    if ((additionalArgs == null) || (additionalArgs.length == 0)) {
+      return formatLogMessage(locale, format, maxMessageSize);
+    }
+    final int length = additionalArgs.length;
+    final Object[] args = new Object[3 + length];
+    args[0] = mCallingThread;
+    args[1] = abbreviate(formatMessage(locale), maxMessageSize);
+    args[2] = printStackTrace();
+    System.arraycopy(additionalArgs, 0, args, 3, length);
+    return String.format(locale, format, args);
+  }
+
+  @Nullable
+  public String formatLogMessage(@NotNull final String format, final int maxMessageSize) {
+    return formatLogMessage(mLocale, format, maxMessageSize);
+  }
+
+  @Nullable
+  public String formatLogMessage(@NotNull final String format, final int maxMessageSize,
+      @Nullable final Object... additionalArgs) {
+    return formatLogMessage(mLocale, format, maxMessageSize, additionalArgs);
+  }
+
+  @Nullable
   public String formatMessage() {
     return formatMessage(mLocale);
   }
@@ -72,17 +103,6 @@ public class LogMessage {
   public String formatMessage(@NotNull final Locale locale) {
     final String format = mFormat;
     return (format != null) ? String.format(locale, format, mArgs) : mMessage;
-  }
-
-  @Nullable
-  public String formatMessage(@NotNull final String format) {
-    return formatMessage(mLocale, format);
-  }
-
-  @Nullable
-  public String formatMessage(@NotNull final Locale locale, @NotNull final String format) {
-    return String.format(locale, format, mCallingThread,
-        abbreviate(formatMessage(locale), DEFAULT_MAX_SIZE), printStackTrace());
   }
 
   @Nullable

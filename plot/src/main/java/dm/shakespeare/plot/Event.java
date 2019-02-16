@@ -130,6 +130,17 @@ public abstract class Event<T> {
     return new EventualEvent<T>(this, eventualAction);
   }
 
+  public void play(@NotNull final EventObserver<? super T> eventObserver) {
+    final Actor actor = BackStage.newActor(new EventObserverScript<T>(eventObserver));
+    final String threadId = actor.getId();
+    getActor().tell(GET, new Options().withReceiptId(threadId).withThread(threadId), actor);
+  }
+
+  public void play(@Nullable final Observer<? super T> resolutionObserver,
+      @Nullable final Observer<? super Throwable> conflictObserver) {
+    play(new DefaultEventObserver<T>(resolutionObserver, conflictObserver));
+  }
+
   @NotNull
   @SuppressWarnings("unchecked")
   public <E1 extends Throwable> Event<T> resolve(@NotNull final Class<? extends E1> firstType,
@@ -160,15 +171,15 @@ public abstract class Event<T> {
     return when(this, resolutionHandler);
   }
 
-  public void watch(@NotNull final EventObserver<? super T> eventObserver) {
-    final Actor actor = BackStage.newActor(new EventObserverScript<T>(eventObserver));
-    final String threadId = actor.getId();
-    getActor().tell(GET, new Options().withReceiptId(threadId).withThread(threadId), actor);
+  @NotNull
+  public Event<T> thenWatch(@NotNull final EventObserver<? super T> eventObserver) {
+    return new WatchEvent<T>(this, eventObserver);
   }
 
-  public void watch(@Nullable final Observer<? super T> resolutionObserver,
+  @NotNull
+  public Event<T> thenWatch(@Nullable final Observer<? super T> resolutionObserver,
       @Nullable final Observer<? super Throwable> conflictObserver) {
-    watch(new DefaultEventObserver<T>(resolutionObserver, conflictObserver));
+    return thenWatch(new DefaultEventObserver<T>(resolutionObserver, conflictObserver));
   }
 
   @NotNull
@@ -880,6 +891,51 @@ public abstract class Event<T> {
       } finally {
         Setting.unset();
       }
+    }
+  }
+
+  private static class WatchEvent<T> extends AbstractEvent<T> {
+
+    private final List<Actor> mActors;
+    private final EventObserver<? super T> mEventObserver;
+
+    private WatchEvent(@NotNull final Event<? extends T> event,
+        @NotNull final EventObserver<? super T> eventObserver) {
+      super(1);
+      mActors = Collections.singletonList(event.getActor());
+      mEventObserver = ConstantConditions.notNull("eventObserver", eventObserver);
+    }
+
+    @Nullable
+    @Override
+    @SuppressWarnings("unchecked")
+    Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
+      Setting.set(getSetting());
+      try {
+        mEventObserver.onResult((T) inputs[0]);
+
+      } finally {
+        Setting.unset();
+      }
+      return super.getOutputActor(inputs);
+    }
+
+    @Nullable
+    @Override
+    Actor getConflictActor(@NotNull final Conflict conflict) throws Exception {
+      Setting.set(getSetting());
+      try {
+        mEventObserver.onIncident(conflict.getCause());
+
+      } finally {
+        Setting.unset();
+      }
+      return super.getConflictActor(conflict);
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return mActors;
     }
   }
 }

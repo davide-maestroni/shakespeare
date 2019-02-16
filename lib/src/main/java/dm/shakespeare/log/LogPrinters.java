@@ -23,6 +23,12 @@ public class LogPrinters {
   }
 
   @NotNull
+  public static LogPrinter javaLoggingPrinter(@NotNull final String name, final int maxMessageSize,
+      final int maxLineSize) {
+    return new JavaLogPrinter(Logger.getLogger(name), maxMessageSize, maxLineSize);
+  }
+
+  @NotNull
   public static LogPrinter mergePrinters(@NotNull final LogPrinter... printers) {
     return mergePrinters(Arrays.asList(printers));
   }
