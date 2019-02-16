@@ -33,7 +33,7 @@ public class Scene {
   }
 
   @NotNull
-  public <T> Event<T> buildEvent(@NotNull final NullaryFunction<? extends Event<T>> eventCreator) {
+  public <T> Event<T> withEvent(@NotNull final NullaryFunction<? extends Event<T>> eventCreator) {
     Setting.set(mSetting);
     try {
       return Event.ofEvent(eventCreator);
@@ -44,7 +44,7 @@ public class Scene {
   }
 
   @NotNull
-  public <T> Story<T> buildStory(@NotNull final NullaryFunction<? extends Story<T>> storyCreator) {
+  public <T> Story<T> withStory(@NotNull final NullaryFunction<? extends Story<T>> storyCreator) {
     Setting.set(mSetting);
     try {
       return Story.ofStory(storyCreator);
