@@ -34,11 +34,6 @@ public class Scene {
   }
 
   @NotNull
-  public <T> Event<T> createEvent(@NotNull final Narrator<T> eventNarrator) {
-    return new NarratorEvent<T>(mSetting, eventNarrator); // TODO: 17/02/2019 ofNarrator()
-  }
-
-  @NotNull
   public <T> Event<T> createEvent(@NotNull final NullaryFunction<? extends Event<T>> eventCreator) {
     Setting.set(mSetting);
     try {

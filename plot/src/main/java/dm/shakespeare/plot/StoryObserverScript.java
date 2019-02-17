@@ -52,7 +52,7 @@ class StoryObserverScript<T> extends Script {
           context.dismissSelf();
 
         } else if (!(message instanceof Receipt)) {
-          mStoryObserver.onResult((T) message);
+          mStoryObserver.onEffect((T) message);
           envelop.getSender().tell(Story.NEXT, options, self);
         }
       }

@@ -46,6 +46,27 @@ public abstract class Event<T> {
   private static final Object NULL = new Object();
 
   @NotNull
+  public static <T> Event<T> ofEffect(final T effect) {
+    Event<T> event;
+    final Cache cache = Setting.get().getCache(Event.class);
+    if (effect == null) {
+      event = cache.get(NULL);
+      if (event == null) {
+        event = new EffectEvent<T>(null);
+        cache.put(NULL, event);
+      }
+
+    } else {
+      event = cache.get(effect);
+      if (event == null) {
+        event = new EffectEvent<T>(effect);
+        cache.put(effect, event);
+      }
+    }
+    return event;
+  }
+
+  @NotNull
   public static <T> Event<T> ofEvent(
       @NotNull final NullaryFunction<? extends Event<T>> eventCreator) {
     return new FunctionEvent<T>(eventCreator);
@@ -53,7 +74,7 @@ public abstract class Event<T> {
 
   @NotNull
   public static Event<Boolean> ofFalse() {
-    return ofResult(Boolean.FALSE);
+    return ofEffect(Boolean.FALSE);
   }
 
   @NotNull
@@ -62,46 +83,30 @@ public abstract class Event<T> {
   }
 
   @NotNull
-  public static <T> Event<T> ofNull() {
-    return ofResult(null);
+  public static <T> Event<T> ofNarration(@NotNull final Narrator<T> eventNarrator) {
+    return new NarratorEvent<T>(eventNarrator);
   }
 
   @NotNull
-  public static <T> Event<T> ofResult(final T result) {
-    Event<T> event;
-    final Cache cache = Setting.get().getCache(Event.class);
-    if (result == null) {
-      event = cache.get(NULL);
-      if (event == null) {
-        event = new ResultEvent<T>(null);
-        cache.put(NULL, event);
-      }
-
-    } else {
-      event = cache.get(result);
-      if (event == null) {
-        event = new ResultEvent<T>(result);
-        cache.put(result, event);
-      }
-    }
-    return event;
+  public static <T> Event<T> ofNull() {
+    return ofEffect(null);
   }
 
   @NotNull
   public static Event<Boolean> ofTrue() {
-    return ofResult(Boolean.TRUE);
+    return ofEffect(Boolean.TRUE);
   }
 
   @NotNull
   public static <T1, R> Event<R> when(@NotNull final Event<? extends T1> firstEvent,
-      @NotNull final UnaryFunction<? super T1, ? extends Event<R>> resolutionHandler) {
-    return new UnaryEvent<T1, R>(firstEvent, resolutionHandler);
+      @NotNull final UnaryFunction<? super T1, ? extends Event<R>> effectHandler) {
+    return new UnaryEvent<T1, R>(firstEvent, effectHandler);
   }
 
   @NotNull
   public static <T, R> Event<R> when(@NotNull final Iterable<? extends Event<? extends T>> events,
-      @NotNull final UnaryFunction<? super List<T>, ? extends Event<R>> resolutionHandler) {
-    return new GenericEvent<T, R>(events, resolutionHandler);
+      @NotNull final UnaryFunction<? super List<T>, ? extends Event<R>> effectHandler) {
+    return new GenericEvent<T, R>(events, effectHandler);
   }
 
   static boolean isFalse(@Nullable final Event<?> event) {
@@ -136,28 +141,28 @@ public abstract class Event<T> {
     getActor().tell(GET, new Options().withReceiptId(threadId).withThread(threadId), actor);
   }
 
-  public void play(@Nullable final Observer<? super T> resolutionObserver,
-      @Nullable final Observer<? super Throwable> conflictObserver) {
-    play(new DefaultEventObserver<T>(resolutionObserver, conflictObserver));
+  public void play(@Nullable final Observer<? super T> effectObserver,
+      @Nullable final Observer<? super Throwable> incidentObserver) {
+    play(new DefaultEventObserver<T>(effectObserver, incidentObserver));
   }
 
   @NotNull
   @SuppressWarnings("unchecked")
   public <E1 extends Throwable> Event<T> resolve(@NotNull final Class<? extends E1> firstType,
-      @NotNull final UnaryFunction<? super E1, ? extends Event<T>> conflictHandler) {
+      @NotNull final UnaryFunction<? super E1, ? extends Event<T>> incidentObserver) {
     final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
     types.add(firstType);
     return new ResolveEvent<T>(this, types,
-        (UnaryFunction<? super Throwable, ? extends Event<T>>) conflictHandler);
+        (UnaryFunction<? super Throwable, ? extends Event<T>>) incidentObserver);
   }
 
   @NotNull
   @SuppressWarnings("unchecked")
   public <E extends Throwable> Event<T> resolve(
-      @NotNull final Iterable<? extends Class<? extends E>> conflictTypes,
-      @NotNull final UnaryFunction<? super E, ? extends Event<T>> conflictHandler) {
-    return new ResolveEvent<T>(this, Iterables.<Class<? extends Throwable>>toSet(conflictTypes),
-        (UnaryFunction<? super Throwable, ? extends Event<T>>) conflictHandler);
+      @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
+      @NotNull final UnaryFunction<? super E, ? extends Event<T>> incidentObserver) {
+    return new ResolveEvent<T>(this, Iterables.<Class<? extends Throwable>>toSet(incidentTypes),
+        (UnaryFunction<? super Throwable, ? extends Event<T>>) incidentObserver);
   }
 
   @NotNull
@@ -167,19 +172,19 @@ public abstract class Event<T> {
 
   @NotNull
   public <R> Event<R> then(
-      @NotNull final UnaryFunction<? super T, ? extends Event<R>> resolutionHandler) {
-    return when(this, resolutionHandler);
+      @NotNull final UnaryFunction<? super T, ? extends Event<R>> effectHandler) {
+    return when(this, effectHandler);
   }
 
   @NotNull
-  public Event<T> thenWatch(@NotNull final EventObserver<? super T> eventObserver) {
-    return new WatchEvent<T>(this, eventObserver);
+  public Event<T> thenWatch(@NotNull final EventObserver<? super T> effectHandler) {
+    return new WatchEvent<T>(this, effectHandler);
   }
 
   @NotNull
-  public Event<T> thenWatch(@Nullable final Observer<? super T> resolutionObserver,
-      @Nullable final Observer<? super Throwable> conflictObserver) {
-    return thenWatch(new DefaultEventObserver<T>(resolutionObserver, conflictObserver));
+  public Event<T> thenWatch(@Nullable final Observer<? super T> effectObserver,
+      @Nullable final Observer<? super Throwable> incidentObserver) {
+    return thenWatch(new DefaultEventObserver<T>(effectObserver, incidentObserver));
   }
 
   @NotNull
@@ -187,102 +192,30 @@ public abstract class Event<T> {
 
   public interface EventObserver<T> {
 
-    void onIncident(@NotNull Throwable incident) throws Exception;
+    void onEffect(T effect) throws Exception;
 
-    void onResult(T result) throws Exception;
+    void onIncident(@NotNull Throwable incident) throws Exception;
   }
 
   static class DefaultEventObserver<T> implements EventObserver<T> {
 
-    private final Observer<Object> mConflictObserver;
-    private final Observer<Object> mResolutionObserver;
+    private final Observer<Object> mEffectObserver;
+    private final Observer<Object> mIncidentObserver;
 
     @SuppressWarnings("unchecked")
-    DefaultEventObserver(@Nullable final Observer<? super T> resolutionObserver,
-        @Nullable final Observer<? super Throwable> conflictObserver) {
-      mResolutionObserver =
-          (Observer<Object>) ((resolutionObserver != null) ? resolutionObserver : NO_OP);
-      mConflictObserver =
-          (Observer<Object>) ((conflictObserver != null) ? conflictObserver : NO_OP);
+    DefaultEventObserver(@Nullable final Observer<? super T> effectObserver,
+        @Nullable final Observer<? super Throwable> incidentObserver) {
+      mEffectObserver = (Observer<Object>) ((effectObserver != null) ? effectObserver : NO_OP);
+      mIncidentObserver =
+          (Observer<Object>) ((incidentObserver != null) ? incidentObserver : NO_OP);
+    }
+
+    public void onEffect(final T effect) throws Exception {
+      mEffectObserver.accept(effect);
     }
 
     public void onIncident(@NotNull final Throwable incident) throws Exception {
-      mConflictObserver.accept(incident);
-    }
-
-    public void onResult(final T result) throws Exception {
-      mResolutionObserver.accept(result);
-    }
-  }
-
-  static class NarratorEvent<T> extends Event<T> {
-
-    private final Actor mActor;
-
-    NarratorEvent(@NotNull final Setting setting, @NotNull final Narrator<T> eventNarrator) {
-      ConstantConditions.notNull("eventNarrator", eventNarrator);
-      mActor = BackStage.newActor(new PlayScript(setting) {
-
-        @NotNull
-        @Override
-        public Behavior getBehavior(@NotNull final String id) {
-          return new AbstractBehavior() {
-
-            private final HashMap<String, Sender> mSenders = new HashMap<String, Sender>();
-
-            public void onMessage(final Object message, @NotNull final Envelop envelop,
-                @NotNull final Context context) {
-              if (message == GET) {
-                eventNarrator.setActor(context.getSelf());
-                Object result;
-                try {
-                  eventNarrator.narrate();
-                  result = eventNarrator.getQueue().peek();
-
-                } catch (final Throwable t) {
-                  result = new Conflict(t);
-                  eventNarrator.cancel(t);
-                  if (t instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                  }
-                }
-
-                if (result != null) {
-                  if (result instanceof Resolution) {
-                    result = ((Resolution) result).getResult();
-                  }
-                  context.setBehavior(new DoneBehavior(result));
-
-                } else {
-                  final Options options = envelop.getOptions().threadOnly();
-                  mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
-                }
-
-              } else if (message == CANCEL) {
-                final Conflict conflict = Conflict.ofCancel();
-                eventNarrator.cancel(conflict.getCause());
-                context.setBehavior(new DoneBehavior(conflict));
-
-              } else if (message == Narrator.AVAILABLE) {
-                Object result = eventNarrator.getQueue().peek();
-                if (result instanceof Resolution) {
-                  result = ((Resolution) result).getResult();
-                }
-                final Actor self = context.getSelf();
-                for (final Sender sender : mSenders.values()) {
-                  sender.getSender().tell(result, sender.getOptions(), self);
-                }
-                context.setBehavior(new DoneBehavior(result));
-              }
-            }
-          };
-        }
-      });
-    }
-
-    @NotNull
-    Actor getActor() {
-      return mActor;
+      mIncidentObserver.accept(incident);
     }
   }
 
@@ -317,6 +250,11 @@ public abstract class Event<T> {
     }
 
     void endAction() throws Exception {
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
     }
 
     @Nullable
@@ -571,27 +509,43 @@ public abstract class Event<T> {
         envelop.preventReceipt();
       }
     }
-
-    @NotNull
-    Actor getActor() {
-      return mActor;
-    }
   }
 
   private static class DoneBehavior extends AbstractBehavior {
 
-    private final Object mResult;
+    private final Object mEffect;
 
-    private DoneBehavior(final Object result) {
-      mResult = result;
+    private DoneBehavior(final Object effect) {
+      mEffect = effect;
     }
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Context context) {
       if (message == GET) {
-        envelop.getSender().tell(mResult, envelop.getOptions().threadOnly(), context.getSelf());
+        envelop.getSender().tell(mEffect, envelop.getOptions().threadOnly(), context.getSelf());
       }
       envelop.preventReceipt();
+    }
+  }
+
+  private static class EffectEvent<T> extends Event<T> {
+
+    private final Actor mActor;
+
+    private EffectEvent(final T effect) {
+      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return new DoneBehavior(effect);
+        }
+      });
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
     }
   }
 
@@ -663,17 +617,17 @@ public abstract class Event<T> {
   private static class GenericEvent<T, R> extends AbstractEvent<R> {
 
     private final List<Actor> mActors;
-    private final UnaryFunction<? super List<T>, ? extends Event<R>> mResolutionHandler;
+    private final UnaryFunction<? super List<T>, ? extends Event<R>> mEffectHandler;
 
     private GenericEvent(@NotNull final Iterable<? extends Event<? extends T>> events,
-        @NotNull final UnaryFunction<? super List<T>, ? extends Event<R>> resolutionHandler) {
+        @NotNull final UnaryFunction<? super List<T>, ? extends Event<R>> effectHandler) {
       super(Iterables.size(events));
       final ArrayList<Actor> actors = new ArrayList<Actor>();
       for (final Event<? extends T> event : events) {
         actors.add(event.getActor());
       }
       mActors = actors;
-      mResolutionHandler = ConstantConditions.notNull("resolutionHandler", resolutionHandler);
+      mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
     }
 
     @NotNull
@@ -690,7 +644,7 @@ public abstract class Event<T> {
         for (final Object input : inputs) {
           inputList.add((T) input);
         }
-        final Event<R> event = mResolutionHandler.call(inputList);
+        final Event<R> event = mEffectHandler.call(inputList);
         return ((event != null) ? event : ofNull()).getActor();
 
       } finally {
@@ -721,30 +675,108 @@ public abstract class Event<T> {
     }
   }
 
+  private static class NarratorEvent<T> extends Event<T> {
+
+    private final Actor mActor;
+
+    private NarratorEvent(@NotNull final Narrator<T> eventNarrator) {
+      ConstantConditions.notNull("eventNarrator", eventNarrator);
+      final Setting setting = Setting.get();
+      mActor = BackStage.newActor(new PlayScript(setting) {
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return new AbstractBehavior() {
+
+            private final HashMap<String, Sender> mSenders = new HashMap<String, Sender>();
+
+            public void onMessage(final Object message, @NotNull final Envelop envelop,
+                @NotNull final Context context) {
+              if (message == GET) {
+                eventNarrator.setActor(context.getSelf());
+                Object effect;
+                try {
+                  Setting.set(setting);
+                  try {
+                    eventNarrator.narrate();
+                    effect = eventNarrator.takeEffect();
+
+                  } finally {
+                    Setting.unset();
+                  }
+
+                } catch (final Throwable t) {
+                  effect = new Conflict(t);
+                  eventNarrator.cancel(t);
+                  if (t instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                  }
+                }
+
+                if (effect != null) {
+                  if (effect instanceof Result) {
+                    effect = ((Result) effect).getEffect();
+                  }
+                  context.setBehavior(new DoneBehavior(effect));
+
+                } else {
+                  final Options options = envelop.getOptions().threadOnly();
+                  mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+                }
+
+              } else if (message == CANCEL) {
+                final Conflict conflict = Conflict.ofCancel();
+                eventNarrator.cancel(conflict.getCause());
+                context.setBehavior(new DoneBehavior(conflict));
+
+              } else if (message == Narrator.AVAILABLE) {
+                Object effect = eventNarrator.takeEffect();
+                if (effect instanceof Result) {
+                  effect = ((Result) effect).getEffect();
+                }
+                final Actor self = context.getSelf();
+                for (final Sender sender : mSenders.values()) {
+                  sender.getSender().tell(effect, sender.getOptions(), self);
+                }
+                context.setBehavior(new DoneBehavior(effect));
+              }
+            }
+          };
+        }
+      });
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
+    }
+  }
+
   private static class ResolveEvent<T> extends AbstractEvent<T> {
 
     private final List<Actor> mActors;
-    private final UnaryFunction<? super Throwable, ? extends Event<T>> mConflictHandler;
-    private final Set<Class<? extends Throwable>> mConflictTypes;
+    private final UnaryFunction<? super Throwable, ? extends Event<T>> mIncidentHandler;
+    private final Set<Class<? extends Throwable>> mIncidentTypes;
 
     private ResolveEvent(@NotNull final Event<? extends T> event,
-        @NotNull final Set<Class<? extends Throwable>> conflictTypes,
-        @NotNull final UnaryFunction<? super Throwable, ? extends Event<T>> conflictHandler) {
+        @NotNull final Set<Class<? extends Throwable>> incidentTypes,
+        @NotNull final UnaryFunction<? super Throwable, ? extends Event<T>> incidentHandler) {
       super(1);
       mActors = Collections.singletonList(event.getActor());
-      mConflictTypes = ConstantConditions.notNullElements("conflictTypes", conflictTypes);
-      mConflictHandler = ConstantConditions.notNull("conflictHandler", conflictHandler);
+      mIncidentTypes = ConstantConditions.notNullElements("incidentTypes", incidentTypes);
+      mIncidentHandler = ConstantConditions.notNull("incidentHandler", incidentHandler);
     }
 
     @Nullable
     @Override
     Actor getConflictActor(@NotNull final Conflict conflict) throws Exception {
       final Throwable incident = conflict.getCause();
-      for (final Class<? extends Throwable> conflictType : mConflictTypes) {
-        if (conflictType.isInstance(incident)) {
+      for (final Class<? extends Throwable> incidentType : mIncidentTypes) {
+        if (incidentType.isInstance(incident)) {
           Setting.set(getSetting());
           try {
-            final Event<T> event = mConflictHandler.call(incident);
+            final Event<T> event = mIncidentHandler.call(incident);
             return ((event != null) ? event : ofNull()).getActor();
 
           } finally {
@@ -758,27 +790,6 @@ public abstract class Event<T> {
     @NotNull
     List<Actor> getInputActors() {
       return mActors;
-    }
-  }
-
-  private static class ResultEvent<T> extends Event<T> {
-
-    private final Actor mActor;
-
-    private ResultEvent(final T result) {
-      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
-
-        @NotNull
-        @Override
-        public Behavior getBehavior(@NotNull final String id) {
-          return new DoneBehavior(result);
-        }
-      });
-    }
-
-    @NotNull
-    Actor getActor() {
-      return mActor;
     }
   }
 
@@ -828,7 +839,7 @@ public abstract class Event<T> {
       context.setBehavior(new DoneBehavior(message));
     }
 
-    private void fail(@NotNull Conflict conflict, @NotNull final Context context) {
+    private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
       final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
       if (scheduledFuture != null) {
         scheduledFuture.cancel(false);
@@ -936,14 +947,14 @@ public abstract class Event<T> {
   private static class UnaryEvent<T1, R> extends AbstractEvent<R> {
 
     private final List<Actor> mActors;
-    private final UnaryFunction<? super T1, ? extends Event<R>> mResolutionHandler;
+    private final UnaryFunction<? super T1, ? extends Event<R>> mEffectHandler;
 
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
     private UnaryEvent(@NotNull final Event<? extends T1> firstEvent,
-        @NotNull final UnaryFunction<? super T1, ? extends Event<R>> resolutionHandler) {
+        @NotNull final UnaryFunction<? super T1, ? extends Event<R>> effectHandler) {
       super(1);
       mActors = Arrays.asList(firstEvent.getActor());
-      mResolutionHandler = ConstantConditions.notNull("resolutionHandler", resolutionHandler);
+      mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
     }
 
     @NotNull
@@ -956,7 +967,7 @@ public abstract class Event<T> {
     Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
       Setting.set(getSetting());
       try {
-        final Event<R> event = mResolutionHandler.call((T1) inputs[0]);
+        final Event<R> event = mEffectHandler.call((T1) inputs[0]);
         return ((event != null) ? event : ofNull()).getActor();
 
       } finally {
@@ -983,7 +994,7 @@ public abstract class Event<T> {
     Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
       Setting.set(getSetting());
       try {
-        mEventObserver.onResult((T) inputs[0]);
+        mEventObserver.onEffect((T) inputs[0]);
 
       } finally {
         Setting.unset();

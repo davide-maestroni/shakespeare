@@ -1,6 +1,7 @@
 package dm.shakespeare.plot;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -33,7 +34,7 @@ public abstract class Narrator<T> {
   }
 
   public void tell(final T result) throws Exception {
-    resolve(new Resolution(result));
+    resolve(new Result(result));
   }
 
   final void cancel(@NotNull final Throwable cause) {
@@ -41,15 +42,15 @@ public abstract class Narrator<T> {
     mQueue.clear();
   }
 
-  @NotNull
-  final BlockingQueue<Object> getQueue() {
-    return mQueue;
-  }
-
   abstract boolean narrate() throws Exception;
 
   final void setActor(@NotNull final Actor actor) {
     mActor = actor;
+  }
+
+  @Nullable
+  final Object takeEffect() {
+    return mQueue.poll();
   }
 
   private void resolve(@NotNull final Object resolution) throws Exception {

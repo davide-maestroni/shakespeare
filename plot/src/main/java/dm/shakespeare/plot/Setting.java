@@ -51,8 +51,8 @@ class Setting {
     }
   }
 
-  static void set(@NotNull final Setting context) {
-    sLocalSetting.get().add(ConstantConditions.notNull("context", context));
+  static void set(@NotNull final Setting setting) {
+    sLocalSetting.get().add(ConstantConditions.notNull("setting", setting));
   }
 
   static void unset() {

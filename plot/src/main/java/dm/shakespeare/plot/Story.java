@@ -71,8 +71,19 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   };
 
   @NotNull
+  public static <T> Story<T> ofEffects(@NotNull final Iterable<T> effects) {
+    final Cache cache = Setting.get().getCache(Story.class);
+    Story<T> story = cache.get(effects);
+    if (story == null) {
+      story = new EffectsStory<T>(effects);
+      cache.put(effects, story);
+    }
+    return story;
+  }
+
+  @NotNull
   public static <T> Story<T> ofEmpty() {
-    return ofResults(Collections.<T>emptyList());
+    return ofEffects(Collections.<T>emptyList());
   }
 
   @NotNull
@@ -101,17 +112,17 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public static Story<ByteBuffer> ofInputStream(@NotNull final Memory memory,
       @NotNull final InputStream inputStream,
       @NotNull final NullaryFunction<? extends ByteBuffer> bufferCreator) {
-    return new ResultsStory<ByteBuffer>(
+    return new EffectsStory<ByteBuffer>(
         new InputStreamIterable(memory, inputStream, bufferCreator));
   }
 
   @NotNull
-  public static <T> Story<T> ofResults(@NotNull final Iterable<T> results) {
+  public static <T> Story<T> ofSingleEffect(final T effect) {
     final Cache cache = Setting.get().getCache(Story.class);
-    Story<T> story = cache.get(results);
+    Story<T> story = cache.get(effect);
     if (story == null) {
-      story = new ResultsStory<T>(results);
-      cache.put(results, story);
+      story = new EffectStory<T>(effect);
+      cache.put(effect, story);
     }
     return story;
   }
@@ -124,17 +135,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   public static <T> Story<T> ofSingleIncident(@NotNull final Throwable incident) {
     return new IncidentStory<T>(incident);
-  }
-
-  @NotNull
-  public static <T> Story<T> ofSingleResult(final T result) {
-    final Cache cache = Setting.get().getCache(Story.class);
-    Story<T> story = cache.get(result);
-    if (story == null) {
-      story = new ResultStory<T>(result);
-      cache.put(result, story);
-    }
-    return story;
   }
 
   @NotNull
@@ -161,23 +161,23 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
-      @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> resolutionHandler) {
-    return when(new ListMemory(), stories, loopHandler, resolutionHandler);
+      @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> effectHandler) {
+    return when(new ListMemory(), stories, loopHandler, effectHandler);
   }
 
   @NotNull
   public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final StoryLooper<? super List<T>, R> storyLooper) {
     return when(stories, new LooperLoopHandler(storyLooper),
-        new LooperResolutionHandler<List<T>, R>(storyLooper));
+        new LooperEffectHandler<List<T>, R>(storyLooper));
   }
 
   @NotNull
   public static <T, R> Story<R> when(@NotNull final Memory memory,
       @NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
-      @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> resolutionHandler) {
-    return new GenericStory<T, R>(memory, stories, loopHandler, resolutionHandler);
+      @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> effectHandler) {
+    return new GenericStory<T, R>(memory, stories, loopHandler, effectHandler);
   }
 
   @NotNull
@@ -185,22 +185,22 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       @NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final StoryLooper<? super List<T>, R> storyLooper) {
     return when(memory, stories, new LooperLoopHandler(storyLooper),
-        new LooperResolutionHandler<List<T>, R>(storyLooper));
+        new LooperEffectHandler<List<T>, R>(storyLooper));
   }
 
   @NotNull
   public static <T1, R> Story<R> when(@NotNull final Memory memory,
       @NotNull final Story<? extends T1> firstStory,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
-      @NotNull final UnaryFunction<? super T1, ? extends Story<R>> resolutionHandler) {
-    return new UnaryStory<T1, R>(memory, firstStory, loopHandler, resolutionHandler);
+      @NotNull final UnaryFunction<? super T1, ? extends Story<R>> effectHandler) {
+    return new UnaryStory<T1, R>(memory, firstStory, loopHandler, effectHandler);
   }
 
   @NotNull
   public static <T1, R> Story<R> when(@NotNull final Story<? extends T1> firstStory,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
-      @NotNull final UnaryFunction<? super T1, ? extends Story<R>> resolutionHandler) {
-    return when(new ListMemory(), firstStory, loopHandler, resolutionHandler);
+      @NotNull final UnaryFunction<? super T1, ? extends Story<R>> effectHandler) {
+    return when(new ListMemory(), firstStory, loopHandler, effectHandler);
   }
 
   private static boolean isEmpty(@Nullable final Story<?> story) {
@@ -230,10 +230,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     playAll(new EventStoryObserver<T>(eventObserver));
   }
 
-  public void playAll(@Nullable final Observer<? super T> resolutionObserver,
-      @Nullable final Observer<? super Throwable> conflictObserver,
+  public void playAll(@Nullable final Observer<? super T> effectObserver,
+      @Nullable final Observer<? super Throwable> incidentObserver,
       @Nullable final Action endAction) {
-    playAll(new DefaultStoryObserver<T>(resolutionObserver, conflictObserver, endAction));
+    playAll(new DefaultStoryObserver<T>(effectObserver, incidentObserver, endAction));
   }
 
   public void playAll(@NotNull final StoryObserver<? super T> storyObserver) {
@@ -246,15 +246,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @SuppressWarnings("unchecked")
   public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
-      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> conflictHandler) {
-    return resolve(new ListMemory(), firstType, loopHandler, conflictHandler);
+      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
+    return resolve(new ListMemory(), firstType, loopHandler, incidentHandler);
   }
 
   @NotNull
   public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
       @NotNull final StoryLooper<? super Throwable, ? extends T> storyLooper) {
     return resolve(firstType, new LooperLoopHandler(storyLooper),
-        new LooperResolutionHandler<Throwable, T>(storyLooper));
+        new LooperEffectHandler<Throwable, T>(storyLooper));
   }
 
   @NotNull
@@ -262,8 +262,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public <E extends Throwable> Story<T> resolve(
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
-      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> conflictHandler) {
-    return resolve(new ListMemory(), incidentTypes, loopHandler, conflictHandler);
+      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
+    return resolve(new ListMemory(), incidentTypes, loopHandler, incidentHandler);
   }
 
   @NotNull
@@ -271,11 +271,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public <E1 extends Throwable> Story<T> resolve(@NotNull final Memory memory,
       @NotNull final Class<? extends E1> firstType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
-      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> conflictHandler) {
+      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
     final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
     types.add(firstType);
     return new ResolveStory<T>(memory, this, types, loopHandler,
-        (UnaryFunction<? super Throwable, ? extends Story<T>>) conflictHandler);
+        (UnaryFunction<? super Throwable, ? extends Story<T>>) incidentHandler);
   }
 
   @NotNull
@@ -283,7 +283,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       @NotNull final Class<? extends E1> firstType,
       @NotNull final StoryLooper<? super Throwable, ? extends T> storyLooper) {
     return resolve(memory, firstType, new LooperLoopHandler(storyLooper),
-        new LooperResolutionHandler<Throwable, T>(storyLooper));
+        new LooperEffectHandler<Throwable, T>(storyLooper));
   }
 
   @NotNull
@@ -291,10 +291,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public <E extends Throwable> Story<T> resolve(@NotNull final Memory memory,
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
-      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> conflictHandler) {
+      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
     return new ResolveStory<T>(memory, this,
         Iterables.<Class<? extends Throwable>>toSet(incidentTypes), loopHandler,
-        (UnaryFunction<? super Throwable, ? extends Story<T>>) conflictHandler);
+        (UnaryFunction<? super Throwable, ? extends Story<T>>) incidentHandler);
   }
 
   @NotNull
@@ -323,27 +323,27 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public <R> Story<R> thenBlend(final int maxConcurrency,
-      @NotNull final UnaryFunction<? super T, ? extends Story<R>> resolutionHandler) {
-    return thenBlend(new ListMemory(), maxConcurrency, resolutionHandler);
+      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
+    return thenBlend(new ListMemory(), maxConcurrency, effectHandler);
   }
 
   @NotNull
   public <R> Story<R> thenBlend(@NotNull final Memory memory, final int maxConcurrency,
-      @NotNull final UnaryFunction<? super T, ? extends Story<R>> resolutionHandler) {
-    return new BlendStory<T, R>(memory, this, maxConcurrency, resolutionHandler);
+      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
+    return new BlendStory<T, R>(memory, this, maxConcurrency, effectHandler);
   }
 
   @NotNull
   public <R> Story<R> thenJoin(final int maxConcurrency, final int maxEventWindow,
-      @NotNull final UnaryFunction<? super T, ? extends Event<R>> resolutionHandler) {
-    return thenJoin(new ListMemory(), maxConcurrency, maxEventWindow, resolutionHandler);
+      @NotNull final UnaryFunction<? super T, ? extends Event<R>> effectHandler) {
+    return thenJoin(new ListMemory(), maxConcurrency, maxEventWindow, effectHandler);
   }
 
   @NotNull
   public <R> Story<R> thenJoin(@NotNull final Memory memory, final int maxConcurrency,
       final int maxEventWindow,
-      @NotNull final UnaryFunction<? super T, ? extends Event<R>> resolutionHandler) {
-    return new JoinStory<T, R>(memory, this, maxConcurrency, maxEventWindow, resolutionHandler);
+      @NotNull final UnaryFunction<? super T, ? extends Event<R>> effectHandler) {
+    return new JoinStory<T, R>(memory, this, maxConcurrency, maxEventWindow, effectHandler);
   }
 
   @NotNull
@@ -359,42 +359,42 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public Story<T> thenWatchEach(@NotNull final Memory memory,
-      @Nullable final Observer<? super T> resolutionObserver,
-      @Nullable final Observer<? super Throwable> conflictObserver) {
-    return thenWatchEach(memory, new DefaultEventObserver<T>(resolutionObserver, conflictObserver));
+      @Nullable final Observer<? super T> effectObserver,
+      @Nullable final Observer<? super Throwable> incidentObserver) {
+    return thenWatchEach(memory, new DefaultEventObserver<T>(effectObserver, incidentObserver));
   }
 
   @NotNull
-  public Story<T> thenWatchEach(@Nullable final Observer<? super T> resolutionObserver,
-      @Nullable final Observer<? super Throwable> conflictObserver) {
-    return thenWatchEach(new DefaultEventObserver<T>(resolutionObserver, conflictObserver));
+  public Story<T> thenWatchEach(@Nullable final Observer<? super T> effectObserver,
+      @Nullable final Observer<? super Throwable> incidentObserver) {
+    return thenWatchEach(new DefaultEventObserver<T>(effectObserver, incidentObserver));
   }
 
   @NotNull
   public <R> Story<R> thenWhile(@NotNull final Memory memory,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
-      @NotNull final UnaryFunction<? super T, ? extends Story<R>> resolutionHandler) {
-    return when(memory, this, loopHandler, resolutionHandler);
+      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
+    return when(memory, this, loopHandler, effectHandler);
   }
 
   @NotNull
   public <R> Story<R> thenWhile(@NotNull final Memory memory,
       @NotNull final StoryLooper<? super T, ? extends R> storyLooper) {
     return thenWhile(memory, new LooperLoopHandler(storyLooper),
-        new LooperResolutionHandler<T, R>(storyLooper));
+        new LooperEffectHandler<T, R>(storyLooper));
   }
 
   @NotNull
   public <R> Story<R> thenWhile(
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
-      @NotNull final UnaryFunction<? super T, ? extends Story<R>> resolutionHandler) {
-    return when(this, loopHandler, resolutionHandler);
+      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
+    return when(this, loopHandler, effectHandler);
   }
 
   @NotNull
   public <R> Story<R> thenWhile(@NotNull final StoryLooper<? super T, ? extends R> storyLooper) {
     return thenWhile(new LooperLoopHandler(storyLooper),
-        new LooperResolutionHandler<T, R>(storyLooper));
+        new LooperEffectHandler<T, R>(storyLooper));
   }
 
   public interface Memory extends Iterable<Object> {
@@ -420,10 +420,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private final Action mEndAction;
 
-    DefaultStoryObserver(@Nullable final Observer<? super T> resolutionObserver,
-        @Nullable final Observer<? super Throwable> conflictObserver,
+    DefaultStoryObserver(@Nullable final Observer<? super T> effectObserver,
+        @Nullable final Observer<? super Throwable> incidentObserver,
         @Nullable final Action endAction) {
-      super(resolutionObserver, conflictObserver);
+      super(effectObserver, incidentObserver);
       mEndAction = (endAction != null) ? endAction : NO_OP;
     }
 
@@ -440,12 +440,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mEventObserver = ConstantConditions.notNull("eventObserver", eventObserver);
     }
 
-    public void onIncident(@NotNull final Throwable incident) throws Exception {
-      mEventObserver.onIncident(incident);
+    public void onEffect(final T effect) throws Exception {
+      mEventObserver.onEffect(effect);
     }
 
-    public void onResult(final T result) throws Exception {
-      mEventObserver.onResult(result);
+    public void onIncident(@NotNull final Throwable incident) throws Exception {
+      mEventObserver.onIncident(incident);
     }
 
     public void onEnd() {
@@ -561,16 +561,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           Thread.currentThread().interrupt();
         }
       }
-      Object results = memory;
-      for (final Object result : memory) {
-        if (result instanceof Conflict) {
-          results = result;
+      Object effects = memory;
+      for (final Object effect : memory) {
+        if (effect instanceof Conflict) {
+          effects = effect;
           break;
         }
       }
       final Actor self = context.getSelf();
       for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(results, sender.getOptions(), self);
+        sender.getSender().tell(effects, sender.getOptions(), self);
       }
       mGetSenders = null;
       final HashMap<String, SenderIterator> nextSenders = mNextSenders;
@@ -579,7 +579,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           sender.getSender().tell(END, sender.getOptions(), self);
         }
       }
-      context.setBehavior(new DoneBehavior(results, memory, nextSenders));
+      context.setBehavior(new DoneBehavior(effects, memory, nextSenders));
     }
 
     private void fail(@NotNull Conflict conflict, @NotNull final Context context) {
@@ -821,13 +821,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                     conflict(mConflict, context);
 
                   } else {
-                    Object result = message;
+                    Object effect = message;
                     Actor outputActor = null;
                     try {
                       outputActor = getOutputActor(inputs);
 
                     } catch (final Throwable t) {
-                      result = new Conflict(t);
+                      effect = new Conflict(t);
                       if (t instanceof InterruptedException) {
                         Thread.currentThread().interrupt();
                       }
@@ -839,7 +839,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                       context.setBehavior(new OutputBehavior());
 
                     } else {
-                      mMemory.put(result);
+                      mMemory.put(effect);
                       for (final SenderIterator sender : mNextSenders.values()) {
                         sender.tellNext(self);
                       }
@@ -1066,6 +1066,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   private static class BlendStory<T, R> extends Story<R> {
 
     private final Actor mActor;
+    private final UnaryFunction<? super T, ? extends Story<R>> mEffectHandler;
     private final Actor mInputActor;
     private final Options mInputOptions;
     private final int mMaxConcurrency;
@@ -1076,7 +1077,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final Options mOptions;
     private final HashMap<Actor, Options> mOutputActors = new HashMap<Actor, Options>();
     private final String mOutputThread;
-    private final UnaryFunction<? super T, ? extends Story<R>> mResolutionHandler;
     private final Setting mSetting;
 
     private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
@@ -1087,11 +1087,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private BlendStory(@NotNull final Memory memory, @NotNull final Story<? extends T> story,
         final int maxConcurrency,
-        @NotNull final UnaryFunction<? super T, ? extends Story<R>> resolutionHandler) {
+        @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
       mMemory = ConstantConditions.notNull("memory", memory);
       mInputActor = story.getActor();
       mMaxConcurrency = ConstantConditions.positive("maxConcurrency", maxConcurrency);
-      mResolutionHandler = ConstantConditions.notNull("resolutionHandler", resolutionHandler);
+      mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
       final Setting setting = (mSetting = Setting.get());
       final String actorId = (mActor = BackStage.newActor(new PlayScript(setting) {
 
@@ -1108,16 +1108,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private void done(@NotNull final Context context) {
       final Memory memory = mMemory;
-      Object results = memory;
-      for (final Object result : memory) {
-        if (result instanceof Conflict) {
-          results = result;
+      Object effects = memory;
+      for (final Object effect : memory) {
+        if (effect instanceof Conflict) {
+          effects = effect;
           break;
         }
       }
       final Actor self = context.getSelf();
       for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(results, sender.getOptions(), self);
+        sender.getSender().tell(effects, sender.getOptions(), self);
       }
       mGetSenders = null;
       final HashMap<String, SenderIterator> nextSenders = mNextSenders;
@@ -1126,7 +1126,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           sender.getSender().tell(END, sender.getOptions(), self);
         }
       }
-      context.setBehavior(new DoneBehavior(results, memory, nextSenders));
+      context.setBehavior(new DoneBehavior(effects, memory, nextSenders));
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
@@ -1149,7 +1149,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private Actor getOutputActor(@NotNull final Object input) throws Exception {
       Setting.set(mSetting);
       try {
-        final Story<R> story = mResolutionHandler.call((T) input);
+        final Story<R> story = mEffectHandler.call((T) input);
         if ((story == null) || isEmpty(story)) {
           return null;
         }
@@ -1495,21 +1495,21 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   private static class DoneBehavior extends AbstractBehavior {
 
+    private final Object mEffect;
+    private final Iterable<?> mEffects;
     private final Map<String, SenderIterator> mNextSenders;
-    private final Object mResult;
-    private final Iterable<?> mResults;
 
-    private DoneBehavior(final Object result, @NotNull final Iterable<?> results,
+    private DoneBehavior(final Object effect, @NotNull final Iterable<?> effects,
         @NotNull final Map<String, SenderIterator> nextSenders) {
-      mResult = result;
-      mResults = results;
+      mEffect = effect;
+      mEffects = effects;
       mNextSenders = nextSenders;
     }
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Context context) {
       if (message == GET) {
-        envelop.getSender().tell(mResult, envelop.getOptions().threadOnly(), context.getSelf());
+        envelop.getSender().tell(mEffect, envelop.getOptions().threadOnly(), context.getSelf());
 
       } else if (message == NEXT) {
         final Actor self = context.getSelf();
@@ -1522,7 +1522,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           sender = new SenderIterator(envelop.getSender(), options);
-          sender.setIterator(mResults.iterator());
+          sender.setIterator(mEffects.iterator());
           nextSenders.put(thread, sender);
         }
 
@@ -1534,6 +1534,106 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         mNextSenders.remove(envelop.getOptions().getThread());
       }
       envelop.preventReceipt();
+    }
+  }
+
+  private static class EffectStory<T> extends Story<T> {
+
+    private final Actor mActor;
+
+    private EffectStory(final T effect) {
+      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
+
+        private final HashSet<String> mThreads = new HashSet<String>();
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return new AbstractBehavior() {
+
+            public void onMessage(final Object message, @NotNull final Envelop envelop,
+                @NotNull final Context context) {
+              if (message == GET) {
+                envelop.getSender()
+                    .tell(effect, envelop.getOptions().threadOnly(), context.getSelf());
+
+              } else if (message == NEXT) {
+                final HashSet<String> threads = mThreads;
+                final Options options = envelop.getOptions().threadOnly();
+                final String thread = options.getThread();
+                if (!threads.contains(thread)) {
+                  envelop.getSender()
+                      .tell(effect, envelop.getOptions().threadOnly(), context.getSelf());
+                  threads.add(thread);
+
+                } else {
+                  envelop.getSender()
+                      .tell(END, envelop.getOptions().threadOnly(), context.getSelf());
+                }
+
+              } else if (message == BREAK) {
+                mThreads.remove(envelop.getOptions().getThread());
+              }
+              envelop.preventReceipt();
+            }
+          };
+        }
+      });
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
+    }
+  }
+
+  private static class EffectsStory<T> extends Story<T> {
+
+    private final Actor mActor;
+
+    private EffectsStory(@NotNull final Iterable<T> effects) {
+      ConstantConditions.notNull("effects", effects);
+      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
+
+        private final HashMap<String, Iterator<T>> mThreads = new HashMap<String, Iterator<T>>();
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return new AbstractBehavior() {
+
+            public void onMessage(final Object message, @NotNull final Envelop envelop,
+                @NotNull final Context context) {
+              if (message == GET) {
+                envelop.getSender()
+                    .tell(Iterables.toList(effects), envelop.getOptions().threadOnly(),
+                        context.getSelf());
+
+              } else if (message == NEXT) {
+                final HashMap<String, Iterator<T>> threads = mThreads;
+                final Options options = envelop.getOptions().threadOnly();
+                final String thread = options.getThread();
+                Iterator<T> iterator = threads.get(thread);
+                if (iterator == null) {
+                  iterator = effects.iterator();
+                  threads.put(thread, iterator);
+                }
+                envelop.getSender()
+                    .tell(iterator.hasNext() ? iterator.next() : END, options, context.getSelf());
+
+              } else if (message == BREAK) {
+                mThreads.remove(envelop.getOptions().getThread());
+              }
+              envelop.preventReceipt();
+            }
+          };
+        }
+      });
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
     }
   }
 
@@ -1672,12 +1772,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 sender.getSender().tell(message, sender.getOptions(), self);
               }
               mGetSenders = null;
-              final Set<Object> results = Collections.singleton(message);
+              final Set<Object> effects = Collections.singleton(message);
               for (final SenderIterator sender : mNextSenders.values()) {
-                sender.setIterator(results.iterator());
+                sender.setIterator(effects.iterator());
                 sender.tellNext(self);
               }
-              context.setBehavior(new DoneBehavior(results, results, mNextSenders));
+              context.setBehavior(new DoneBehavior(effects, effects, mNextSenders));
             }
           }
         }
@@ -1760,14 +1860,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   private static class GenericStory<T, R> extends AbstractStory<R> {
 
+    private final UnaryFunction<? super List<T>, ? extends Story<R>> mEffectHandler;
     private final List<Actor> mInputActors;
-    private final UnaryFunction<? super List<T>, ? extends Story<R>> mResolutionHandler;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private GenericStory(@NotNull final Memory memory,
         @NotNull final Iterable<? extends Story<? extends T>> stories,
         @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
-        @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> resolutionHandler) {
+        @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> effectHandler) {
       super(memory, loopHandler, Iterables.size(stories));
       final ArrayList<Actor> inputActors = new ArrayList<Actor>();
       for (final Story<? extends T> story : stories) {
@@ -1775,7 +1875,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       }
       ConstantConditions.positive("stories size", inputActors.size());
       mInputActors = inputActors;
-      mResolutionHandler = ConstantConditions.notNull("resolutionHandler", resolutionHandler);
+      mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
     }
 
     @NotNull
@@ -1792,7 +1892,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         for (final Object input : inputs) {
           inputList.add((T) input);
         }
-        final Story<R> story = mResolutionHandler.call(inputList);
+        final Story<R> story = mEffectHandler.call(inputList);
         if ((story == null) || isEmpty(story)) {
           return null;
         }
@@ -2014,6 +2114,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   private static class JoinStory<T, R> extends Story<R> {
 
     private final Actor mActor;
+    private final UnaryFunction<? super T, ? extends Event<R>> mEffectHandler;
     private final Actor mInputActor;
     private final Options mInputOptions;
     private final int mMaxConcurrency;
@@ -2022,10 +2123,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final HashMap<String, SenderIterator> mNextSenders =
         new HashMap<String, SenderIterator>();
     private final Options mOptions;
-    private final LinkedHashMap<Actor, OutputResult> mOutputResults =
-        new LinkedHashMap<Actor, OutputResult>();
+    private final LinkedHashMap<Actor, OutputEffect> mOutputEffects =
+        new LinkedHashMap<Actor, OutputEffect>();
     private final String mOutputThread;
-    private final UnaryFunction<? super T, ? extends Event<R>> mResolutionHandler;
     private final Setting mSetting;
 
     private int mActorCount;
@@ -2037,12 +2137,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private JoinStory(@NotNull final Memory memory, @NotNull final Story<? extends T> story,
         final int maxConcurrency, final int maxEventWindow,
-        @NotNull final UnaryFunction<? super T, ? extends Event<R>> resolutionHandler) {
+        @NotNull final UnaryFunction<? super T, ? extends Event<R>> effectHandler) {
       mMemory = ConstantConditions.notNull("memory", memory);
       mInputActor = story.getActor();
       mMaxConcurrency = ConstantConditions.positive("maxConcurrency", maxConcurrency);
       mMaxEventWindow = ConstantConditions.positive("maxEventWindow", maxEventWindow);
-      mResolutionHandler = ConstantConditions.notNull("resolutionHandler", resolutionHandler);
+      mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
       final Setting setting = (mSetting = Setting.get());
       final String actorId = (mActor = BackStage.newActor(new PlayScript(setting) {
 
@@ -2059,16 +2159,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private void done(@NotNull final Context context) {
       final Memory memory = mMemory;
-      Object results = memory;
-      for (final Object result : memory) {
-        if (result instanceof Conflict) {
-          results = result;
+      Object effects = memory;
+      for (final Object effect : memory) {
+        if (effect instanceof Conflict) {
+          effects = effect;
           break;
         }
       }
       final Actor self = context.getSelf();
       for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(results, sender.getOptions(), self);
+        sender.getSender().tell(effects, sender.getOptions(), self);
       }
       mGetSenders = null;
       final HashMap<String, SenderIterator> nextSenders = mNextSenders;
@@ -2077,7 +2177,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           sender.getSender().tell(END, sender.getOptions(), self);
         }
       }
-      context.setBehavior(new DoneBehavior(results, memory, nextSenders));
+      context.setBehavior(new DoneBehavior(effects, memory, nextSenders));
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
@@ -2100,7 +2200,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private Actor getOutputActor(@NotNull final Object input) throws Exception {
       Setting.set(mSetting);
       try {
-        final Event<R> event = mResolutionHandler.call((T) input);
+        final Event<R> event = mEffectHandler.call((T) input);
         return ((event != null) ? event : Event.ofNull()).getActor();
 
       } finally {
@@ -2147,7 +2247,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             final String thread = envelop.getOptions().getThread();
             if ((thread != null) && thread.startsWith(mOutputThread)) {
               final Actor sender = envelop.getSender();
-              sender.tell(BREAK, mOutputResults.get(sender).getOptions(), context.getSelf());
+              sender.tell(BREAK, mOutputEffects.get(sender).getOptions(), context.getSelf());
               if ((--mActorCount == 0) && mInputsEnded) {
                 fail(Conflict.ofCancel(), context);
               }
@@ -2232,10 +2332,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 final Actor outputActor = getOutputActor(message);
                 final String outputThreadId = mOutputThread + "#" + mOutputCount++;
                 final Options options = mOptions.withThread(outputThreadId);
-                final LinkedHashMap<Actor, OutputResult> outputResults = mOutputResults;
-                outputResults.put(outputActor, new OutputResult(options));
+                final LinkedHashMap<Actor, OutputEffect> outputEffects = mOutputEffects;
+                outputEffects.put(outputActor, new OutputEffect(options));
                 outputActor.tell(GET, options, context.getSelf());
-                if ((mInputsPending = (++mActorCount < mMaxConcurrency) && (outputResults.size()
+                if ((mInputsPending = (++mActorCount < mMaxConcurrency) && (outputEffects.size()
                     < mMaxEventWindow))) {
                   mInputActor.tell(NEXT, inputOptions, context.getSelf());
                 }
@@ -2283,10 +2383,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else if (message == CANCEL) {
           final Actor self = context.getSelf();
-          for (final Entry<Actor, OutputResult> entry : mOutputResults.entrySet()) {
-            final OutputResult outputResult = entry.getValue();
-            if (!outputResult.isSet()) {
-              entry.getKey().tell(CANCEL, outputResult.getOptions(), self);
+          for (final Entry<Actor, OutputEffect> entry : mOutputEffects.entrySet()) {
+            final OutputEffect outputEffect = entry.getValue();
+            if (!outputEffect.isSet()) {
+              entry.getKey().tell(CANCEL, outputEffect.getOptions(), self);
             }
           }
           mInputActor.tell(CANCEL, mInputOptions, self);
@@ -2322,10 +2422,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 final Actor outputActor = getOutputActor(message);
                 final String outputThreadId = mOutputThread + "#" + mOutputCount++;
                 final Options options = mOptions.withThread(outputThreadId);
-                final LinkedHashMap<Actor, OutputResult> outputResults = mOutputResults;
-                outputResults.put(outputActor, new OutputResult(options));
+                final LinkedHashMap<Actor, OutputEffect> outputEffects = mOutputEffects;
+                outputEffects.put(outputActor, new OutputEffect(options));
                 outputActor.tell(GET, options, context.getSelf());
-                if ((mInputsPending = (++mActorCount < mMaxConcurrency) && (outputResults.size()
+                if ((mInputsPending = (++mActorCount < mMaxConcurrency) && (outputEffects.size()
                     < mMaxEventWindow))) {
                   mInputActor.tell(NEXT, inputOptions, context.getSelf());
                 }
@@ -2346,22 +2446,22 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           } else {
             final String thread = envelop.getOptions().getThread();
             if ((thread != null) && thread.startsWith(mOutputThread)) {
-              final Object result;
+              final Object effect;
               if (message instanceof Bounce) {
-                result = Conflict.ofBounce((Bounce) message);
+                effect = Conflict.ofBounce((Bounce) message);
 
               } else {
-                result = message;
+                effect = message;
               }
               // pass on conflicts
               @SuppressWarnings("UnnecessaryLocalVariable") final Memory memory = mMemory;
-              final LinkedHashMap<Actor, OutputResult> outputResults = mOutputResults;
-              outputResults.get(envelop.getSender()).set(result);
-              final Iterator<OutputResult> iterator = outputResults.values().iterator();
+              final LinkedHashMap<Actor, OutputEffect> outputEffects = mOutputEffects;
+              outputEffects.get(envelop.getSender()).set(effect);
+              final Iterator<OutputEffect> iterator = outputEffects.values().iterator();
               while (iterator.hasNext()) {
-                final OutputResult outputResult = iterator.next();
-                if (outputResult.isSet()) {
-                  memory.put(outputResult.getResult());
+                final OutputEffect outputEffect = iterator.next();
+                if (outputEffect.isSet()) {
+                  memory.put(outputEffect.getEffect());
                   iterator.remove();
 
                 } else {
@@ -2373,7 +2473,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 sender.tellNext(self);
               }
 
-              if (outputResults.size() < mMaxEventWindow) {
+              if (outputEffects.size() < mMaxEventWindow) {
                 if (!mInputsEnded) {
                   if (!mInputsPending) {
                     mInputsPending = true;
@@ -2403,6 +2503,20 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
+  private static class LooperEffectHandler<T, R> implements UnaryFunction<T, Story<R>> {
+
+    private final StoryLooper<? super T, ? extends R> mStoryLooper;
+
+    LooperEffectHandler(@NotNull final StoryLooper<? super T, ? extends R> storyLooper) {
+      mStoryLooper = ConstantConditions.notNull("storyLooper", storyLooper);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Story<R> call(final T first) throws Exception {
+      return (Story<R>) mStoryLooper.resolve(first);
+    }
+  }
+
   private static class LooperLoopHandler implements NullaryFunction<Event<? extends Boolean>> {
 
     private final StoryLooper<?, ?> mStoryLooper;
@@ -2416,29 +2530,18 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
-  private static class LooperResolutionHandler<T, R> implements UnaryFunction<T, Story<R>> {
-
-    private final StoryLooper<? super T, ? extends R> mStoryLooper;
-
-    LooperResolutionHandler(@NotNull final StoryLooper<? super T, ? extends R> storyLooper) {
-      mStoryLooper = ConstantConditions.notNull("storyLooper", storyLooper);
-    }
-
-    @SuppressWarnings("unchecked")
-    public Story<R> call(final T first) throws Exception {
-      return (Story<R>) mStoryLooper.resolve(first);
-    }
-  }
-
-  private static class OutputResult {
+  private static class OutputEffect {
 
     private final Options mOptions;
-
+    private Object mEffect;
     private boolean mIsSet;
-    private Object mResult;
 
-    private OutputResult(@NotNull final Options options) {
+    private OutputEffect(@NotNull final Options options) {
       mOptions = options;
+    }
+
+    Object getEffect() {
+      return mEffect;
     }
 
     @NotNull
@@ -2446,23 +2549,19 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       return mOptions;
     }
 
-    Object getResult() {
-      return mResult;
-    }
-
     boolean isSet() {
       return mIsSet;
     }
 
-    void set(final Object result) {
+    void set(final Object effect) {
       mIsSet = true;
-      mResult = result;
+      mEffect = effect;
     }
   }
 
   private static class ResolveStory<T> extends AbstractStory<T> {
 
-    private final UnaryFunction<? super Throwable, ? extends Story<T>> mConflictHandler;
+    private final UnaryFunction<? super Throwable, ? extends Story<T>> mIncidentHandler;
     private final Set<Class<? extends Throwable>> mIncidentTypes;
     private final List<Actor> mInputActors;
 
@@ -2470,23 +2569,23 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private ResolveStory(@NotNull final Memory memory, @NotNull final Story<? extends T> story,
         @NotNull final Set<Class<? extends Throwable>> incidentTypes,
         @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
-        @NotNull final UnaryFunction<? super Throwable, ? extends Story<T>> conflictHandler) {
+        @NotNull final UnaryFunction<? super Throwable, ? extends Story<T>> incidentHandler) {
       super(memory, loopHandler, 1);
       mInputActors = Collections.singletonList(story.getActor());
       ConstantConditions.positive("incidentTypes size", incidentTypes.size());
       mIncidentTypes = ConstantConditions.notNullElements("incidentTypes", incidentTypes);
-      mConflictHandler = ConstantConditions.notNull("conflictHandler", conflictHandler);
+      mIncidentHandler = ConstantConditions.notNull("incidentHandler", incidentHandler);
     }
 
     @Nullable
     @Override
     Actor getConflictActor(@NotNull final Conflict conflict) throws Exception {
       final Throwable incident = conflict.getCause();
-      for (final Class<? extends Throwable> conflictType : mIncidentTypes) {
-        if (conflictType.isInstance(incident)) {
+      for (final Class<? extends Throwable> incidentType : mIncidentTypes) {
+        if (incidentType.isInstance(incident)) {
           Setting.set(getSetting());
           try {
-            final Story<T> story = mConflictHandler.call(incident);
+            final Story<T> story = mIncidentHandler.call(incident);
             return ((story != null) ? story : ofEmpty()).getActor();
 
           } finally {
@@ -2500,106 +2599,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @NotNull
     List<Actor> getInputActors() {
       return mInputActors;
-    }
-  }
-
-  private static class ResultStory<T> extends Story<T> {
-
-    private final Actor mActor;
-
-    private ResultStory(final T result) {
-      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
-
-        private final HashSet<String> mThreads = new HashSet<String>();
-
-        @NotNull
-        @Override
-        public Behavior getBehavior(@NotNull final String id) {
-          return new AbstractBehavior() {
-
-            public void onMessage(final Object message, @NotNull final Envelop envelop,
-                @NotNull final Context context) {
-              if (message == GET) {
-                envelop.getSender()
-                    .tell(result, envelop.getOptions().threadOnly(), context.getSelf());
-
-              } else if (message == NEXT) {
-                final HashSet<String> threads = mThreads;
-                final Options options = envelop.getOptions().threadOnly();
-                final String thread = options.getThread();
-                if (!threads.contains(thread)) {
-                  envelop.getSender()
-                      .tell(result, envelop.getOptions().threadOnly(), context.getSelf());
-                  threads.add(thread);
-
-                } else {
-                  envelop.getSender()
-                      .tell(END, envelop.getOptions().threadOnly(), context.getSelf());
-                }
-
-              } else if (message == BREAK) {
-                mThreads.remove(envelop.getOptions().getThread());
-              }
-              envelop.preventReceipt();
-            }
-          };
-        }
-      });
-    }
-
-    @NotNull
-    Actor getActor() {
-      return mActor;
-    }
-  }
-
-  private static class ResultsStory<T> extends Story<T> {
-
-    private final Actor mActor;
-
-    private ResultsStory(@NotNull final Iterable<T> results) {
-      ConstantConditions.notNull("results", results);
-      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
-
-        private final HashMap<String, Iterator<T>> mThreads = new HashMap<String, Iterator<T>>();
-
-        @NotNull
-        @Override
-        public Behavior getBehavior(@NotNull final String id) {
-          return new AbstractBehavior() {
-
-            public void onMessage(final Object message, @NotNull final Envelop envelop,
-                @NotNull final Context context) {
-              if (message == GET) {
-                envelop.getSender()
-                    .tell(Iterables.toList(results), envelop.getOptions().threadOnly(),
-                        context.getSelf());
-
-              } else if (message == NEXT) {
-                final HashMap<String, Iterator<T>> threads = mThreads;
-                final Options options = envelop.getOptions().threadOnly();
-                final String thread = options.getThread();
-                Iterator<T> iterator = threads.get(thread);
-                if (iterator == null) {
-                  iterator = results.iterator();
-                  threads.put(thread, iterator);
-                }
-                envelop.getSender()
-                    .tell(iterator.hasNext() ? iterator.next() : END, options, context.getSelf());
-
-              } else if (message == BREAK) {
-                mThreads.remove(envelop.getOptions().getThread());
-              }
-              envelop.preventReceipt();
-            }
-          };
-        }
-      });
-    }
-
-    @NotNull
-    Actor getActor() {
-      return mActor;
     }
   }
 
@@ -2649,16 +2648,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         scheduledFuture.cancel(false);
       }
       final Memory memory = mMemory;
-      Object results = memory;
-      for (final Object result : memory) {
-        if (result instanceof Conflict) {
-          results = result;
+      Object effects = memory;
+      for (final Object effect : memory) {
+        if (effect instanceof Conflict) {
+          effects = effect;
           break;
         }
       }
       final Actor self = context.getSelf();
       for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(results, sender.getOptions(), self);
+        sender.getSender().tell(effects, sender.getOptions(), self);
       }
       mGetSenders = null;
       final HashMap<String, SenderIterator> nextSenders = mNextSenders;
@@ -2667,7 +2666,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           sender.getSender().tell(END, sender.getOptions(), self);
         }
       }
-      context.setBehavior(new DoneBehavior(results, memory, nextSenders));
+      context.setBehavior(new DoneBehavior(effects, memory, nextSenders));
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
@@ -2863,16 +2862,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         scheduledFuture.cancel(false);
       }
       final Memory memory = mMemory;
-      Object results = memory;
-      for (final Object result : memory) {
-        if (result instanceof Conflict) {
-          results = result;
+      Object effects = memory;
+      for (final Object effect : memory) {
+        if (effect instanceof Conflict) {
+          effects = effect;
           break;
         }
       }
       final Actor self = context.getSelf();
       for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(results, sender.getOptions(), self);
+        sender.getSender().tell(effects, sender.getOptions(), self);
       }
       mGetSenders = null;
       final HashMap<String, SenderIterator> nextSenders = mNextSenders;
@@ -2881,7 +2880,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           sender.getSender().tell(END, sender.getOptions(), self);
         }
       }
-      context.setBehavior(new DoneBehavior(results, memory, nextSenders));
+      context.setBehavior(new DoneBehavior(effects, memory, nextSenders));
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
@@ -3098,16 +3097,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   private static class UnaryStory<T1, R> extends AbstractStory<R> {
 
+    private final UnaryFunction<? super T1, ? extends Story<R>> mEffectHandler;
     private final List<Actor> mInputActors;
-    private final UnaryFunction<? super T1, ? extends Story<R>> mResolutionHandler;
 
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
     private UnaryStory(@NotNull final Memory memory, @NotNull final Story<? extends T1> firstStory,
         @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
-        @NotNull final UnaryFunction<? super T1, ? extends Story<R>> resolutionHandler) {
+        @NotNull final UnaryFunction<? super T1, ? extends Story<R>> effectHandler) {
       super(memory, loopHandler, 1);
       mInputActors = Arrays.asList(firstStory.getActor());
-      mResolutionHandler = ConstantConditions.notNull("resolutionHandler", resolutionHandler);
+      mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
     }
 
     @NotNull
@@ -3120,7 +3119,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
       Setting.set(getSetting());
       try {
-        final Story<R> story = mResolutionHandler.call((T1) inputs[0]);
+        final Story<R> story = mEffectHandler.call((T1) inputs[0]);
         if ((story == null) || isEmpty(story)) {
           return null;
         }
@@ -3262,16 +3261,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
           } else {
             final Actor self = context.getSelf();
-            final Iterable<?> results = (Iterable<?>) message;
+            final Iterable<?> effects = (Iterable<?>) message;
             for (final Sender sender : mGetSenders.values()) {
-              sender.getSender().tell(results, sender.getOptions(), self);
+              sender.getSender().tell(effects, sender.getOptions(), self);
             }
             mGetSenders = null;
             for (final SenderIterator sender : mNextSenders.values()) {
-              sender.setIterator(results.iterator());
+              sender.setIterator(effects.iterator());
               sender.tellNext(self);
             }
-            context.setBehavior(new DoneBehavior(results, results, mNextSenders));
+            context.setBehavior(new DoneBehavior(effects, effects, mNextSenders));
           }
         }
         envelop.preventReceipt();
@@ -3316,7 +3315,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
       Setting.set(getSetting());
       try {
-        mEventObserver.onResult((T) inputs[0]);
+        mEventObserver.onEffect((T) inputs[0]);
 
       } finally {
         Setting.unset();

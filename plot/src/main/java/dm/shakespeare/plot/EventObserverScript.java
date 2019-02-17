@@ -41,7 +41,7 @@ class EventObserverScript<T> extends Script {
           context.dismissSelf();
 
         } else if (!(message instanceof Receipt)) {
-          mEventObserver.onResult((T) message);
+          mEventObserver.onEffect((T) message);
           context.dismissSelf();
         }
       }
