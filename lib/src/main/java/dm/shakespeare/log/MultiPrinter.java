@@ -1,7 +1,6 @@
 package dm.shakespeare.log;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -46,21 +45,21 @@ class MultiPrinter implements LogPrinter {
     return false;
   }
 
-  public void dbg(@Nullable final String message, @Nullable final Throwable throwable) {
+  public void dbg(@NotNull final LogMessage message) {
     for (final LogPrinter printer : mPrinters) {
-      printer.dbg(message, throwable);
+      printer.dbg(message);
     }
   }
 
-  public void err(@Nullable final String message, @Nullable final Throwable throwable) {
+  public void err(@NotNull final LogMessage message) {
     for (final LogPrinter printer : mPrinters) {
-      printer.err(message, throwable);
+      printer.err(message);
     }
   }
 
-  public void wrn(@Nullable final String message, @Nullable final Throwable throwable) {
+  public void wrn(@NotNull final LogMessage message) {
     for (final LogPrinter printer : mPrinters) {
-      printer.wrn(message, throwable);
+      printer.wrn(message);
     }
   }
 }
