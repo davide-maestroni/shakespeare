@@ -215,6 +215,77 @@ public abstract class Event<T> {
     }
   }
 
+  static class NarratorEvent<T> extends Event<T> {
+
+    private final Actor mActor;
+
+    NarratorEvent(@NotNull final Setting setting, @NotNull final Narrator<T> eventNarrator) {
+      ConstantConditions.notNull("eventNarrator", eventNarrator);
+      mActor = BackStage.newActor(new PlayScript(setting) {
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return new AbstractBehavior() {
+
+            private final HashMap<String, Sender> mSenders = new HashMap<String, Sender>();
+
+            public void onMessage(final Object message, @NotNull final Envelop envelop,
+                @NotNull final Context context) {
+              if (message == GET) {
+                eventNarrator.setActor(context.getSelf());
+                Object result;
+                try {
+                  eventNarrator.narrate();
+                  result = eventNarrator.getQueue().peek();
+
+                } catch (final Throwable t) {
+                  result = new Conflict(t);
+                  eventNarrator.cancel(t);
+                  if (t instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                  }
+                }
+
+                if (result != null) {
+                  if (result instanceof Resolution) {
+                    result = ((Resolution) result).getResult();
+                  }
+                  context.setBehavior(new DoneBehavior(result));
+
+                } else {
+                  final Options options = envelop.getOptions().threadOnly();
+                  mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+                }
+
+              } else if (message == CANCEL) {
+                final Conflict conflict = Conflict.ofCancel();
+                eventNarrator.cancel(conflict.getCause());
+                context.setBehavior(new DoneBehavior(conflict));
+
+              } else if (message == Narrator.AVAILABLE) {
+                Object result = eventNarrator.getQueue().peek();
+                if (result instanceof Resolution) {
+                  result = ((Resolution) result).getResult();
+                }
+                final Actor self = context.getSelf();
+                for (final Sender sender : mSenders.values()) {
+                  sender.getSender().tell(result, sender.getOptions(), self);
+                }
+                context.setBehavior(new DoneBehavior(result));
+              }
+            }
+          };
+        }
+      });
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
+    }
+  }
+
   private abstract static class AbstractEvent<T> extends Event<T> {
 
     private final Actor mActor;
@@ -246,11 +317,6 @@ public abstract class Event<T> {
     }
 
     void endAction() throws Exception {
-    }
-
-    @NotNull
-    Actor getActor() {
-      return mActor;
     }
 
     @Nullable
@@ -504,6 +570,11 @@ public abstract class Event<T> {
         }
         envelop.preventReceipt();
       }
+    }
+
+    @NotNull
+    Actor getActor() {
+      return mActor;
     }
   }
 
