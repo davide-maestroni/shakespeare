@@ -117,6 +117,17 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
+  public static <T> Story<T> ofNarrations(@NotNull final Memory memory,
+      @NotNull final Narrator<T> storyNarrator) {
+    return new NarratorStory<T>(memory, storyNarrator);
+  }
+
+  @NotNull
+  public static <T> Story<T> ofNarrations(@NotNull final Narrator<T> storyNarrator) {
+    return ofNarrations(new ListMemory(), storyNarrator);
+  }
+
+  @NotNull
   public static <T> Story<T> ofSingleEffect(final T effect) {
     final Cache cache = Setting.get().getCache(Story.class);
     Story<T> story = cache.get(effect);
@@ -2527,6 +2538,18 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     public Event<? extends Boolean> call() throws Exception {
       return mStoryLooper.loop();
+    }
+  }
+
+  private static class NarratorStory<T> extends Story<T> {
+
+    private NarratorStory(@NotNull final Memory memory, @NotNull final Narrator<T> storyNarrator) {
+      // TODO: 17/02/2019 implement
+    }
+
+    @NotNull
+    Actor getActor() {
+      return null;
     }
   }
 

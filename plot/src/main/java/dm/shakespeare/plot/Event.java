@@ -30,6 +30,8 @@ import dm.shakespeare.plot.function.UnaryFunction;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.Iterables;
 
+import static dm.shakespeare.plot.Narrator.NULL;
+
 /**
  * Created by davide-maestroni on 01/22/2019.
  */
@@ -43,7 +45,6 @@ public abstract class Event<T> {
     public void accept(final Object value) {
     }
   };
-  private static final Object NULL = new Object();
 
   @NotNull
   public static <T> Event<T> ofEffect(final T effect) {
@@ -128,6 +129,10 @@ public abstract class Event<T> {
   private static boolean isSameThread(@Nullable final String expectedThread,
       @Nullable final String actualThread) {
     return expectedThread.equals(actualThread);
+  }
+
+  public void cancel() {
+    getActor().tell(CANCEL, null, BackStage.standIn());
   }
 
   @NotNull
@@ -715,8 +720,8 @@ public abstract class Event<T> {
                 }
 
                 if (effect != null) {
-                  if (effect instanceof Result) {
-                    effect = ((Result) effect).getEffect();
+                  if (effect == NULL) {
+                    effect = null;
                   }
                   context.setBehavior(new DoneBehavior(effect));
 
@@ -732,8 +737,8 @@ public abstract class Event<T> {
 
               } else if (message == Narrator.AVAILABLE) {
                 Object effect = eventNarrator.takeEffect();
-                if (effect instanceof Result) {
-                  effect = ((Result) effect).getEffect();
+                if (effect == NULL) {
+                  effect = null;
                 }
                 final Actor self = context.getSelf();
                 for (final Sender sender : mSenders.values()) {

@@ -6,6 +6,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import dm.shakespeare.BackStage;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -15,6 +16,7 @@ import dm.shakespeare.util.ConstantConditions;
 public abstract class Narrator<T> {
 
   static final Object AVAILABLE = new Object();
+  static final Object NULL = new Object();
 
   private final BlockingQueue<Object> mQueue;
 
@@ -33,16 +35,16 @@ public abstract class Narrator<T> {
     resolve(new Conflict(incident));
   }
 
-  public void tell(final T result) throws Exception {
-    resolve(new Result(result));
+  public void tell(final T effect) throws Exception {
+    resolve((effect != null) ? effect : NULL);
   }
+
+  protected abstract boolean narrate() throws Exception;
 
   final void cancel(@NotNull final Throwable cause) {
     mException = cause;
     mQueue.clear();
   }
-
-  abstract boolean narrate() throws Exception;
 
   final void setActor(@NotNull final Actor actor) {
     mActor = actor;
@@ -67,7 +69,7 @@ public abstract class Narrator<T> {
     mQueue.add(resolution);
     final Actor actor = mActor;
     if (actor != null) {
-      actor.tell(AVAILABLE, null, actor);
+      actor.tell(AVAILABLE, null, BackStage.standIn());
     }
   }
 }
