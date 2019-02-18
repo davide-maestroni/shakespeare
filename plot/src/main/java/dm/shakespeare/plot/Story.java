@@ -194,47 +194,47 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> effectHandler) {
-    return when(new ListMemory(), stories, continueHandler, effectHandler);
+    return when(new ListMemory(), stories, conditionHandler, effectHandler);
   }
 
   @NotNull
   public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final StoryLooper<? super List<T>, R> storyLooper) {
-    return when(stories, new LooperContinueHandler(storyLooper),
+    return when(stories, new LooperConditionHandler(storyLooper),
         new LooperEffectHandler<List<T>, R>(storyLooper));
   }
 
   @NotNull
   public static <T, R> Story<R> when(@NotNull final Memory memory,
       @NotNull final Iterable<? extends Story<? extends T>> stories,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> effectHandler) {
-    return new GenericStory<T, R>(memory, stories, continueHandler, effectHandler);
+    return new GenericStory<T, R>(memory, stories, conditionHandler, effectHandler);
   }
 
   @NotNull
   public static <T, R> Story<R> when(@NotNull final Memory memory,
       @NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final StoryLooper<? super List<T>, R> storyLooper) {
-    return when(memory, stories, new LooperContinueHandler(storyLooper),
+    return when(memory, stories, new LooperConditionHandler(storyLooper),
         new LooperEffectHandler<List<T>, R>(storyLooper));
   }
 
   @NotNull
   public static <T1, R> Story<R> when(@NotNull final Memory memory,
       @NotNull final Story<? extends T1> firstStory,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super T1, ? extends Story<R>> effectHandler) {
-    return new UnaryStory<T1, R>(memory, firstStory, continueHandler, effectHandler);
+    return new UnaryStory<T1, R>(memory, firstStory, conditionHandler, effectHandler);
   }
 
   @NotNull
   public static <T1, R> Story<R> when(@NotNull final Story<? extends T1> firstStory,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super T1, ? extends Story<R>> effectHandler) {
-    return when(new ListMemory(), firstStory, continueHandler, effectHandler);
+    return when(new ListMemory(), firstStory, conditionHandler, effectHandler);
   }
 
   private static boolean isEmpty(@Nullable final Story<?> story) {
@@ -279,15 +279,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   @SuppressWarnings("unchecked")
   public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
-    return resolve(new ListMemory(), firstType, continueHandler, incidentHandler);
+    return resolve(new ListMemory(), firstType, conditionHandler, incidentHandler);
   }
 
   @NotNull
   public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
       @NotNull final StoryLooper<? super Throwable, ? extends T> storyLooper) {
-    return resolve(firstType, new LooperContinueHandler(storyLooper),
+    return resolve(firstType, new LooperConditionHandler(storyLooper),
         new LooperEffectHandler<Throwable, T>(storyLooper));
   }
 
@@ -295,20 +295,20 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @SuppressWarnings("unchecked")
   public <E extends Throwable> Story<T> resolve(
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
-    return resolve(new ListMemory(), incidentTypes, continueHandler, incidentHandler);
+    return resolve(new ListMemory(), incidentTypes, conditionHandler, incidentHandler);
   }
 
   @NotNull
   @SuppressWarnings("unchecked")
   public <E1 extends Throwable> Story<T> resolve(@NotNull final Memory memory,
       @NotNull final Class<? extends E1> firstType,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
     final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
     types.add(firstType);
-    return new ResolveStory<T>(memory, this, types, continueHandler,
+    return new ResolveStory<T>(memory, this, types, conditionHandler,
         (UnaryFunction<? super Throwable, ? extends Story<T>>) incidentHandler);
   }
 
@@ -316,7 +316,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public <E1 extends Throwable> Story<T> resolve(@NotNull final Memory memory,
       @NotNull final Class<? extends E1> firstType,
       @NotNull final StoryLooper<? super Throwable, ? extends T> storyLooper) {
-    return resolve(memory, firstType, new LooperContinueHandler(storyLooper),
+    return resolve(memory, firstType, new LooperConditionHandler(storyLooper),
         new LooperEffectHandler<Throwable, T>(storyLooper));
   }
 
@@ -324,10 +324,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @SuppressWarnings("unchecked")
   public <E extends Throwable> Story<T> resolve(@NotNull final Memory memory,
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
     return new ResolveStory<T>(memory, this,
-        Iterables.<Class<? extends Throwable>>toSet(incidentTypes), continueHandler,
+        Iterables.<Class<? extends Throwable>>toSet(incidentTypes), conditionHandler,
         (UnaryFunction<? super Throwable, ? extends Story<T>>) incidentHandler);
   }
 
@@ -406,28 +406,28 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public <R> Story<R> thenWhile(@NotNull final Memory memory,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
-    return when(memory, this, continueHandler, effectHandler);
+    return when(memory, this, conditionHandler, effectHandler);
   }
 
   @NotNull
   public <R> Story<R> thenWhile(@NotNull final Memory memory,
       @NotNull final StoryLooper<? super T, ? extends R> storyLooper) {
-    return thenWhile(memory, new LooperContinueHandler(storyLooper),
+    return thenWhile(memory, new LooperConditionHandler(storyLooper),
         new LooperEffectHandler<T, R>(storyLooper));
   }
 
   @NotNull
   public <R> Story<R> thenWhile(
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
-    return when(this, continueHandler, effectHandler);
+    return when(this, conditionHandler, effectHandler);
   }
 
   @NotNull
   public <R> Story<R> thenWhile(@NotNull final StoryLooper<? super T, ? extends R> storyLooper) {
-    return thenWhile(new LooperContinueHandler(storyLooper),
+    return thenWhile(new LooperConditionHandler(storyLooper),
         new LooperEffectHandler<T, R>(storyLooper));
   }
 
@@ -442,7 +442,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     Event<? extends Boolean> canContinue() throws Exception;
 
     @Nullable
-    Story<R> resolve(T effect) throws Exception;
+    Story<R> elaborate(T effect) throws Exception;
   }
 
   public interface StoryObserver<T> extends EventObserver<T> {
@@ -489,7 +489,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   private abstract static class AbstractStory<T> extends Story<T> {
 
     private final Actor mActor;
-    private final NullaryFunction<? extends Event<? extends Boolean>> mContinueHandler;
+    private final NullaryFunction<? extends Event<? extends Boolean>> mConditionHandler;
     private final String mContinueThread;
     private final HashMap<Actor, Options> mInputActors = new HashMap<Actor, Options>();
     private final String mInputThread;
@@ -511,10 +511,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private Options mOutputOptions;
 
     private AbstractStory(@NotNull final Memory memory,
-        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
+        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
         final int numInputs) {
       mMemory = ConstantConditions.notNull("memory", memory);
-      mContinueHandler = ConstantConditions.notNull("continueHandler", continueHandler);
+      mConditionHandler = ConstantConditions.notNull("conditionHandler", conditionHandler);
       mInputs = new Object[numInputs];
       final Setting setting = (mSetting = Setting.get());
       final String actorId = (mActor = BackStage.newActor(new PlayScript(setting) {
@@ -652,7 +652,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         final Event<? extends Boolean> event;
         Setting.set(getSetting());
         try {
-          event = mContinueHandler.call();
+          event = mConditionHandler.call();
 
         } finally {
           Setting.unset();
@@ -1900,9 +1900,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private GenericStory(@NotNull final Memory memory,
         @NotNull final Iterable<? extends Story<? extends T>> stories,
-        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
+        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
         @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> effectHandler) {
-      super(memory, continueHandler, Iterables.size(stories));
+      super(memory, conditionHandler, Iterables.size(stories));
       final ArrayList<Actor> inputActors = new ArrayList<Actor>();
       for (final Story<? extends T> story : stories) {
         inputActors.add(story.getActor());
@@ -2537,11 +2537,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
-  private static class LooperContinueHandler implements NullaryFunction<Event<? extends Boolean>> {
+  private static class LooperConditionHandler implements NullaryFunction<Event<? extends Boolean>> {
 
     private final StoryLooper<?, ?> mStoryLooper;
 
-    LooperContinueHandler(@NotNull final StoryLooper<?, ?> storyLooper) {
+    LooperConditionHandler(@NotNull final StoryLooper<?, ?> storyLooper) {
       mStoryLooper = ConstantConditions.notNull("storyLooper", storyLooper);
     }
 
@@ -2560,7 +2560,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     @SuppressWarnings("unchecked")
     public Story<R> call(final T first) throws Exception {
-      return (Story<R>) mStoryLooper.resolve(first);
+      return (Story<R>) mStoryLooper.elaborate(first);
     }
   }
 
@@ -2614,9 +2614,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private ResolveStory(@NotNull final Memory memory, @NotNull final Story<? extends T> story,
         @NotNull final Set<Class<? extends Throwable>> incidentTypes,
-        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
+        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
         @NotNull final UnaryFunction<? super Throwable, ? extends Story<T>> incidentHandler) {
-      super(memory, continueHandler, 1);
+      super(memory, conditionHandler, 1);
       mInputActors = Collections.singletonList(story.getActor());
       ConstantConditions.positive("incidentTypes size", incidentTypes.size());
       mIncidentTypes = ConstantConditions.notNullElements("incidentTypes", incidentTypes);
@@ -3148,9 +3148,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
     private UnaryStory(@NotNull final Memory memory, @NotNull final Story<? extends T1> firstStory,
-        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
+        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
         @NotNull final UnaryFunction<? super T1, ? extends Story<R>> effectHandler) {
-      super(memory, continueHandler, 1);
+      super(memory, conditionHandler, 1);
       mInputActors = Arrays.asList(firstStory.getActor());
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
     }
