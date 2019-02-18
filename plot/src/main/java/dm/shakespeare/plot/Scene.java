@@ -5,7 +5,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.ExecutorService;
 
 import dm.shakespeare.log.Logger;
-import dm.shakespeare.plot.Event.NarratorEvent;
 import dm.shakespeare.plot.function.NullaryFunction;
 import dm.shakespeare.util.ConstantConditions;
 

@@ -89,6 +89,17 @@ public abstract class Event<T> {
   }
 
   @NotNull
+  public static <T> Event<T> ofNarration(@NotNull final NullaryFunction<T> narrationCreator) {
+    return ofNarration(new InfiniteNarrator<T>(narrationCreator));
+  }
+
+  @NotNull
+  public static <T> Event<T> ofNarration(
+      @NotNull final UnaryFunction<? super Narrator<T>, ? extends Boolean> narrationCreator) {
+    return ofNarration(new FunctionNarrator<T>(narrationCreator));
+  }
+
+  @NotNull
   public static <T> Event<T> ofNull() {
     return ofEffect(null);
   }
@@ -683,73 +694,123 @@ public abstract class Event<T> {
   private static class NarratorEvent<T> extends Event<T> {
 
     private final Actor mActor;
+    private final Narrator<T> mEventNarrator;
+    private final Setting mSetting;
+
+    private HashMap<String, Sender> mSenders = new HashMap<String, Sender>();
 
     private NarratorEvent(@NotNull final Narrator<T> eventNarrator) {
-      ConstantConditions.notNull("eventNarrator", eventNarrator);
-      final Setting setting = Setting.get();
+      mEventNarrator = ConstantConditions.notNull("eventNarrator", eventNarrator);
+      final Setting setting = (mSetting = Setting.get());
       mActor = BackStage.newActor(new PlayScript(setting) {
 
         @NotNull
         @Override
         public Behavior getBehavior(@NotNull final String id) {
-          return new AbstractBehavior() {
-
-            private final HashMap<String, Sender> mSenders = new HashMap<String, Sender>();
-
-            public void onMessage(final Object message, @NotNull final Envelop envelop,
-                @NotNull final Context context) {
-              if (message == GET) {
-                eventNarrator.setActor(context.getSelf());
-                Object effect;
-                try {
-                  Setting.set(setting);
-                  try {
-                    eventNarrator.narrate();
-                    effect = eventNarrator.takeEffect();
-
-                  } finally {
-                    Setting.unset();
-                  }
-
-                } catch (final Throwable t) {
-                  effect = new Conflict(t);
-                  eventNarrator.cancel(t);
-                  if (t instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                  }
-                }
-
-                if (effect != null) {
-                  if (effect == NULL) {
-                    effect = null;
-                  }
-                  context.setBehavior(new DoneBehavior(effect));
-
-                } else {
-                  final Options options = envelop.getOptions().threadOnly();
-                  mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
-                }
-
-              } else if (message == CANCEL) {
-                final Conflict conflict = Conflict.ofCancel();
-                eventNarrator.cancel(conflict.getCause());
-                context.setBehavior(new DoneBehavior(conflict));
-
-              } else if (message == Narrator.AVAILABLE) {
-                Object effect = eventNarrator.takeEffect();
-                if (effect == NULL) {
-                  effect = null;
-                }
-                final Actor self = context.getSelf();
-                for (final Sender sender : mSenders.values()) {
-                  sender.getSender().tell(effect, sender.getOptions(), self);
-                }
-                context.setBehavior(new DoneBehavior(effect));
-              }
-            }
-          };
+          return new InitBehavior();
         }
       });
+    }
+
+    private void done(@NotNull final Context context) {
+      final Narrator<T> eventNarrator = mEventNarrator;
+      Object effect = eventNarrator.takeEffect();
+      if (effect == NULL) {
+        effect = null;
+      }
+      eventNarrator.stop();
+      final Actor self = context.getSelf();
+      for (final Sender sender : mSenders.values()) {
+        sender.getSender().tell(effect, sender.getOptions(), self);
+      }
+      mSenders = null;
+      context.setBehavior(new DoneBehavior(effect));
+    }
+
+    private class CancelBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final Options options = envelop.getOptions().threadOnly();
+          mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+
+        } else if (message == Narrator.AVAILABLE) {
+          done(context);
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    private class InitBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        final Narrator<T> eventNarrator = mEventNarrator;
+        if (message == GET) {
+          eventNarrator.setActor(context.getSelf());
+          Object effect;
+          try {
+            Setting.set(mSetting);
+            try {
+              eventNarrator.narrate();
+              effect = eventNarrator.takeEffect();
+
+            } finally {
+              Setting.unset();
+            }
+
+          } catch (final Throwable t) {
+            effect = new Conflict(t);
+            eventNarrator.cancel(t);
+            if (t instanceof InterruptedException) {
+              Thread.currentThread().interrupt();
+            }
+          }
+
+          if (effect != null) {
+            if (effect == NULL) {
+              effect = null;
+            }
+            eventNarrator.stop();
+            context.setBehavior(new DoneBehavior(effect));
+
+          } else {
+            final Options options = envelop.getOptions().threadOnly();
+            mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+            context.setBehavior(new InputBehavior());
+          }
+
+        } else if (message == CANCEL) {
+          final Conflict conflict = Conflict.ofCancel();
+          eventNarrator.cancel(conflict.getCause());
+          context.setBehavior(new DoneBehavior(conflict));
+
+        } else if (message == Narrator.AVAILABLE) {
+          done(context);
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    private class InputBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final Options options = envelop.getOptions().threadOnly();
+          mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+
+        } else if (message == CANCEL) {
+          final Conflict conflict = Conflict.ofCancel();
+          mEventNarrator.cancel(conflict.getCause());
+          context.setBehavior(new CancelBehavior());
+
+        } else if (message == Narrator.AVAILABLE) {
+          done(context);
+        }
+        envelop.preventReceipt();
+      }
     }
 
     @NotNull

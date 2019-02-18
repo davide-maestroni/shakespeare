@@ -44,7 +44,7 @@ import dm.shakespeare.util.Iterables;
 public abstract class Story<T> extends Event<Iterable<T>> {
 
   // TODO: 05/02/2019 PROGRESS???
-  // TODO: 15/02/2019 generator, untriggered actors, serialization
+  // TODO: 15/02/2019 untriggered actors, serialization
 
   static final Object BREAK = new Object();
   static final Object END = new Object();
@@ -57,7 +57,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           return ByteBuffer.allocate(8 << 10);
         }
       };
-  private static final NullaryFunction<Event<Boolean>> INDEFINITE_LOOP =
+  private static final NullaryFunction<Event<Boolean>> INFINITE_LOOP =
       new NullaryFunction<Event<Boolean>>() {
 
         public Event<Boolean> call() {
@@ -123,8 +123,31 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
+  public static <T> Story<T> ofNarrations(@NotNull final Memory memory,
+      @NotNull final NullaryFunction<T> narrationCreator) {
+    return ofNarrations(memory, new InfiniteNarrator<T>(narrationCreator));
+  }
+
+  @NotNull
+  public static <T> Story<T> ofNarrations(@NotNull final Memory memory,
+      @NotNull final UnaryFunction<? super Narrator<T>, ? extends Boolean> narrationCreator) {
+    return ofNarrations(memory, new FunctionNarrator<T>(narrationCreator));
+  }
+
+  @NotNull
   public static <T> Story<T> ofNarrations(@NotNull final Narrator<T> storyNarrator) {
     return ofNarrations(new ListMemory(), storyNarrator);
+  }
+
+  @NotNull
+  public static <T> Story<T> ofNarrations(@NotNull final NullaryFunction<T> narrationCreator) {
+    return ofNarrations(new ListMemory(), narrationCreator);
+  }
+
+  @NotNull
+  public static <T> Story<T> ofNarrations(
+      @NotNull final UnaryFunction<? super Narrator<T>, ? extends Boolean> narrationCreator) {
+    return ofNarrations(new ListMemory(), narrationCreator);
   }
 
   @NotNull
@@ -171,47 +194,47 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
       @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> effectHandler) {
-    return when(new ListMemory(), stories, loopHandler, effectHandler);
+    return when(new ListMemory(), stories, continueHandler, effectHandler);
   }
 
   @NotNull
   public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final StoryLooper<? super List<T>, R> storyLooper) {
-    return when(stories, new LooperLoopHandler(storyLooper),
+    return when(stories, new LooperContinueHandler(storyLooper),
         new LooperEffectHandler<List<T>, R>(storyLooper));
   }
 
   @NotNull
   public static <T, R> Story<R> when(@NotNull final Memory memory,
       @NotNull final Iterable<? extends Story<? extends T>> stories,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
       @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> effectHandler) {
-    return new GenericStory<T, R>(memory, stories, loopHandler, effectHandler);
+    return new GenericStory<T, R>(memory, stories, continueHandler, effectHandler);
   }
 
   @NotNull
   public static <T, R> Story<R> when(@NotNull final Memory memory,
       @NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final StoryLooper<? super List<T>, R> storyLooper) {
-    return when(memory, stories, new LooperLoopHandler(storyLooper),
+    return when(memory, stories, new LooperContinueHandler(storyLooper),
         new LooperEffectHandler<List<T>, R>(storyLooper));
   }
 
   @NotNull
   public static <T1, R> Story<R> when(@NotNull final Memory memory,
       @NotNull final Story<? extends T1> firstStory,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
       @NotNull final UnaryFunction<? super T1, ? extends Story<R>> effectHandler) {
-    return new UnaryStory<T1, R>(memory, firstStory, loopHandler, effectHandler);
+    return new UnaryStory<T1, R>(memory, firstStory, continueHandler, effectHandler);
   }
 
   @NotNull
   public static <T1, R> Story<R> when(@NotNull final Story<? extends T1> firstStory,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
       @NotNull final UnaryFunction<? super T1, ? extends Story<R>> effectHandler) {
-    return when(new ListMemory(), firstStory, loopHandler, effectHandler);
+    return when(new ListMemory(), firstStory, continueHandler, effectHandler);
   }
 
   private static boolean isEmpty(@Nullable final Story<?> story) {
@@ -256,15 +279,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   @SuppressWarnings("unchecked")
   public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
-    return resolve(new ListMemory(), firstType, loopHandler, incidentHandler);
+    return resolve(new ListMemory(), firstType, continueHandler, incidentHandler);
   }
 
   @NotNull
   public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
       @NotNull final StoryLooper<? super Throwable, ? extends T> storyLooper) {
-    return resolve(firstType, new LooperLoopHandler(storyLooper),
+    return resolve(firstType, new LooperContinueHandler(storyLooper),
         new LooperEffectHandler<Throwable, T>(storyLooper));
   }
 
@@ -272,20 +295,20 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @SuppressWarnings("unchecked")
   public <E extends Throwable> Story<T> resolve(
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
-    return resolve(new ListMemory(), incidentTypes, loopHandler, incidentHandler);
+    return resolve(new ListMemory(), incidentTypes, continueHandler, incidentHandler);
   }
 
   @NotNull
   @SuppressWarnings("unchecked")
   public <E1 extends Throwable> Story<T> resolve(@NotNull final Memory memory,
       @NotNull final Class<? extends E1> firstType,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
     final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
     types.add(firstType);
-    return new ResolveStory<T>(memory, this, types, loopHandler,
+    return new ResolveStory<T>(memory, this, types, continueHandler,
         (UnaryFunction<? super Throwable, ? extends Story<T>>) incidentHandler);
   }
 
@@ -293,7 +316,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public <E1 extends Throwable> Story<T> resolve(@NotNull final Memory memory,
       @NotNull final Class<? extends E1> firstType,
       @NotNull final StoryLooper<? super Throwable, ? extends T> storyLooper) {
-    return resolve(memory, firstType, new LooperLoopHandler(storyLooper),
+    return resolve(memory, firstType, new LooperContinueHandler(storyLooper),
         new LooperEffectHandler<Throwable, T>(storyLooper));
   }
 
@@ -301,10 +324,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @SuppressWarnings("unchecked")
   public <E extends Throwable> Story<T> resolve(@NotNull final Memory memory,
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
     return new ResolveStory<T>(memory, this,
-        Iterables.<Class<? extends Throwable>>toSet(incidentTypes), loopHandler,
+        Iterables.<Class<? extends Throwable>>toSet(incidentTypes), continueHandler,
         (UnaryFunction<? super Throwable, ? extends Story<T>>) incidentHandler);
   }
 
@@ -383,28 +406,28 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public <R> Story<R> thenWhile(@NotNull final Memory memory,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
       @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
-    return when(memory, this, loopHandler, effectHandler);
+    return when(memory, this, continueHandler, effectHandler);
   }
 
   @NotNull
   public <R> Story<R> thenWhile(@NotNull final Memory memory,
       @NotNull final StoryLooper<? super T, ? extends R> storyLooper) {
-    return thenWhile(memory, new LooperLoopHandler(storyLooper),
+    return thenWhile(memory, new LooperContinueHandler(storyLooper),
         new LooperEffectHandler<T, R>(storyLooper));
   }
 
   @NotNull
   public <R> Story<R> thenWhile(
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
       @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
-    return when(this, loopHandler, effectHandler);
+    return when(this, continueHandler, effectHandler);
   }
 
   @NotNull
   public <R> Story<R> thenWhile(@NotNull final StoryLooper<? super T, ? extends R> storyLooper) {
-    return thenWhile(new LooperLoopHandler(storyLooper),
+    return thenWhile(new LooperContinueHandler(storyLooper),
         new LooperEffectHandler<T, R>(storyLooper));
   }
 
@@ -416,10 +439,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public interface StoryLooper<T, R> {
 
     @Nullable
-    Event<? extends Boolean> loop() throws Exception;
+    Event<? extends Boolean> canContinue() throws Exception;
 
     @Nullable
-    Story<R> resolve(T event) throws Exception;
+    Story<R> resolve(T effect) throws Exception;
   }
 
   public interface StoryObserver<T> extends EventObserver<T> {
@@ -466,11 +489,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   private abstract static class AbstractStory<T> extends Story<T> {
 
     private final Actor mActor;
+    private final NullaryFunction<? extends Event<? extends Boolean>> mContinueHandler;
+    private final String mContinueThread;
     private final HashMap<Actor, Options> mInputActors = new HashMap<Actor, Options>();
     private final String mInputThread;
     private final Object[] mInputs;
-    private final NullaryFunction<? extends Event<? extends Boolean>> mLoopHandler;
-    private final String mLoopThread;
     private final HashMap<String, SenderIterator> mNextSenders =
         new HashMap<String, SenderIterator>();
     private final Options mOptions;
@@ -478,20 +501,20 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final Setting mSetting;
 
     private Conflict mConflict;
+    private Actor mContinueActor;
+    private int mContinueCount;
+    private Options mContinueOptions;
     private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private int mInputCount;
-    private Actor mLoopActor;
-    private int mLoopCount;
-    private Options mLoopOptions;
     private Memory mMemory;
     private Actor mOutputActor;
     private Options mOutputOptions;
 
     private AbstractStory(@NotNull final Memory memory,
-        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
         final int numInputs) {
       mMemory = ConstantConditions.notNull("memory", memory);
-      mLoopHandler = ConstantConditions.notNull("loopHandler", loopHandler);
+      mContinueHandler = ConstantConditions.notNull("continueHandler", continueHandler);
       mInputs = new Object[numInputs];
       final Setting setting = (mSetting = Setting.get());
       final String actorId = (mActor = BackStage.newActor(new PlayScript(setting) {
@@ -502,7 +525,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           return new InitBehavior();
         }
       })).getId();
-      mLoopThread = actorId + ":loop";
+      mContinueThread = actorId + ":continue";
       mInputThread = actorId + ":input";
       mOutputThread = actorId + ":output";
       mOptions = new Options().withReceiptId(actorId);
@@ -553,10 +576,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         }
 
         if (!mGetSenders.isEmpty()) {
-          loop(++mLoopCount, context);
+          loop(++mContinueCount, context);
 
         } else {
-          context.setBehavior(new NextLoopBehavior());
+          context.setBehavior(new NextContinueBehavior());
         }
       }
     }
@@ -629,7 +652,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         final Event<? extends Boolean> event;
         Setting.set(getSetting());
         try {
-          event = mLoopHandler.call();
+          event = mContinueHandler.call();
 
         } finally {
           Setting.unset();
@@ -645,8 +668,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           setThreadIds(loopCount);
-          (mLoopActor = event.getActor()).tell(GET, mLoopOptions, context.getSelf());
-          context.setBehavior(new LoopBehavior());
+          (mContinueActor = event.getActor()).tell(GET, mContinueOptions, context.getSelf());
+          context.setBehavior(new ContinueBehavior());
         }
 
       } catch (final Throwable t) {
@@ -659,7 +682,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private void setThreadIds(final int count) {
       final Options options = mOptions;
-      mLoopOptions = options.withThread(mLoopThread + "#" + count);
+      mContinueOptions = options.withThread(mContinueThread + "#" + count);
       mOutputOptions = options.withThread(mOutputThread + "#" + count);
     }
 
@@ -740,6 +763,61 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       }
     }
 
+    private class ContinueBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final Options options = envelop.getOptions().threadOnly();
+          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+
+        } else if (message == NEXT) {
+          final Options options = envelop.getOptions();
+          final String thread = options.getThread();
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
+          if (sender != null) {
+            sender.waitNext();
+
+          } else {
+            sender = new SenderIterator(envelop.getSender(), options.threadOnly());
+            sender.setIterator(mMemory.iterator());
+            nextSenders.put(thread, sender);
+          }
+          sender.tellNext(context.getSelf());
+
+        } else if (message == BREAK) {
+          mNextSenders.remove(envelop.getOptions().getThread());
+
+        } else if (message == CANCEL) {
+          mContinueActor.tell(CANCEL, mOutputOptions, context.getSelf());
+          tellInputActors(CANCEL, context);
+          context.setBehavior(new CancelBehavior());
+
+        } else {
+          final String thread = envelop.getOptions().getThread();
+          if (isSameThread(mContinueOptions.getThread(), thread)) {
+            if (message instanceof Conflict) {
+              fail((Conflict) message, context);
+
+            } else if (message instanceof Bounce) {
+              fail(Conflict.ofBounce((Bounce) message), context);
+
+            } else {
+              if (Boolean.TRUE.equals(message)) {
+                tellInputActors(NEXT, context);
+                context.setBehavior(new InputBehavior());
+
+              } else {
+                done(context);
+              }
+            }
+          }
+        }
+        envelop.preventReceipt();
+      }
+    }
+
     private class InitBehavior extends AbstractBehavior {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
@@ -747,14 +825,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
           mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
-          loop(mLoopCount, context);
+          loop(mContinueCount, context);
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions().threadOnly();
           final SenderIterator sender = new SenderIterator(envelop.getSender(), options);
           sender.setIterator(mMemory.iterator());
           mNextSenders.put(options.getThread(), sender);
-          loop(mLoopCount, context);
+          loop(mContinueCount, context);
 
         } else if (message == CANCEL) {
           tellInputActors(CANCEL, context);
@@ -856,10 +934,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                       }
 
                       if (!mGetSenders.isEmpty()) {
-                        loop(++mLoopCount, context);
+                        loop(++mContinueCount, context);
 
                       } else {
-                        context.setBehavior(new NextLoopBehavior());
+                        context.setBehavior(new NextContinueBehavior());
                       }
                     }
                   }
@@ -872,69 +950,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       }
     }
 
-    private class LoopBehavior extends AbstractBehavior {
+    private class NextContinueBehavior extends AbstractBehavior {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
           mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
-
-        } else if (message == NEXT) {
-          final Options options = envelop.getOptions();
-          final String thread = options.getThread();
-          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
-          if (sender != null) {
-            sender.waitNext();
-
-          } else {
-            sender = new SenderIterator(envelop.getSender(), options.threadOnly());
-            sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
-          }
-          sender.tellNext(context.getSelf());
-
-        } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
-
-        } else if (message == CANCEL) {
-          mLoopActor.tell(CANCEL, mOutputOptions, context.getSelf());
-          tellInputActors(CANCEL, context);
-          context.setBehavior(new CancelBehavior());
-
-        } else {
-          final String thread = envelop.getOptions().getThread();
-          if (isSameThread(mLoopOptions.getThread(), thread)) {
-            if (message instanceof Conflict) {
-              fail((Conflict) message, context);
-
-            } else if (message instanceof Bounce) {
-              fail(Conflict.ofBounce((Bounce) message), context);
-
-            } else {
-              if (Boolean.TRUE.equals(message)) {
-                tellInputActors(NEXT, context);
-                context.setBehavior(new InputBehavior());
-
-              } else {
-                done(context);
-              }
-            }
-          }
-        }
-        envelop.preventReceipt();
-      }
-    }
-
-    private class NextLoopBehavior extends AbstractBehavior {
-
-      public void onMessage(final Object message, @NotNull final Envelop envelop,
-          @NotNull final Context context) {
-        if (message == GET) {
-          final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
-          loop(++mLoopCount, context);
+          loop(++mContinueCount, context);
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
@@ -951,7 +974,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           final Actor self = context.getSelf();
           if (!sender.tellNext(self)) {
-            loop(++mLoopCount, context);
+            loop(++mContinueCount, context);
           }
 
         } else if (message == BREAK) {
@@ -1042,7 +1065,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           if (isSameThread(outputOptions.getThread(), envelop.getOptions().getThread())) {
             if (message == END) {
               mOutputActor.tell(BREAK, outputOptions, context.getSelf());
-              loop(++mLoopCount, context);
+              loop(++mContinueCount, context);
 
             } else if (message instanceof Bounce) {
               fail(Conflict.ofBounce((Bounce) message), context);
@@ -1809,7 +1832,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private EventualStory(@NotNull final Memory memory, @NotNull final Story<T> story,
         @NotNull final Action eventualAction) {
-      super(memory, INDEFINITE_LOOP, 1);
+      super(memory, INFINITE_LOOP, 1);
       mActors = Collections.singletonList(story.getActor());
       mEventualAction = ConstantConditions.notNull("eventualAction", eventualAction);
     }
@@ -1839,7 +1862,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private FunctionStory(@NotNull final Memory memory,
         @NotNull final NullaryFunction<? extends Story<T>> storyCreator) {
-      super(memory, INDEFINITE_LOOP, 1);
+      super(memory, INFINITE_LOOP, 1);
       mStoryCreator = ConstantConditions.notNull("storyCreator", storyCreator);
     }
 
@@ -1877,9 +1900,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private GenericStory(@NotNull final Memory memory,
         @NotNull final Iterable<? extends Story<? extends T>> stories,
-        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
         @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> effectHandler) {
-      super(memory, loopHandler, Iterables.size(stories));
+      super(memory, continueHandler, Iterables.size(stories));
       final ArrayList<Actor> inputActors = new ArrayList<Actor>();
       for (final Story<? extends T> story : stories) {
         inputActors.add(story.getActor());
@@ -2514,6 +2537,19 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
+  private static class LooperContinueHandler implements NullaryFunction<Event<? extends Boolean>> {
+
+    private final StoryLooper<?, ?> mStoryLooper;
+
+    LooperContinueHandler(@NotNull final StoryLooper<?, ?> storyLooper) {
+      mStoryLooper = ConstantConditions.notNull("storyLooper", storyLooper);
+    }
+
+    public Event<? extends Boolean> call() throws Exception {
+      return mStoryLooper.canContinue();
+    }
+  }
+
   private static class LooperEffectHandler<T, R> implements UnaryFunction<T, Story<R>> {
 
     private final StoryLooper<? super T, ? extends R> mStoryLooper;
@@ -2525,19 +2561,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @SuppressWarnings("unchecked")
     public Story<R> call(final T first) throws Exception {
       return (Story<R>) mStoryLooper.resolve(first);
-    }
-  }
-
-  private static class LooperLoopHandler implements NullaryFunction<Event<? extends Boolean>> {
-
-    private final StoryLooper<?, ?> mStoryLooper;
-
-    LooperLoopHandler(@NotNull final StoryLooper<?, ?> storyLooper) {
-      mStoryLooper = ConstantConditions.notNull("storyLooper", storyLooper);
-    }
-
-    public Event<? extends Boolean> call() throws Exception {
-      return mStoryLooper.loop();
     }
   }
 
@@ -2591,9 +2614,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private ResolveStory(@NotNull final Memory memory, @NotNull final Story<? extends T> story,
         @NotNull final Set<Class<? extends Throwable>> incidentTypes,
-        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
         @NotNull final UnaryFunction<? super Throwable, ? extends Story<T>> incidentHandler) {
-      super(memory, loopHandler, 1);
+      super(memory, continueHandler, 1);
       mInputActors = Collections.singletonList(story.getActor());
       ConstantConditions.positive("incidentTypes size", incidentTypes.size());
       mIncidentTypes = ConstantConditions.notNullElements("incidentTypes", incidentTypes);
@@ -3125,9 +3148,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
     private UnaryStory(@NotNull final Memory memory, @NotNull final Story<? extends T1> firstStory,
-        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> loopHandler,
+        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> continueHandler,
         @NotNull final UnaryFunction<? super T1, ? extends Story<R>> effectHandler) {
-      super(memory, loopHandler, 1);
+      super(memory, continueHandler, 1);
       mInputActors = Arrays.asList(firstStory.getActor());
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
     }
@@ -3314,7 +3337,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private WatchStory(@NotNull final Memory memory, @NotNull final Story<? extends T> story,
         @NotNull final EventObserver<? super T> eventObserver) {
-      super(memory, INDEFINITE_LOOP, 1);
+      super(memory, INFINITE_LOOP, 1);
       mInputActors = Collections.singletonList(story.getActor());
       mEventObserver = ConstantConditions.notNull("eventObserver", eventObserver);
     }

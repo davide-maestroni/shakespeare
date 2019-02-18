@@ -3,6 +3,8 @@ package dm.shakespeare.plot;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -48,6 +50,14 @@ public abstract class Narrator<T> {
 
   final void setActor(@NotNull final Actor actor) {
     mActor = actor;
+  }
+
+  @NotNull
+  final List<Object> stop() {
+    final ArrayList<Object> effects = new ArrayList<Object>();
+    mQueue.drainTo(effects);
+    cancel(new NarrationStoppedException());
+    return effects;
   }
 
   @Nullable
