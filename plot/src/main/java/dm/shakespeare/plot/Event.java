@@ -31,6 +31,7 @@ import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.Iterables;
 
 import static dm.shakespeare.plot.Narrator.NULL;
+import static dm.shakespeare.plot.Narrator.STOP;
 
 /**
  * Created by davide-maestroni on 01/22/2019.
@@ -89,14 +90,14 @@ public abstract class Event<T> {
   }
 
   @NotNull
-  public static <T> Event<T> ofNarration(@NotNull final NullaryFunction<T> narrationCreator) {
-    return ofNarration(new InfiniteNarrator<T>(narrationCreator));
-  }
+  public static <T> Event<T> ofNarration(@NotNull final NullaryFunction<T> effectCreator) {
+    ConstantConditions.notNull("effectCreator", effectCreator);
+    return ofEvent(new NullaryFunction<Event<T>>() {
 
-  @NotNull
-  public static <T> Event<T> ofNarration(
-      @NotNull final UnaryFunction<? super Narrator<T>, ? extends Boolean> narrationCreator) {
-    return ofNarration(new FunctionNarrator<T>(narrationCreator));
+      public Event<T> call() throws Exception {
+        return Event.ofEffect(effectCreator.call());
+      }
+    });
   }
 
   @NotNull
@@ -695,14 +696,12 @@ public abstract class Event<T> {
 
     private final Actor mActor;
     private final Narrator<T> mEventNarrator;
-    private final Setting mSetting;
 
     private HashMap<String, Sender> mSenders = new HashMap<String, Sender>();
 
     private NarratorEvent(@NotNull final Narrator<T> eventNarrator) {
       mEventNarrator = ConstantConditions.notNull("eventNarrator", eventNarrator);
-      final Setting setting = (mSetting = Setting.get());
-      mActor = BackStage.newActor(new PlayScript(setting) {
+      mActor = BackStage.newActor(new PlayScript(Setting.get()) {
 
         @NotNull
         @Override
@@ -712,36 +711,6 @@ public abstract class Event<T> {
       });
     }
 
-    private void done(@NotNull final Context context) {
-      final Narrator<T> eventNarrator = mEventNarrator;
-      Object effect = eventNarrator.takeEffect();
-      if (effect == NULL) {
-        effect = null;
-      }
-      eventNarrator.stop();
-      final Actor self = context.getSelf();
-      for (final Sender sender : mSenders.values()) {
-        sender.getSender().tell(effect, sender.getOptions(), self);
-      }
-      mSenders = null;
-      context.setBehavior(new DoneBehavior(effect));
-    }
-
-    private class CancelBehavior extends AbstractBehavior {
-
-      public void onMessage(final Object message, @NotNull final Envelop envelop,
-          @NotNull final Context context) {
-        if (message == GET) {
-          final Options options = envelop.getOptions().threadOnly();
-          mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
-
-        } else if (message == Narrator.AVAILABLE) {
-          done(context);
-        }
-        envelop.preventReceipt();
-      }
-    }
-
     private class InitBehavior extends AbstractBehavior {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
@@ -749,30 +718,11 @@ public abstract class Event<T> {
         final Narrator<T> eventNarrator = mEventNarrator;
         if (message == GET) {
           eventNarrator.setActor(context.getSelf());
-          Object effect;
-          try {
-            Setting.set(mSetting);
-            try {
-              eventNarrator.narrate();
-              effect = eventNarrator.takeEffect();
-
-            } finally {
-              Setting.unset();
-            }
-
-          } catch (final Throwable t) {
-            effect = new Conflict(t);
-            eventNarrator.cancel(t);
-            if (t instanceof InterruptedException) {
-              Thread.currentThread().interrupt();
-            }
-          }
-
+          Object effect = eventNarrator.takeEffect();
           if (effect != null) {
-            if (effect == NULL) {
+            if ((effect == NULL) || (effect == STOP)) {
               effect = null;
             }
-            eventNarrator.stop();
             context.setBehavior(new DoneBehavior(effect));
 
           } else {
@@ -785,9 +735,6 @@ public abstract class Event<T> {
           final Conflict conflict = Conflict.ofCancel();
           eventNarrator.cancel(conflict.getCause());
           context.setBehavior(new DoneBehavior(conflict));
-
-        } else if (message == Narrator.AVAILABLE) {
-          done(context);
         }
         envelop.preventReceipt();
       }
@@ -804,10 +751,19 @@ public abstract class Event<T> {
         } else if (message == CANCEL) {
           final Conflict conflict = Conflict.ofCancel();
           mEventNarrator.cancel(conflict.getCause());
-          context.setBehavior(new CancelBehavior());
+          context.setBehavior(new DoneBehavior(conflict));
 
         } else if (message == Narrator.AVAILABLE) {
-          done(context);
+          Object effect = mEventNarrator.takeEffect();
+          if ((effect == NULL) || (effect == STOP)) {
+            effect = null;
+          }
+          final Actor self = context.getSelf();
+          for (final Sender sender : mSenders.values()) {
+            sender.getSender().tell(effect, sender.getOptions(), self);
+          }
+          mSenders = null;
+          context.setBehavior(new DoneBehavior(effect));
         }
         envelop.preventReceipt();
       }

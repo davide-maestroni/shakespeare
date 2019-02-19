@@ -47,7 +47,7 @@ class Setting {
       return sLocalSetting.get().get(0);
 
     } catch (final IndexOutOfBoundsException e) {
-      throw new IllegalStateException("code is not running inside a Scene");
+      throw new IllegalStateException("code is not running inside a scene");
     }
   }
 

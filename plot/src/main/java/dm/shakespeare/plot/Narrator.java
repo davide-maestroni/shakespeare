@@ -3,8 +3,7 @@ package dm.shakespeare.plot;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.Closeable;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -15,10 +14,11 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 02/17/2019.
  */
-public abstract class Narrator<T> {
+public final class Narrator<T> implements Closeable {
 
   static final Object AVAILABLE = new Object();
   static final Object NULL = new Object();
+  static final Object STOP = new Object();
 
   private final BlockingQueue<Object> mQueue;
 
@@ -33,36 +33,47 @@ public abstract class Narrator<T> {
     mQueue = ConstantConditions.notNull("queue", queue);
   }
 
-  public void report(@NotNull final Throwable incident) throws Exception {
+  public void close() {
+    if (mException == null) {
+      mException = new NarrationStoppedException();
+      enqueue(STOP);
+    }
+  }
+
+  @NotNull
+  public Narrator<T> report(@NotNull final Throwable incident) throws Exception {
     resolve(new Conflict(incident));
+    return this;
   }
 
-  public void tell(final T effect) throws Exception {
+  @NotNull
+  public Narrator<T> tell(final T effect) throws Exception {
     resolve((effect != null) ? effect : NULL);
+    return this;
   }
 
-  protected abstract boolean narrate() throws Exception;
-
-  final void cancel(@NotNull final Throwable cause) {
+  void cancel(@NotNull final Throwable cause) {
     mException = cause;
     mQueue.clear();
   }
 
-  final void setActor(@NotNull final Actor actor) {
+  void setActor(@NotNull final Actor actor) {
     mActor = actor;
   }
 
-  @NotNull
-  final List<Object> stop() {
-    final ArrayList<Object> effects = new ArrayList<Object>();
-    mQueue.drainTo(effects);
-    cancel(new NarrationStoppedException());
-    return effects;
+  @Nullable
+  Object takeEffect() {
+    return mQueue.poll();
   }
 
-  @Nullable
-  final Object takeEffect() {
-    return mQueue.poll();
+  private void enqueue(@NotNull final Object resolution) {
+    final BlockingQueue<Object> queue = mQueue;
+    final boolean wasEmpty = queue.isEmpty();
+    queue.add(resolution);
+    final Actor actor = mActor;
+    if (wasEmpty && (actor != null)) {
+      actor.tell(AVAILABLE, null, BackStage.standIn());
+    }
   }
 
   private void resolve(@NotNull final Object resolution) throws Exception {
@@ -76,10 +87,6 @@ public abstract class Narrator<T> {
         throw new IllegalStateException(exception);
       }
     }
-    mQueue.add(resolution);
-    final Actor actor = mActor;
-    if (actor != null) {
-      actor.tell(AVAILABLE, null, BackStage.standIn());
-    }
+    enqueue(resolution);
   }
 }

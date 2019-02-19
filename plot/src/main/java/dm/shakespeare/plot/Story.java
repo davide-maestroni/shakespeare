@@ -3,7 +3,6 @@ package dm.shakespeare.plot;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -37,6 +36,10 @@ import dm.shakespeare.plot.memory.ListMemory;
 import dm.shakespeare.plot.memory.SingletonMemory;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.Iterables;
+
+import static dm.shakespeare.plot.Narrator.AVAILABLE;
+import static dm.shakespeare.plot.Narrator.NULL;
+import static dm.shakespeare.plot.Narrator.STOP;
 
 /**
  * Created by davide-maestroni on 01/22/2019.
@@ -93,61 +96,43 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public static Story<ByteBuffer> ofInputStream(@NotNull final InputStream inputStream) {
-    return ofInputStream(new ListMemory(), inputStream, DEFAULT_BUFFER_CREATOR);
+    return ofInputStream(inputStream, DEFAULT_BUFFER_CREATOR, new ListMemory());
+  }
+
+  @NotNull
+  public static Story<ByteBuffer> ofInputStream(@NotNull final InputStream inputStream,
+      @NotNull final Memory memory) {
+    return ofInputStream(inputStream, DEFAULT_BUFFER_CREATOR, memory);
   }
 
   @NotNull
   public static Story<ByteBuffer> ofInputStream(@NotNull final InputStream inputStream,
       @NotNull final NullaryFunction<? extends ByteBuffer> bufferCreator) {
-    return ofInputStream(new ListMemory(), inputStream, bufferCreator);
+    return ofInputStream(inputStream, bufferCreator, new ListMemory());
   }
 
   @NotNull
-  public static Story<ByteBuffer> ofInputStream(@NotNull final Memory memory,
-      @NotNull final InputStream inputStream) {
-    return ofInputStream(memory, inputStream, DEFAULT_BUFFER_CREATOR);
-  }
-
-  @NotNull
-  public static Story<ByteBuffer> ofInputStream(@NotNull final Memory memory,
-      @NotNull final InputStream inputStream,
-      @NotNull final NullaryFunction<? extends ByteBuffer> bufferCreator) {
+  public static Story<ByteBuffer> ofInputStream(@NotNull final InputStream inputStream,
+      @NotNull final NullaryFunction<? extends ByteBuffer> bufferCreator,
+      @NotNull final Memory memory) {
     return new EffectsStory<ByteBuffer>(
-        new InputStreamIterable(memory, inputStream, bufferCreator));
-  }
-
-  @NotNull
-  public static <T> Story<T> ofNarrations(@NotNull final Memory memory,
-      @NotNull final Narrator<T> storyNarrator) {
-    return new NarratorStory<T>(memory, storyNarrator);
-  }
-
-  @NotNull
-  public static <T> Story<T> ofNarrations(@NotNull final Memory memory,
-      @NotNull final NullaryFunction<T> narrationCreator) {
-    return ofNarrations(memory, new InfiniteNarrator<T>(narrationCreator));
-  }
-
-  @NotNull
-  public static <T> Story<T> ofNarrations(@NotNull final Memory memory,
-      @NotNull final UnaryFunction<? super Narrator<T>, ? extends Boolean> narrationCreator) {
-    return ofNarrations(memory, new FunctionNarrator<T>(narrationCreator));
+        new InputStreamIterable(inputStream, bufferCreator, memory));
   }
 
   @NotNull
   public static <T> Story<T> ofNarrations(@NotNull final Narrator<T> storyNarrator) {
-    return ofNarrations(new ListMemory(), storyNarrator);
+    return ofNarrations(storyNarrator, new ListMemory());
   }
 
   @NotNull
-  public static <T> Story<T> ofNarrations(@NotNull final NullaryFunction<T> narrationCreator) {
-    return ofNarrations(new ListMemory(), narrationCreator);
+  public static <T> Story<T> ofNarrations(@NotNull final Narrator<T> storyNarrator,
+      @NotNull final Memory memory) {
+    return new NarratorStory<T>(storyNarrator, memory);
   }
 
   @NotNull
-  public static <T> Story<T> ofNarrations(
-      @NotNull final UnaryFunction<? super Narrator<T>, ? extends Boolean> narrationCreator) {
-    return ofNarrations(new ListMemory(), narrationCreator);
+  public static <T> Story<T> ofNarrations(@NotNull final NullaryFunction<T> effectsCreator) {
+    return ofEffects(new CreatorIterable<T>(effectsCreator));
   }
 
   @NotNull
@@ -172,15 +157,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public static <T> Story<T> ofStory(@NotNull final Memory memory,
+  public static <T> Story<T> ofStory(
       @NotNull final NullaryFunction<? extends Story<T>> storyCreator) {
-    return new FunctionStory<T>(memory, storyCreator);
+    return ofStory(storyCreator, new ListMemory());
   }
 
   @NotNull
   public static <T> Story<T> ofStory(
-      @NotNull final NullaryFunction<? extends Story<T>> storyCreator) {
-    return ofStory(new ListMemory(), storyCreator);
+      @NotNull final NullaryFunction<? extends Story<T>> storyCreator,
+      @NotNull final Memory memory) {
+    return new FunctionStory<T>(storyCreator, memory);
   }
 
   @NotNull
@@ -196,7 +182,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> effectHandler) {
-    return when(new ListMemory(), stories, conditionHandler, effectHandler);
+    return when(stories, conditionHandler, effectHandler, new ListMemory());
+  }
+
+  @NotNull
+  public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
+      @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> effectHandler,
+      @NotNull final Memory memory) {
+    return new GenericStory<T, R>(stories, conditionHandler, effectHandler, memory);
   }
 
   @NotNull
@@ -207,34 +201,25 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public static <T, R> Story<R> when(@NotNull final Memory memory,
-      @NotNull final Iterable<? extends Story<? extends T>> stories,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-      @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> effectHandler) {
-    return new GenericStory<T, R>(memory, stories, conditionHandler, effectHandler);
-  }
-
-  @NotNull
-  public static <T, R> Story<R> when(@NotNull final Memory memory,
-      @NotNull final Iterable<? extends Story<? extends T>> stories,
-      @NotNull final StoryLooper<? super List<T>, R> storyLooper) {
-    return when(memory, stories, new LooperConditionHandler(storyLooper),
-        new LooperEffectHandler<List<T>, R>(storyLooper));
-  }
-
-  @NotNull
-  public static <T1, R> Story<R> when(@NotNull final Memory memory,
-      @NotNull final Story<? extends T1> firstStory,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-      @NotNull final UnaryFunction<? super T1, ? extends Story<R>> effectHandler) {
-    return new UnaryStory<T1, R>(memory, firstStory, conditionHandler, effectHandler);
+  public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
+      @NotNull final StoryLooper<? super List<T>, R> storyLooper, @NotNull final Memory memory) {
+    return when(stories, new LooperConditionHandler(storyLooper),
+        new LooperEffectHandler<List<T>, R>(storyLooper), memory);
   }
 
   @NotNull
   public static <T1, R> Story<R> when(@NotNull final Story<? extends T1> firstStory,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super T1, ? extends Story<R>> effectHandler) {
-    return when(new ListMemory(), firstStory, conditionHandler, effectHandler);
+    return when(firstStory, conditionHandler, effectHandler, new ListMemory());
+  }
+
+  @NotNull
+  public static <T1, R> Story<R> when(@NotNull final Story<? extends T1> firstStory,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
+      @NotNull final UnaryFunction<? super T1, ? extends Story<R>> effectHandler,
+      @NotNull final Memory memory) {
+    return new UnaryStory<T1, R>(firstStory, conditionHandler, effectHandler, memory);
   }
 
   private static boolean isEmpty(@Nullable final Story<?> story) {
@@ -252,12 +237,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   @Override
   public Story<T> eventually(@NotNull final Action eventualAction) {
-    return eventually(new ListMemory(), eventualAction);
+    return eventually(eventualAction, new ListMemory());
   }
 
   @NotNull
-  public Story<T> eventually(@NotNull final Memory memory, @NotNull final Action eventualAction) {
-    return new EventualStory<T>(memory, this, eventualAction);
+  public Story<T> eventually(@NotNull final Action eventualAction, @NotNull final Memory memory) {
+    return new EventualStory<T>(this, eventualAction, memory);
   }
 
   public void playAll(@NotNull final EventObserver<? super T> eventObserver) {
@@ -281,7 +266,19 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
-    return resolve(new ListMemory(), firstType, conditionHandler, incidentHandler);
+    return resolve(firstType, conditionHandler, incidentHandler, new ListMemory());
+  }
+
+  @NotNull
+  @SuppressWarnings("unchecked")
+  public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
+      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler,
+      @NotNull final Memory memory) {
+    final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
+    types.add(firstType);
+    return new ResolveStory<T>(this, types, conditionHandler,
+        (UnaryFunction<? super Throwable, ? extends Story<T>>) incidentHandler, memory);
   }
 
   @NotNull
@@ -292,110 +289,93 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
+  public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
+      @NotNull final StoryLooper<? super Throwable, ? extends T> storyLooper,
+      @NotNull final Memory memory) {
+    return resolve(firstType, new LooperConditionHandler(storyLooper),
+        new LooperEffectHandler<Throwable, T>(storyLooper), memory);
+  }
+
+  @NotNull
   @SuppressWarnings("unchecked")
   public <E extends Throwable> Story<T> resolve(
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
-    return resolve(new ListMemory(), incidentTypes, conditionHandler, incidentHandler);
+    return resolve(incidentTypes, conditionHandler, incidentHandler, new ListMemory());
   }
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E1 extends Throwable> Story<T> resolve(@NotNull final Memory memory,
-      @NotNull final Class<? extends E1> firstType,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
-    final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
-    types.add(firstType);
-    return new ResolveStory<T>(memory, this, types, conditionHandler,
-        (UnaryFunction<? super Throwable, ? extends Story<T>>) incidentHandler);
-  }
-
-  @NotNull
-  public <E1 extends Throwable> Story<T> resolve(@NotNull final Memory memory,
-      @NotNull final Class<? extends E1> firstType,
-      @NotNull final StoryLooper<? super Throwable, ? extends T> storyLooper) {
-    return resolve(memory, firstType, new LooperConditionHandler(storyLooper),
-        new LooperEffectHandler<Throwable, T>(storyLooper));
-  }
-
-  @NotNull
-  @SuppressWarnings("unchecked")
-  public <E extends Throwable> Story<T> resolve(@NotNull final Memory memory,
+  public <E extends Throwable> Story<T> resolve(
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
-    return new ResolveStory<T>(memory, this,
-        Iterables.<Class<? extends Throwable>>toSet(incidentTypes), conditionHandler,
-        (UnaryFunction<? super Throwable, ? extends Story<T>>) incidentHandler);
+      @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler,
+      @NotNull final Memory memory) {
+    return new ResolveStory<T>(this, Iterables.<Class<? extends Throwable>>toSet(incidentTypes),
+        conditionHandler, (UnaryFunction<? super Throwable, ? extends Story<T>>) incidentHandler,
+        memory);
   }
 
   @NotNull
   public Story<T> scheduleAtFixedRate(final long initialDelay, final long period,
       @NotNull final TimeUnit unit) {
-    return scheduleAtFixedRate(new ListMemory(), initialDelay, period, unit);
+    return scheduleAtFixedRate(initialDelay, period, unit, new ListMemory());
   }
 
   @NotNull
-  public Story<T> scheduleAtFixedRate(@NotNull final Memory memory, final long initialDelay,
-      final long period, @NotNull final TimeUnit unit) {
-    return new ScheduleAtFixedRateStory<T>(memory, this, initialDelay, period, unit);
+  public Story<T> scheduleAtFixedRate(final long initialDelay, final long period,
+      @NotNull final TimeUnit unit, @NotNull final Memory memory) {
+    return new ScheduleAtFixedRateStory<T>(this, initialDelay, period, unit, memory);
   }
 
   @NotNull
   public Story<T> scheduleWithFixedDelay(final long initialDelay, final long delay,
       @NotNull final TimeUnit unit) {
-    return scheduleWithFixedDelay(new ListMemory(), initialDelay, delay, unit);
+    return scheduleWithFixedDelay(initialDelay, delay, unit, new ListMemory());
   }
 
   @NotNull
-  public Story<T> scheduleWithFixedDelay(@NotNull final Memory memory, final long initialDelay,
-      final long delay, @NotNull final TimeUnit unit) {
-    return new ScheduleWithFixedDelayStory<T>(memory, this, initialDelay, delay, unit);
+  public Story<T> scheduleWithFixedDelay(final long initialDelay, final long delay,
+      @NotNull final TimeUnit unit, @NotNull final Memory memory) {
+    return new ScheduleWithFixedDelayStory<T>(this, initialDelay, delay, unit, memory);
   }
 
   @NotNull
   public <R> Story<R> thenBlend(final int maxConcurrency,
       @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
-    return thenBlend(new ListMemory(), maxConcurrency, effectHandler);
+    return thenBlend(maxConcurrency, effectHandler, new ListMemory());
   }
 
   @NotNull
-  public <R> Story<R> thenBlend(@NotNull final Memory memory, final int maxConcurrency,
-      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
-    return new BlendStory<T, R>(memory, this, maxConcurrency, effectHandler);
+  public <R> Story<R> thenBlend(final int maxConcurrency,
+      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler,
+      @NotNull final Memory memory) {
+    return new BlendStory<T, R>(this, maxConcurrency, effectHandler, memory);
   }
 
   @NotNull
   public <R> Story<R> thenJoin(final int maxConcurrency, final int maxEventWindow,
       @NotNull final UnaryFunction<? super T, ? extends Event<R>> effectHandler) {
-    return thenJoin(new ListMemory(), maxConcurrency, maxEventWindow, effectHandler);
+    return thenJoin(maxConcurrency, maxEventWindow, effectHandler, new ListMemory());
   }
 
   @NotNull
-  public <R> Story<R> thenJoin(@NotNull final Memory memory, final int maxConcurrency,
-      final int maxEventWindow,
-      @NotNull final UnaryFunction<? super T, ? extends Event<R>> effectHandler) {
-    return new JoinStory<T, R>(memory, this, maxConcurrency, maxEventWindow, effectHandler);
+  public <R> Story<R> thenJoin(final int maxConcurrency, final int maxEventWindow,
+      @NotNull final UnaryFunction<? super T, ? extends Event<R>> effectHandler,
+      @NotNull final Memory memory) {
+    return new JoinStory<T, R>(this, maxConcurrency, maxEventWindow, effectHandler, memory);
   }
 
   @NotNull
   public Story<T> thenWatchEach(@NotNull final EventObserver<? super T> eventObserver) {
-    return thenWatchEach(new ListMemory(), eventObserver);
+    return thenWatchEach(eventObserver, new ListMemory());
   }
 
   @NotNull
-  public Story<T> thenWatchEach(@NotNull final Memory memory,
-      @NotNull final EventObserver<? super T> eventObserver) {
-    return new WatchStory<T>(memory, this, eventObserver);
-  }
-
-  @NotNull
-  public Story<T> thenWatchEach(@NotNull final Memory memory,
-      @Nullable final Observer<? super T> effectObserver,
-      @Nullable final Observer<? super Throwable> incidentObserver) {
-    return thenWatchEach(memory, new DefaultEventObserver<T>(effectObserver, incidentObserver));
+  public Story<T> thenWatchEach(@NotNull final EventObserver<? super T> eventObserver,
+      @NotNull final Memory memory) {
+    return new WatchStory<T>(this, eventObserver, memory);
   }
 
   @NotNull
@@ -405,17 +385,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <R> Story<R> thenWhile(@NotNull final Memory memory,
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
-    return when(memory, this, conditionHandler, effectHandler);
-  }
-
-  @NotNull
-  public <R> Story<R> thenWhile(@NotNull final Memory memory,
-      @NotNull final StoryLooper<? super T, ? extends R> storyLooper) {
-    return thenWhile(memory, new LooperConditionHandler(storyLooper),
-        new LooperEffectHandler<T, R>(storyLooper));
+  public Story<T> thenWatchEach(@Nullable final Observer<? super T> effectObserver,
+      @Nullable final Observer<? super Throwable> incidentObserver, @NotNull final Memory memory) {
+    return thenWatchEach(new DefaultEventObserver<T>(effectObserver, incidentObserver), memory);
   }
 
   @NotNull
@@ -426,9 +398,24 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
+  public <R> Story<R> thenWhile(
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
+      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler,
+      @NotNull final Memory memory) {
+    return when(this, conditionHandler, effectHandler, memory);
+  }
+
+  @NotNull
   public <R> Story<R> thenWhile(@NotNull final StoryLooper<? super T, ? extends R> storyLooper) {
     return thenWhile(new LooperConditionHandler(storyLooper),
         new LooperEffectHandler<T, R>(storyLooper));
+  }
+
+  @NotNull
+  public <R> Story<R> thenWhile(@NotNull final StoryLooper<? super T, ? extends R> storyLooper,
+      @NotNull final Memory memory) {
+    return thenWhile(new LooperConditionHandler(storyLooper),
+        new LooperEffectHandler<T, R>(storyLooper), memory);
   }
 
   public interface Memory extends Iterable<Object> {
@@ -510,12 +497,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private Actor mOutputActor;
     private Options mOutputOptions;
 
-    private AbstractStory(@NotNull final Memory memory,
+    private AbstractStory(
         @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-        final int numInputs) {
-      mMemory = ConstantConditions.notNull("memory", memory);
+        final int numInputs, @NotNull final Memory memory) {
       mConditionHandler = ConstantConditions.notNull("conditionHandler", conditionHandler);
       mInputs = new Object[numInputs];
+      mMemory = ConstantConditions.notNull("memory", memory);
       final Setting setting = (mSetting = Setting.get());
       final String actorId = (mActor = BackStage.newActor(new PlayScript(setting) {
 
@@ -1119,13 +1106,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private boolean mInputsPending;
     private long mOutputCount;
 
-    private BlendStory(@NotNull final Memory memory, @NotNull final Story<? extends T> story,
-        final int maxConcurrency,
-        @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
-      mMemory = ConstantConditions.notNull("memory", memory);
+    private BlendStory(@NotNull final Story<? extends T> story, final int maxConcurrency,
+        @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler,
+        @NotNull final Memory memory) {
       mInputActor = story.getActor();
       mMaxConcurrency = ConstantConditions.positive("maxConcurrency", maxConcurrency);
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
+      mMemory = ConstantConditions.notNull("memory", memory);
       final Setting setting = (mSetting = Setting.get());
       final String actorId = (mActor = BackStage.newActor(new PlayScript(setting) {
 
@@ -1830,9 +1817,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final List<Actor> mActors;
     private final Action mEventualAction;
 
-    private EventualStory(@NotNull final Memory memory, @NotNull final Story<T> story,
-        @NotNull final Action eventualAction) {
-      super(memory, INFINITE_LOOP, 1);
+    private EventualStory(@NotNull final Story<T> story, @NotNull final Action eventualAction,
+        @NotNull final Memory memory) {
+      super(INFINITE_LOOP, 1, memory);
       mActors = Collections.singletonList(story.getActor());
       mEventualAction = ConstantConditions.notNull("eventualAction", eventualAction);
     }
@@ -1860,9 +1847,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private List<Actor> mActors;
 
-    private FunctionStory(@NotNull final Memory memory,
-        @NotNull final NullaryFunction<? extends Story<T>> storyCreator) {
-      super(memory, INFINITE_LOOP, 1);
+    private FunctionStory(@NotNull final NullaryFunction<? extends Story<T>> storyCreator,
+        @NotNull final Memory memory) {
+      super(INFINITE_LOOP, 1, memory);
       mStoryCreator = ConstantConditions.notNull("storyCreator", storyCreator);
     }
 
@@ -1898,11 +1885,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final List<Actor> mInputActors;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    private GenericStory(@NotNull final Memory memory,
-        @NotNull final Iterable<? extends Story<? extends T>> stories,
+    private GenericStory(@NotNull final Iterable<? extends Story<? extends T>> stories,
         @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-        @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> effectHandler) {
-      super(memory, conditionHandler, Iterables.size(stories));
+        @NotNull final UnaryFunction<? super List<T>, ? extends Story<R>> effectHandler,
+        @NotNull final Memory memory) {
+      super(conditionHandler, Iterables.size(stories), memory);
       final ArrayList<Actor> inputActors = new ArrayList<Actor>();
       for (final Story<? extends T> story : stories) {
         inputActors.add(story.getActor());
@@ -2041,110 +2028,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
-  private static class InputStreamIterable implements Iterable<ByteBuffer> {
-
-    private final NullaryFunction<? extends ByteBuffer> mBufferCreator;
-    private final InputStream mInputStream;
-    private final Memory mMemory;
-    private NullaryFunction<ByteBuffer> mReader;
-
-    private InputStreamIterable(@NotNull final Memory memory,
-        @NotNull final InputStream inputStream,
-        @NotNull final NullaryFunction<? extends ByteBuffer> bufferCreator) {
-      mMemory = ConstantConditions.notNull("memory", memory);
-      mInputStream = ConstantConditions.notNull("inputStream", inputStream);
-      mBufferCreator = ConstantConditions.notNull("bufferCreator", bufferCreator);
-      if (inputStream instanceof FileInputStream) {
-        mReader = new NullaryFunction<ByteBuffer>() {
-
-          public ByteBuffer call() throws Exception {
-            final ByteBuffer byteBuffer = mBufferCreator.call();
-            final int read = ((FileInputStream) mInputStream).getChannel().read(byteBuffer);
-            if (read > 0) {
-              return byteBuffer;
-            }
-            mReader = new NullaryFunction<ByteBuffer>() {
-
-              public ByteBuffer call() {
-                return null;
-              }
-            };
-            return null;
-          }
-        };
-
-      } else {
-        mReader = new NullaryFunction<ByteBuffer>() {
-
-          public ByteBuffer call() throws Exception {
-            final InputStream inputStream = mInputStream;
-            final ByteBuffer byteBuffer = mBufferCreator.call();
-            int read = 0;
-            if (byteBuffer.hasArray()) {
-              read = inputStream.read(byteBuffer.array());
-              if (read > 0) {
-                byteBuffer.position(read);
-              }
-
-            } else {
-              while (byteBuffer.hasRemaining()) {
-                byteBuffer.put((byte) inputStream.read());
-                ++read;
-              }
-            }
-            if (read > 0) {
-              return byteBuffer;
-            }
-            mReader = new NullaryFunction<ByteBuffer>() {
-
-              public ByteBuffer call() {
-                return null;
-              }
-            };
-            return null;
-          }
-        };
-      }
-    }
-
-    @NotNull
-    public Iterator<ByteBuffer> iterator() {
-      return new InputStreamIterator();
-    }
-
-    private class InputStreamIterator implements Iterator<ByteBuffer> {
-
-      private final Iterator<Object> mIterator;
-
-      private InputStreamIterator() {
-        mIterator = mMemory.iterator();
-      }
-
-      public boolean hasNext() {
-        if (!mIterator.hasNext()) {
-          try {
-            final ByteBuffer byteBuffer = mReader.call();
-            if (byteBuffer != null) {
-              mMemory.put(byteBuffer);
-            }
-
-          } catch (final Exception e) {
-            throw new IllegalStateException(e);
-          }
-        }
-        return mIterator.hasNext();
-      }
-
-      public ByteBuffer next() {
-        return (ByteBuffer) mIterator.next();
-      }
-
-      public void remove() {
-        throw new UnsupportedOperationException("remove");
-      }
-    }
-  }
-
   private static class JoinStory<T, R> extends Story<R> {
 
     private final Actor mActor;
@@ -2169,14 +2052,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private boolean mInputsPending;
     private long mOutputCount;
 
-    private JoinStory(@NotNull final Memory memory, @NotNull final Story<? extends T> story,
-        final int maxConcurrency, final int maxEventWindow,
-        @NotNull final UnaryFunction<? super T, ? extends Event<R>> effectHandler) {
-      mMemory = ConstantConditions.notNull("memory", memory);
+    private JoinStory(@NotNull final Story<? extends T> story, final int maxConcurrency,
+        final int maxEventWindow,
+        @NotNull final UnaryFunction<? super T, ? extends Event<R>> effectHandler,
+        @NotNull final Memory memory) {
       mInputActor = story.getActor();
       mMaxConcurrency = ConstantConditions.positive("maxConcurrency", maxConcurrency);
       mMaxEventWindow = ConstantConditions.positive("maxEventWindow", maxEventWindow);
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
+      mMemory = ConstantConditions.notNull("memory", memory);
       final Setting setting = (mSetting = Setting.get());
       final String actorId = (mActor = BackStage.newActor(new PlayScript(setting) {
 
@@ -2566,13 +2450,162 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   private static class NarratorStory<T> extends Story<T> {
 
-    private NarratorStory(@NotNull final Memory memory, @NotNull final Narrator<T> storyNarrator) {
-      // TODO: 17/02/2019 implement
+    private final Actor mActor;
+    private final Memory mMemory;
+    private final HashMap<String, SenderIterator> mNextSenders =
+        new HashMap<String, SenderIterator>();
+    private final Narrator<T> mStoryNarrator;
+
+    private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
+
+    private NarratorStory(@NotNull final Narrator<T> storyNarrator, @NotNull final Memory memory) {
+      mStoryNarrator = ConstantConditions.notNull("storyNarrator", storyNarrator);
+      mMemory = ConstantConditions.notNull("memory", memory);
+      mActor = BackStage.newActor(new PlayScript(Setting.get()) {
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return new InitBehavior();
+        }
+      });
+    }
+
+    private void done(@NotNull final Context context) {
+      final Memory memory = mMemory;
+      Object effects = memory;
+      for (final Object effect : memory) {
+        if (effect instanceof Conflict) {
+          effects = effect;
+          break;
+        }
+      }
+      final Actor self = context.getSelf();
+      for (final Sender sender : mGetSenders.values()) {
+        sender.getSender().tell(effects, sender.getOptions(), self);
+      }
+      mGetSenders = null;
+      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+      for (final SenderIterator sender : nextSenders.values()) {
+        if (sender.isWaitNext() && !sender.tellNext(self)) {
+          sender.getSender().tell(END, sender.getOptions(), self);
+        }
+      }
+      context.setBehavior(new DoneBehavior(effects, memory, nextSenders));
+    }
+
+    private boolean next(@NotNull final Context context) {
+      final Narrator<T> storyNarrator = mStoryNarrator;
+      final Actor self = context.getSelf();
+      storyNarrator.setActor(self);
+      Object effect = storyNarrator.takeEffect();
+      if (effect != null) {
+        if (effect == STOP) {
+          done(context);
+          return false;
+        }
+
+        if (effect == NULL) {
+          effect = null;
+        }
+        mMemory.put(effect);
+        for (final SenderIterator sender : mNextSenders.values()) {
+          sender.tellNext(self);
+        }
+      }
+
+      if (!mGetSenders.isEmpty()) {
+        context.getExecutor().execute(new Runnable() {
+
+          public void run() {
+            next(context);
+          }
+        });
+      }
+      return true;
+    }
+
+    private class InitBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final Options options = envelop.getOptions().threadOnly();
+          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          if (next(context)) {
+            context.setBehavior(new InputBehavior());
+          }
+
+        } else if (message == NEXT) {
+          final Options options = envelop.getOptions().threadOnly();
+          final SenderIterator sender = new SenderIterator(envelop.getSender(), options);
+          sender.setIterator(mMemory.iterator());
+          mNextSenders.put(options.getThread(), sender);
+          if (next(context)) {
+            context.setBehavior(new InputBehavior());
+          }
+
+        } else if (message == CANCEL) {
+          final Conflict conflict = Conflict.ofCancel();
+          mStoryNarrator.cancel(conflict.getCause());
+          context.setBehavior(
+              new DoneBehavior(conflict, Collections.singleton(conflict), mNextSenders));
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    private class InputBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Context context) {
+        if (message == GET) {
+          final HashMap<String, Sender> getSenders = mGetSenders;
+          final boolean wasEmpty = getSenders.isEmpty();
+          final Options options = envelop.getOptions().threadOnly();
+          getSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          if (wasEmpty) {
+            next(context);
+          }
+
+        } else if (message == NEXT) {
+          final Options options = envelop.getOptions();
+          final String thread = options.getThread();
+          final HashMap<String, SenderIterator> nextSenders = mNextSenders;
+          SenderIterator sender = nextSenders.get(thread);
+          if (sender != null) {
+            sender.waitNext();
+
+          } else {
+            sender = new SenderIterator(envelop.getSender(), options.threadOnly());
+            sender.setIterator(mMemory.iterator());
+            nextSenders.put(thread, sender);
+          }
+          if (mGetSenders.isEmpty()) {
+            next(context);
+          }
+
+        } else if (message == BREAK) {
+          mNextSenders.remove(envelop.getOptions().getThread());
+
+        } else if (message == AVAILABLE) {
+          if (mGetSenders.isEmpty()) {
+            next(context);
+          }
+
+        } else if (message == CANCEL) {
+          final Conflict conflict = Conflict.ofCancel();
+          mStoryNarrator.cancel(conflict.getCause());
+          context.setBehavior(
+              new DoneBehavior(conflict, Collections.singleton(conflict), mNextSenders));
+        }
+        envelop.preventReceipt();
+      }
     }
 
     @NotNull
     Actor getActor() {
-      return null;
+      return mActor;
     }
   }
 
@@ -2612,11 +2645,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final List<Actor> mInputActors;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    private ResolveStory(@NotNull final Memory memory, @NotNull final Story<? extends T> story,
+    private ResolveStory(@NotNull final Story<? extends T> story,
         @NotNull final Set<Class<? extends Throwable>> incidentTypes,
         @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-        @NotNull final UnaryFunction<? super Throwable, ? extends Story<T>> incidentHandler) {
-      super(memory, conditionHandler, 1);
+        @NotNull final UnaryFunction<? super Throwable, ? extends Story<T>> incidentHandler,
+        @NotNull final Memory memory) {
+      super(conditionHandler, 1, memory);
       mInputActors = Collections.singletonList(story.getActor());
       ConstantConditions.positive("incidentTypes size", incidentTypes.size());
       mIncidentTypes = ConstantConditions.notNullElements("incidentTypes", incidentTypes);
@@ -2664,14 +2698,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private boolean mInputsPending;
     private ScheduledFuture<?> mScheduledFuture;
 
-    private ScheduleAtFixedRateStory(@NotNull final Memory memory,
-        @NotNull final Story<? extends T> story, final long initialDelay, final long period,
-        @NotNull final TimeUnit unit) {
-      mMemory = ConstantConditions.notNull("memory", memory);
+    private ScheduleAtFixedRateStory(@NotNull final Story<? extends T> story,
+        final long initialDelay, final long period, @NotNull final TimeUnit unit,
+        @NotNull final Memory memory) {
       mInputActor = story.getActor();
       mInitialDelay = Math.max(initialDelay, 0);
       mPeriod = ConstantConditions.positive("period", period);
       mUnit = ConstantConditions.notNull("unit", unit);
+      mMemory = ConstantConditions.notNull("memory", memory);
       final String actorId = (mActor = BackStage.newActor(new PlayScript(Setting.get()) {
 
         @NotNull
@@ -2681,11 +2715,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         }
       })).getId();
       mInputOptions = new Options().withReceiptId(actorId).withThread(actorId + ":input");
-    }
-
-    public void run() {
-      mInputsPending = true;
-      mInputActor.tell(NEXT, mInputOptions, mActor);
     }
 
     private void done(@NotNull final Context context) {
@@ -2861,6 +2890,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       }
     }
 
+    public void run() {
+      mInputsPending = true;
+      mInputActor.tell(NEXT, mInputOptions, mActor);
+    }
+
     @NotNull
     Actor getActor() {
       return mActor;
@@ -2883,14 +2917,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private boolean mInputsPending;
     private ScheduledFuture<?> mScheduledFuture;
 
-    private ScheduleWithFixedDelayStory(@NotNull final Memory memory,
-        @NotNull final Story<? extends T> story, final long initialDelay, final long delay,
-        @NotNull final TimeUnit unit) {
-      mMemory = ConstantConditions.notNull("memory", memory);
+    private ScheduleWithFixedDelayStory(@NotNull final Story<? extends T> story,
+        final long initialDelay, final long delay, @NotNull final TimeUnit unit,
+        @NotNull final Memory memory) {
       mInputActor = story.getActor();
       mInitialDelay = Math.max(initialDelay, 0);
       mDelay = ConstantConditions.positive("delay", delay);
       mUnit = ConstantConditions.notNull("unit", unit);
+      mMemory = ConstantConditions.notNull("memory", memory);
       final String actorId = (mActor = BackStage.newActor(new PlayScript(Setting.get()) {
 
         @NotNull
@@ -3147,10 +3181,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final List<Actor> mInputActors;
 
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
-    private UnaryStory(@NotNull final Memory memory, @NotNull final Story<? extends T1> firstStory,
+    private UnaryStory(@NotNull final Story<? extends T1> firstStory,
         @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-        @NotNull final UnaryFunction<? super T1, ? extends Story<R>> effectHandler) {
-      super(memory, conditionHandler, 1);
+        @NotNull final UnaryFunction<? super T1, ? extends Story<R>> effectHandler,
+        @NotNull final Memory memory) {
+      super(conditionHandler, 1, memory);
       mInputActors = Arrays.asList(firstStory.getActor());
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
     }
@@ -3335,9 +3370,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final List<Actor> mInputActors;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    private WatchStory(@NotNull final Memory memory, @NotNull final Story<? extends T> story,
-        @NotNull final EventObserver<? super T> eventObserver) {
-      super(memory, INFINITE_LOOP, 1);
+    private WatchStory(@NotNull final Story<? extends T> story,
+        @NotNull final EventObserver<? super T> eventObserver, @NotNull final Memory memory) {
+      super(INFINITE_LOOP, 1, memory);
       mInputActors = Collections.singletonList(story.getActor());
       mEventObserver = ConstantConditions.notNull("eventObserver", eventObserver);
     }
