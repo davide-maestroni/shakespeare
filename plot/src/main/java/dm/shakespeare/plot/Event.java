@@ -720,6 +720,7 @@ public abstract class Event<T> {
           eventNarrator.setActor(context.getSelf());
           Object effect = eventNarrator.takeEffect();
           if (effect != null) {
+            eventNarrator.close();
             if ((effect == NULL) || (effect == STOP)) {
               effect = null;
             }
@@ -754,16 +755,20 @@ public abstract class Event<T> {
           context.setBehavior(new DoneBehavior(conflict));
 
         } else if (message == Narrator.AVAILABLE) {
-          Object effect = mEventNarrator.takeEffect();
-          if ((effect == NULL) || (effect == STOP)) {
-            effect = null;
+          final Narrator<T> eventNarrator = mEventNarrator;
+          Object effect = eventNarrator.takeEffect();
+          if (effect != null) {
+            eventNarrator.close();
+            if ((effect == NULL) || (effect == STOP)) {
+              effect = null;
+            }
+            final Actor self = context.getSelf();
+            for (final Sender sender : mSenders.values()) {
+              sender.getSender().tell(effect, sender.getOptions(), self);
+            }
+            mSenders = null;
+            context.setBehavior(new DoneBehavior(effect));
           }
-          final Actor self = context.getSelf();
-          for (final Sender sender : mSenders.values()) {
-            sender.getSender().tell(effect, sender.getOptions(), self);
-          }
-          mSenders = null;
-          context.setBehavior(new DoneBehavior(effect));
         }
         envelop.preventReceipt();
       }
