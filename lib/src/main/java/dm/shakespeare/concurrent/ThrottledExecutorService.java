@@ -4,7 +4,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -87,13 +86,12 @@ class ThrottledExecutorService extends AbstractExecutorService implements Queued
    */
   private class ThrottledRunnable implements Runnable {
 
+    @SuppressWarnings("unchecked")
     public void run() {
       final Runnable runnable;
       synchronized (mMutex) {
-        try {
-          runnable = mQueue.removeFirst();
-
-        } catch (final NoSuchElementException ignored) {
+        runnable = mQueue.poll();
+        if (runnable == null) {
           --mPendingCount;
           return;
         }

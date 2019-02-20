@@ -103,6 +103,116 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     ++mSize;
   }
 
+  /**
+   * Removes all the elements from this queue and put them into the specified array, starting from
+   * {@code dstPos} position.
+   * <br>
+   * If the array is bigger than the required length, the remaining elements will stay untouched,
+   * and the number of transferred data will be returned.
+   * <br>
+   * On the contrary, if the array is not big enough to contain all the data, only the fitting
+   * number of elements will be transferred, and a negative number, whose absolute value represents
+   * the number of data still remaining in the queue, will be returned.
+   * <br>
+   * If the queue is empty, {@code 0} will be returned.
+   *
+   * @param dst     the destination array.
+   * @param destPos the destination position in the array.
+   * @param <T>     the array component type.
+   * @return the number of transferred elements or the negated number of elements still remaining
+   * in the queue.
+   */
+  @SuppressWarnings("unchecked")
+  public <T> int drainTo(@NotNull final T[] dst, final int destPos) {
+    final Object[] data = mData;
+    final int mask = mMask;
+    final int last = mLast;
+    final int length = dst.length;
+    int i = mFirst;
+    int n = destPos;
+    while (i != last) {
+      if (n == length) {
+        mFirst = i;
+        return -(mSize -= (n - destPos));
+      }
+      dst[n++] = (T) data[i];
+      data[i] = null;
+      i = (i + 1) & mask;
+    }
+    mFirst = 0;
+    mLast = 0;
+    mSize = 0;
+    return (n - destPos);
+  }
+
+  @SuppressWarnings("unchecked")
+  public <T> int drainTo(@NotNull final T[] dst, final int destPos, final int maxElements) {
+    final Object[] data = mData;
+    final int mask = mMask;
+    final int last = mLast;
+    final int length = dst.length;
+    int i = mFirst;
+    int n = destPos;
+    int c = 0;
+    while (i != last) {
+      if ((n == length) || (++c > maxElements)) {
+        mFirst = i;
+        return -(mSize -= (n - destPos));
+      }
+      dst[n++] = (T) data[i];
+      data[i] = null;
+      i = (i + 1) & mask;
+    }
+    mFirst = 0;
+    mLast = 0;
+    mSize = 0;
+    return (n - destPos);
+  }
+
+  /**
+   * Removes all the elements from this queue and add them to the specified collection.
+   *
+   * @param collection the collection to fill.
+   */
+  @SuppressWarnings("unchecked")
+  public void drainTo(@NotNull final Collection<? super E> collection) {
+    final Object[] data = mData;
+    final int mask = mMask;
+    final int last = mLast;
+    int i = mFirst;
+    while (i != last) {
+      collection.add((E) data[i]);
+      data[i] = null;
+      i = (i + 1) & mask;
+    }
+    mFirst = 0;
+    mLast = 0;
+    mSize = 0;
+  }
+
+  @SuppressWarnings("unchecked")
+  public void drainTo(@NotNull final Collection<? super E> collection, final int maxElements) {
+    final Object[] data = mData;
+    final int mask = mMask;
+    final int last = mLast;
+    int i = mFirst;
+    int c = 0;
+    while (i != last) {
+      if (c >= maxElements) {
+        mFirst = i;
+        mSize -= c;
+        return;
+      }
+      ++c;
+      collection.add((E) data[i]);
+      data[i] = null;
+      i = (i + 1) & mask;
+    }
+    mFirst = 0;
+    mLast = 0;
+    mSize = 0;
+  }
+
   // TODO: 08/08/2017 javadoc
   @SuppressWarnings("unchecked")
   public E get(final int index) {
@@ -186,18 +296,19 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     if (isEmpty()) {
       return null;
     }
-    return removeFirst();
+    return unsafeRemoveFirst();
   }
 
   public E element() {
     return peekFirst();
   }
 
+  @SuppressWarnings("unchecked")
   public E peek() {
     if (isEmpty()) {
       return null;
     }
-    return peekFirst();
+    return (E) mData[mFirst];
   }
 
   /**
@@ -245,18 +356,11 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
    * @return the element.
    * @throws NoSuchElementException if the queue is empty.
    */
-  @SuppressWarnings("unchecked")
   public E removeFirst() {
     if (isEmpty()) {
       throw new NoSuchElementException();
     }
-    final Object[] data = mData;
-    final int first = mFirst;
-    mFirst = (first + 1) & mMask;
-    final Object output = data[first];
-    data[first] = null;
-    --mSize;
-    return (E) output;
+    return unsafeRemoveFirst();
   }
 
   /**
@@ -265,19 +369,11 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
    * @return the element.
    * @throws NoSuchElementException if the queue is empty.
    */
-  @SuppressWarnings("unchecked")
   public E removeLast() {
     if (isEmpty()) {
       throw new NoSuchElementException();
     }
-    final Object[] data = mData;
-    final int mask = mMask;
-    final int newLast = (mLast - 1) & mask;
-    mLast = newLast;
-    final Object output = data[newLast];
-    data[newLast] = null;
-    --mSize;
-    return (E) output;
+    return unsafeRemoveLast();
   }
 
   // TODO: 08/08/2017 javadoc
@@ -291,69 +387,6 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     final E old = (E) data[pos];
     data[pos] = element;
     return old;
-  }
-
-  /**
-   * Removes all the elements from this queue and put them into the specified array, starting from
-   * {@code dstPos} position.
-   * <br>
-   * If the array is bigger than the required length, the remaining elements will stay untouched,
-   * and the number of transferred data will be returned.
-   * <br>
-   * On the contrary, if the array is not big enough to contain all the data, only the fitting
-   * number of elements will be transferred, and a negative number, whose absolute value represents
-   * the number of data still remaining in the queue, will be returned.
-   * <br>
-   * If the queue is empty, {@code 0} will be returned.
-   *
-   * @param dst     the destination array.
-   * @param destPos the destination position in the array.
-   * @param <T>     the array component type.
-   * @return the number of transferred elements or the negated number of elements still remaining
-   * in the queue.
-   */
-  @SuppressWarnings("unchecked")
-  public <T> int transferTo(@NotNull final T[] dst, final int destPos) {
-    final Object[] data = mData;
-    final int mask = mMask;
-    final int last = mLast;
-    final int length = dst.length;
-    int i = mFirst;
-    int n = destPos;
-    while (i != last) {
-      if (n == length) {
-        mFirst = i;
-        return -(mSize -= (n - destPos));
-      }
-      dst[n++] = (T) data[i];
-      data[i] = null;
-      i = (i + 1) & mask;
-    }
-    mFirst = 0;
-    mLast = 0;
-    mSize = 0;
-    return (n - destPos);
-  }
-
-  /**
-   * Removes all the elements from this queue and add them to the specified collection.
-   *
-   * @param collection the collection to fill.
-   */
-  @SuppressWarnings("unchecked")
-  public void transferTo(@NotNull final Collection<? super E> collection) {
-    final Object[] data = mData;
-    final int mask = mMask;
-    final int last = mLast;
-    int i = mFirst;
-    while (i != last) {
-      collection.add((E) data[i]);
-      data[i] = null;
-      i = (i + 1) & mask;
-    }
-    mFirst = 0;
-    mLast = 0;
-    mSize = 0;
   }
 
   @NotNull
@@ -426,6 +459,29 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     }
     --mSize;
     return isForward;
+  }
+
+  @SuppressWarnings("unchecked")
+  private E unsafeRemoveFirst() {
+    final Object[] data = mData;
+    final int first = mFirst;
+    mFirst = (first + 1) & mMask;
+    final Object output = data[first];
+    data[first] = null;
+    --mSize;
+    return (E) output;
+  }
+
+  @SuppressWarnings("unchecked")
+  private E unsafeRemoveLast() {
+    final Object[] data = mData;
+    final int mask = mMask;
+    final int newLast = (mLast - 1) & mask;
+    mLast = newLast;
+    final Object output = data[newLast];
+    data[newLast] = null;
+    --mSize;
+    return (E) output;
   }
 
   /**
