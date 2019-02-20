@@ -90,17 +90,6 @@ public abstract class Event<T> {
   }
 
   @NotNull
-  public static <T> Event<T> ofNarration(@NotNull final NullaryFunction<T> effectCreator) {
-    ConstantConditions.notNull("effectCreator", effectCreator);
-    return ofEvent(new NullaryFunction<Event<T>>() {
-
-      public Event<T> call() throws Exception {
-        return Event.ofEffect(effectCreator.call());
-      }
-    });
-  }
-
-  @NotNull
   public static <T> Event<T> ofNull() {
     return ofEffect(null);
   }
@@ -194,14 +183,14 @@ public abstract class Event<T> {
   }
 
   @NotNull
-  public Event<T> thenWatch(@NotNull final EventObserver<? super T> effectHandler) {
+  public Event<T> watch(@NotNull final EventObserver<? super T> effectHandler) {
     return new WatchEvent<T>(this, effectHandler);
   }
 
   @NotNull
-  public Event<T> thenWatch(@Nullable final Observer<? super T> effectObserver,
+  public Event<T> watch(@Nullable final Observer<? super T> effectObserver,
       @Nullable final Observer<? super Throwable> incidentObserver) {
-    return thenWatch(new DefaultEventObserver<T>(effectObserver, incidentObserver));
+    return watch(new DefaultEventObserver<T>(effectObserver, incidentObserver));
   }
 
   @NotNull

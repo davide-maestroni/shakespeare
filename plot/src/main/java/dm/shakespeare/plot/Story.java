@@ -85,6 +85,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
+  public static <T> Story<T> ofEffects(@NotNull final NullaryFunction<T> effectsCreator) {
+    return ofEffects(new CreatorIterable<T>(effectsCreator));
+  }
+
+  @NotNull
   public static <T> Story<T> ofEmpty() {
     return ofEffects(Collections.<T>emptyList());
   }
@@ -128,11 +133,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public static <T> Story<T> ofNarrations(@NotNull final Narrator<T> storyNarrator,
       @NotNull final Memory memory) {
     return new NarratorStory<T>(storyNarrator, memory);
-  }
-
-  @NotNull
-  public static <T> Story<T> ofNarrations(@NotNull final NullaryFunction<T> effectsCreator) {
-    return ofEffects(new CreatorIterable<T>(effectsCreator));
   }
 
   @NotNull
@@ -235,6 +235,19 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
+  public <R> Story<R> blend(final int maxConcurrency,
+      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
+    return blend(maxConcurrency, effectHandler, new ListMemory());
+  }
+
+  @NotNull
+  public <R> Story<R> blend(final int maxConcurrency,
+      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler,
+      @NotNull final Memory memory) {
+    return new BlendStory<T, R>(this, maxConcurrency, effectHandler, memory);
+  }
+
+  @NotNull
   @Override
   public Story<T> eventually(@NotNull final Action eventualAction) {
     return eventually(eventualAction, new ListMemory());
@@ -243,6 +256,19 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   public Story<T> eventually(@NotNull final Action eventualAction, @NotNull final Memory memory) {
     return new EventualStory<T>(this, eventualAction, memory);
+  }
+
+  @NotNull
+  public <R> Story<R> join(final int maxConcurrency, final int maxEventWindow,
+      @NotNull final UnaryFunction<? super T, ? extends Event<R>> effectHandler) {
+    return join(maxConcurrency, maxEventWindow, effectHandler, new ListMemory());
+  }
+
+  @NotNull
+  public <R> Story<R> join(final int maxConcurrency, final int maxEventWindow,
+      @NotNull final UnaryFunction<? super T, ? extends Event<R>> effectHandler,
+      @NotNull final Memory memory) {
+    return new JoinStory<T, R>(this, maxConcurrency, maxEventWindow, effectHandler, memory);
   }
 
   public void playAll(@NotNull final EventObserver<? super T> eventObserver) {
@@ -342,55 +368,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <R> Story<R> thenBlend(final int maxConcurrency,
-      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
-    return thenBlend(maxConcurrency, effectHandler, new ListMemory());
-  }
-
-  @NotNull
-  public <R> Story<R> thenBlend(final int maxConcurrency,
-      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler,
-      @NotNull final Memory memory) {
-    return new BlendStory<T, R>(this, maxConcurrency, effectHandler, memory);
-  }
-
-  @NotNull
-  public <R> Story<R> thenJoin(final int maxConcurrency, final int maxEventWindow,
-      @NotNull final UnaryFunction<? super T, ? extends Event<R>> effectHandler) {
-    return thenJoin(maxConcurrency, maxEventWindow, effectHandler, new ListMemory());
-  }
-
-  @NotNull
-  public <R> Story<R> thenJoin(final int maxConcurrency, final int maxEventWindow,
-      @NotNull final UnaryFunction<? super T, ? extends Event<R>> effectHandler,
-      @NotNull final Memory memory) {
-    return new JoinStory<T, R>(this, maxConcurrency, maxEventWindow, effectHandler, memory);
-  }
-
-  @NotNull
-  public Story<T> thenWatchEach(@NotNull final EventObserver<? super T> eventObserver) {
-    return thenWatchEach(eventObserver, new ListMemory());
-  }
-
-  @NotNull
-  public Story<T> thenWatchEach(@NotNull final EventObserver<? super T> eventObserver,
-      @NotNull final Memory memory) {
-    return new WatchStory<T>(this, eventObserver, memory);
-  }
-
-  @NotNull
-  public Story<T> thenWatchEach(@Nullable final Observer<? super T> effectObserver,
-      @Nullable final Observer<? super Throwable> incidentObserver) {
-    return thenWatchEach(new DefaultEventObserver<T>(effectObserver, incidentObserver));
-  }
-
-  @NotNull
-  public Story<T> thenWatchEach(@Nullable final Observer<? super T> effectObserver,
-      @Nullable final Observer<? super Throwable> incidentObserver, @NotNull final Memory memory) {
-    return thenWatchEach(new DefaultEventObserver<T>(effectObserver, incidentObserver), memory);
-  }
-
-  @NotNull
   public <R> Story<R> thenWhile(
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
@@ -416,6 +393,29 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       @NotNull final Memory memory) {
     return thenWhile(new LooperConditionHandler(storyLooper),
         new LooperEffectHandler<T, R>(storyLooper), memory);
+  }
+
+  @NotNull
+  public Story<T> watchEach(@NotNull final EventObserver<? super T> eventObserver) {
+    return watchEach(eventObserver, new ListMemory());
+  }
+
+  @NotNull
+  public Story<T> watchEach(@NotNull final EventObserver<? super T> eventObserver,
+      @NotNull final Memory memory) {
+    return new WatchStory<T>(this, eventObserver, memory);
+  }
+
+  @NotNull
+  public Story<T> watchEach(@Nullable final Observer<? super T> effectObserver,
+      @Nullable final Observer<? super Throwable> incidentObserver) {
+    return watchEach(new DefaultEventObserver<T>(effectObserver, incidentObserver));
+  }
+
+  @NotNull
+  public Story<T> watchEach(@Nullable final Observer<? super T> effectObserver,
+      @Nullable final Observer<? super Throwable> incidentObserver, @NotNull final Memory memory) {
+    return watchEach(new DefaultEventObserver<T>(effectObserver, incidentObserver), memory);
   }
 
   public interface Memory extends Iterable<Object> {
