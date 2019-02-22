@@ -62,7 +62,7 @@ public class TestExecutorService extends AbstractExecutorService {
   public List<Runnable> shutdownNow() {
     mIsShutdown = true;
     final ArrayList<Runnable> runnables = new ArrayList<Runnable>();
-    mRunnables.transferTo(runnables);
+    mRunnables.drainTo(runnables);
     return runnables;
   }
 

@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import dm.shakespeare.util.ConstantConditions;
+
 /**
  * Created by davide-maestroni on 05/28/2018.
  */
@@ -25,8 +27,8 @@ class TrampolineExecutor extends AbstractExecutorService {
     return sInstance;
   }
 
-  public void execute(@NotNull final Runnable runnable) {
-    LocalExecutor.run(runnable);
+  public void execute(@NotNull final Runnable command) {
+    LocalExecutor.run(ConstantConditions.notNull("command", command));
   }
 
   public void shutdown() {

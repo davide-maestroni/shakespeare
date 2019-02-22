@@ -122,7 +122,7 @@ class LocalContext implements Context {
       mRestartRunnable = new Runnable() {
 
         public void run() {
-          mRunner = Thread.currentThread();
+          final Thread runner = (mRunner = Thread.currentThread());
           try {
             mBehaviorWrapper.onRestart(LocalContext.this);
 
@@ -130,7 +130,7 @@ class LocalContext implements Context {
             mRunner = null;
           }
 
-          if (Thread.currentThread().isInterrupted()) {
+          if (runner.isInterrupted()) {
             mLogger.wrn("[%s] thread has been interrupted!", mActor);
             mBehaviorWrapper.onStop(LocalContext.this);
           }
@@ -170,12 +170,7 @@ class LocalContext implements Context {
   }
 
   void message(final Object message, @NotNull final Envelop envelop) {
-    final Options options = envelop.getOptions();
-    if (isDismissed() && (options.getReceiptId() != null)) {
-      reply(envelop.getSender(), new Bounce(message, options), options.threadOnly());
-      return;
-    }
-    mRunner = Thread.currentThread();
+    final Thread runner = (mRunner = Thread.currentThread());
     try {
       mBehaviorWrapper.onMessage(message, envelop, this);
 
@@ -183,7 +178,7 @@ class LocalContext implements Context {
       mRunner = null;
     }
 
-    if (Thread.currentThread().isInterrupted()) {
+    if (runner.isInterrupted()) {
       mLogger.wrn("[%s] thread has been interrupted!", mActor);
       mBehaviorWrapper.onStop(this);
     }
@@ -199,7 +194,7 @@ class LocalContext implements Context {
       replyAll(envelop.getSender(), bounces, options.threadOnly());
       return;
     }
-    mRunner = Thread.currentThread();
+    final Thread runner = (mRunner = Thread.currentThread());
     try {
       for (final Object message : messages) {
         mBehaviorWrapper.onMessage(message, envelop, this);
@@ -209,7 +204,7 @@ class LocalContext implements Context {
       mRunner = null;
     }
 
-    if (Thread.currentThread().isInterrupted()) {
+    if (runner.isInterrupted()) {
       mLogger.wrn("[%s] thread has been interrupted!", mActor);
       mBehaviorWrapper.onStop(this);
     }
@@ -285,10 +280,6 @@ class LocalContext implements Context {
       mBehaviorWrapper = new BehaviorWrapper();
       super.onStart(context);
       super.onMessage(message, envelop, context);
-      if (Thread.currentThread().isInterrupted()) {
-        mLogger.wrn("[%s] thread has been interrupted!", mActor);
-        onStop(context);
-      }
     }
 
     @Override
@@ -301,14 +292,14 @@ class LocalContext implements Context {
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Context context) {
       mLogger.dbg("[%s] handling new message: envelop=%s - message=%s", mActor, envelop, message);
-      final Options options = envelop.getOptions();
       if (isDismissed()) {
+        final Options options = envelop.getOptions();
         if (options.getReceiptId() != null) {
           reply(envelop.getSender(), new Bounce(message, options), options.threadOnly());
         }
         return;
       }
-
+      final Options options = envelop.getOptions();
       if (options.getReceiptId() != null) {
         try {
           mBehavior.onMessage(message, envelop, context);

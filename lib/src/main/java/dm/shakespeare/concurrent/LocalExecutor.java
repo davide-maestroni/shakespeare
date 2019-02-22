@@ -57,42 +57,20 @@ class LocalExecutor {
   }
 
   private void addCommand(@NotNull final Runnable command) {
-    final CQueue<Runnable> commands = mCommands;
+    mCommands.add(command);
     if (!mIsRunning) {
-      mIsRunning = true;
-      try {
-        if (commands.isEmpty()) {
-          try {
-            command.run();
-
-          } catch (final Throwable t) {
-            sLogger.wrn(t, "suppressed exception");
-            if (Thread.currentThread().isInterrupted()) {
-              return;
-            }
-          }
-
-        } else {
-          commands.add(command);
-        }
-        run();
-
-      } finally {
-        mIsRunning = false;
-      }
-
-    } else {
-      commands.add(command);
+      run();
     }
   }
 
   private void run() {
     mIsRunning = true;
-    final CQueue<Runnable> commands = mCommands;
+    @SuppressWarnings("UnnecessaryLocalVariable") final CQueue<Runnable> commands = mCommands;
     try {
-      while (!commands.isEmpty()) {
+      Runnable command;
+      while ((command = commands.poll()) != null) {
         try {
-          commands.removeFirst().run();
+          command.run();
 
         } catch (final Throwable t) {
           sLogger.wrn(t, "suppressed exception");
