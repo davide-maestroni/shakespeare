@@ -102,6 +102,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
+  @SuppressWarnings("unchecked")
+  public static <T> Story<T> ofIncidents(
+      @NotNull final NullaryFunction<? extends Throwable> incidentsCreator) {
+    return ofIncidents(
+        new CreatorIterable<Throwable>((NullaryFunction<Throwable>) incidentsCreator));
+  }
+
+  @NotNull
   public static Story<ByteBuffer> ofInputStream(@NotNull final InputStream inputStream) {
     return ofInputStream(inputStream, DEFAULT_BUFFER_CREATOR, new ListMemory());
   }
@@ -228,6 +236,18 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   private static boolean isSameThread(@Nullable final String expectedThread,
       @Nullable final String actualThread) {
     return expectedThread.equals(actualThread);
+  }
+
+  @NotNull
+  public <R> Story<R> all(
+      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
+    return all(effectHandler, new ListMemory());
+  }
+
+  @NotNull
+  public <R> Story<R> all(@NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler,
+      @NotNull final Memory memory) {
+    return new AllStory<T, R>(this, effectHandler, memory);
   }
 
   @NotNull
@@ -364,27 +384,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <R> Story<R> thenAll(
-      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
-    return thenAll(effectHandler, new ListMemory());
-  }
-
-  @NotNull
-  public <R> Story<R> thenAll(
-      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler,
-      @NotNull final Memory memory) {
-    return new AllStory<T, R>(this, effectHandler, memory);
-  }
-
-  @NotNull
-  public <R> Story<R> thenWhile(
+  public <R> Story<R> until(
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
     return when(this, conditionHandler, effectHandler);
   }
 
   @NotNull
-  public <R> Story<R> thenWhile(
+  public <R> Story<R> until(
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler,
       @NotNull final Memory memory) {
@@ -392,15 +399,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <R> Story<R> thenWhile(@NotNull final StoryLooper<? super T, ? extends R> storyLooper) {
-    return thenWhile(new LooperConditionHandler(storyLooper),
+  public <R> Story<R> until(@NotNull final StoryLooper<? super T, ? extends R> storyLooper) {
+    return until(new LooperConditionHandler(storyLooper),
         new LooperEffectHandler<T, R>(storyLooper));
   }
 
   @NotNull
-  public <R> Story<R> thenWhile(@NotNull final StoryLooper<? super T, ? extends R> storyLooper,
+  public <R> Story<R> until(@NotNull final StoryLooper<? super T, ? extends R> storyLooper,
       @NotNull final Memory memory) {
-    return thenWhile(new LooperConditionHandler(storyLooper),
+    return until(new LooperConditionHandler(storyLooper),
         new LooperEffectHandler<T, R>(storyLooper), memory);
   }
 

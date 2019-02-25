@@ -13,40 +13,32 @@ import dm.shakespeare.actor.Options;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.message.QuotaExceeded;
 import dm.shakespeare.util.ConstantConditions;
-import dm.shakespeare.util.Iterables;
 
 /**
  * Created by davide-maestroni on 08/03/2018.
  */
 class LocalActor implements Actor {
 
-  private static final QuotaNotifier DUMMY_NOTIFIER = new QuotaNotifier() {
+  private static final QuotaHandler DUMMY_HANDLER = new QuotaHandler() {
 
-    public void consume() {
+    public boolean consumeQuota() {
+      return true;
     }
 
-    public boolean exceedsQuota(final int size) {
-      return false;
-    }
-
-    public void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
-    }
-
-    public void quotaExceeded(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
+    public void releaseQuota() {
     }
   };
 
   private final LocalContext mContext;
   private final String mId;
   private final Logger mLogger;
-  private final int mQuota;
-  private final QuotaNotifier mQuotaNotifier;
+  private final QuotaHandler mQuotaHandler;
 
   LocalActor(@NotNull final String id, final int quota, @NotNull final LocalContext context) {
     mId = ConstantConditions.notNull("id", id);
     mContext = ConstantConditions.notNull("context", context);
-    mQuotaNotifier = ((mQuota = ConstantConditions.positive("quota", quota)) < Integer.MAX_VALUE)
-        ? new DefaultQuotaNotifier() : DUMMY_NOTIFIER;
+    mQuotaHandler = (quota < Integer.MAX_VALUE) ? new DefaultQuotaHandler(
+        ConstantConditions.positive("quota", quota)) : DUMMY_HANDLER;
     mLogger = mContext.getLogger();
   }
 
@@ -89,18 +81,12 @@ class LocalActor implements Actor {
       @NotNull final Actor sender) {
     mLogger.dbg("[%s] sending: options=%s - sender=%s - message=%s", this, options, sender,
         message);
-    final QuotaNotifier quotaNotifier = mQuotaNotifier;
-    if (quotaNotifier.exceedsQuota(1)) {
-      mLogger.wrn("[%s] quota exceeded: options=%s - sender=%s - message=%s", this, options, sender,
-          message);
-      quotaNotifier.quotaExceeded(message, new BounceEnvelop(sender, options));
-
-    } else {
+    if (mQuotaHandler.consumeQuota()) {
       try {
         mContext.getActorExecutor().execute(new DefaultEnvelop(sender, options) {
 
           void open() {
-            mQuotaNotifier.consume();
+            mQuotaHandler.releaseQuota();
             mContext.message(message, this);
           }
         });
@@ -110,8 +96,13 @@ class LocalActor implements Actor {
       } catch (final RejectedExecutionException e) {
         mLogger.wrn(e, "[%s] failed to send: options=%s - sender=%s - message=%s", this, options,
             sender, message);
-        quotaNotifier.quotaExceeded(message, new BounceEnvelop(sender, options));
+        quotaExceeded(message, new BounceEnvelop(sender, options));
       }
+
+    } else {
+      mLogger.wrn("[%s] quota exceeded: options=%s - sender=%s - message=%s", this, options, sender,
+          message);
+      quotaExceeded(message, new BounceEnvelop(sender, options));
     }
     return this;
   }
@@ -121,18 +112,12 @@ class LocalActor implements Actor {
       @NotNull final Actor sender) {
     mLogger.dbg("[%s] sending all: options=%s - sender=%s - message=%s", this, options, sender,
         messages);
-    final QuotaNotifier quotaNotifier = mQuotaNotifier;
-    if (quotaNotifier.exceedsQuota(Iterables.size(messages))) {
-      mLogger.wrn("[%s] quota exceeded all: options=%s - sender=%s - message=%s", this, options,
-          sender, messages);
-      quotaNotifier.quotaExceeded(messages, new BounceEnvelop(sender, options));
-
-    } else {
+    if (mQuotaHandler.consumeQuota()) {
       try {
         mContext.getActorExecutor().execute(new DefaultEnvelop(sender, options) {
 
           void open() {
-            mQuotaNotifier.consume();
+            mQuotaHandler.releaseQuota();
             mContext.messages(messages, this);
           }
         });
@@ -142,8 +127,13 @@ class LocalActor implements Actor {
       } catch (final RejectedExecutionException e) {
         mLogger.wrn(e, "[%s] failed to send all: options=%s - sender=%s - message=%s", this,
             options, sender, messages);
-        quotaNotifier.quotaExceeded(messages, new BounceEnvelop(sender, options));
+        quotaExceeded(messages, new BounceEnvelop(sender, options));
       }
+
+    } else {
+      mLogger.wrn("[%s] quota exceeded all: options=%s - sender=%s - message=%s", this, options,
+          sender, messages);
+      quotaExceeded(messages, new BounceEnvelop(sender, options));
     }
     return this;
   }
@@ -153,15 +143,30 @@ class LocalActor implements Actor {
     return super.toString() + ":" + mId;
   }
 
-  private interface QuotaNotifier {
+  private void quotaExceeded(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
+    final Options options = envelop.getOptions();
+    if (options.getReceiptId() != null) {
+      final ArrayList<Object> bounces = new ArrayList<Object>();
+      for (final Object message : messages) {
+        bounces.add(new QuotaExceeded(message, options));
+      }
+      mContext.replyAll(envelop.getSender(), bounces, options.threadOnly());
+    }
+  }
 
-    void consume();
+  private void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
+    final Options options = envelop.getOptions();
+    if (options.getReceiptId() != null) {
+      mContext.reply(envelop.getSender(), new QuotaExceeded(message, options),
+          options.threadOnly());
+    }
+  }
 
-    boolean exceedsQuota(int size);
+  private interface QuotaHandler {
 
-    void quotaExceeded(Object message, @NotNull Envelop envelop);
+    boolean consumeQuota();
 
-    void quotaExceeded(@NotNull Iterable<?> messages, @NotNull Envelop envelop);
+    void releaseQuota();
   }
 
   private static class BounceEnvelop extends DefaultEnvelop {
@@ -174,40 +179,26 @@ class LocalActor implements Actor {
     }
   }
 
-  private class DefaultQuotaNotifier implements QuotaNotifier {
+  private static class DefaultQuotaHandler implements QuotaHandler {
 
-    private AtomicInteger mCount = new AtomicInteger();
+    private final AtomicInteger mCount = new AtomicInteger();
+    private final int mQuota;
 
-    public void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
-      final Options options = envelop.getOptions();
-      if (options.getReceiptId() != null) {
-        mContext.reply(envelop.getSender(), new QuotaExceeded(message, options),
-            options.threadOnly());
-      }
+    private DefaultQuotaHandler(final int quota) {
+      mQuota = quota;
     }
 
-    public void quotaExceeded(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
-      final Options options = envelop.getOptions();
-      if (options.getReceiptId() != null) {
-        final ArrayList<Object> bounces = new ArrayList<Object>();
-        for (final Object message : messages) {
-          bounces.add(new QuotaExceeded(message, options));
-        }
-        mContext.replyAll(envelop.getSender(), bounces, options.threadOnly());
-      }
-    }
-
-    public void consume() {
-      mCount.decrementAndGet();
-    }
-
-    public boolean exceedsQuota(final int size) {
+    public boolean consumeQuota() {
       final AtomicInteger count = mCount;
-      if (count.addAndGet(size) > mQuota) {
-        count.addAndGet(-size);
-        return true;
+      if (count.incrementAndGet() > mQuota) {
+        count.decrementAndGet();
+        return false;
       }
-      return false;
+      return true;
+    }
+
+    public void releaseQuota() {
+      mCount.decrementAndGet();
     }
   }
 }
