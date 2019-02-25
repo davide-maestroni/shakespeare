@@ -267,17 +267,17 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     return new JoinStory<T, R>(this, maxConcurrency, maxEventWindow, effectHandler, memory);
   }
 
-  public void playAll(@NotNull final EventObserver<? super T> eventObserver) {
-    playAll(new EventStoryObserver<T>(eventObserver));
+  public void playEach(@NotNull final EventObserver<? super T> eventObserver) {
+    playEach(new EventStoryObserver<T>(eventObserver));
   }
 
-  public void playAll(@Nullable final Observer<? super T> effectObserver,
+  public void playEach(@Nullable final Observer<? super T> effectObserver,
       @Nullable final Observer<? super Throwable> incidentObserver,
       @Nullable final Action endAction) {
-    playAll(new DefaultStoryObserver<T>(effectObserver, incidentObserver, endAction));
+    playEach(new DefaultStoryObserver<T>(effectObserver, incidentObserver, endAction));
   }
 
-  public void playAll(@NotNull final StoryObserver<? super T> storyObserver) {
+  public void playEach(@NotNull final StoryObserver<? super T> storyObserver) {
     final Actor actor = BackStage.newActor(new StoryObserverScript<T>(storyObserver));
     final String actorId = actor.getId();
     getActor().tell(NEXT, new Options().withReceiptId(actorId).withThread(actorId), actor);
