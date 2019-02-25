@@ -12,7 +12,7 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 05/28/2018.
  */
-class TrampolineExecutor extends AbstractExecutorService {
+class TrampolineExecutor extends AbstractExecutorService implements QueuedExecutorService {
 
   private static final TrampolineExecutor sInstance = new TrampolineExecutor();
 
@@ -28,7 +28,11 @@ class TrampolineExecutor extends AbstractExecutorService {
   }
 
   public void execute(@NotNull final Runnable command) {
-    LocalExecutor.run(ConstantConditions.notNull("command", command));
+    LocalExecutor.execute(ConstantConditions.notNull("command", command));
+  }
+
+  public void executeNext(@NotNull final Runnable command) {
+    LocalExecutor.executeNext(ConstantConditions.notNull("command", command));
   }
 
   public void shutdown() {

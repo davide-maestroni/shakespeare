@@ -58,12 +58,15 @@ public abstract class Event<T> {
         cache.put(NULL, event);
       }
 
-    } else {
+    } else if ((effect == Boolean.TRUE) || (effect == Boolean.FALSE)) {
       event = cache.get(effect);
       if (event == null) {
         event = new EffectEvent<T>(effect);
         cache.put(effect, event);
       }
+
+    } else {
+      event = new EffectEvent<T>(effect);
     }
     return event;
   }
@@ -281,6 +284,13 @@ public abstract class Event<T> {
       return mSetting;
     }
 
+    private void cancelInputActors(@NotNull final Context context) {
+      final Actor self = context.getSelf();
+      for (final Actor actor : getInputActors()) {
+        actor.tell(CANCEL, null, self);
+      }
+    }
+
     private void conflict(@NotNull final Conflict conflict, @NotNull final Context context) {
       try {
         final Actor conflictActor = getConflictActor(conflict);
@@ -364,28 +374,25 @@ public abstract class Event<T> {
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
 
+        } else if (isSameThread(mOutputOptions.getThread(), envelop.getOptions().getThread())) {
+          fail(Conflict.ofCancel(), context);
+
         } else {
-          final Options outputOptions = mOutputOptions;
-          if (isSameThread(outputOptions.getThread(), envelop.getOptions().getThread())) {
-            fail(Conflict.ofCancel(), context);
+          final String thread = envelop.getOptions().getThread();
+          if ((thread != null) && thread.startsWith(mInputThread)) {
+            if (++mInputCount == mInputs.length) {
+              final Conflict conflict = Conflict.ofCancel();
+              try {
+                final Actor conflictActor = getConflictActor(conflict);
+                if (conflictActor != null) {
+                  conflictActor.tell(CANCEL, null, context.getSelf());
+                }
+                fail(conflict, context);
 
-          } else {
-            final String thread = envelop.getOptions().getThread();
-            if ((thread != null) && thread.startsWith(mInputThread)) {
-              if (++mInputCount == mInputs.length) {
-                final Conflict conflict = Conflict.ofCancel();
-                try {
-                  final Actor conflictActor = getConflictActor(conflict);
-                  if (conflictActor != null) {
-                    conflictActor.tell(CANCEL, outputOptions, context.getSelf());
-                  }
-                  fail(conflict, context);
-
-                } catch (final Throwable t) {
-                  fail(new Conflict(t), context);
-                  if (t instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                  }
+              } catch (final Throwable t) {
+                fail(new Conflict(t), context);
+                if (t instanceof InterruptedException) {
+                  Thread.currentThread().interrupt();
                 }
               }
             }
@@ -405,7 +412,7 @@ public abstract class Event<T> {
           context.setBehavior(new InputBehavior());
 
         } else if (message == CANCEL) {
-          tellInputActors(CANCEL, context);
+          cancelInputActors(context);
           fail(Conflict.ofCancel(), context);
         }
         envelop.preventReceipt();
@@ -422,7 +429,7 @@ public abstract class Event<T> {
           mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
 
         } else if (message == CANCEL) {
-          tellInputActors(CANCEL, context);
+          cancelInputActors(context);
           context.setBehavior(new CancelBehavior());
 
         } else {
@@ -496,7 +503,7 @@ public abstract class Event<T> {
           mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
 
         } else if (message == CANCEL) {
-          tellInputActors(CANCEL, context);
+          cancelInputActors(context);
           context.setBehavior(new CancelBehavior());
 
         } else {
@@ -894,7 +901,7 @@ public abstract class Event<T> {
           context.setBehavior(new InputBehavior());
 
         } else if (message == CANCEL) {
-          mInputActor.tell(CANCEL, mInputOptions, mActor);
+          mInputActor.tell(CANCEL, null, mActor);
           fail(Conflict.ofCancel(), context);
         }
         envelop.preventReceipt();
@@ -910,7 +917,7 @@ public abstract class Event<T> {
           mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
 
         } else if (message == CANCEL) {
-          mInputActor.tell(CANCEL, mInputOptions, mActor);
+          mInputActor.tell(CANCEL, null, mActor);
           if (mInputPending) {
             context.setBehavior(new CancelBehavior());
 

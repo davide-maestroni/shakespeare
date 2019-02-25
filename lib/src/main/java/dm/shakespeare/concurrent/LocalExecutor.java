@@ -48,22 +48,33 @@ class LocalExecutor {
   }
 
   /**
-   * Runs the specified command.
+   * Executes the specified command.
    *
    * @param command the command.
    */
-  public static void run(@NotNull final Runnable command) {
-    sExecutor.get().addCommand(command);
+  public static void execute(@NotNull final Runnable command) {
+    sExecutor.get().enqueue(command);
   }
 
-  private void addCommand(@NotNull final Runnable command) {
+  public static void executeNext(@NotNull final Runnable command) {
+    sExecutor.get().enqueueNext(command);
+  }
+
+  private void enqueue(@NotNull final Runnable command) {
     mCommands.add(command);
     if (!mIsRunning) {
-      run();
+      execute();
     }
   }
 
-  private void run() {
+  private void enqueueNext(@NotNull final Runnable command) {
+    mCommands.addFirst(command);
+    if (!mIsRunning) {
+      execute();
+    }
+  }
+
+  private void execute() {
     mIsRunning = true;
     @SuppressWarnings("UnnecessaryLocalVariable") final CQueue<Runnable> commands = mCommands;
     try {
