@@ -264,34 +264,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <R> Story<R> doWhile(
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
-    return when(this, new DoWhileConditionHandler(conditionHandler), effectHandler);
-  }
-
-  @NotNull
-  public <R> Story<R> doWhile(
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler,
-      @NotNull final Memory memory) {
-    return when(this, new DoWhileConditionHandler(conditionHandler), effectHandler, memory);
-  }
-
-  @NotNull
-  public <R> Story<R> doWhile(@NotNull final StoryEvolver<? super T, ? extends R> storyEvolver) {
-    return whileDo(new DoWhileConditionHandler(new LooperConditionHandler(storyEvolver)),
-        new LooperEffectHandler<T, R>(storyEvolver));
-  }
-
-  @NotNull
-  public <R> Story<R> doWhile(@NotNull final StoryEvolver<? super T, ? extends R> storyEvolver,
-      @NotNull final Memory memory) {
-    return whileDo(new DoWhileConditionHandler(new LooperConditionHandler(storyEvolver)),
-        new LooperEffectHandler<T, R>(storyEvolver), memory);
-  }
-
-  @NotNull
   @Override
   public Story<T> eventually(@NotNull final Action eventualAction) {
     return eventually(eventualAction, new ListMemory());
@@ -495,6 +467,34 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
+  public <R> Story<R> until(
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
+      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
+    return when(this, conditionHandler, effectHandler);
+  }
+
+  @NotNull
+  public <R> Story<R> until(
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
+      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler,
+      @NotNull final Memory memory) {
+    return when(this, conditionHandler, effectHandler, memory);
+  }
+
+  @NotNull
+  public <R> Story<R> until(@NotNull final StoryEvolver<? super T, ? extends R> storyEvolver) {
+    return until(new LooperConditionHandler(storyEvolver),
+        new LooperEffectHandler<T, R>(storyEvolver));
+  }
+
+  @NotNull
+  public <R> Story<R> until(@NotNull final StoryEvolver<? super T, ? extends R> storyEvolver,
+      @NotNull final Memory memory) {
+    return until(new LooperConditionHandler(storyEvolver),
+        new LooperEffectHandler<T, R>(storyEvolver), memory);
+  }
+
+  @NotNull
   public Story<T> watchEach(@NotNull final EventObserver<? super T> eventObserver) {
     return watchEach(eventObserver, new ListMemory());
   }
@@ -515,34 +515,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public Story<T> watchEach(@Nullable final Observer<? super T> effectObserver,
       @Nullable final Observer<? super Throwable> incidentObserver, @NotNull final Memory memory) {
     return watchEach(new DefaultEventObserver<T>(effectObserver, incidentObserver), memory);
-  }
-
-  @NotNull
-  public <R> Story<R> whileDo(
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler) {
-    return when(this, conditionHandler, effectHandler);
-  }
-
-  @NotNull
-  public <R> Story<R> whileDo(
-      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-      @NotNull final UnaryFunction<? super T, ? extends Story<R>> effectHandler,
-      @NotNull final Memory memory) {
-    return when(this, conditionHandler, effectHandler, memory);
-  }
-
-  @NotNull
-  public <R> Story<R> whileDo(@NotNull final StoryEvolver<? super T, ? extends R> storyEvolver) {
-    return whileDo(new LooperConditionHandler(storyEvolver),
-        new LooperEffectHandler<T, R>(storyEvolver));
-  }
-
-  @NotNull
-  public <R> Story<R> whileDo(@NotNull final StoryEvolver<? super T, ? extends R> storyEvolver,
-      @NotNull final Memory memory) {
-    return whileDo(new LooperConditionHandler(storyEvolver),
-        new LooperEffectHandler<T, R>(storyEvolver), memory);
   }
 
   public interface Memory extends Iterable<Object> {
@@ -2032,27 +2004,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @NotNull
     Actor getActor() {
       return mActor;
-    }
-  }
-
-  private static class DoWhileConditionHandler
-      implements NullaryFunction<Event<? extends Boolean>> {
-
-    private final NullaryFunction<? extends Event<? extends Boolean>> mConditionHandler;
-
-    private boolean mIsFirst = true;
-
-    private DoWhileConditionHandler(
-        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler) {
-      mConditionHandler = ConstantConditions.notNull("conditionHandler", conditionHandler);
-    }
-
-    public Event<? extends Boolean> call() throws Exception {
-      if (mIsFirst) {
-        mIsFirst = false;
-        return Event.ofTrue();
-      }
-      return mConditionHandler.call();
     }
   }
 

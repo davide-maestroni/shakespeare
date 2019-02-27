@@ -19,25 +19,6 @@ abstract class DefaultEnvelop implements Envelop, Runnable {
   private boolean mPreventReceipt;
   private long mReceivedAt = -1;
 
-  DefaultEnvelop(@NotNull final Actor sender) {
-    mSender = ConstantConditions.notNull("sender", sender);
-    mOptions = Options.EMPTY;
-    mSentAt = System.currentTimeMillis();
-  }
-
-  DefaultEnvelop(@NotNull final Actor sender, @NotNull final Envelop envelop) {
-    mSender = ConstantConditions.notNull("sender", sender);
-    mOptions = envelop.getOptions();
-    mSentAt = envelop.getSentAt();
-  }
-
-  DefaultEnvelop(@NotNull final Actor sender, @NotNull final Envelop envelop,
-      @Nullable final Options options) {
-    mSender = ConstantConditions.notNull("sender", sender);
-    mSentAt = envelop.getSentAt();
-    mOptions = (options != null) ? options : Options.EMPTY;
-  }
-
   DefaultEnvelop(@NotNull final Actor sender, @Nullable final Options options) {
     mSender = ConstantConditions.notNull("sender", sender);
     mOptions = (options != null) ? options : Options.EMPTY;
