@@ -15,7 +15,7 @@ class CreatorIterable<T> implements Iterable<T> {
 
   private final Iterator<T> mIterator;
 
-  CreatorIterable(@NotNull final NullaryFunction<T> effectsCreator) {
+  CreatorIterable(@NotNull final NullaryFunction<? extends T> effectsCreator) {
     mIterator = new CreatorIterator<T>(effectsCreator);
   }
 
@@ -26,9 +26,9 @@ class CreatorIterable<T> implements Iterable<T> {
 
   private static class CreatorIterator<T> implements Iterator<T> {
 
-    private final NullaryFunction<T> mEffectsCreator;
+    private final NullaryFunction<? extends T> mEffectsCreator;
 
-    CreatorIterator(@NotNull final NullaryFunction<T> effectsCreator) {
+    CreatorIterator(@NotNull final NullaryFunction<? extends T> effectsCreator) {
       mEffectsCreator = ConstantConditions.notNull("effectsCreator", effectsCreator);
     }
 
