@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
+import dm.shakespeare.BackStage;
+import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Script;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.log.Logger;
@@ -89,6 +91,11 @@ class Setting {
       mTrampolineExecutor = ExecutorServices.asActorExecutor(ExecutorServices.trampolineExecutor());
     }
     return mTrampolineExecutor;
+  }
+
+  @NotNull
+  Actor newActor(@NotNull final Script script) {
+    return BackStage.newActor(script);
   }
 
   static class Cache {

@@ -48,6 +48,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   // TODO: 05/02/2019 PROGRESS???
   // TODO: 15/02/2019 untriggered actors, serialization
+  // TODO: 28/02/2019 isBoundless()?, mustache, swagger converter
 
   static final Object BREAK = new Object();
   static final Object END = new Object();
@@ -223,6 +224,41 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       @NotNull final UnaryFunction<? super T1, ? extends Story<? extends R>> effectHandler,
       @NotNull final Memory memory) {
     return new UnaryStory<T1, R>(firstStory, conditionHandler, effectHandler, memory);
+  }
+
+  static void done(@NotNull final Memory memory, @NotNull final Map<String, Sender> getSenders,
+      @NotNull final Map<String, SenderIterator> nextSenders, @NotNull final Context context) {
+    Object effects = memory;
+    for (final Object effect : memory) {
+      if (effect instanceof Conflict) {
+        effects = effect;
+        break;
+      }
+    }
+    final Actor self = context.getSelf();
+    for (final Sender sender : getSenders.values()) {
+      sender.getSender().tell(effects, sender.getOptions(), self);
+    }
+    for (final SenderIterator sender : nextSenders.values()) {
+      if (sender.isWaitNext() && !sender.tellNext(self)) {
+        sender.getSender().tell(END, sender.getOptions(), self);
+      }
+    }
+    context.setBehavior(new DoneBehavior(effects, memory, nextSenders));
+  }
+
+  static void fail(@NotNull final Conflict conflict, @NotNull final Memory memory,
+      @NotNull final Map<String, Sender> getSenders,
+      @NotNull final Map<String, SenderIterator> nextSenders, @NotNull final Context context) {
+    final Actor self = context.getSelf();
+    for (final Sender sender : getSenders.values()) {
+      sender.getSender().tell(conflict, sender.getOptions(), self);
+    }
+    memory.put(conflict);
+    for (final SenderIterator sender : nextSenders.values()) {
+      sender.tellNext(self);
+    }
+    context.setBehavior(new DoneBehavior(conflict, memory, nextSenders));
   }
 
   private static boolean isEmpty(@Nullable final Story<?> story) {
@@ -603,7 +639,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mInputs = new Object[numInputs];
       mMemory = ConstantConditions.notNull("memory", memory);
       final Setting setting = (mSetting = Setting.get());
-      final String actorId = (mActor = BackStage.newActor(new PlayScript(setting) {
+      final String actorId = (mActor = setting.newActor(new PlayScript(setting) {
 
         @NotNull
         @Override
@@ -688,25 +724,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           Thread.currentThread().interrupt();
         }
       }
-      Object effects = memory;
-      for (final Object effect : memory) {
-        if (effect instanceof Conflict) {
-          effects = effect;
-          break;
-        }
-      }
-      final Actor self = context.getSelf();
-      for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(effects, sender.getOptions(), self);
-      }
+      done(memory, mGetSenders, mNextSenders, context);
       mGetSenders = null;
-      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-      for (final SenderIterator sender : nextSenders.values()) {
-        if (sender.isWaitNext() && !sender.tellNext(self)) {
-          sender.getSender().tell(END, sender.getOptions(), self);
-        }
-      }
-      context.setBehavior(new DoneBehavior(effects, memory, nextSenders));
     }
 
     private void fail(@NotNull Conflict conflict, @NotNull final Context context) {
@@ -725,18 +744,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           Thread.currentThread().interrupt();
         }
       }
-      final Actor self = context.getSelf();
-      for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(conflict, sender.getOptions(), self);
-      }
-      mGetSenders = null;
-      final Memory memory = mMemory;
-      memory.put(conflict);
-      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-      for (final SenderIterator sender : nextSenders.values()) {
-        sender.tellNext(self);
-      }
-      context.setBehavior(new DoneBehavior(conflict, memory, nextSenders));
+      fail(conflict, mMemory, mGetSenders, mNextSenders, context);
     }
 
     private void next(final int loopCount, @NotNull final Context context) {
@@ -1218,7 +1226,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
       mMemory = ConstantConditions.notNull("memory", memory);
       final Setting setting = (mSetting = Setting.get());
-      final String actorId = (mActor = BackStage.newActor(new PlayScript(setting) {
+      final String actorId = (mActor = setting.newActor(new PlayScript(setting) {
 
         @NotNull
         @Override
@@ -1232,26 +1240,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
 
     private void done(@NotNull final Context context) {
-      final Memory memory = mMemory;
-      Object effects = memory;
-      for (final Object effect : memory) {
-        if (effect instanceof Conflict) {
-          effects = effect;
-          break;
-        }
-      }
-      final Actor self = context.getSelf();
-      for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(effects, sender.getOptions(), self);
-      }
+      done(mMemory, mGetSenders, mNextSenders, context);
       mGetSenders = null;
-      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-      for (final SenderIterator sender : nextSenders.values()) {
-        if (sender.isWaitNext() && !sender.tellNext(self)) {
-          sender.getSender().tell(END, sender.getOptions(), self);
-        }
-      }
-      context.setBehavior(new DoneBehavior(effects, memory, nextSenders));
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
@@ -1259,18 +1249,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       if (outputActor != null) {
         outputActor.tell(BREAK, mOutputOptions, context.getSelf());
       }
-      final Actor self = context.getSelf();
-      for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(conflict, sender.getOptions(), self);
-      }
+      fail(conflict, mMemory, mGetSenders, mNextSenders, context);
       mGetSenders = null;
-      final Memory memory = mMemory;
-      memory.put(conflict);
-      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-      for (final SenderIterator sender : nextSenders.values()) {
-        sender.tellNext(self);
-      }
-      context.setBehavior(new DoneBehavior(conflict, memory, nextSenders));
     }
 
     @Nullable
@@ -1607,7 +1587,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
       mMemory = ConstantConditions.notNull("memory", memory);
       final Setting setting = (mSetting = Setting.get());
-      final String actorId = (mActor = BackStage.newActor(new PlayScript(setting) {
+      final String actorId = (mActor = setting.newActor(new PlayScript(setting) {
 
         @NotNull
         @Override
@@ -1621,41 +1601,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
 
     private void done(@NotNull final Context context) {
-      final Memory memory = mMemory;
-      Object effects = memory;
-      for (final Object effect : memory) {
-        if (effect instanceof Conflict) {
-          effects = effect;
-          break;
-        }
-      }
-      final Actor self = context.getSelf();
-      for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(effects, sender.getOptions(), self);
-      }
+      done(mMemory, mGetSenders, mNextSenders, context);
       mGetSenders = null;
-      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-      for (final SenderIterator sender : nextSenders.values()) {
-        if (sender.isWaitNext() && !sender.tellNext(self)) {
-          sender.getSender().tell(END, sender.getOptions(), self);
-        }
-      }
-      context.setBehavior(new DoneBehavior(effects, memory, nextSenders));
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
-      final Actor self = context.getSelf();
-      for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(conflict, sender.getOptions(), self);
-      }
+      fail(conflict, mMemory, mGetSenders, mNextSenders, context);
       mGetSenders = null;
-      final Memory memory = mMemory;
-      memory.put(conflict);
-      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-      for (final SenderIterator sender : nextSenders.values()) {
-        sender.tellNext(self);
-      }
-      context.setBehavior(new DoneBehavior(conflict, memory, nextSenders));
     }
 
     @Nullable
@@ -2056,7 +2008,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final Actor mActor;
 
     private EffectStory(final T effect) {
-      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
+      final Setting setting = Setting.get();
+      mActor = setting.newActor(new TrampolinePlayScript(setting) {
 
         private final HashSet<String> mThreads = new HashSet<String>();
 
@@ -2106,8 +2059,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final Actor mActor;
 
     private EffectsStory(@NotNull final Iterable<? extends T> effects) {
+      final Setting setting = Setting.get();
       ConstantConditions.notNull("effects", effects);
-      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
+      mActor = setting.newActor(new TrampolinePlayScript(setting) {
 
         private final HashMap<String, Iterator<? extends T>> mThreads =
             new HashMap<String, Iterator<? extends T>>();
@@ -2163,8 +2117,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
 
     private EventStory(@NotNull final Event<? extends T> event) {
+      final Setting setting = Setting.get();
       mInputActor = event.getActor();
-      final String actorId = (mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
+      final String actorId = (mActor = setting.newActor(new TrampolinePlayScript(setting) {
 
         @NotNull
         @Override
@@ -2176,16 +2131,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
-      final Actor self = context.getSelf();
-      for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(conflict, sender.getOptions(), self);
-      }
-      mGetSenders = null;
-      final Set<Conflict> conflicts = Collections.singleton(conflict);
+      final SingletonMemory memory = new SingletonMemory();
       for (final SenderIterator sender : mNextSenders.values()) {
-        sender.setIterator(conflicts.iterator());
+        sender.setIterator(memory.iterator());
       }
-      context.setBehavior(new DoneBehavior(conflict, conflicts, mNextSenders));
+      fail(conflict, memory, mGetSenders, mNextSenders, context);
+      mGetSenders = null;
     }
 
     private class CancelBehavior extends AbstractBehavior {
@@ -2424,8 +2375,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final Actor mActor;
 
     private IncidentStory(@NotNull final Throwable incident) {
+      final Setting setting = Setting.get();
       final Conflict conflict = new Conflict(incident);
-      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
+      mActor = setting.newActor(new TrampolinePlayScript(setting) {
 
         private final HashSet<String> mThreads = new HashSet<String>();
 
@@ -2475,8 +2427,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private IncidentsStory(@NotNull final Iterable<? extends Throwable> incidents) {
+      final Setting setting = Setting.get();
       ConstantConditions.notNull("incidents", incidents);
-      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
+      mActor = setting.newActor(new TrampolinePlayScript(setting) {
 
         private final HashMap<String, Iterator<? extends Throwable>> mThreads =
             new HashMap<String, Iterator<? extends Throwable>>();
@@ -2556,7 +2509,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
       mMemory = ConstantConditions.notNull("memory", memory);
       final Setting setting = (mSetting = Setting.get());
-      final String actorId = (mActor = BackStage.newActor(new PlayScript(setting) {
+      final String actorId = (mActor = setting.newActor(new PlayScript(setting) {
 
         @NotNull
         @Override
@@ -2570,41 +2523,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
 
     private void done(@NotNull final Context context) {
-      final Memory memory = mMemory;
-      Object effects = memory;
-      for (final Object effect : memory) {
-        if (effect instanceof Conflict) {
-          effects = effect;
-          break;
-        }
-      }
-      final Actor self = context.getSelf();
-      for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(effects, sender.getOptions(), self);
-      }
+      done(mMemory, mGetSenders, mNextSenders, context);
       mGetSenders = null;
-      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-      for (final SenderIterator sender : nextSenders.values()) {
-        if (sender.isWaitNext() && !sender.tellNext(self)) {
-          sender.getSender().tell(END, sender.getOptions(), self);
-        }
-      }
-      context.setBehavior(new DoneBehavior(effects, memory, nextSenders));
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
-      final Actor self = context.getSelf();
-      for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(conflict, sender.getOptions(), self);
-      }
+      fail(conflict, mMemory, mGetSenders, mNextSenders, context);
       mGetSenders = null;
-      final Memory memory = mMemory;
-      memory.put(conflict);
-      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-      for (final SenderIterator sender : nextSenders.values()) {
-        sender.tellNext(self);
-      }
-      context.setBehavior(new DoneBehavior(conflict, memory, nextSenders));
     }
 
     @NotNull
@@ -2954,9 +2879,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private NarratorStory(@NotNull final Narrator<? extends T> storyNarrator,
         @NotNull final Memory memory) {
+      final Setting setting = Setting.get();
       mStoryNarrator = ConstantConditions.notNull("storyNarrator", storyNarrator);
       mMemory = ConstantConditions.notNull("memory", memory);
-      mActor = BackStage.newActor(new PlayScript(Setting.get()) {
+      mActor = setting.newActor(new PlayScript(setting) {
 
         @NotNull
         @Override
@@ -2967,26 +2893,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
 
     private void done(@NotNull final Context context) {
-      final Memory memory = mMemory;
-      Object effects = memory;
-      for (final Object effect : memory) {
-        if (effect instanceof Conflict) {
-          effects = effect;
-          break;
-        }
-      }
-      final Actor self = context.getSelf();
-      for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(effects, sender.getOptions(), self);
-      }
+      done(mMemory, mGetSenders, mNextSenders, context);
       mGetSenders = null;
-      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-      for (final SenderIterator sender : nextSenders.values()) {
-        if (sender.isWaitNext() && !sender.tellNext(self)) {
-          sender.getSender().tell(END, sender.getOptions(), self);
-        }
-      }
-      context.setBehavior(new DoneBehavior(effects, memory, nextSenders));
     }
 
     private boolean next(@NotNull final Context context) {
@@ -3196,12 +3104,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private ScheduleAtFixedRateStory(@NotNull final Story<? extends T> story,
         final long initialDelay, final long period, @NotNull final TimeUnit unit,
         @NotNull final Memory memory) {
+      final Setting setting = Setting.get();
       mInputActor = story.getActor();
       mInitialDelay = Math.max(initialDelay, 0);
       mPeriod = ConstantConditions.positive("period", period);
       mUnit = ConstantConditions.notNull("unit", unit);
       mMemory = ConstantConditions.notNull("memory", memory);
-      final String actorId = (mActor = BackStage.newActor(new PlayScript(Setting.get()) {
+      final String actorId = (mActor = setting.newActor(new PlayScript(setting) {
 
         @NotNull
         @Override
@@ -3217,26 +3126,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       if (scheduledFuture != null) {
         scheduledFuture.cancel(false);
       }
-      final Memory memory = mMemory;
-      Object effects = memory;
-      for (final Object effect : memory) {
-        if (effect instanceof Conflict) {
-          effects = effect;
-          break;
-        }
-      }
-      final Actor self = context.getSelf();
-      for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(effects, sender.getOptions(), self);
-      }
+      done(mMemory, mGetSenders, mNextSenders, context);
       mGetSenders = null;
-      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-      for (final SenderIterator sender : nextSenders.values()) {
-        if (sender.isWaitNext() && !sender.tellNext(self)) {
-          sender.getSender().tell(END, sender.getOptions(), self);
-        }
-      }
-      context.setBehavior(new DoneBehavior(effects, memory, nextSenders));
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
@@ -3244,18 +3135,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       if (scheduledFuture != null) {
         scheduledFuture.cancel(false);
       }
-      final Actor self = context.getSelf();
-      for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(conflict, sender.getOptions(), self);
-      }
+      fail(conflict, mMemory, mGetSenders, mNextSenders, context);
       mGetSenders = null;
-      final Memory memory = mMemory;
-      memory.put(conflict);
-      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-      for (final SenderIterator sender : nextSenders.values()) {
-        sender.tellNext(self);
-      }
-      context.setBehavior(new DoneBehavior(conflict, memory, nextSenders));
     }
 
     private class CancelBehavior extends AbstractBehavior {
@@ -3415,12 +3296,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private ScheduleWithFixedDelayStory(@NotNull final Story<? extends T> story,
         final long initialDelay, final long delay, @NotNull final TimeUnit unit,
         @NotNull final Memory memory) {
+      final Setting setting = Setting.get();
       mInputActor = story.getActor();
       mInitialDelay = Math.max(initialDelay, 0);
       mDelay = ConstantConditions.positive("delay", delay);
       mUnit = ConstantConditions.notNull("unit", unit);
       mMemory = ConstantConditions.notNull("memory", memory);
-      final String actorId = (mActor = BackStage.newActor(new PlayScript(Setting.get()) {
+      final String actorId = (mActor = setting.newActor(new PlayScript(setting) {
 
         @NotNull
         @Override
@@ -3436,26 +3318,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       if (scheduledFuture != null) {
         scheduledFuture.cancel(false);
       }
-      final Memory memory = mMemory;
-      Object effects = memory;
-      for (final Object effect : memory) {
-        if (effect instanceof Conflict) {
-          effects = effect;
-          break;
-        }
-      }
-      final Actor self = context.getSelf();
-      for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(effects, sender.getOptions(), self);
-      }
+      done(mMemory, mGetSenders, mNextSenders, context);
       mGetSenders = null;
-      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-      for (final SenderIterator sender : nextSenders.values()) {
-        if (sender.isWaitNext() && !sender.tellNext(self)) {
-          sender.getSender().tell(END, sender.getOptions(), self);
-        }
-      }
-      context.setBehavior(new DoneBehavior(effects, memory, nextSenders));
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
@@ -3463,18 +3327,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       if (scheduledFuture != null) {
         scheduledFuture.cancel(false);
       }
-      final Actor self = context.getSelf();
-      for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(conflict, sender.getOptions(), self);
-      }
+      fail(conflict, mMemory, mGetSenders, mNextSenders, context);
       mGetSenders = null;
-      final Memory memory = mMemory;
-      memory.put(conflict);
-      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-      for (final SenderIterator sender : nextSenders.values()) {
-        sender.tellNext(self);
-      }
-      context.setBehavior(new DoneBehavior(conflict, memory, nextSenders));
     }
 
     private class CancelBehavior extends AbstractBehavior {
@@ -3719,8 +3573,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
 
     private UnfoldStory(@NotNull final Event<? extends Iterable<? extends T>> event) {
+      final Setting setting = Setting.get();
       mInputActor = event.getActor();
-      final String actorId = (mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
+      final String actorId = (mActor = setting.newActor(new TrampolinePlayScript(setting) {
 
         @NotNull
         @Override
@@ -3733,19 +3588,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
-      final Actor self = context.getSelf();
-      for (final Sender sender : mGetSenders.values()) {
-        sender.getSender().tell(conflict, sender.getOptions(), self);
-      }
-      mGetSenders = null;
       final SingletonMemory memory = new SingletonMemory();
-      memory.put(conflict);
-      final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-      for (final SenderIterator sender : nextSenders.values()) {
+      for (final SenderIterator sender : mNextSenders.values()) {
         sender.setIterator(memory.iterator());
-        sender.tellNext(self);
       }
-      context.setBehavior(new DoneBehavior(conflict, memory, nextSenders));
+      fail(conflict, memory, mGetSenders, mNextSenders, context);
+      mGetSenders = null;
     }
 
     private class CancelBehavior extends AbstractBehavior {

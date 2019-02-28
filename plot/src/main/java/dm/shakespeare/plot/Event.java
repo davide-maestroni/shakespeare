@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
@@ -112,6 +113,15 @@ public abstract class Event<T> {
   public static <T, R> Event<R> when(@NotNull final Iterable<? extends Event<? extends T>> events,
       @NotNull final UnaryFunction<? super List<T>, ? extends Event<R>> effectHandler) {
     return new GenericEvent<T, R>(events, effectHandler);
+  }
+
+  static void done(final Object message, @NotNull final Map<String, Sender> senders,
+      @NotNull final Context context) {
+    final Actor self = context.getSelf();
+    for (final Sender sender : senders.values()) {
+      sender.getSender().tell(message, sender.getOptions(), self);
+    }
+    context.setBehavior(new DoneBehavior(message));
   }
 
   static boolean isFalse(@Nullable final Event<?> event) {
@@ -245,7 +255,7 @@ public abstract class Event<T> {
     private AbstractEvent(final int numInputs) {
       mInputs = new Object[numInputs];
       final Setting setting = (mSetting = Setting.get());
-      final String actorId = (mActor = BackStage.newActor(new PlayScript(setting) {
+      final String actorId = (mActor = setting.newActor(new PlayScript(setting) {
 
         @NotNull
         @Override
@@ -320,12 +330,8 @@ public abstract class Event<T> {
           Thread.currentThread().interrupt();
         }
       }
-      final Actor self = context.getSelf();
-      for (final Sender sender : mSenders.values()) {
-        sender.getSender().tell(message, sender.getOptions(), self);
-      }
+      done(message, mSenders, context);
       mSenders = null;
-      context.setBehavior(new DoneBehavior(message));
     }
 
     private void fail(@NotNull Conflict conflict, @NotNull final Context context) {
@@ -338,15 +344,11 @@ public abstract class Event<T> {
           Thread.currentThread().interrupt();
         }
       }
-      final Actor self = context.getSelf();
-      for (final Sender sender : mSenders.values()) {
-        sender.getSender().tell(conflict, sender.getOptions(), self);
-      }
+      done(conflict, mSenders, context);
       mSenders = null;
-      context.setBehavior(new DoneBehavior(conflict));
     }
 
-    private void tellInputActors(final Object message, @NotNull final Context context) {
+    private void getInputActors(@NotNull final Context context) {
       final Actor self = context.getSelf();
       final HashMap<Actor, Options> inputActors = mInputActors;
       if (inputActors.isEmpty()) {
@@ -356,12 +358,12 @@ public abstract class Event<T> {
           final String threadId = mInputThread + builder.append('#').toString();
           final Options inputOptions = options.withThread(threadId);
           inputActors.put(actor, inputOptions);
-          actor.tell(message, inputOptions, self);
+          actor.tell(GET, inputOptions, self);
         }
 
       } else {
         for (final Entry<Actor, Options> entry : inputActors.entrySet()) {
-          entry.getKey().tell(message, entry.getValue(), self);
+          entry.getKey().tell(GET, entry.getValue(), self);
         }
       }
     }
@@ -408,7 +410,7 @@ public abstract class Event<T> {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
-          tellInputActors(GET, context);
+          getInputActors(context);
           context.setBehavior(new InputBehavior());
 
         } else if (message == CANCEL) {
@@ -546,7 +548,8 @@ public abstract class Event<T> {
     private final Actor mActor;
 
     private EffectEvent(final T effect) {
-      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
+      final Setting setting = Setting.get();
+      mActor = setting.newActor(new TrampolinePlayScript(setting) {
 
         @NotNull
         @Override
@@ -671,8 +674,9 @@ public abstract class Event<T> {
     private final Actor mActor;
 
     private IncidentEvent(@NotNull final Throwable incident) {
+      final Setting setting = Setting.get();
       final Conflict conflict = new Conflict(incident);
-      mActor = BackStage.newActor(new TrampolinePlayScript(Setting.get()) {
+      mActor = setting.newActor(new TrampolinePlayScript(setting) {
 
         @NotNull
         @Override
@@ -696,8 +700,9 @@ public abstract class Event<T> {
     private HashMap<String, Sender> mSenders = new HashMap<String, Sender>();
 
     private NarratorEvent(@NotNull final Narrator<T> eventNarrator) {
+      final Setting setting = Setting.get();
       mEventNarrator = ConstantConditions.notNull("eventNarrator", eventNarrator);
-      mActor = BackStage.newActor(new PlayScript(Setting.get()) {
+      mActor = setting.newActor(new PlayScript(setting) {
 
         @NotNull
         @Override
@@ -830,10 +835,11 @@ public abstract class Event<T> {
 
     private ScheduleWithDelayEvent(@NotNull final Event<? extends T> event, final long delay,
         @NotNull final TimeUnit unit) {
+      final Setting setting = Setting.get();
       mInputActor = event.getActor();
       mDelay = ConstantConditions.positive("delay", delay);
       mUnit = ConstantConditions.notNull("unit", unit);
-      final String actorId = (mActor = BackStage.newActor(new PlayScript(Setting.get()) {
+      final String actorId = (mActor = setting.newActor(new PlayScript(setting) {
 
         @NotNull
         @Override
@@ -854,12 +860,8 @@ public abstract class Event<T> {
       if (scheduledFuture != null) {
         scheduledFuture.cancel(false);
       }
-      final Actor self = context.getSelf();
-      for (final Sender sender : mSenders.values()) {
-        sender.getSender().tell(message, sender.getOptions(), self);
-      }
+      done(message, mSenders, context);
       mSenders = null;
-      context.setBehavior(new DoneBehavior(message));
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
@@ -867,12 +869,8 @@ public abstract class Event<T> {
       if (scheduledFuture != null) {
         scheduledFuture.cancel(false);
       }
-      final Actor self = context.getSelf();
-      for (final Sender sender : mSenders.values()) {
-        sender.getSender().tell(conflict, sender.getOptions(), self);
-      }
+      done(conflict, mSenders, context);
       mSenders = null;
-      context.setBehavior(new DoneBehavior(conflict));
     }
 
     private class CancelBehavior extends AbstractBehavior {
