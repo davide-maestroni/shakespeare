@@ -17,9 +17,9 @@
 plugins {
   id 'java-library'
   id 'jacoco'
-  id 'com.github.spotbugs' version '1.6.9'
+  id 'com.github.spotbugs' version '1.6.10'
   id 'de.fuerstenau.buildconfig' version '1.1.8'
-  id 'com.github.ben-manes.versions' version '0.20.0'
+  id 'com.github.ben-manes.versions' version '0.21.0'
 }
 
 apply from: '../extra.gradle'

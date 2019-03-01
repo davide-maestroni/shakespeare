@@ -267,10 +267,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         == story);
   }
 
-  @SuppressWarnings("ConstantConditions")
-  private static boolean isSameThread(@Nullable final String expectedThread,
-      @Nullable final String actualThread) {
-    return expectedThread.equals(actualThread);
+  private static boolean isSame(@Nullable final Object expected, @Nullable final Object actual) {
+    return (expected == actual) || (expected != null) && expected.equals(actual);
   }
 
   @NotNull
@@ -836,7 +834,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options outputOptions = mOutputOptions;
-          if (isSameThread(outputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(outputOptions.getThread(), envelop.getOptions().getThread())) {
             mOutputActor.tell(BREAK, outputOptions, context.getSelf());
             fail(Conflict.ofCancel(), context);
 
@@ -898,7 +896,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final String thread = envelop.getOptions().getThread();
-          if (isSameThread(mContinueOptions.getThread(), thread)) {
+          if (isSame(mContinueOptions.getThread(), thread)) {
             if (message instanceof Conflict) {
               fail((Conflict) message, context);
 
@@ -1165,7 +1163,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options outputOptions = mOutputOptions;
-          if (isSameThread(outputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(outputOptions.getThread(), envelop.getOptions().getThread())) {
             if (message == END) {
               mOutputActor.tell(BREAK, outputOptions, context.getSelf());
               next(++mContinueCount, context);
@@ -1307,12 +1305,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == BREAK) {
           mNextSenders.remove(envelop.getOptions().getThread());
 
-        } else if (isSameThread(mInputOptions.getThread(), envelop.getOptions().getThread())) {
+        } else if (isSame(mInputOptions.getThread(), envelop.getOptions().getThread())) {
           fail(Conflict.ofCancel(), context);
 
         } else {
           final Options outputOptions = mOutputOptions;
-          if (isSameThread(outputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(outputOptions.getThread(), envelop.getOptions().getThread())) {
             mOutputActor.tell(BREAK, mOutputOptions, context.getSelf());
             fail(Conflict.ofCancel(), context);
           }
@@ -1376,7 +1374,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           mInputActor.tell(CANCEL, null, context.getSelf());
           context.setBehavior(new CancelBehavior());
 
-        } else if (isSameThread(mInputOptions.getThread(), envelop.getOptions().getThread())) {
+        } else if (isSame(mInputOptions.getThread(), envelop.getOptions().getThread())) {
           if (message instanceof Conflict) {
             fail((Conflict) message, context);
 
@@ -1483,7 +1481,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options outputOptions = mOutputOptions;
-          if (isSameThread(outputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(outputOptions.getThread(), envelop.getOptions().getThread())) {
             if (message == END) {
               final Actor self = context.getSelf();
               mOutputActor.tell(BREAK, outputOptions, self);
@@ -1654,7 +1652,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSameThread(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
             mInputActor.tell(BREAK, inputOptions, context.getSelf());
             mInputsEnded = true;
             if (mOutputActors.isEmpty()) {
@@ -1735,7 +1733,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSameThread(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
             if (message == END) {
               mInputActor.tell(BREAK, inputOptions, context.getSelf());
               done(context);
@@ -1827,7 +1825,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSameThread(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
             if (message == END) {
               mInputActor.tell(BREAK, inputOptions, context.getSelf());
               mInputsEnded = true;
@@ -2573,7 +2571,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSameThread(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
             mInputActor.tell(BREAK, inputOptions, context.getSelf());
             mInputsEnded = true;
             if (mActorCount == 0) {
@@ -2652,7 +2650,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSameThread(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
             if (message == END) {
               mInputActor.tell(BREAK, inputOptions, context.getSelf());
               done(context);
@@ -2731,7 +2729,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSameThread(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
             if (message == END) {
               mInputActor.tell(BREAK, inputOptions, context.getSelf());
               mInputsEnded = true;
@@ -3167,7 +3165,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSameThread(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
             mInputActor.tell(BREAK, inputOptions, context.getSelf());
             fail(Conflict.ofCancel(), context);
           }
@@ -3241,7 +3239,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSameThread(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
             if (message == END) {
               mInputActor.tell(BREAK, inputOptions, context.getSelf());
               done(context);
@@ -3359,7 +3357,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSameThread(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
             mInputActor.tell(BREAK, inputOptions, context.getSelf());
             fail(Conflict.ofCancel(), context);
           }
@@ -3433,7 +3431,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSameThread(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
             if (message == END) {
               mInputActor.tell(BREAK, inputOptions, context.getSelf());
               done(context);

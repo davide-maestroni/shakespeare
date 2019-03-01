@@ -59,7 +59,7 @@ public abstract class Event<T> {
         cache.put(NULL, event);
       }
 
-    } else if ((effect == Boolean.TRUE) || (effect == Boolean.FALSE)) {
+    } else if (Boolean.TRUE.equals(effect) || Boolean.FALSE.equals(effect)) {
       event = cache.get(effect);
       if (event == null) {
         event = new EffectEvent<T>(effect);
@@ -139,10 +139,8 @@ public abstract class Event<T> {
     return cache.get(Boolean.TRUE) == event;
   }
 
-  @SuppressWarnings("ConstantConditions")
-  private static boolean isSameThread(@Nullable final String expectedThread,
-      @Nullable final String actualThread) {
-    return expectedThread.equals(actualThread);
+  private static boolean isSame(@Nullable final Object expected, @Nullable final Object actual) {
+    return (expected == actual) || (expected != null) && expected.equals(actual);
   }
 
   public void cancel() {
@@ -376,7 +374,7 @@ public abstract class Event<T> {
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
 
-        } else if (isSameThread(mOutputOptions.getThread(), envelop.getOptions().getThread())) {
+        } else if (isSame(mOutputOptions.getThread(), envelop.getOptions().getThread())) {
           fail(Conflict.ofCancel(), context);
 
         } else {
@@ -509,7 +507,7 @@ public abstract class Event<T> {
           context.setBehavior(new CancelBehavior());
 
         } else {
-          if (isSameThread(mOutputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(mOutputOptions.getThread(), envelop.getOptions().getThread())) {
             if (message instanceof Conflict) {
               fail((Conflict) message, context);
 
@@ -881,7 +879,7 @@ public abstract class Event<T> {
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
 
-        } else if (isSameThread(mInputOptions.getThread(), envelop.getOptions().getThread())) {
+        } else if (isSame(mInputOptions.getThread(), envelop.getOptions().getThread())) {
           fail(Conflict.ofCancel(), context);
         }
       }
@@ -923,7 +921,7 @@ public abstract class Event<T> {
             fail(Conflict.ofCancel(), context);
           }
 
-        } else if (isSameThread(mInputOptions.getThread(), envelop.getOptions().getThread())) {
+        } else if (isSame(mInputOptions.getThread(), envelop.getOptions().getThread())) {
           if (message instanceof Conflict) {
             fail((Conflict) message, context);
 
