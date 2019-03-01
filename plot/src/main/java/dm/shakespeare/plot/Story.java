@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -26,8 +27,11 @@ import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Script;
+import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.function.Observer;
 import dm.shakespeare.message.Bounce;
+import dm.shakespeare.message.Receipt;
 import dm.shakespeare.plot.Setting.Cache;
 import dm.shakespeare.plot.function.Action;
 import dm.shakespeare.plot.function.NullaryFunction;
@@ -3519,6 +3523,62 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     void waitNext() {
       mWaitNext = true;
+    }
+  }
+
+  private static class StoryObserverScript<T> extends Script {
+
+    private final StoryObserver<? super T> mStoryObserver;
+
+    private StoryObserverScript(@NotNull final StoryObserver<? super T> storyObserver) {
+      mStoryObserver = ConstantConditions.notNull("storyObserver", storyObserver);
+    }
+
+    @NotNull
+    public Behavior getBehavior(@NotNull final String id) {
+      final Options options = new Options().withReceiptId(id).withThread(id);
+      return new AbstractBehavior() {
+
+        private Actor mSender;
+
+        @Override
+        public void onStop(@NotNull final Context context) {
+          final Actor sender = mSender;
+          if (sender != null) {
+            sender.tell(Story.BREAK, options, context.getSelf());
+          }
+        }
+
+        @SuppressWarnings("unchecked")
+        public void onMessage(final Object message, @NotNull final Envelop envelop,
+            @NotNull final Context context) throws Exception {
+          mSender = envelop.getSender();
+          final Actor self = context.getSelf();
+          if (message instanceof Conflict) {
+            mStoryObserver.onIncident(((Conflict) message).getCause());
+            envelop.getSender().tell(Story.NEXT, options, self);
+
+          } else if (message instanceof Bounce) {
+            mStoryObserver.onIncident(PlotFailureException.getOrNew((Bounce) message));
+            context.dismissSelf();
+
+          } else if (message == Story.END) {
+            mStoryObserver.onEnd();
+            context.dismissSelf();
+
+          } else if (!(message instanceof Receipt)) {
+            mStoryObserver.onEffect((T) message);
+            envelop.getSender().tell(Story.NEXT, options, self);
+          }
+        }
+
+      };
+    }
+
+    @NotNull
+    @Override
+    public ExecutorService getExecutor(@NotNull final String id) {
+      return ExecutorServices.trampolineExecutor();
     }
   }
 
