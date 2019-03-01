@@ -165,10 +165,36 @@ public abstract class Event<T> {
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E1 extends Throwable> Event<T> resolve(@NotNull final Class<? extends E1> firstType,
+  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Event<T> resolve(
+      @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
+      @NotNull final Class<? extends E3> thirdType,
       @NotNull final UnaryFunction<? super E1, ? extends Event<T>> incidentObserver) {
     final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
     types.add(firstType);
+    types.add(secondType);
+    types.add(thirdType);
+    return new ResolveEvent<T>(this, types,
+        (UnaryFunction<? super Throwable, ? extends Event<T>>) incidentObserver);
+  }
+
+  @NotNull
+  @SuppressWarnings("unchecked")
+  public <E1 extends Throwable, E2 extends Throwable> Event<T> resolve(
+      @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
+      @NotNull final UnaryFunction<? super E1, ? extends Event<T>> incidentObserver) {
+    final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
+    types.add(firstType);
+    types.add(secondType);
+    return new ResolveEvent<T>(this, types,
+        (UnaryFunction<? super Throwable, ? extends Event<T>>) incidentObserver);
+  }
+
+  @NotNull
+  @SuppressWarnings("unchecked")
+  public <E1 extends Throwable> Event<T> resolve(@NotNull final Class<? extends E1> firstType,
+      @NotNull final UnaryFunction<? super E1, ? extends Event<T>> incidentObserver) {
+    final Set<Class<? extends Throwable>> types =
+        Collections.<Class<? extends Throwable>>singleton(firstType);
     return new ResolveEvent<T>(this, types,
         (UnaryFunction<? super Throwable, ? extends Event<T>>) incidentObserver);
   }
