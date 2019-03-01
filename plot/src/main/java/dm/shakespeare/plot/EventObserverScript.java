@@ -37,7 +37,7 @@ class EventObserverScript<T> extends Script {
           context.dismissSelf();
 
         } else if (message instanceof Bounce) {
-          mEventObserver.onIncident(PlotStateException.getOrNew((Bounce) message));
+          mEventObserver.onIncident(PlotFailureException.getOrNew((Bounce) message));
           context.dismissSelf();
 
         } else if (!(message instanceof Receipt)) {

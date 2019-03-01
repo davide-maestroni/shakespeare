@@ -37,28 +37,31 @@ public final class Narrator<T> implements Closeable {
   }
 
   public void close() {
-    if (mException == null) {
-      mException = new NarrationStoppedException();
-    }
-    mIsClosed.set(true);
-    final Actor actor = mActor;
-    if (mQueue.isEmpty() && (actor != null)) {
-      actor.tell(AVAILABLE, null, BackStage.standIn());
+    if (!mIsClosed.getAndSet(true)) {
+      if (mException == null) {
+        mException = new NarrationStoppedException();
+      }
+      final Actor actor = mActor;
+      if (mQueue.isEmpty() && (actor != null)) {
+        actor.tell(AVAILABLE, null, BackStage.standIn());
+      }
     }
   }
 
   public boolean report(@NotNull final Throwable incident, final long timeout,
-      @NotNull final TimeUnit unit) throws Exception {
+      @NotNull final TimeUnit unit) throws InterruptedException {
     return enqueue(new Conflict(incident), timeout, unit);
   }
 
   public boolean tell(final T effect, final long timeout, @NotNull final TimeUnit unit) throws
-      Exception {
+      InterruptedException {
     return enqueue((effect != null) ? effect : NULL, timeout, unit);
   }
 
   void cancel(@NotNull final Throwable cause) {
-    mException = cause;
+    if (mException == null) {
+      mException = cause;
+    }
     mQueue.clear();
   }
 
@@ -76,15 +79,14 @@ public final class Narrator<T> implements Closeable {
   }
 
   private boolean enqueue(@NotNull final Object resolution, final long timeout,
-      @NotNull final TimeUnit unit) throws Exception {
-    // TODO: 17/02/2019 detect deadlock
+      @NotNull final TimeUnit unit) throws InterruptedException {
     final Throwable exception = mException;
     if (exception != null) {
-      if (exception instanceof Exception) {
-        throw (Exception) exception;
+      if (exception instanceof RuntimeException) {
+        throw (RuntimeException) exception;
 
       } else {
-        throw new IllegalStateException(exception);
+        throw new PlotFailureException(exception);
       }
     }
     final BlockingQueue<Object> queue = mQueue;

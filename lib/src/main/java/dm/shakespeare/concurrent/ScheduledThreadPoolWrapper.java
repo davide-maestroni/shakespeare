@@ -27,6 +27,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -38,23 +41,65 @@ import dm.shakespeare.util.TimeUnits;
  * <p>
  * Created by davide-maestroni on 05/24/2016.
  */
-class ScheduledThreadPoolExecutorService extends ScheduledThreadPoolExecutor {
+class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
 
   private final ExecutorService mExecutor;
 
   /**
    * Constructor.
    *
-   * @param service the executor service.
+   * @param executor the executor service.
    */
-  ScheduledThreadPoolExecutorService(@NotNull final ExecutorService service) {
+  ScheduledThreadPoolWrapper(@NotNull final ExecutorService executor) {
     super(1);
-    if (service instanceof QueuedExecutorService) {
-      mExecutor = new NextExecutorService((QueuedExecutorService) service);
+    if (executor instanceof QueuedExecutorService) {
+      mExecutor = new NextExecutorService((QueuedExecutorService) executor);
 
     } else {
-      mExecutor = ConstantConditions.notNull("service", service);
+      mExecutor = ConstantConditions.notNull("executor", executor);
     }
+  }
+
+  /**
+   * Constructor.
+   *
+   * @param corePoolSize    the number of threads to keep in the pool, even if they are idle.
+   * @param maximumPoolSize the maximum number of threads to allow in the pool.
+   * @param keepAliveTime   when the number of threads is greater than the core, this is the
+   *                        maximum time that excess idle threads will wait for new tasks before
+   *                        terminating.
+   * @param keepAliveUnit   the time unit for the keep alive time.
+   * @throws IllegalArgumentException if one of the following holds:<ul>
+   *                                  <li>{@code corePoolSize < 0}</li>
+   *                                  <li>{@code maximumPoolSize <= 0}</li>
+   *                                  <li>{@code keepAliveTime < 0}</li></ul>
+   */
+  ScheduledThreadPoolWrapper(final int corePoolSize, final int maximumPoolSize,
+      final long keepAliveTime, @NotNull final TimeUnit keepAliveUnit) {
+    this(new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, keepAliveUnit,
+        new NonRejectingQueue()));
+  }
+
+  /**
+   * Constructor.
+   *
+   * @param corePoolSize    the number of threads to keep in the pool, even if they are idle.
+   * @param maximumPoolSize the maximum number of threads to allow in the pool.
+   * @param keepAliveTime   when the number of threads is greater than the core, this is the
+   *                        maximum time that excess idle threads will wait for new tasks before
+   *                        terminating.
+   * @param keepAliveUnit   the time unit for the keep alive time.
+   * @param threadFactory   the thread factory.
+   * @throws IllegalArgumentException if one of the following holds:<ul>
+   *                                  <li>{@code corePoolSize < 0}</li>
+   *                                  <li>{@code maximumPoolSize <= 0}</li>
+   *                                  <li>{@code keepAliveTime < 0}</li></ul>
+   */
+  ScheduledThreadPoolWrapper(final int corePoolSize, final int maximumPoolSize,
+      final long keepAliveTime, @NotNull final TimeUnit keepAliveUnit,
+      @NotNull final ThreadFactory threadFactory) {
+    this(new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, keepAliveUnit,
+        new NonRejectingQueue(), threadFactory));
   }
 
   @Override
@@ -124,6 +169,29 @@ class ScheduledThreadPoolExecutorService extends ScheduledThreadPoolExecutor {
             unit.toNanos(-ConstantConditions.positive("delay", delay)));
     future.setFuture(super.scheduleWithFixedDelay(future, initialDelay, delay, unit));
     return future;
+  }
+
+  @Override
+  public void execute(final Runnable command) {
+    mExecutor.execute(command);
+  }
+
+  @NotNull
+  @Override
+  public Future<?> submit(final Runnable task) {
+    return mExecutor.submit(task);
+  }
+
+  @NotNull
+  @Override
+  public <T> Future<T> submit(final Runnable task, final T result) {
+    return mExecutor.submit(task, result);
+  }
+
+  @NotNull
+  @Override
+  public <T> Future<T> submit(final Callable<T> task) {
+    return mExecutor.submit(task);
   }
 
   @Override
@@ -211,6 +279,27 @@ class ScheduledThreadPoolExecutorService extends ScheduledThreadPoolExecutor {
         final long timeout, @NotNull final TimeUnit unit) throws InterruptedException,
         ExecutionException, TimeoutException {
       return mExecutor.invokeAny(tasks, timeout, unit);
+    }
+  }
+
+  /**
+   * Implementation of a synchronous queue, which avoids rejection of tasks by forcedly waiting
+   * for available threads.
+   */
+  private static class NonRejectingQueue extends SynchronousQueue<Runnable> {
+
+    // Unused
+    private static final long serialVersionUID = -1;
+
+    @Override
+    public boolean offer(@NotNull final Runnable runnable) {
+      try {
+        put(runnable);
+
+      } catch (final InterruptedException ignored) {
+        return false;
+      }
+      return true;
     }
   }
 }

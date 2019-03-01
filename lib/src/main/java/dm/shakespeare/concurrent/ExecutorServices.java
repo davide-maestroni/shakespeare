@@ -50,7 +50,7 @@ public class ExecutorServices {
           sScheduledExecutors;
       scheduledExecutor = executors.get(executor);
       if (scheduledExecutor == null) {
-        scheduledExecutor = new ScheduledThreadPoolExecutorService(executor);
+        scheduledExecutor = new ScheduledThreadPoolWrapper(executor);
         executors.put(executor, scheduledExecutor);
       }
     }
@@ -61,23 +61,23 @@ public class ExecutorServices {
   public static ScheduledExecutorService newDynamicScheduledThreadPool(
       @NotNull final ThreadFactory threadFactory) {
     final int processors = Runtime.getRuntime().availableProcessors();
-    return newDynamicScheduledThreadPool(Math.max(2, processors >> 1),
-        Math.max(2, (processors << 1) - 1), 10L, TimeUnit.SECONDS, threadFactory);
+    return newDynamicScheduledThreadPool(Math.max(0, processors - 1),
+        Math.max(2, (processors << 1) - 1), 60L, TimeUnit.SECONDS, threadFactory);
   }
 
   @NotNull
   public static ScheduledExecutorService newDynamicScheduledThreadPool(final int corePoolSize,
       final int maximumPoolSize, final long keepAliveTime, @NotNull final TimeUnit keepAliveUnit,
       @NotNull final ThreadFactory threadFactory) {
-    return new DynamicScheduledThreadPoolExecutorService(corePoolSize, maximumPoolSize,
-        keepAliveTime, keepAliveUnit, threadFactory);
+    return new ScheduledThreadPoolWrapper(corePoolSize, maximumPoolSize, keepAliveTime,
+        keepAliveUnit, threadFactory);
   }
 
   @NotNull
   public static ScheduledExecutorService newDynamicScheduledThreadPool(final int corePoolSize,
       final int maximumPoolSize, final long keepAliveTime, @NotNull final TimeUnit keepAliveUnit) {
-    return new DynamicScheduledThreadPoolExecutorService(corePoolSize, maximumPoolSize,
-        keepAliveTime, keepAliveUnit);
+    return new ScheduledThreadPoolWrapper(corePoolSize, maximumPoolSize, keepAliveTime,
+        keepAliveUnit);
   }
 
   @NotNull

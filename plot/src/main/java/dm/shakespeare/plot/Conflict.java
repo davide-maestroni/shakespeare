@@ -18,12 +18,12 @@ class Conflict {
 
   @NotNull
   static Conflict ofBounce(@NotNull final Bounce message) {
-    return new Conflict(PlotStateException.getOrNew(message));
+    return new Conflict(PlotFailureException.getOrNew(message));
   }
 
   @NotNull
   static Conflict ofCancel() {
-    return new Conflict(new PlotCancelledException());
+    return new Conflict(new PlotCancellationException());
   }
 
   @NotNull

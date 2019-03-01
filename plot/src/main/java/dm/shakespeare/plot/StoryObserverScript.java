@@ -44,7 +44,7 @@ class StoryObserverScript<T> extends Script {
           envelop.getSender().tell(Story.NEXT, options, self);
 
         } else if (message instanceof Bounce) {
-          mStoryObserver.onIncident(PlotStateException.getOrNew((Bounce) message));
+          mStoryObserver.onIncident(PlotFailureException.getOrNew((Bounce) message));
           context.dismissSelf();
 
         } else if (message == Story.END) {
