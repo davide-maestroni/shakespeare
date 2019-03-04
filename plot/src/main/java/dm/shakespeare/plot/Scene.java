@@ -5,6 +5,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.ExecutorService;
 
 import dm.shakespeare.log.Logger;
+import dm.shakespeare.plot.Event.EventNarrator;
+import dm.shakespeare.plot.Story.StoryNarrator;
 import dm.shakespeare.plot.function.NullaryFunction;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -34,7 +36,7 @@ public class Scene {
 
   @NotNull
   public <T> Event<T> includeEvent(
-      @NotNull final NullaryFunction<? extends Event<T>> eventCreator) {
+      @NotNull final NullaryFunction<? extends Event<? extends T>> eventCreator) {
     Setting.set(mSetting);
     try {
       return Event.ofEvent(eventCreator);
@@ -46,10 +48,38 @@ public class Scene {
 
   @NotNull
   public <T> Story<T> includeStory(
-      @NotNull final NullaryFunction<? extends Story<T>> storyCreator) {
+      @NotNull final NullaryFunction<? extends Story<? extends T>> storyCreator) {
     Setting.set(mSetting);
     try {
       return Story.ofStory(storyCreator);
+
+    } finally {
+      Setting.unset();
+    }
+  }
+
+  @NotNull
+  @SuppressWarnings("unchecked")
+  public <T> EventNarrator<T> narrateEvent(
+      @NotNull final NullaryFunction<? extends EventNarrator<? extends T>> eventCreator) throws
+      Exception {
+    Setting.set(mSetting);
+    try {
+      return (EventNarrator<T>) eventCreator.call();
+
+    } finally {
+      Setting.unset();
+    }
+  }
+
+  @NotNull
+  @SuppressWarnings("unchecked")
+  public <T> StoryNarrator<T> narrateStory(
+      @NotNull final NullaryFunction<? extends StoryNarrator<? extends T>> storyCreator) throws
+      Exception {
+    Setting.set(mSetting);
+    try {
+      return (StoryNarrator<T>) storyCreator.call();
 
     } finally {
       Setting.unset();
