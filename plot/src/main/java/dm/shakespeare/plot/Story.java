@@ -543,6 +543,17 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
+  public Story<T> watchAll(@Nullable final Observer<? super T> effectObserver) {
+    return forAll(new WatchAllFunction<T>(effectObserver));
+  }
+
+  @NotNull
+  public Story<T> watchAll(@Nullable final Observer<? super T> effectObserver,
+      @NotNull final Memory memory) {
+    return forAll(new WatchAllFunction<T>(effectObserver), memory);
+  }
+
+  @NotNull
   public Story<T> watchEach(@NotNull final EventObserver<? super T> eventObserver) {
     return watchEach(eventObserver, new ListMemory());
   }
@@ -3821,6 +3832,20 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @NotNull
     Actor getActor() {
       return mActor;
+    }
+  }
+
+  private static class WatchAllFunction<T> implements UnaryFunction<T, Story<T>> {
+
+    private final Observer<? super T> mEffectObserver;
+
+    private WatchAllFunction(@Nullable final Observer<? super T> effectObserver) {
+      mEffectObserver = ConstantConditions.notNull("effectObserver", effectObserver);
+    }
+
+    public Story<T> call(final T first) throws Exception {
+      mEffectObserver.accept(first);
+      return Story.ofSingleEffect(first);
     }
   }
 
