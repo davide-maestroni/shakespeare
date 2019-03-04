@@ -1,0 +1,9 @@
+package dm.shakespeare.plot.function;
+
+/**
+ * Created by davide-maestroni on 04/26/2018.
+ */
+public interface {{classPrefix}}Function<{{#paramTypes}}{{type}}, {{/paramTypes}}R> {
+
+  R call({{#paramTypes}}{{type}} {{prefix}}{{#hasNext}}, {{/hasNext}}{{/paramTypes}}) throws Exception;
+}

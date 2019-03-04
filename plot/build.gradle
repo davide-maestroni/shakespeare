@@ -92,16 +92,16 @@ task generateClasses(type: Task) {
   def arities = new org.yaml.snakeyaml.Yaml().load(file('res/arities.yaml').newInputStream())
   def scopes = []
   scopes += [
-    classPrefix: 'Unary',
-    paramTypes: [[prefix: 'first', type: 'T1', index: 0, hasNext: false]]
+      classPrefix: 'Unary',
+      paramTypes : [[prefix: 'first', type: 'T1', index: 0, hasNext: false]]
   ]
   def index = 1
-  arities.forEach({arity ->
-    def clone = scopes[index - 1].paramTypes.collect({scope -> scope.clone()})
+  arities.forEach({ arity ->
+    def clone = scopes[index - 1].paramTypes.collect({ scope -> scope.clone() })
     clone.last().hasNext = true
     scopes += [
         classPrefix: arity.prefix.capitalize(),
-        paramTypes: clone + [[prefix: arity.param, type: "T${index + 1}", index: index, hasNext: false]]
+        paramTypes : clone + [[prefix: arity.param, type: "T${index + 1}", index: index, hasNext: false]]
     ]
     ++index
   })
@@ -112,7 +112,11 @@ task generateClasses(type: Task) {
   doFirst {
     def writer = factory.compile(file('res/event.mustache').path).execute(new StringWriter(), [arities: scopes])
     file(functionPath).mkdirs()
-    file("${plotPath}/Event.java") << writer
+    file("${plotPath}/Event.java").newWriter().withWriter({ w -> w << writer })
+    scopes.stream().skip(1).forEach({ scope ->
+      writer = factory.compile(file('res/function.mustache').path).execute(new StringWriter(), [scope])
+      file("${functionPath}/${scope.classPrefix}Function.java").newWriter().withWriter({ w -> w << writer })
+    })
   }
   project.sourceSets.main.java.srcDir(mainPath)
 }
