@@ -1,0 +1,19 @@
+---
+- prefix: binary
+  param: second
+- prefix: ternary
+  param: third
+- prefix: quaternary
+  param: fourth
+- prefix: quinary
+  param: fifth
+- prefix: senary
+  param: sixth
+- prefix: septenary
+  param: seventh
+- prefix: octonary
+  param: eighth
+- prefix: novenary
+  param: nineth
+- prefix: denary
+  param: tenth

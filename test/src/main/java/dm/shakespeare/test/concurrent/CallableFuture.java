@@ -4,8 +4,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.Callable;
 
-import dm.shakespeare.util.ConstantConditions;
-
 /**
  * Created by davide-maestroni on 02/14/2019.
  */
@@ -15,7 +13,7 @@ class CallableFuture<V> extends AbstractFuture<V> {
 
   CallableFuture(@NotNull final Callable<V> callable, final long timestamp) {
     super(timestamp);
-    mCallable = ConstantConditions.notNull("callable", callable);
+    mCallable = TestConditions.notNull("callable", callable);
   }
 
   @Override

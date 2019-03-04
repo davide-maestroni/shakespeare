@@ -34,7 +34,9 @@ import dm.shakespeare.message.Receipt;
 import dm.shakespeare.plot.Setting.Cache;
 import dm.shakespeare.plot.function.Action;
 import dm.shakespeare.plot.function.NullaryFunction;
-import dm.shakespeare.plot.function.UnaryFunction;
+{{#arities}}
+import dm.shakespeare.plot.function.{{classPrefix}}Function;
+{{/arities}}
 import dm.shakespeare.plot.narrator.Narrator;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.Iterables;
@@ -114,12 +116,14 @@ public abstract class Event<T> {
   public static Event<Boolean> ofTrue() {
     return ofEffect(Boolean.TRUE);
   }
+{{#arities}}
 
   @NotNull
-  public static <T1, R> Event<R> when(@NotNull final Event<? extends T1> firstEvent,
-      @NotNull final UnaryFunction<? super T1, ? extends Event<R>> effectHandler) {
-    return new UnaryEvent<T1, R>(firstEvent, effectHandler);
+  public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Event<R> when({{#paramTypes}}@NotNull final Event<? extends {{type}}> {{prefix}}Event, {{/paramTypes}}
+      @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends Event<R>> effectHandler) {
+    return new {{classPrefix}}Event<{{#paramTypes}}{{type}}, {{/paramTypes}}R>({{#paramTypes}}{{prefix}}Event, {{/paramTypes}}effectHandler);
   }
+{{/arities}}
 
   @NotNull
   public static <T, R> Event<R> when(@NotNull final Iterable<? extends Event<? extends T>> events,
@@ -1098,17 +1102,18 @@ public abstract class Event<T> {
       return mSender;
     }
   }
+{{#arities}}
 
-  private static class UnaryEvent<T1, R> extends AbstractEvent<R> {
+  private static class {{classPrefix}}Event<{{#paramTypes}}{{type}}, {{/paramTypes}}R> extends AbstractEvent<R> {
 
     private final List<Actor> mActors;
-    private final UnaryFunction<? super T1, ? extends Event<R>> mEffectHandler;
+    private final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends Event<R>> mEffectHandler;
 
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
-    private UnaryEvent(@NotNull final Event<? extends T1> firstEvent,
-        @NotNull final UnaryFunction<? super T1, ? extends Event<R>> effectHandler) {
+    private {{classPrefix}}Event({{#paramTypes}}@NotNull final Event<? extends {{type}}> {{prefix}}Event, {{/paramTypes}}
+        @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends Event<R>> effectHandler) {
       super(1);
-      mActors = Arrays.asList(firstEvent.getActor());
+      mActors = Arrays.asList({{#paramTypes}}{{prefix}}Event.getActor(){{#hasNext}}, {{/hasNext}}{{/paramTypes}});
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
     }
 
@@ -1122,7 +1127,7 @@ public abstract class Event<T> {
     Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
       Setting.set(getSetting());
       try {
-        final Event<R> event = mEffectHandler.call((T1) inputs[0]);
+        final Event<R> event = mEffectHandler.call({{#paramTypes}}({{type}}) inputs[{{index}}]{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
         return ((event != null) ? event : ofNull()).getActor();
 
       } finally {
@@ -1130,6 +1135,7 @@ public abstract class Event<T> {
       }
     }
   }
+{{/arities}}
 
   private static class WatchEvent<T> extends AbstractEvent<T> {
 

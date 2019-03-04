@@ -3,40 +3,47 @@ package dm.shakespeare.test.concurrent;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import dm.shakespeare.util.CQueue;
-import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Created by davide-maestroni on 02/08/2019.
  */
 public class TestExecutorService extends AbstractExecutorService {
 
-  private final CQueue<Runnable> mRunnables = new CQueue<Runnable>();
+  private final Queue<Runnable> mRunnables;
 
   private boolean mIsShutdown;
 
+  public TestExecutorService() {
+    this(new LinkedList<Runnable>());
+  }
+
+  public TestExecutorService(@NotNull final Queue<Runnable> queue) {
+    mRunnables = TestConditions.notNull("queue", queue);
+  }
+
   @SuppressWarnings("ResultOfMethodCallIgnored")
   public int consume(final int maxTasks) {
-    ConstantConditions.positive("maxTasks", maxTasks);
-    final CQueue<Runnable> runnables = mRunnables;
+    TestConditions.positive("maxTasks", maxTasks);
+    final Queue<Runnable> runnables = mRunnables;
     int count = 0;
     while ((count < maxTasks) && !runnables.isEmpty()) {
-      runnables.removeFirst().run();
+      runnables.remove().run();
       ++count;
     }
     return count;
   }
 
   public int consumeAll() {
-    final CQueue<Runnable> runnables = mRunnables;
+    final Queue<Runnable> runnables = mRunnables;
     int count = 0;
     while (!runnables.isEmpty()) {
-      runnables.removeFirst().run();
+      runnables.remove().run();
       ++count;
     }
     return count;
@@ -61,8 +68,8 @@ public class TestExecutorService extends AbstractExecutorService {
   @NotNull
   public List<Runnable> shutdownNow() {
     mIsShutdown = true;
-    final ArrayList<Runnable> runnables = new ArrayList<Runnable>();
-    mRunnables.drainTo(runnables);
+    final ArrayList<Runnable> runnables = new ArrayList<Runnable>(mRunnables);
+    mRunnables.clear();
     return runnables;
   }
 

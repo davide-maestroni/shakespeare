@@ -5,8 +5,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import dm.shakespeare.util.ConstantConditions;
-
 /**
  * Created by davide-maestroni on 02/14/2019.
  */
@@ -24,8 +22,8 @@ class RunnableFuture extends AbstractFuture<Object> {
   RunnableFuture(@NotNull final List<AbstractFuture<?>> futures, @NotNull final Runnable runnable,
       final long timestamp, final long period) {
     super(timestamp);
-    mFutures = ConstantConditions.notNull("futures", futures);
-    mRunnable = ConstantConditions.notNull("runnable", runnable);
+    mFutures = TestConditions.notNull("futures", futures);
+    mRunnable = TestConditions.notNull("runnable", runnable);
     mPeriod = period;
   }
 

@@ -11,8 +11,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import dm.shakespeare.util.ConstantConditions;
-
 /**
  * Created by davide-maestroni on 02/08/2019.
  */
@@ -62,7 +60,7 @@ public class TestScheduledExecutorService extends TestExecutorService
       final long initialDelay, final long period, @NotNull final TimeUnit unit) {
     final RunnableFuture future =
         new RunnableFuture(mFutures, command, AbstractFuture.toTimestampNanos(initialDelay, unit),
-            unit.toNanos(ConstantConditions.positive("period", period)));
+            unit.toNanos(TestConditions.positive("period", period)));
     mFutures.add(future);
     return future;
   }
@@ -72,7 +70,7 @@ public class TestScheduledExecutorService extends TestExecutorService
       final long initialDelay, final long delay, @NotNull final TimeUnit unit) {
     final RunnableFuture future =
         new RunnableFuture(mFutures, command, AbstractFuture.toTimestampNanos(initialDelay, unit),
-            unit.toNanos(-ConstantConditions.positive("delay", delay)));
+            unit.toNanos(-TestConditions.positive("delay", delay)));
     mFutures.add(future);
     return future;
   }
