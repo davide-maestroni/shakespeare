@@ -14,21 +14,12 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.message;
-
-import org.jetbrains.annotations.NotNull;
-
-import dm.shakespeare.actor.Options;
-import dm.shakespeare.config.BuildConfig;
+package dm.shakespeare.plot.memory;
 
 /**
- * Created by davide-maestroni on 01/09/2019.
+ * Created by davide-maestroni on 03/05/2019.
  */
-public class QuotaExceeded extends Bounce {
+public interface Memory extends Iterable<Object> {
 
-  private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
-
-  public QuotaExceeded(final Object message, @NotNull final Options options) {
-    super(message, options);
-  }
+  void put(Object value);
 }

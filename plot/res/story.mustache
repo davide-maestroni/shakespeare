@@ -1,3 +1,19 @@
+/*
+ * Copyright 2019 Davide Maestroni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package dm.shakespeare.plot;
 
 import org.jetbrains.annotations.NotNull;
@@ -38,8 +54,11 @@ import dm.shakespeare.message.Receipt;
 import dm.shakespeare.plot.Setting.Cache;
 import dm.shakespeare.plot.function.Action;
 import dm.shakespeare.plot.function.NullaryFunction;
-import dm.shakespeare.plot.function.UnaryFunction;
+{{#arities}}
+import dm.shakespeare.plot.function.{{classPrefix}}Function;
+{{/arities}}
 import dm.shakespeare.plot.memory.ListMemory;
+import dm.shakespeare.plot.memory.Memory;
 import dm.shakespeare.plot.memory.SingletonMemory;
 import dm.shakespeare.plot.narrator.Narrator;
 import dm.shakespeare.util.ConstantConditions;
@@ -49,10 +68,6 @@ import dm.shakespeare.util.Iterables;
  * Created by davide-maestroni on 01/22/2019.
  */
 public abstract class Story<T> extends Event<Iterable<T>> {
-
-  // TODO: 05/02/2019 PROGRESS???
-  // TODO: 15/02/2019 untriggered actors, serialization
-  // TODO: 28/02/2019 isBoundless()?, mustache, swagger converter
 
   static final Object BREAK = new Object();
   static final Object END = new Object();
@@ -224,21 +239,23 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     return when(stories, new LooperConditionHandler(storyEvolver),
         new LooperEffectHandler<List<T>, R>(storyEvolver), memory);
   }
+{{#arities}}
 
   @NotNull
-  public static <T1, R> Story<R> when(@NotNull final Story<? extends T1> firstStory,
+  public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Story<R> when({{#paramTypes}}@NotNull final Story<? extends {{type}}> {{prefix}}Story, {{/paramTypes}}
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-      @NotNull final UnaryFunction<? super T1, ? extends Story<? extends R>> effectHandler) {
-    return when(firstStory, conditionHandler, effectHandler, new ListMemory());
+      @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends Story<? extends R>> effectHandler) {
+    return when({{#paramTypes}}{{prefix}}Story, {{/paramTypes}}conditionHandler, effectHandler, new ListMemory());
   }
 
   @NotNull
-  public static <T1, R> Story<R> when(@NotNull final Story<? extends T1> firstStory,
+  public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Story<R> when({{#paramTypes}}@NotNull final Story<? extends {{type}}> {{prefix}}Story, {{/paramTypes}}
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-      @NotNull final UnaryFunction<? super T1, ? extends Story<? extends R>> effectHandler,
+      @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends Story<? extends R>> effectHandler,
       @NotNull final Memory memory) {
-    return new UnaryStory<T1, R>(firstStory, conditionHandler, effectHandler, memory);
+    return new {{classPrefix}}Story<{{#paramTypes}}{{type}}, {{/paramTypes}}R>({{#paramTypes}}{{prefix}}Story, {{/paramTypes}}conditionHandler, effectHandler, memory);
   }
+{{/arities}}
 
   static void done(@NotNull final Memory memory, @NotNull final Map<String, Sender> getSenders,
       @NotNull final Map<String, SenderIterator> nextSenders, @NotNull final Context context) {
@@ -574,11 +591,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public Story<T> watchEach(@Nullable final Observer<? super T> effectObserver,
       @Nullable final Observer<? super Throwable> incidentObserver, @NotNull final Memory memory) {
     return watchEach(new DefaultEventObserver<T>(effectObserver, incidentObserver), memory);
-  }
-
-  public interface Memory extends Iterable<Object> {
-
-    void put(Object value);
   }
 
   public interface StoryEvolver<T, R> {
@@ -3651,19 +3663,20 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       return ExecutorServices.trampolineExecutor();
     }
   }
+{{#arities}}
 
-  private static class UnaryStory<T1, R> extends AbstractStory<R> {
+  private static class {{classPrefix}}Story<{{#paramTypes}}{{type}}, {{/paramTypes}}R> extends AbstractStory<R> {
 
-    private final UnaryFunction<? super T1, ? extends Story<? extends R>> mEffectHandler;
+    private final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends Story<? extends R>> mEffectHandler;
     private final List<Actor> mInputActors;
 
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
-    private UnaryStory(@NotNull final Story<? extends T1> firstStory,
+    private {{classPrefix}}Story({{#paramTypes}}@NotNull final Story<? extends {{type}}> {{prefix}}Story, {{/paramTypes}}
         @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-        @NotNull final UnaryFunction<? super T1, ? extends Story<? extends R>> effectHandler,
+        @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends Story<? extends R>> effectHandler,
         @NotNull final Memory memory) {
       super(conditionHandler, 1, memory);
-      mInputActors = Arrays.asList(firstStory.getActor());
+      mInputActors = Arrays.asList({{#paramTypes}}{{prefix}}Story.getActor(){{#hasNext}}, {{/hasNext}}{{/paramTypes}});
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
     }
 
@@ -3677,7 +3690,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
       Setting.set(getSetting());
       try {
-        final Story<? extends R> story = mEffectHandler.call((T1) inputs[0]);
+        final Story<? extends R> story = mEffectHandler.call({{#paramTypes}}({{type}}) inputs[{{index}}]{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
         if ((story == null) || isEmpty(story)) {
           return null;
         }
@@ -3688,6 +3701,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       }
     }
   }
+{{/arities}}
 
   private static class UnfoldStory<T> extends Story<T> {
 

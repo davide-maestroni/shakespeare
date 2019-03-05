@@ -1,3 +1,19 @@
+/*
+ * Copyright 2019 Davide Maestroni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package dm.shakespeare.plot;
 
 import org.jetbrains.annotations.NotNull;
@@ -120,14 +136,14 @@ public abstract class Event<T> {
 
   @NotNull
   public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Event<R> when({{#paramTypes}}@NotNull final Event<? extends {{type}}> {{prefix}}Event, {{/paramTypes}}
-      @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends Event<R>> effectHandler) {
+      @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends Event<? extends R>> effectHandler) {
     return new {{classPrefix}}Event<{{#paramTypes}}{{type}}, {{/paramTypes}}R>({{#paramTypes}}{{prefix}}Event, {{/paramTypes}}effectHandler);
   }
 {{/arities}}
 
   @NotNull
   public static <T, R> Event<R> when(@NotNull final Iterable<? extends Event<? extends T>> events,
-      @NotNull final UnaryFunction<? super List<T>, ? extends Event<R>> effectHandler) {
+      @NotNull final UnaryFunction<? super List<T>, ? extends Event<? extends R>> effectHandler) {
     return new GenericEvent<T, R>(events, effectHandler);
   }
 
@@ -609,7 +625,6 @@ public abstract class Event<T> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) {
         if (message == GET) {
-          // TODO: 25/01/2019 loop detection?
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
 
@@ -860,10 +875,10 @@ public abstract class Event<T> {
   private static class GenericEvent<T, R> extends AbstractEvent<R> {
 
     private final List<Actor> mActors;
-    private final UnaryFunction<? super List<T>, ? extends Event<R>> mEffectHandler;
+    private final UnaryFunction<? super List<T>, ? extends Event<? extends R>> mEffectHandler;
 
     private GenericEvent(@NotNull final Iterable<? extends Event<? extends T>> events,
-        @NotNull final UnaryFunction<? super List<T>, ? extends Event<R>> effectHandler) {
+        @NotNull final UnaryFunction<? super List<T>, ? extends Event<? extends R>> effectHandler) {
       super(Iterables.size(events));
       final ArrayList<Actor> actors = new ArrayList<Actor>();
       for (final Event<? extends T> event : events) {
@@ -887,7 +902,7 @@ public abstract class Event<T> {
         for (final Object input : inputs) {
           inputList.add((T) input);
         }
-        final Event<R> event = mEffectHandler.call(inputList);
+        final Event<? extends R> event = mEffectHandler.call(inputList);
         return ((event != null) ? event : ofNull()).getActor();
 
       } finally {
@@ -1107,11 +1122,11 @@ public abstract class Event<T> {
   private static class {{classPrefix}}Event<{{#paramTypes}}{{type}}, {{/paramTypes}}R> extends AbstractEvent<R> {
 
     private final List<Actor> mActors;
-    private final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends Event<R>> mEffectHandler;
+    private final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends Event<? extends R>> mEffectHandler;
 
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
     private {{classPrefix}}Event({{#paramTypes}}@NotNull final Event<? extends {{type}}> {{prefix}}Event, {{/paramTypes}}
-        @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends Event<R>> effectHandler) {
+        @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends Event<? extends R>> effectHandler) {
       super(1);
       mActors = Arrays.asList({{#paramTypes}}{{prefix}}Event.getActor(){{#hasNext}}, {{/hasNext}}{{/paramTypes}});
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
@@ -1127,7 +1142,7 @@ public abstract class Event<T> {
     Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
       Setting.set(getSetting());
       try {
-        final Event<R> event = mEffectHandler.call({{#paramTypes}}({{type}}) inputs[{{index}}]{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
+        final Event<? extends R> event = mEffectHandler.call({{#paramTypes}}({{type}}) inputs[{{index}}]{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
         return ((event != null) ? event : ofNull()).getActor();
 
       } finally {

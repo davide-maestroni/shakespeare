@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Davide Maestroni
+ * Copyright 2019 Davide Maestroni
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,9 +110,11 @@ task generateClasses(type: Task) {
   def plotPath = "${mainPath}/dm/shakespeare/plot"
   def functionPath = "${plotPath}/function"
   doFirst {
-    def writer = factory.compile(file('res/event.mustache').path).execute(new StringWriter(), [arities: scopes])
     file(functionPath).mkdirs()
+    def writer = factory.compile(file('res/event.mustache').path).execute(new StringWriter(), [arities: scopes])
     file("${plotPath}/Event.java").newWriter().withWriter({ w -> w << writer })
+    writer = factory.compile(file('res/story.mustache').path).execute(new StringWriter(), [arities: scopes])
+    file("${plotPath}/Story.java").newWriter().withWriter({ w -> w << writer })
     scopes.stream().skip(1).forEach({ scope ->
       writer = factory.compile(file('res/function.mustache').path).execute(new StringWriter(), [scope])
       file("${functionPath}/${scope.classPrefix}Function.java").newWriter().withWriter({ w -> w << writer })
