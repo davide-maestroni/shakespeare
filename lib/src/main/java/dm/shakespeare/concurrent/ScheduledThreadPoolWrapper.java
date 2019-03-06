@@ -25,9 +25,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -77,7 +77,7 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
   ScheduledThreadPoolWrapper(final int corePoolSize, final int maximumPoolSize,
       final long keepAliveTime, @NotNull final TimeUnit keepAliveUnit) {
     this(new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, keepAliveUnit,
-        new NonRejectingQueue()));
+        new LinkedBlockingQueue<Runnable>()));
   }
 
   /**
@@ -99,17 +99,12 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
       final long keepAliveTime, @NotNull final TimeUnit keepAliveUnit,
       @NotNull final ThreadFactory threadFactory) {
     this(new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, keepAliveUnit,
-        new NonRejectingQueue(), threadFactory));
+        new LinkedBlockingQueue<Runnable>(), threadFactory));
   }
 
   @Override
   public boolean isShutdown() {
     return super.isShutdown() && mExecutor.isShutdown();
-  }
-
-  @Override
-  public boolean isTerminating() {
-    return super.isTerminating();
   }
 
   @Override
@@ -279,27 +274,6 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
         final long timeout, @NotNull final TimeUnit unit) throws InterruptedException,
         ExecutionException, TimeoutException {
       return mExecutor.invokeAny(tasks, timeout, unit);
-    }
-  }
-
-  /**
-   * Implementation of a synchronous queue, which avoids rejection of tasks by forcedly waiting
-   * for available threads.
-   */
-  private static class NonRejectingQueue extends SynchronousQueue<Runnable> {
-
-    // Unused
-    private static final long serialVersionUID = -1;
-
-    @Override
-    public boolean offer(@NotNull final Runnable runnable) {
-      try {
-        put(runnable);
-
-      } catch (final InterruptedException ignored) {
-        return false;
-      }
-      return true;
     }
   }
 }

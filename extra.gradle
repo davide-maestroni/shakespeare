@@ -261,7 +261,7 @@ afterEvaluate { project ->
 }
 
 def isJavaProject(project) {
-  project.plugins.hasPlugin('java')
+  project.plugins.hasPlugin('java-library')
 }
 
 def isAndroidProject(project) {

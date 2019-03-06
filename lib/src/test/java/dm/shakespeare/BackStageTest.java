@@ -14,14 +14,9 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.message;
+package dm.shakespeare;
 
 /**
- * Created by davide-maestroni on 01/17/2019.
+ * Created by davide-maestroni on 03/05/2019.
  */
-public class IllegalRecipientException extends RuntimeException {
-
-  public IllegalRecipientException(final String message) {
-    super(message);
-  }
-}
+public class BackStageTest {}

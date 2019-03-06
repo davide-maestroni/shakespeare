@@ -38,6 +38,7 @@ import dm.shakespeare.log.Logger;
  */
 public abstract class Script {
 
+  // TODO: 06/03/2019 shutdown?
   private static final ScheduledExecutorService DEFAULT_EXECUTOR =
       ExecutorServices.newDynamicScheduledThreadPool(new ThreadFactory() {
 

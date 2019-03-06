@@ -28,6 +28,8 @@ import java.util.Locale;
  */
 public class LogMessage {
 
+  private static final Object[] NO_ARGS = new Object[0];
+
   private final Object[] mArgs;
   private final Thread mCallingThread;
   private final String mFormat;
@@ -52,7 +54,7 @@ public class LogMessage {
     mThrowable = throwable;
     mMessage = message;
     mFormat = format;
-    mArgs = args;
+    mArgs = (args != null) ? args : NO_ARGS;
     mCallingThread = Thread.currentThread();
   }
 
@@ -123,7 +125,7 @@ public class LogMessage {
 
   @Nullable
   public Object[] getArgs() {
-    return mArgs;
+    return mArgs.clone();
   }
 
   @NotNull
@@ -159,6 +161,7 @@ public class LogMessage {
 
   @Override
   public String toString() {
-    return formatMessage();
+    final String message = formatMessage();
+    return (message != null) ? message : "null";
   }
 }

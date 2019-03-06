@@ -26,7 +26,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 import dm.shakespeare.util.ConstantConditions;
 
@@ -35,8 +34,9 @@ import dm.shakespeare.util.ConstantConditions;
  */
 class TimeoutExecutorService extends AbstractExecutorService {
 
-  private static final AtomicLong sCount = new AtomicLong();
+  private static final Object sMutex = new Object();
 
+  private static long sCount;
   private static ScheduledExecutorService sTimeoutService;
 
   private final ExecutorService mExecutor;
@@ -51,6 +51,23 @@ class TimeoutExecutorService extends AbstractExecutorService {
     mTimeout = ConstantConditions.positive("timeout", timeout);
     mTimeUnit = ConstantConditions.notNull("timeUnit", timeUnit);
     mMayInterruptIfRunning = mayInterruptIfRunning;
+    startGlobalService();
+  }
+
+  private static void shutdownGlobalService() {
+    synchronized (sMutex) {
+      if (--sCount == 0) {
+        sTimeoutService.shutdown();
+      }
+    }
+  }
+
+  private static void startGlobalService() {
+    synchronized (sMutex) {
+      if (sCount++ == 0) {
+        sTimeoutService = Executors.newSingleThreadScheduledExecutor();
+      }
+    }
   }
 
   public void execute(@NotNull final Runnable command) {
@@ -60,9 +77,7 @@ class TimeoutExecutorService extends AbstractExecutorService {
   public void shutdown() {
     mExecutor.shutdown();
     if (!mIsShutdown.getAndSet(true)) {
-      if (sCount.decrementAndGet() == 0) {
-        sTimeoutService.shutdown();
-      }
+      shutdownGlobalService();
     }
   }
 
@@ -70,9 +85,7 @@ class TimeoutExecutorService extends AbstractExecutorService {
   public List<Runnable> shutdownNow() {
     final List<Runnable> runnables = mExecutor.shutdownNow();
     if (!mIsShutdown.getAndSet(true)) {
-      if (sCount.decrementAndGet() == 0) {
-        sTimeoutService.shutdown();
-      }
+      shutdownGlobalService();
     }
     return runnables;
   }
@@ -92,9 +105,6 @@ class TimeoutExecutorService extends AbstractExecutorService {
 
   @NotNull
   <F extends Future<?>> F timeout(@NotNull final F future) {
-    if (sCount.getAndIncrement() == 0) {
-      sTimeoutService = Executors.newSingleThreadScheduledExecutor();
-    }
     sTimeoutService.schedule(new CancelRunnable(future, mMayInterruptIfRunning), mTimeout,
         mTimeUnit);
     return future;
