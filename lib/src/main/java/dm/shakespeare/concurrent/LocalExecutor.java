@@ -18,22 +18,23 @@ package dm.shakespeare.concurrent;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.Executor;
+
 import dm.shakespeare.log.LogPrinters;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.CQueue;
 
 /**
- * Class maintaining a queue of commands which is local to the calling thread.
+ * Class maintaining a queue of commands.
  * <p>
  * The implementation ensures that recursive commands are broken into commands handled inside a
  * consuming loop, running in the same thread.
  * <p>
  * Created by davide-maestroni on 09/18/2014.
  */
-class LocalExecutor {
+class LocalExecutor implements Executor {
 
   private static final int INITIAL_CAPACITY = 1 << 3;
-  private static final LocalExecutorThreadLocal sExecutor = new LocalExecutorThreadLocal();
   private static final Logger sLogger =
       Logger.newLogger(LogPrinters.javaLoggingPrinter(LocalExecutor.class.getName()));
 
@@ -42,32 +43,18 @@ class LocalExecutor {
   private boolean mIsRunning;
 
   /**
-   * Constructor.
-   */
-  private LocalExecutor() {
-  }
-
-  /**
    * Executes the specified command.
    *
    * @param command the command.
    */
-  public static void execute(@NotNull final Runnable command) {
-    sExecutor.get().enqueue(command);
-  }
-
-  public static void executeNext(@NotNull final Runnable command) {
-    sExecutor.get().enqueueNext(command);
-  }
-
-  private void enqueue(@NotNull final Runnable command) {
+  public void execute(@NotNull final Runnable command) {
     mCommands.add(command);
     if (!mIsRunning) {
       execute();
     }
   }
 
-  private void enqueueNext(@NotNull final Runnable command) {
+  public void executeNext(@NotNull final Runnable command) {
     mCommands.addFirst(command);
     if (!mIsRunning) {
       execute();
@@ -93,17 +80,6 @@ class LocalExecutor {
 
     } finally {
       mIsRunning = false;
-    }
-  }
-
-  /**
-   * Thread local initializing the queue instance.
-   */
-  private static class LocalExecutorThreadLocal extends ThreadLocal<LocalExecutor> {
-
-    @Override
-    protected LocalExecutor initialValue() {
-      return new LocalExecutor();
     }
   }
 }

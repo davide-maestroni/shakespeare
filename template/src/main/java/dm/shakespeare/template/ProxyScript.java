@@ -174,7 +174,7 @@ public class ProxyScript extends Script {
     @NotNull
     @Override
     public ExecutorService getExecutor(@NotNull final String id) {
-      return ExecutorServices.trampolineExecutor();
+      return ExecutorServices.localExecutor();
     }
   }
 }

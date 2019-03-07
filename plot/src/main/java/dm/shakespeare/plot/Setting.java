@@ -96,17 +96,17 @@ class Setting {
     return mExecutor;
   }
 
+  @NotNull
+  ExecutorService getLocalExecutor() {
+    if (mTrampolineExecutor == null) {
+      mTrampolineExecutor = ExecutorServices.asActorExecutor(ExecutorServices.localExecutor());
+    }
+    return mTrampolineExecutor;
+  }
+
   @Nullable
   Logger getLogger() {
     return mLogger;
-  }
-
-  @NotNull
-  ExecutorService getTrampolineExecutor() {
-    if (mTrampolineExecutor == null) {
-      mTrampolineExecutor = ExecutorServices.asActorExecutor(ExecutorServices.trampolineExecutor());
-    }
-    return mTrampolineExecutor;
   }
 
   @NotNull

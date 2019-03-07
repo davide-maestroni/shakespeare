@@ -18,7 +18,6 @@ package dm.shakespeare.concurrent;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -26,37 +25,42 @@ import java.util.concurrent.TimeUnit;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
+ * Class maintaining a queue of commands which is local to the calling thread.
+ * <p>
  * Created by davide-maestroni on 05/28/2018.
  */
-class TrampolineExecutor extends AbstractExecutorService implements QueuedExecutorService {
+class LocalExecutorService extends AbstractExecutorService implements QueuedExecutorService {
 
-  private static final TrampolineExecutor sInstance = new TrampolineExecutor();
+  private static final LocalExecutorService sInstance = new LocalExecutorService();
+
+  private final LocalExecutorThreadLocal mLocalExecutor = new LocalExecutorThreadLocal();
 
   /**
    * Avoid explicit instantiation.
    */
-  private TrampolineExecutor() {
+  private LocalExecutorService() {
   }
 
   @NotNull
-  static TrampolineExecutor defaultInstance() {
+  static LocalExecutorService defaultInstance() {
     return sInstance;
   }
 
   public void execute(@NotNull final Runnable command) {
-    LocalExecutor.execute(ConstantConditions.notNull("command", command));
+    mLocalExecutor.get().execute(ConstantConditions.notNull("command", command));
   }
 
   public void executeNext(@NotNull final Runnable command) {
-    LocalExecutor.executeNext(ConstantConditions.notNull("command", command));
+    mLocalExecutor.get().executeNext(ConstantConditions.notNull("command", command));
   }
 
   public void shutdown() {
+    ConstantConditions.unsupported();
   }
 
   @NotNull
   public List<Runnable> shutdownNow() {
-    return Collections.emptyList();
+    return ConstantConditions.unsupported();
   }
 
   public boolean isShutdown() {
@@ -71,5 +75,16 @@ class TrampolineExecutor extends AbstractExecutorService implements QueuedExecut
       InterruptedException {
     Thread.sleep(unit.toMillis(timeout));
     return false;
+  }
+
+  /**
+   * Thread local initializing the queue instance.
+   */
+  private static class LocalExecutorThreadLocal extends ThreadLocal<LocalExecutor> {
+
+    @Override
+    protected LocalExecutor initialValue() {
+      return new LocalExecutor();
+    }
   }
 }

@@ -27,18 +27,19 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 01/25/2019.
  */
-abstract class TrampolinePlayScript extends Script {
+abstract class SceneScript extends Script {
 
   private final Setting mSetting;
 
-  TrampolinePlayScript(@NotNull final Setting setting) {
+  SceneScript(@NotNull final Setting setting) {
     mSetting = ConstantConditions.notNull("setting", setting);
   }
 
   @NotNull
   @Override
-  public ExecutorService getExecutor(@NotNull final String id) {
-    return mSetting.getTrampolineExecutor();
+  public ExecutorService getExecutor(@NotNull final String id) throws Exception {
+    final ExecutorService executor = mSetting.getExecutor();
+    return (executor != null) ? executor : super.getExecutor(id);
   }
 
   @NotNull

@@ -28,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Semaphore;
@@ -59,7 +60,7 @@ public class ExecutorServicesTest {
   }
 
   @Test
-  public void actorExecutorShutdown() {
+  public void actorExecutorShutdown() throws Exception {
     testShutdown(ExecutorServices.asActorExecutor(Executors.newSingleThreadExecutor()));
   }
 
@@ -85,7 +86,7 @@ public class ExecutorServicesTest {
   }
 
   @Test
-  public void actorScheduledExecutorShutdown() {
+  public void actorScheduledExecutorShutdown() throws Exception {
     testShutdown(ExecutorServices.asActorExecutor(Executors.newSingleThreadScheduledExecutor()));
   }
 
@@ -132,7 +133,7 @@ public class ExecutorServicesTest {
   }
 
   @Test
-  public void dynamicScheduledThreadPoolShutdown() {
+  public void dynamicScheduledThreadPoolShutdown() throws Exception {
     testShutdown(ExecutorServices.newDynamicScheduledThreadPool(0, 3, 0, TimeUnit.SECONDS));
   }
 
@@ -142,9 +143,30 @@ public class ExecutorServicesTest {
     ExecutorServices.newDynamicScheduledThreadPool(0, 5, 10, null);
   }
 
+  @Test(expected = UnsupportedOperationException.class)
+  public void localExecutor() throws Exception {
+    testExecutor(ExecutorServices.localExecutor());
+  }
+
+  @Test
+  public void localExecutorAwait() throws Exception {
+    final ExecutorService executor = ExecutorServices.localExecutor();
+    assertThat(executor.isShutdown()).isFalse();
+    assertThat(executor.isTerminated()).isFalse();
+    assertThat(executor.awaitTermination(100, TimeUnit.MILLISECONDS)).isFalse();
+  }
+
+  @Test(expected = UnsupportedOperationException.class)
+  public void localExecutorShutdown() {
+    final ExecutorService executor = ExecutorServices.localExecutor();
+    assertThat(executor.isShutdown()).isFalse();
+    assertThat(executor.isTerminated()).isFalse();
+    executor.shutdownNow();
+  }
+
   @Test
   public void priorityExecutor() throws Exception {
-    testExecutor(ExecutorServices.withPriority(1, ExecutorServices.trampolineExecutor()));
+    testExecutor(ExecutorServices.withPriority(1, ExecutorServices.newTrampolineExecutor()));
   }
 
   @Test(expected = NullPointerException.class)
@@ -166,7 +188,7 @@ public class ExecutorServicesTest {
 
   @Test
   public void throttlingExecutor() throws Exception {
-    testExecutor(ExecutorServices.withThrottling(3, ExecutorServices.trampolineExecutor()));
+    testExecutor(ExecutorServices.withThrottling(3, ExecutorServices.newTrampolineExecutor()));
   }
 
   @Test
@@ -175,13 +197,13 @@ public class ExecutorServicesTest {
   }
 
   @Test
-  public void throttlingExecutorShutdown() {
+  public void throttlingExecutorShutdown() throws Exception {
     testShutdown(ExecutorServices.withThrottling(3, Executors.newSingleThreadExecutor()));
   }
 
   @Test
   public void throttlingExecutorSingle() throws Exception {
-    testExecutor(ExecutorServices.withThrottling(1, ExecutorServices.trampolineExecutor()));
+    testExecutor(ExecutorServices.withThrottling(1, ExecutorServices.newTrampolineExecutor()));
   }
 
   @Test
@@ -211,7 +233,7 @@ public class ExecutorServicesTest {
   }
 
   @Test
-  public void throttlingScheduledExecutorShutdown() {
+  public void throttlingScheduledExecutorShutdown() throws Exception {
     testShutdown(ExecutorServices.withThrottling(5, Executors.newScheduledThreadPool(13)));
   }
 
@@ -223,7 +245,7 @@ public class ExecutorServicesTest {
   @Test
   public void timeoutExecutor() throws Exception {
     testExecutor(ExecutorServices.withTimeout(3, TimeUnit.SECONDS, false,
-        ExecutorServices.trampolineExecutor()));
+        ExecutorServices.newTrampolineExecutor()));
   }
 
   @Test
@@ -241,7 +263,7 @@ public class ExecutorServicesTest {
   @Test(expected = IllegalArgumentException.class)
   @SuppressWarnings("ConstantConditions")
   public void timeoutExecutorPositive() {
-    ExecutorServices.withTimeout(0, TimeUnit.SECONDS, true, ExecutorServices.trampolineExecutor());
+    ExecutorServices.withTimeout(0, TimeUnit.SECONDS, true, ExecutorServices.localExecutor());
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -251,7 +273,7 @@ public class ExecutorServicesTest {
   }
 
   @Test
-  public void timeoutExecutorShutdown() {
+  public void timeoutExecutorShutdown() throws Exception {
     testShutdown(ExecutorServices.withTimeout(3, TimeUnit.SECONDS, false,
         Executors.newSingleThreadExecutor()));
   }
@@ -273,7 +295,7 @@ public class ExecutorServicesTest {
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void timeoutExecutorUnitNPE() {
-    ExecutorServices.withTimeout(1, null, true, ExecutorServices.trampolineExecutor());
+    ExecutorServices.withTimeout(1, null, true, ExecutorServices.localExecutor());
   }
 
   @Test
@@ -295,7 +317,7 @@ public class ExecutorServicesTest {
   }
 
   @Test
-  public void timeoutScheduledExecutorShutdown() {
+  public void timeoutScheduledExecutorShutdown() throws Exception {
     testShutdown(ExecutorServices.withTimeout(3, TimeUnit.SECONDS, true,
         Executors.newScheduledThreadPool(13)));
   }
@@ -308,7 +330,33 @@ public class ExecutorServicesTest {
 
   @Test
   public void trampolineExecutor() throws Exception {
-    testExecutor(ExecutorServices.trampolineExecutor());
+    testExecutor(ExecutorServices.newTrampolineExecutor());
+  }
+
+  @Test
+  public void trampolineExecutorFuture() {
+    final ExecutorService executor = ExecutorServices.newTrampolineExecutor();
+    final Future<Object> future = executor.submit(new SleepCallable<Object>(1000));
+    assertThat(future.cancel(true)).isFalse();
+    assertThat(future.isCancelled()).isFalse();
+    assertThat(future.isDone()).isTrue();
+    executor.shutdown();
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void trampolineExecutorNPE() {
+    ExecutorServices.newTrampolineExecutor(null);
+  }
+
+  @Test
+  public void trampolineExecutorQueue() throws Exception {
+    testExecutor(ExecutorServices.newTrampolineExecutor(new LinkedBlockingQueue<Runnable>()));
+  }
+
+  @Test
+  public void trampolineExecutorShutdown() throws Exception {
+    testShutdown(ExecutorServices.newTrampolineExecutor());
   }
 
   private void testExecutor(@NotNull final ExecutorService executor) throws Exception {
@@ -418,10 +466,11 @@ public class ExecutorServicesTest {
     executor.shutdown();
   }
 
-  private void testShutdown(@NotNull final ExecutorService executor) {
+  private void testShutdown(@NotNull final ExecutorService executor) throws InterruptedException {
     assertThat(executor.isShutdown()).isFalse();
     assertThat(executor.isTerminated()).isFalse();
     assertThat(executor.shutdownNow()).isEmpty();
+    assertThat(executor.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
     assertThat(executor.isShutdown()).isTrue();
     assertThat(executor.isTerminated()).isTrue();
   }

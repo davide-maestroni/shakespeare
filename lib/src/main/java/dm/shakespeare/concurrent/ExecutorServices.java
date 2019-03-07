@@ -18,6 +18,7 @@ package dm.shakespeare.concurrent;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -74,6 +75,11 @@ public class ExecutorServices {
   }
 
   @NotNull
+  public static ExecutorService localExecutor() {
+    return LocalExecutorService.defaultInstance();
+  }
+
+  @NotNull
   public static ScheduledExecutorService newDynamicScheduledThreadPool(
       @NotNull final ThreadFactory threadFactory) {
     final int processors = Runtime.getRuntime().availableProcessors();
@@ -97,8 +103,14 @@ public class ExecutorServices {
   }
 
   @NotNull
-  public static ExecutorService trampolineExecutor() {
-    return TrampolineExecutor.defaultInstance();
+  public static ExecutorService newTrampolineExecutor() {
+    return new TrampolineExecutorService();
+  }
+
+  @NotNull
+  public static ExecutorService newTrampolineExecutor(
+      @NotNull final BlockingQueue<Runnable> commandQueue) {
+    return new TrampolineExecutorService(commandQueue);
   }
 
   @NotNull

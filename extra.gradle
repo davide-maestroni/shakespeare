@@ -74,11 +74,8 @@ afterEvaluate { project ->
   def artifactPackaging = 'jar'
   if (isJavaProject(project)) {
     if (project.plugins.hasPlugin('jacoco')) {
-      project.task('jacocoTest', dependsOn: 'test') {
+      project.task('jacocoTest', dependsOn: ['test', 'jacocoTestReport']) {
         description = 'Runs the tests and generates the JaCoCo report files.'
-        doLast {
-          tasks.jacocoTestReport.execute()
-        }
       }
     }
 
@@ -121,18 +118,12 @@ afterEvaluate { project ->
   if (isAndroidProject(project)) {
     artifactPackaging = 'aar'
     if (project.plugins.hasPlugin('jacoco')) {
-      project.task('jacocoTest', dependsOn: 'connectedCheck') {
+      project.task('jacocoTest', dependsOn: ['connectedCheck', 'createDebugAndroidTestCoverageReport']) {
         description = 'Runs the tests and generates the JaCoCo report files.'
-        doLast {
-          tasks.createDebugAndroidTestCoverageReport.execute()
-        }
       }
 
-      project.task('jacocoTestReport', dependsOn: 'assemble') {
+      project.task('jacocoTestReport', dependsOn: ['assemble', 'createDebugAndroidTestCoverageReport']) {
         description = 'Generates the JaCoCo report files.'
-        doLast {
-          tasks.createDebugAndroidTestCoverageReport.execute()
-        }
       }
     }
 

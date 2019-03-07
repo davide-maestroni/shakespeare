@@ -117,7 +117,7 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
       InterruptedException {
     final long startTime = System.currentTimeMillis();
     if (super.awaitTermination(timeout, unit)) {
-      long remainingTime = System.currentTimeMillis() - startTime - unit.toMillis(timeout);
+      long remainingTime = unit.toMillis(timeout) + startTime - System.currentTimeMillis();
       return (remainingTime > 0) && mExecutor.awaitTermination(remainingTime,
           TimeUnit.MILLISECONDS);
     }
