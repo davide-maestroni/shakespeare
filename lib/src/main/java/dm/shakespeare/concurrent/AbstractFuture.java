@@ -20,14 +20,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.Delayed;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 
-import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.TimeUnits;
 import dm.shakespeare.util.TimeUnits.Condition;
 
@@ -36,15 +34,13 @@ import dm.shakespeare.util.TimeUnits.Condition;
  */
 abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
 
-  private final ExecutorService mExecutor;
   private final Object mMutex = new Object();
   private final AtomicLong mTimestamp;
 
   private Future<V> mFuture;
   private ScheduledFuture<?> mScheduledFuture;
 
-  AbstractFuture(@NotNull final ExecutorService executor, final long timestamp) {
-    mExecutor = ConstantConditions.notNull("executor", executor);
+  AbstractFuture(final long timestamp) {
     mTimestamp = new AtomicLong(timestamp);
   }
 
@@ -134,7 +130,7 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
 
   @Override
   public int hashCode() {
-    int result = (mTimestamp != null ? mTimestamp.hashCode() : 0);
+    int result = mTimestamp.hashCode();
     result = 31 * result + (mFuture != null ? mFuture.hashCode() : 0);
     result = 31 * result + (mScheduledFuture != null ? mScheduledFuture.hashCode() : 0);
     return result;
@@ -150,14 +146,13 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
       return false;
     }
     final AbstractFuture<?> that = (AbstractFuture<?>) o;
-    return (mTimestamp != null ? mTimestamp.equals(that.mTimestamp) : that.mTimestamp == null) && (
-        mFuture != null ? mFuture.equals(that.mFuture) : that.mFuture == null) && (
-        mScheduledFuture != null ? mScheduledFuture.equals(that.mScheduledFuture)
-            : that.mScheduledFuture == null);
+    return mTimestamp.equals(that.mTimestamp) && (mFuture != null ? mFuture.equals(that.mFuture)
+        : that.mFuture == null) && (mScheduledFuture != null ? mScheduledFuture.equals(
+        that.mScheduledFuture) : that.mScheduledFuture == null);
   }
 
   public void run() {
-    final Future<V> future = submitTo(mExecutor);
+    final Future<V> future = submit();
     synchronized (mMutex) {
       mFuture = future;
       mMutex.notifyAll();
@@ -174,5 +169,5 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
   }
 
   @NotNull
-  abstract Future<V> submitTo(@NotNull final ExecutorService executor);
+  abstract Future<V> submit();
 }

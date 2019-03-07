@@ -19,10 +19,9 @@ package dm.shakespeare.concurrent;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -31,7 +30,6 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.TimeUnits;
@@ -44,6 +42,7 @@ import dm.shakespeare.util.TimeUnits;
 class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
 
   private final ExecutorService mExecutor;
+  private final ExecutorService mFutureExecutor;
 
   /**
    * Constructor.
@@ -52,11 +51,12 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
    */
   ScheduledThreadPoolWrapper(@NotNull final ExecutorService executor) {
     super(1);
+    mExecutor = ConstantConditions.notNull("executor", executor);
     if (executor instanceof QueuedExecutorService) {
-      mExecutor = new NextExecutorService((QueuedExecutorService) executor);
+      mFutureExecutor = new NextExecutorService((QueuedExecutorService) executor);
 
     } else {
-      mExecutor = ConstantConditions.notNull("executor", executor);
+      mFutureExecutor = executor;
     }
   }
 
@@ -76,8 +76,10 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
    */
   ScheduledThreadPoolWrapper(final int corePoolSize, final int maximumPoolSize,
       final long keepAliveTime, @NotNull final TimeUnit keepAliveUnit) {
-    this(new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, keepAliveUnit,
-        new LinkedBlockingQueue<Runnable>()));
+    super(1);
+    mFutureExecutor = (mExecutor =
+        new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, keepAliveUnit,
+            new LinkedBlockingQueue<Runnable>()));
   }
 
   /**
@@ -98,8 +100,10 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
   ScheduledThreadPoolWrapper(final int corePoolSize, final int maximumPoolSize,
       final long keepAliveTime, @NotNull final TimeUnit keepAliveUnit,
       @NotNull final ThreadFactory threadFactory) {
-    this(new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, keepAliveUnit,
-        new LinkedBlockingQueue<Runnable>(), threadFactory));
+    super(1);
+    mFutureExecutor = (mExecutor =
+        new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, keepAliveUnit,
+            new LinkedBlockingQueue<Runnable>(), threadFactory));
   }
 
   @Override
@@ -129,7 +133,7 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
   public ScheduledFuture<?> schedule(final Runnable command, final long delay,
       final TimeUnit unit) {
     final RunnableFuture future =
-        new RunnableFuture(mExecutor, command, TimeUnits.toTimestampNanos(delay, unit));
+        new RunnableFuture(mFutureExecutor, command, TimeUnits.toTimestampNanos(delay, unit));
     future.setFuture(super.schedule(future, delay, unit));
     return future;
   }
@@ -139,7 +143,7 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
   public <V> ScheduledFuture<V> schedule(final Callable<V> callable, final long delay,
       final TimeUnit unit) {
     final CallableFuture<V> future =
-        new CallableFuture<V>(mExecutor, callable, TimeUnits.toTimestampNanos(delay, unit));
+        new CallableFuture<V>(mFutureExecutor, callable, TimeUnits.toTimestampNanos(delay, unit));
     future.setFuture(super.schedule(future, delay, unit));
     return future;
   }
@@ -149,7 +153,7 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
   public ScheduledFuture<?> scheduleAtFixedRate(final Runnable command, final long initialDelay,
       final long period, final TimeUnit unit) {
     final RunnableFuture future =
-        new RunnableFuture(mExecutor, command, TimeUnits.toTimestampNanos(initialDelay, unit),
+        new RunnableFuture(mFutureExecutor, command, TimeUnits.toTimestampNanos(initialDelay, unit),
             unit.toNanos(ConstantConditions.positive("period", period)));
     future.setFuture(super.scheduleAtFixedRate(future, initialDelay, period, unit));
     return future;
@@ -160,7 +164,7 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
   public ScheduledFuture<?> scheduleWithFixedDelay(final Runnable command, final long initialDelay,
       final long delay, final TimeUnit unit) {
     final RunnableFuture future =
-        new RunnableFuture(mExecutor, command, TimeUnits.toTimestampNanos(initialDelay, unit),
+        new RunnableFuture(mFutureExecutor, command, TimeUnits.toTimestampNanos(initialDelay, unit),
             unit.toNanos(-ConstantConditions.positive("delay", delay)));
     future.setFuture(super.scheduleWithFixedDelay(future, initialDelay, delay, unit));
     return future;
@@ -198,12 +202,12 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
   @NotNull
   @Override
   public List<Runnable> shutdownNow() {
-    final ArrayList<Runnable> runnables = new ArrayList<Runnable>(super.shutdownNow());
-    runnables.addAll(mExecutor.shutdownNow());
-    return runnables;
+    final ArrayList<Runnable> commands = new ArrayList<Runnable>(super.shutdownNow());
+    commands.addAll(mExecutor.shutdownNow());
+    return commands;
   }
 
-  private static class NextExecutorService implements ExecutorService {
+  private static class NextExecutorService extends AbstractExecutorService {
 
     private final QueuedExecutorService mExecutor;
 
@@ -235,45 +239,6 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
     public boolean awaitTermination(final long timeout, @NotNull final TimeUnit unit) throws
         InterruptedException {
       return mExecutor.awaitTermination(timeout, unit);
-    }
-
-    @NotNull
-    public <T> Future<T> submit(@NotNull final Callable<T> task) {
-      return mExecutor.submit(task);
-    }
-
-    @NotNull
-    public <T> Future<T> submit(@NotNull final Runnable task, final T result) {
-      return mExecutor.submit(task, result);
-    }
-
-    @NotNull
-    public Future<?> submit(@NotNull final Runnable task) {
-      return mExecutor.submit(task);
-    }
-
-    @NotNull
-    public <T> List<Future<T>> invokeAll(
-        @NotNull final Collection<? extends Callable<T>> tasks) throws InterruptedException {
-      return mExecutor.invokeAll(tasks);
-    }
-
-    @NotNull
-    public <T> List<Future<T>> invokeAll(@NotNull final Collection<? extends Callable<T>> tasks,
-        final long timeout, @NotNull final TimeUnit unit) throws InterruptedException {
-      return mExecutor.invokeAll(tasks, timeout, unit);
-    }
-
-    @NotNull
-    public <T> T invokeAny(@NotNull final Collection<? extends Callable<T>> tasks) throws
-        InterruptedException, ExecutionException {
-      return mExecutor.invokeAny(tasks);
-    }
-
-    public <T> T invokeAny(@NotNull final Collection<? extends Callable<T>> tasks,
-        final long timeout, @NotNull final TimeUnit unit) throws InterruptedException,
-        ExecutionException, TimeoutException {
-      return mExecutor.invokeAny(tasks, timeout, unit);
     }
   }
 }

@@ -18,16 +18,12 @@ package dm.shakespeare.concurrent;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.TimeUnits;
@@ -39,20 +35,20 @@ class ThrottledScheduledExecutorService extends ThrottledExecutorService
     implements ScheduledExecutorService {
 
   private final ScheduledExecutorService mExecutor;
-  private final NextExecutorService mNextExecutor;
+  private final NextExecutorService mFutureExecutor;
 
   ThrottledScheduledExecutorService(@NotNull final ScheduledExecutorService executor,
       final int maxConcurrency) {
     super(executor, maxConcurrency);
     mExecutor = executor;
-    mNextExecutor = new NextExecutorService(this);
+    mFutureExecutor = new NextExecutorService(this);
   }
 
   @NotNull
   public ScheduledFuture<?> schedule(@NotNull final Runnable command, final long delay,
       @NotNull final TimeUnit unit) {
     final RunnableFuture future =
-        new RunnableFuture(mNextExecutor, command, TimeUnits.toTimestampNanos(delay, unit));
+        new RunnableFuture(mFutureExecutor, command, TimeUnits.toTimestampNanos(delay, unit));
     future.setFuture(mExecutor.schedule(future, delay, unit));
     return future;
   }
@@ -61,7 +57,7 @@ class ThrottledScheduledExecutorService extends ThrottledExecutorService
   public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> callable, final long delay,
       @NotNull final TimeUnit unit) {
     final CallableFuture<V> future =
-        new CallableFuture<V>(mNextExecutor, callable, TimeUnits.toTimestampNanos(delay, unit));
+        new CallableFuture<V>(mFutureExecutor, callable, TimeUnits.toTimestampNanos(delay, unit));
     future.setFuture(mExecutor.schedule(future, delay, unit));
     return future;
   }
@@ -70,7 +66,7 @@ class ThrottledScheduledExecutorService extends ThrottledExecutorService
   public ScheduledFuture<?> scheduleAtFixedRate(@NotNull final Runnable command,
       final long initialDelay, final long period, @NotNull final TimeUnit unit) {
     final RunnableFuture future =
-        new RunnableFuture(mNextExecutor, command, TimeUnits.toTimestampNanos(initialDelay, unit),
+        new RunnableFuture(mFutureExecutor, command, TimeUnits.toTimestampNanos(initialDelay, unit),
             unit.toNanos(ConstantConditions.positive("period", period)));
     future.setFuture(mExecutor.scheduleAtFixedRate(future, initialDelay, period, unit));
     return future;
@@ -80,13 +76,13 @@ class ThrottledScheduledExecutorService extends ThrottledExecutorService
   public ScheduledFuture<?> scheduleWithFixedDelay(@NotNull final Runnable command,
       final long initialDelay, final long delay, @NotNull final TimeUnit unit) {
     final RunnableFuture future =
-        new RunnableFuture(mNextExecutor, command, TimeUnits.toTimestampNanos(initialDelay, unit),
+        new RunnableFuture(mFutureExecutor, command, TimeUnits.toTimestampNanos(initialDelay, unit),
             unit.toNanos(-ConstantConditions.positive("delay", delay)));
     future.setFuture(mExecutor.scheduleWithFixedDelay(future, initialDelay, delay, unit));
     return future;
   }
 
-  private static class NextExecutorService implements ExecutorService {
+  private static class NextExecutorService extends AbstractExecutorService {
 
     private final ThrottledExecutorService mExecutor;
 
@@ -118,45 +114,6 @@ class ThrottledScheduledExecutorService extends ThrottledExecutorService
     public boolean awaitTermination(final long timeout, @NotNull final TimeUnit unit) throws
         InterruptedException {
       return mExecutor.awaitTermination(timeout, unit);
-    }
-
-    @NotNull
-    public <T> Future<T> submit(@NotNull final Callable<T> task) {
-      return mExecutor.submit(task);
-    }
-
-    @NotNull
-    public <T> Future<T> submit(@NotNull final Runnable task, final T result) {
-      return mExecutor.submit(task, result);
-    }
-
-    @NotNull
-    public Future<?> submit(@NotNull final Runnable task) {
-      return mExecutor.submit(task);
-    }
-
-    @NotNull
-    public <T> List<Future<T>> invokeAll(
-        @NotNull final Collection<? extends Callable<T>> tasks) throws InterruptedException {
-      return mExecutor.invokeAll(tasks);
-    }
-
-    @NotNull
-    public <T> List<Future<T>> invokeAll(@NotNull final Collection<? extends Callable<T>> tasks,
-        final long timeout, @NotNull final TimeUnit unit) throws InterruptedException {
-      return mExecutor.invokeAll(tasks, timeout, unit);
-    }
-
-    @NotNull
-    public <T> T invokeAny(@NotNull final Collection<? extends Callable<T>> tasks) throws
-        InterruptedException, ExecutionException {
-      return mExecutor.invokeAny(tasks);
-    }
-
-    public <T> T invokeAny(@NotNull final Collection<? extends Callable<T>> tasks,
-        final long timeout, @NotNull final TimeUnit unit) throws InterruptedException,
-        ExecutionException, TimeoutException {
-      return mExecutor.invokeAny(tasks, timeout, unit);
     }
   }
 }

@@ -35,6 +35,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -75,6 +76,16 @@ public class ExecutorServicesTest {
   }
 
   @Test
+  public void actorScheduledExecutorFixedDelay() throws Exception {
+    testFixedDelay(ExecutorServices.asActorExecutor(Executors.newSingleThreadScheduledExecutor()));
+  }
+
+  @Test
+  public void actorScheduledExecutorFixedRate() throws Exception {
+    testFixedRate(ExecutorServices.asActorExecutor(Executors.newSingleThreadScheduledExecutor()));
+  }
+
+  @Test
   public void actorScheduledExecutorFuture() {
     testFuture(ExecutorServices.asActorExecutor(Executors.newSingleThreadScheduledExecutor()));
   }
@@ -112,6 +123,16 @@ public class ExecutorServicesTest {
   public void dynamicScheduledThreadPoolFactoryOnly() throws Exception {
     final DefaultThreadFactory threadFactory = new DefaultThreadFactory();
     testExecutor(ExecutorServices.newDynamicScheduledThreadPool(threadFactory));
+  }
+
+  @Test
+  public void dynamicScheduledThreadPoolFixedDelay() throws Exception {
+    testFixedDelay(ExecutorServices.newDynamicScheduledThreadPool(3, 3, 0, TimeUnit.SECONDS));
+  }
+
+  @Test
+  public void dynamicScheduledThreadPoolFixedRate() throws Exception {
+    testFixedRate(ExecutorServices.newDynamicScheduledThreadPool(3, 3, 0, TimeUnit.SECONDS));
   }
 
   @Test(expected = NullPointerException.class)
@@ -180,10 +201,30 @@ public class ExecutorServicesTest {
     testExecutor(ExecutorServices.withPriority(13, Executors.newScheduledThreadPool(3)));
   }
 
+  @Test
+  public void priorityScheduledExecutorFixedDelay() throws Exception {
+    testFixedDelay(ExecutorServices.withPriority(13, Executors.newScheduledThreadPool(3)));
+  }
+
+  @Test
+  public void priorityScheduledExecutorFixedRate() throws Exception {
+    testFixedRate(ExecutorServices.withPriority(13, Executors.newScheduledThreadPool(3)));
+  }
+
+  @Test
+  public void priorityScheduledExecutorFuture() {
+    testFuture(ExecutorServices.withPriority(13, Executors.newScheduledThreadPool(3)));
+  }
+
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void priorityScheduledExecutorNPE() {
     ExecutorServices.withPriority(0, null);
+  }
+
+  @Test
+  public void priorityScheduledExecutorShutdown() throws Exception {
+    testShutdown(ExecutorServices.withPriority(13, Executors.newScheduledThreadPool(3)));
   }
 
   @Test
@@ -225,6 +266,16 @@ public class ExecutorServicesTest {
   @Test
   public void throttlingScheduledExecutor() throws Exception {
     testExecutor(ExecutorServices.withThrottling(5, Executors.newScheduledThreadPool(13)));
+  }
+
+  @Test
+  public void throttlingScheduledExecutorFixedDelay() throws Exception {
+    testFixedDelay(ExecutorServices.withThrottling(5, Executors.newScheduledThreadPool(13)));
+  }
+
+  @Test
+  public void throttlingScheduledExecutorFixedRate() throws Exception {
+    testFixedRate(ExecutorServices.withThrottling(5, Executors.newScheduledThreadPool(13)));
   }
 
   @Test
@@ -305,6 +356,18 @@ public class ExecutorServicesTest {
   }
 
   @Test
+  public void timeoutScheduledExecutorFixedDelay() throws Exception {
+    testFixedDelay(ExecutorServices.withTimeout(3, TimeUnit.SECONDS, true,
+        Executors.newScheduledThreadPool(13)));
+  }
+
+  @Test
+  public void timeoutScheduledExecutorFixedRate() throws Exception {
+    testFixedRate(ExecutorServices.withTimeout(3, TimeUnit.SECONDS, true,
+        Executors.newScheduledThreadPool(13)));
+  }
+
+  @Test
   public void timeoutScheduledExecutorFuture() {
     testFuture(ExecutorServices.withTimeout(3, TimeUnit.SECONDS, true,
         Executors.newScheduledThreadPool(13)));
@@ -365,8 +428,19 @@ public class ExecutorServicesTest {
 
   private void testExecutor(@NotNull final ScheduledExecutorService executor) throws Exception {
     try {
+      final ArrayList<TestRunnable> commands = new ArrayList<TestRunnable>();
+      for (int i = 0; i < 13; ++i) {
+        final TestRunnable execution = new TestRunnable(0, TimeUnit.MILLISECONDS);
+        commands.add(execution);
+        executor.execute(execution);
+      }
+
+      for (final TestRunnable execution : commands) {
+        execution.await();
+        assertThat(execution.isPassed()).isTrue();
+      }
+      commands.clear();
       final Random random = new Random(System.currentTimeMillis());
-      final ArrayList<TestRunExecution> executions = new ArrayList<TestRunExecution>();
       for (int i = 0; i < 13; ++i) {
         final long delay;
         final TimeUnit timeUnit;
@@ -389,16 +463,16 @@ public class ExecutorServicesTest {
             timeUnit = TimeUnit.MILLISECONDS;
             break;
         }
-        final TestRunExecution execution = new TestRunExecution(delay, timeUnit);
-        executions.add(execution);
+        final TestRunnable execution = new TestRunnable(delay, timeUnit);
+        commands.add(execution);
         executor.schedule(execution, delay, timeUnit);
       }
 
-      for (final TestRunExecution execution : executions) {
+      for (final TestRunnable execution : commands) {
         execution.await();
         assertThat(execution.isPassed()).isTrue();
       }
-      executions.clear();
+      commands.clear();
       final ArrayList<Delay> delays = new ArrayList<Delay>();
       for (int i = 0; i < 13; ++i) {
         final long delay;
@@ -423,13 +497,13 @@ public class ExecutorServicesTest {
             break;
         }
         delays.add(new Delay(delay, timeUnit));
-        final TestRunExecution execution = new TestRunExecution(delay, timeUnit);
-        executions.add(execution);
+        final TestRunnable execution = new TestRunnable(delay, timeUnit);
+        commands.add(execution);
       }
-      final TestRecursiveExecution recursiveExecution =
-          new TestRecursiveExecution(executor, executions, delays, 0, TimeUnit.MILLISECONDS);
+      final RecursiveTestRunnable recursiveExecution =
+          new RecursiveTestRunnable(executor, commands, delays, 0, TimeUnit.MILLISECONDS);
       executor.execute(recursiveExecution);
-      for (final TestRunExecution execution : executions) {
+      for (final TestRunnable execution : commands) {
         execution.await();
         assertThat(execution.isPassed()).isTrue();
       }
@@ -456,6 +530,35 @@ public class ExecutorServicesTest {
     }
   }
 
+  private void testFixedDelay(@NotNull final ScheduledExecutorService executor) throws Exception {
+    final AtomicInteger count = new AtomicInteger();
+    final ScheduledFuture<?> future =
+        executor.scheduleWithFixedDelay(new CountingRunnable(count), 10, 500,
+            TimeUnit.MILLISECONDS);
+    assertThat(future.isCancelled()).isFalse();
+    assertThat(future.isDone()).isFalse();
+    Thread.sleep(100);
+    assertThat(future.cancel(true)).isTrue();
+    assertThat(future.isCancelled()).isTrue();
+    assertThat(future.isDone()).isTrue();
+    assertThat(count.get()).isEqualTo(1);
+    executor.shutdown();
+  }
+
+  private void testFixedRate(@NotNull final ScheduledExecutorService executor) throws Exception {
+    final AtomicInteger count = new AtomicInteger();
+    final ScheduledFuture<?> future =
+        executor.scheduleAtFixedRate(new CountingRunnable(count), 10, 500, TimeUnit.MILLISECONDS);
+    assertThat(future.isCancelled()).isFalse();
+    assertThat(future.isDone()).isFalse();
+    Thread.sleep(100);
+    assertThat(future.cancel(true)).isTrue();
+    assertThat(future.isCancelled()).isTrue();
+    assertThat(future.isDone()).isTrue();
+    assertThat(count.get()).isEqualTo(1);
+    executor.shutdown();
+  }
+
   private void testFuture(@NotNull final ExecutorService executor) {
     final Future<Object> future = executor.submit(new SleepCallable<Object>(1000));
     assertThat(future.isCancelled()).isFalse();
@@ -473,6 +576,19 @@ public class ExecutorServicesTest {
     assertThat(executor.awaitTermination(10, TimeUnit.SECONDS)).isTrue();
     assertThat(executor.isShutdown()).isTrue();
     assertThat(executor.isTerminated()).isTrue();
+  }
+
+  private static class CountingRunnable implements Runnable {
+
+    private final AtomicInteger mCount;
+
+    CountingRunnable(@NotNull final AtomicInteger count) {
+      mCount = count;
+    }
+
+    public void run() {
+      mCount.incrementAndGet();
+    }
   }
 
   private static class DefaultThreadFactory implements ThreadFactory {
@@ -499,6 +615,37 @@ public class ExecutorServicesTest {
     @NotNull
     TimeUnit getTimeUnit() {
       return mTimeUnit;
+    }
+  }
+
+  private static class RecursiveTestRunnable extends TestRunnable {
+
+    private final ArrayList<Delay> mDelays;
+    private final ArrayList<TestRunnable> mExecutions;
+    private final ScheduledExecutorService mExecutor;
+
+    RecursiveTestRunnable(@NotNull final ScheduledExecutorService executor,
+        @NotNull final ArrayList<TestRunnable> executions, @NotNull final ArrayList<Delay> delays,
+        final long delay, @NotNull final TimeUnit timeUnit) {
+      super(delay, timeUnit);
+      mExecutor = executor;
+      mExecutions = executions;
+      mDelays = delays;
+    }
+
+    @Override
+    @SuppressWarnings("UnnecessaryLocalVariable")
+    public void run() {
+      final ArrayList<TestRunnable> executions = mExecutions;
+      final ArrayList<Delay> delays = mDelays;
+      final ScheduledExecutorService executor = mExecutor;
+      final int size = executions.size();
+      for (int i = 0; i < size; ++i) {
+        final Delay delay = delays.get(i);
+        final TestRunnable execution = executions.get(i);
+        executor.schedule(execution, delay.getDelay(), delay.getTimeUnit());
+      }
+      super.run();
     }
   }
 
@@ -529,39 +676,7 @@ public class ExecutorServicesTest {
     }
   }
 
-  private static class TestRecursiveExecution extends TestRunExecution {
-
-    private final ArrayList<Delay> mDelays;
-    private final ArrayList<TestRunExecution> mExecutions;
-    private final ScheduledExecutorService mExecutor;
-
-    TestRecursiveExecution(@NotNull final ScheduledExecutorService executor,
-        @NotNull final ArrayList<TestRunExecution> executions,
-        @NotNull final ArrayList<Delay> delays, final long delay,
-        @NotNull final TimeUnit timeUnit) {
-      super(delay, timeUnit);
-      mExecutor = executor;
-      mExecutions = executions;
-      mDelays = delays;
-    }
-
-    @Override
-    @SuppressWarnings("UnnecessaryLocalVariable")
-    public void run() {
-      final ArrayList<TestRunExecution> executions = mExecutions;
-      final ArrayList<Delay> delays = mDelays;
-      final ScheduledExecutorService executor = mExecutor;
-      final int size = executions.size();
-      for (int i = 0; i < size; ++i) {
-        final Delay delay = delays.get(i);
-        final TestRunExecution execution = executions.get(i);
-        executor.schedule(execution, delay.getDelay(), delay.getTimeUnit());
-      }
-      super.run();
-    }
-  }
-
-  private static class TestRunExecution implements Runnable {
+  private static class TestRunnable implements Runnable {
 
     private final long mDelay;
     private final Semaphore mSemaphore = new Semaphore(0);
@@ -569,16 +684,10 @@ public class ExecutorServicesTest {
     private final TimeUnit mTimeUnit;
     private boolean mIsPassed;
 
-    TestRunExecution(final long delay, @NotNull final TimeUnit timeUnit) {
+    TestRunnable(final long delay, @NotNull final TimeUnit timeUnit) {
       mStartTime = System.currentTimeMillis();
       mDelay = delay;
       mTimeUnit = timeUnit;
-    }
-
-    public void run() {
-      // The JVM might not have nanosecond precision...
-      mIsPassed = (System.currentTimeMillis() - mStartTime >= mTimeUnit.toMillis(mDelay));
-      mSemaphore.release();
     }
 
     void await() throws InterruptedException {
@@ -588,6 +697,13 @@ public class ExecutorServicesTest {
     boolean isPassed() {
       return mIsPassed;
     }
+
+    public void run() {
+      // The JVM might not have nanosecond precision...
+      mIsPassed = (System.currentTimeMillis() - mStartTime >= mTimeUnit.toMillis(mDelay));
+      mSemaphore.release();
+    }
+
   }
 
   private static class ThrottlingRunnable implements Runnable {

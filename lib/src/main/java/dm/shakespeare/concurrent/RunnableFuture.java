@@ -30,6 +30,7 @@ import dm.shakespeare.util.TimeUnits;
  */
 class RunnableFuture extends AbstractFuture<Object> {
 
+  private final ExecutorService mExecutor;
   private final long mPeriod;
   private final Runnable mRunnable;
 
@@ -40,7 +41,8 @@ class RunnableFuture extends AbstractFuture<Object> {
 
   RunnableFuture(@NotNull final ExecutorService executor, @NotNull final Runnable runnable,
       final long timestamp, final long period) {
-    super(executor, timestamp);
+    super(timestamp);
+    mExecutor = ConstantConditions.notNull("executor", executor);
     mRunnable = ConstantConditions.notNull("runnable", runnable);
     mPeriod = period;
   }
@@ -72,8 +74,8 @@ class RunnableFuture extends AbstractFuture<Object> {
 
   @NotNull
   @SuppressWarnings("unchecked")
-  Future<Object> submitTo(@NotNull final ExecutorService executor) {
-    return (Future<Object>) executor.submit(new Runnable() {
+  Future<Object> submit() {
+    return (Future<Object>) mExecutor.submit(new Runnable() {
 
       public void run() {
         mRunnable.run();

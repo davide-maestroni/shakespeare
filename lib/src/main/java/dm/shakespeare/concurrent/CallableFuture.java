@@ -30,10 +30,12 @@ import dm.shakespeare.util.ConstantConditions;
 class CallableFuture<V> extends AbstractFuture<V> {
 
   private final Callable<V> mCallable;
+  private final ExecutorService mExecutor;
 
   CallableFuture(@NotNull final ExecutorService executor, @NotNull final Callable<V> callable,
       final long timestamp) {
-    super(executor, timestamp);
+    super(timestamp);
+    mExecutor = ConstantConditions.notNull("executor", executor);
     mCallable = ConstantConditions.notNull("callable", callable);
   }
 
@@ -62,7 +64,7 @@ class CallableFuture<V> extends AbstractFuture<V> {
   }
 
   @NotNull
-  Future<V> submitTo(@NotNull final ExecutorService executor) {
-    return executor.submit(mCallable);
+  Future<V> submit() {
+    return mExecutor.submit(mCallable);
   }
 }
