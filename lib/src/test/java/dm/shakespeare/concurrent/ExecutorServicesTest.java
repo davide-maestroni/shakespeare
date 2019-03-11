@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Delayed;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -119,6 +120,34 @@ public class ExecutorServicesTest {
     assertThat(ExecutorServices.asActorExecutor(actorExecutorService)).isSameAs(
         actorExecutorService);
     actorExecutorService.shutdown();
+  }
+
+  @Test
+  public void callableFuture() throws Exception {
+    final ScheduledExecutorService executorService =
+        ExecutorServices.asScheduled(ExecutorServices.localExecutor());
+    final Object result1 = new Object();
+    final Object result2 = new Object();
+    final ScheduledFuture<Object> scheduledFuture1 =
+        executorService.schedule(new TestCallable<Object>(result1), 300, TimeUnit.MILLISECONDS);
+    final ScheduledFuture<Object> scheduledFuture2 =
+        executorService.schedule(new TestCallable<Object>(result2), 500, TimeUnit.MILLISECONDS);
+    assertThat(scheduledFuture1.isDone()).isFalse();
+    assertThat(scheduledFuture2.isDone()).isFalse();
+    assertThat(scheduledFuture1).isEqualTo(scheduledFuture1);
+    assertThat(scheduledFuture2).isEqualTo(scheduledFuture2);
+    assertThat(scheduledFuture1).isNotEqualTo(scheduledFuture2);
+    assertThat(scheduledFuture1.hashCode()).isNotEqualTo(scheduledFuture2.hashCode());
+    assertThat(scheduledFuture1).isEqualByComparingTo(scheduledFuture1);
+    assertThat(scheduledFuture2).isEqualByComparingTo(scheduledFuture2);
+    assertThat(scheduledFuture1.compareTo(scheduledFuture2)).isLessThan(0);
+    Thread.sleep(1000);
+    assertThat(scheduledFuture1.cancel(true)).isFalse();
+    assertThat(scheduledFuture2.cancel(true)).isFalse();
+    assertThat(scheduledFuture1.isDone()).isTrue();
+    assertThat(scheduledFuture2.isDone()).isTrue();
+    assertThat(scheduledFuture1.get()).isSameAs(result1);
+    assertThat(scheduledFuture2.get()).isSameAs(result2);
   }
 
   @Test
@@ -366,11 +395,20 @@ public class ExecutorServicesTest {
             TimeUnit.MILLISECONDS);
     assertThat(scheduledFuture1.isDone()).isFalse();
     assertThat(scheduledFuture2.isDone()).isFalse();
+    assertThat(scheduledFuture1).isEqualTo(scheduledFuture1);
+    assertThat(scheduledFuture2).isEqualTo(scheduledFuture2);
+    assertThat(scheduledFuture1).isNotEqualTo(scheduledFuture2);
+    assertThat(scheduledFuture1.hashCode()).isNotEqualTo(scheduledFuture2.hashCode());
+    assertThat((Delayed) scheduledFuture1).isEqualByComparingTo(scheduledFuture1);
+    assertThat((Delayed) scheduledFuture2).isEqualByComparingTo(scheduledFuture2);
+    assertThat(scheduledFuture1.compareTo(scheduledFuture2)).isLessThan(0);
     Thread.sleep(1000);
     assertThat(scheduledFuture1.cancel(true)).isTrue();
     assertThat(scheduledFuture2.cancel(true)).isTrue();
     assertThat(scheduledFuture1.isDone()).isTrue();
     assertThat(scheduledFuture2.isDone()).isTrue();
+    assertThat(scheduledFuture1.get()).isNull();
+    assertThat(scheduledFuture2.get()).isNull();
     assertThat(count1.get()).isEqualTo(3);
     assertThat(count2.get()).isEqualTo(2);
   }
@@ -389,11 +427,20 @@ public class ExecutorServicesTest {
             TimeUnit.MILLISECONDS);
     assertThat(scheduledFuture1.isDone()).isFalse();
     assertThat(scheduledFuture2.isDone()).isFalse();
+    assertThat(scheduledFuture1).isEqualTo(scheduledFuture1);
+    assertThat(scheduledFuture2).isEqualTo(scheduledFuture2);
+    assertThat(scheduledFuture1).isNotEqualTo(scheduledFuture2);
+    assertThat(scheduledFuture1.hashCode()).isNotEqualTo(scheduledFuture2.hashCode());
+    assertThat((Delayed) scheduledFuture1).isEqualByComparingTo(scheduledFuture1);
+    assertThat((Delayed) scheduledFuture2).isEqualByComparingTo(scheduledFuture2);
+    assertThat(scheduledFuture1.compareTo(scheduledFuture2)).isLessThan(0);
     Thread.sleep(1000);
     assertThat(scheduledFuture1.cancel(true)).isTrue();
     assertThat(scheduledFuture2.cancel(true)).isTrue();
     assertThat(scheduledFuture1.isDone()).isTrue();
     assertThat(scheduledFuture2.isDone()).isTrue();
+    assertThat(scheduledFuture1.get()).isNull();
+    assertThat(scheduledFuture2.get()).isNull();
     assertThat(count1.get()).isEqualTo(3);
     assertThat(count2.get()).isEqualTo(2);
   }

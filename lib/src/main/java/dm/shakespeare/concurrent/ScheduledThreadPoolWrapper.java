@@ -195,15 +195,15 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
 
   @Override
   public void shutdown() {
-    super.shutdown();
     mExecutor.shutdown();
+    super.shutdown();
   }
 
   @NotNull
   @Override
   public List<Runnable> shutdownNow() {
-    final ArrayList<Runnable> commands = new ArrayList<Runnable>(super.shutdownNow());
-    commands.addAll(mExecutor.shutdownNow());
+    final ArrayList<Runnable> commands = new ArrayList<Runnable>(mExecutor.shutdownNow());
+    commands.addAll(super.shutdownNow());
     return commands;
   }
 
