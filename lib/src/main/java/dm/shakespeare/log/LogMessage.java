@@ -60,8 +60,11 @@ public class LogMessage {
 
   @Nullable
   public static String abbreviate(@Nullable final String message, final int maxSize) {
-    return (message != null) ?
-        message.substring(0, Math.min(message.length(), Math.max(maxSize - 3, 0))) + "..." : null;
+    if (message != null) {
+      return (message.length() <= maxSize) ? message
+          : message.substring(0, Math.max(maxSize - 3, 0)) + "...";
+    }
+    return null;
   }
 
   /**

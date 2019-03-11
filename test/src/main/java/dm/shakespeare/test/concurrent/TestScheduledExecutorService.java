@@ -36,21 +36,28 @@ public class TestScheduledExecutorService extends TestExecutorService
   private final LinkedList<AbstractFuture<?>> mFutures = new LinkedList<AbstractFuture<?>>();
 
   public void advance(final long period, @NotNull final TimeUnit unit) {
-    final Iterator<AbstractFuture<?>> iterator = mFutures.iterator();
+    final LinkedList<AbstractFuture<?>> futures = mFutures;
+    for (final AbstractFuture<?> future : futures) {
+      future.setTimestamp(future.getTimestamp() - unit.toNanos(period));
+    }
     final ArrayList<AbstractFuture<?>> executables = new ArrayList<AbstractFuture<?>>();
-    while (iterator.hasNext()) {
-      final AbstractFuture<?> future = iterator.next();
-      future.setTimestamp(future.getTimestamp() + unit.toNanos(period));
-      if (future.getDelay(TimeUnit.NANOSECONDS) <= 0) {
-        executables.add(future);
-        iterator.remove();
+    do {
+      executables.clear();
+      final Iterator<AbstractFuture<?>> iterator = futures.iterator();
+      while (iterator.hasNext()) {
+        final AbstractFuture<?> future = iterator.next();
+        if (future.getDelay(TimeUnit.NANOSECONDS) <= 0) {
+          executables.add(future);
+          iterator.remove();
+        }
       }
-    }
 
-    Collections.sort(executables);
-    for (final AbstractFuture<?> future : executables) {
-      execute(future);
-    }
+      Collections.sort(executables);
+      for (final AbstractFuture<?> future : executables) {
+        execute(future);
+      }
+      consumeAll();
+    } while (!executables.isEmpty());
   }
 
   @NotNull

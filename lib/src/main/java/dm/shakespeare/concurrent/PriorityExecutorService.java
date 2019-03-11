@@ -56,7 +56,6 @@ class PriorityExecutorService extends AbstractExecutorService {
         context = new PriorityContext();
         contexts.put(executor, context);
       }
-
       mContext = context;
     }
   }

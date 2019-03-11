@@ -28,57 +28,107 @@ import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.WeakIdentityHashMap;
 
 /**
- * Created by davide-maestroni on 06/06/2018.
+ * Utility class providing constructors for several {@link ExecutorService} and
+ * {@link ScheduledExecutorService} classes.
  */
 public class ExecutorServices {
 
   private static final WeakIdentityHashMap<ExecutorService, ScheduledExecutorService>
       sScheduledExecutors = new WeakIdentityHashMap<ExecutorService, ScheduledExecutorService>();
 
+  /**
+   * Avoid instantiation.
+   */
   private ExecutorServices() {
     ConstantConditions.avoid();
   }
 
+  /**
+   * Converts the specified instance into an {@link ActorExecutorService}.<br>
+   * If the input parameter is already an {@link ActorExecutorService}, the same object is returned.
+   *
+   * @param executorService the executor service to convert.
+   * @return the converted instance.
+   */
   @NotNull
-  public static ActorExecutorService asActorExecutor(@NotNull final ExecutorService executor) {
-    if (executor instanceof ActorExecutorService) {
-      return (ActorExecutorService) executor;
+  public static ActorExecutorService asActorExecutor(
+      @NotNull final ExecutorService executorService) {
+    if (executorService instanceof ActorExecutorService) {
+      return (ActorExecutorService) executorService;
     }
-    return new ActorExecutorService(executor);
+    return new ActorExecutorService(executorService);
   }
 
+  /**
+   * Converts the specified instance into an {@link ActorScheduledExecutorService}.<br>
+   * If the input parameter is already an {@link ActorScheduledExecutorService}, the same object
+   * is returned.
+   *
+   * @param executorService the executor service to convert.
+   * @return the converted instance.
+   */
   @NotNull
   public static ActorScheduledExecutorService asActorExecutor(
-      @NotNull final ScheduledExecutorService executor) {
-    if (executor instanceof ActorScheduledExecutorService) {
-      return (ActorScheduledExecutorService) executor;
+      @NotNull final ScheduledExecutorService executorService) {
+    if (executorService instanceof ActorScheduledExecutorService) {
+      return (ActorScheduledExecutorService) executorService;
     }
-    return new ActorScheduledExecutorService(executor);
+    return new ActorScheduledExecutorService(executorService);
   }
 
+  /**
+   * Converts the specified instance into an {@link ScheduledExecutorService}.<br>
+   * If the input parameter is already an {@link ScheduledExecutorService}, the same object is
+   * returned.<br>
+   * The wrapping objects are cached so that calling this method with the same instance as input
+   * will produce the same result.
+   *
+   * @param executorService the executor service to convert.
+   * @return the converted instance.
+   */
   @NotNull
-  public static ScheduledExecutorService asScheduled(@NotNull final ExecutorService executor) {
-    if (executor instanceof ScheduledExecutorService) {
-      return (ScheduledExecutorService) executor;
+  public static ScheduledExecutorService asScheduled(
+      @NotNull final ExecutorService executorService) {
+    if (executorService instanceof ScheduledExecutorService) {
+      return (ScheduledExecutorService) executorService;
     }
     ScheduledExecutorService scheduledExecutor;
     synchronized (sScheduledExecutors) {
       final WeakIdentityHashMap<ExecutorService, ScheduledExecutorService> executors =
           sScheduledExecutors;
-      scheduledExecutor = executors.get(executor);
+      scheduledExecutor = executors.get(executorService);
       if (scheduledExecutor == null) {
-        scheduledExecutor = new ScheduledThreadPoolWrapper(executor);
-        executors.put(executor, scheduledExecutor);
+        scheduledExecutor = new ScheduledThreadPoolWrapper(executorService);
+        executors.put(executorService, scheduledExecutor);
       }
     }
     return scheduledExecutor;
   }
 
+  /**
+   * Returns the global local executor instance.<br>
+   * A local executor is an {@link ExecutorService} implementation maintaining a queue of
+   * commands local to each calling thread. It may act as a trampoline of tasks and comply to the
+   * {@link ExecutorService} but for its {@code shutdown} methods. In fact, the local executor
+   * instance cannot be stopped and will throw an {@link UnsupportedOperationException} if an
+   * attempt is made.
+   *
+   * @return the local executor instance.
+   */
   @NotNull
   public static ExecutorService localExecutor() {
     return LocalExecutorService.defaultInstance();
   }
 
+  /**
+   * Creates pre-configured pool of scheduled threads.<br>
+   * The service maintains a fixed number of always available threads, while adding new ones till
+   * reaching a maximum number. All the threads exceeding the core ones will be automatically
+   * stopped if they stay idle for a pre-defined amount of time.
+   *
+   * @param threadFactory the thread factory.
+   * @return the scheduled executor instance.
+   */
   @NotNull
   public static ScheduledExecutorService newDynamicScheduledThreadPool(
       @NotNull final ThreadFactory threadFactory) {
@@ -87,6 +137,25 @@ public class ExecutorServices {
         Math.max(2, (processors << 1) - 1), 60L, TimeUnit.SECONDS, threadFactory);
   }
 
+  /**
+   * Creates a pool of scheduled threads.<br>
+   * The service maintains a fixed number of always available threads, while adding new ones till
+   * reaching a maximum number. All the threads exceeding the core ones will be automatically
+   * stopped if they stay idle for the specified amount of time.
+   *
+   * @param corePoolSize    the number of threads to keep in the pool, even if they are idle.
+   * @param maximumPoolSize the maximum number of threads to allow in the pool.
+   * @param keepAliveTime   when the number of threads is greater than the core, this is the
+   *                        maximum time that excess idle threads will wait for new tasks before
+   *                        terminating.
+   * @param keepAliveUnit   the time unit for the keep alive time.
+   * @param threadFactory   the thread factory.
+   * @return the scheduled executor instance.
+   * @throws IllegalArgumentException if one of the following holds:<ul>
+   *                                  <li>{@code corePoolSize < 0}</li>
+   *                                  <li>{@code maximumPoolSize <= 0}</li>
+   *                                  <li>{@code keepAliveTime < 0}</li></ul>
+   */
   @NotNull
   public static ScheduledExecutorService newDynamicScheduledThreadPool(final int corePoolSize,
       final int maximumPoolSize, final long keepAliveTime, @NotNull final TimeUnit keepAliveUnit,
@@ -95,6 +164,24 @@ public class ExecutorServices {
         keepAliveUnit, threadFactory);
   }
 
+  /**
+   * Creates a pool of scheduled threads with a pre-defined thread factory.<br>
+   * The service maintains a fixed number of always available threads, while adding new ones till
+   * reaching a maximum number. All the threads exceeding the core ones will be automatically
+   * stopped if they stay idle for the specified amount of time.
+   *
+   * @param corePoolSize    the number of threads to keep in the pool, even if they are idle.
+   * @param maximumPoolSize the maximum number of threads to allow in the pool.
+   * @param keepAliveTime   when the number of threads is greater than the core, this is the
+   *                        maximum time that excess idle threads will wait for new tasks before
+   *                        terminating.
+   * @param keepAliveUnit   the time unit for the keep alive time.
+   * @return the scheduled executor instance.
+   * @throws IllegalArgumentException if one of the following holds:<ul>
+   *                                  <li>{@code corePoolSize < 0}</li>
+   *                                  <li>{@code maximumPoolSize <= 0}</li>
+   *                                  <li>{@code keepAliveTime < 0}</li></ul>
+   */
   @NotNull
   public static ScheduledExecutorService newDynamicScheduledThreadPool(final int corePoolSize,
       final int maximumPoolSize, final long keepAliveTime, @NotNull final TimeUnit keepAliveUnit) {
@@ -102,11 +189,22 @@ public class ExecutorServices {
         keepAliveUnit);
   }
 
+  /**
+   * Creates a new trampoline executor service instance.
+   *
+   * @return the executor instance.
+   */
   @NotNull
   public static ExecutorService newTrampolineExecutor() {
     return new TrampolineExecutorService();
   }
 
+  /**
+   * Creates a new trampoline executor service instance.
+   *
+   * @param commandQueue the internal command queue.
+   * @return the executor instance.
+   */
   @NotNull
   public static ExecutorService newTrampolineExecutor(
       @NotNull final BlockingQueue<Runnable> commandQueue) {

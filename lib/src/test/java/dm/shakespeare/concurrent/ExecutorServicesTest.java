@@ -37,6 +37,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import dm.shakespeare.test.concurrent.TestExecutorService;
+import dm.shakespeare.test.concurrent.TestScheduledExecutorService;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -76,6 +79,14 @@ public class ExecutorServicesTest {
   }
 
   @Test
+  public void actorExecutorWrapping() {
+    final ActorExecutorService actorExecutorService =
+        ExecutorServices.asActorExecutor(ExecutorServices.localExecutor());
+    assertThat(ExecutorServices.asActorExecutor(actorExecutorService)).isSameAs(
+        actorExecutorService);
+  }
+
+  @Test
   public void actorScheduledExecutorFixedDelay() throws Exception {
     testFixedDelay(ExecutorServices.asActorExecutor(Executors.newSingleThreadScheduledExecutor()));
   }
@@ -99,6 +110,15 @@ public class ExecutorServicesTest {
   @Test
   public void actorScheduledExecutorShutdown() throws Exception {
     testShutdown(ExecutorServices.asActorExecutor(Executors.newSingleThreadScheduledExecutor()));
+  }
+
+  @Test
+  public void actorScheduledExecutorWrapping() {
+    final ActorScheduledExecutorService actorExecutorService =
+        ExecutorServices.asActorExecutor(Executors.newSingleThreadScheduledExecutor());
+    assertThat(ExecutorServices.asActorExecutor(actorExecutorService)).isSameAs(
+        actorExecutorService);
+    actorExecutorService.shutdown();
   }
 
   @Test
@@ -154,6 +174,28 @@ public class ExecutorServicesTest {
   }
 
   @Test
+  public void dynamicScheduledThreadPoolRunnableFuture() throws Exception {
+    final ScheduledExecutorService executorService =
+        ExecutorServices.newDynamicScheduledThreadPool(3, 3, 0, TimeUnit.SECONDS);
+    final TestRunnable runnable = new TestRunnable(0, TimeUnit.MILLISECONDS);
+    final Future<?> future = executorService.submit(runnable);
+    future.get();
+    assertThat(runnable.isPassed());
+    executorService.shutdown();
+  }
+
+  @Test
+  public void dynamicScheduledThreadPoolRunnableResult() throws Exception {
+    final ScheduledExecutorService executorService =
+        ExecutorServices.newDynamicScheduledThreadPool(3, 3, 0, TimeUnit.SECONDS);
+    final TestRunnable runnable = new TestRunnable(0, TimeUnit.MILLISECONDS);
+    final Future<Integer> future = executorService.submit(runnable, 1);
+    assertThat(future.get()).isEqualTo(1);
+    assertThat(runnable.isPassed());
+    executorService.shutdown();
+  }
+
+  @Test
   public void dynamicScheduledThreadPoolShutdown() throws Exception {
     testShutdown(ExecutorServices.newDynamicScheduledThreadPool(0, 3, 0, TimeUnit.SECONDS));
   }
@@ -177,6 +219,11 @@ public class ExecutorServicesTest {
     assertThat(executor.awaitTermination(100, TimeUnit.MILLISECONDS)).isFalse();
   }
 
+  @Test
+  public void localExecutorException() {
+    ExecutorServices.localExecutor().execute(new ThrowingRunnable(new IllegalArgumentException()));
+  }
+
   @Test(expected = UnsupportedOperationException.class)
   public void localExecutorShutdown() {
     final ExecutorService executor = ExecutorServices.localExecutor();
@@ -190,6 +237,28 @@ public class ExecutorServicesTest {
     testExecutor(ExecutorServices.withPriority(1, ExecutorServices.newTrampolineExecutor()));
   }
 
+  @Test
+  public void priorityExecutorAging() throws Exception {
+    final TestExecutorService executorService = new TestExecutorService();
+    final ExecutorService executorService1 = ExecutorServices.withPriority(1, executorService);
+    final ExecutorService executorService2 = ExecutorServices.withPriority(3, executorService);
+    final ArrayList<Future<Long>> futures = new ArrayList<Future<Long>>();
+    futures.add(executorService1.submit(new TimeCallable()));
+    futures.add(executorService1.submit(new TimeCallable()));
+    futures.add(executorService1.submit(new TimeCallable()));
+    final Future<Long> future2 = executorService2.submit(new TimeCallable());
+    executorService.consume(1);
+    Thread.sleep(100);
+    executorService.consume(1);
+    Thread.sleep(100);
+    executorService.consume(1);
+    Thread.sleep(100);
+    executorService.consume(1);
+    assertThat(future2.get()).isGreaterThan(futures.get(0).get());
+    assertThat(future2.get()).isGreaterThan(futures.get(1).get());
+    assertThat(future2.get()).isLessThan(futures.get(2).get());
+  }
+
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void priorityExecutorNPE() {
@@ -197,8 +266,51 @@ public class ExecutorServicesTest {
   }
 
   @Test
+  public void priorityExecutorOrder() throws Exception {
+    final TestExecutorService executorService = new TestExecutorService();
+    final ExecutorService executorService1 = ExecutorServices.withPriority(1, executorService);
+    final ExecutorService executorService2 = ExecutorServices.withPriority(3, executorService);
+    final Future<Long> future1 = executorService1.submit(new TimeCallable());
+    final Future<Long> future2 = executorService2.submit(new TimeCallable());
+    executorService.consume(1);
+    Thread.sleep(100);
+    executorService.consume(1);
+    assertThat(future2.get()).isLessThan(future1.get());
+  }
+
+  @Test
+  public void priorityExecutorWrapping() {
+    final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    assertThat(ExecutorServices.withPriority(1, (ExecutorService) executorService)).isInstanceOf(
+        ScheduledExecutorService.class);
+    executorService.shutdown();
+  }
+
+  @Test
   public void priorityScheduledExecutor() throws Exception {
     testExecutor(ExecutorServices.withPriority(13, Executors.newScheduledThreadPool(3)));
+  }
+
+  @Test
+  public void priorityScheduledExecutorAging() throws Exception {
+    final TestScheduledExecutorService executorService = new TestScheduledExecutorService();
+    final ExecutorService executorService1 = ExecutorServices.withPriority(1, executorService);
+    final ExecutorService executorService2 = ExecutorServices.withPriority(3, executorService);
+    final ArrayList<Future<Long>> futures = new ArrayList<Future<Long>>();
+    futures.add(executorService1.submit(new TimeCallable()));
+    futures.add(executorService1.submit(new TimeCallable()));
+    futures.add(executorService1.submit(new TimeCallable()));
+    final Future<Long> future2 = executorService2.submit(new TimeCallable());
+    executorService.consume(1);
+    Thread.sleep(100);
+    executorService.consume(1);
+    Thread.sleep(100);
+    executorService.consume(1);
+    Thread.sleep(100);
+    executorService.consume(1);
+    assertThat(future2.get()).isGreaterThan(futures.get(0).get());
+    assertThat(future2.get()).isGreaterThan(futures.get(1).get());
+    assertThat(future2.get()).isLessThan(futures.get(2).get());
   }
 
   @Test
@@ -223,8 +335,74 @@ public class ExecutorServicesTest {
   }
 
   @Test
+  public void priorityScheduledExecutorOrder() throws Exception {
+    final TestScheduledExecutorService executorService = new TestScheduledExecutorService();
+    final ExecutorService executorService1 = ExecutorServices.withPriority(1, executorService);
+    final ExecutorService executorService2 = ExecutorServices.withPriority(3, executorService);
+    final Future<Long> future1 = executorService1.submit(new TimeCallable());
+    final Future<Long> future2 = executorService2.submit(new TimeCallable());
+    executorService.consume(1);
+    Thread.sleep(100);
+    executorService.consume(1);
+    assertThat(future2.get()).isLessThan(future1.get());
+  }
+
+  @Test
   public void priorityScheduledExecutorShutdown() throws Exception {
     testShutdown(ExecutorServices.withPriority(13, Executors.newScheduledThreadPool(3)));
+  }
+
+  @Test
+  public void runnableFutureFixedDelay() throws Exception {
+    final ScheduledExecutorService executorService =
+        ExecutorServices.asScheduled(ExecutorServices.localExecutor());
+    final AtomicInteger count1 = new AtomicInteger();
+    final AtomicInteger count2 = new AtomicInteger();
+    final ScheduledFuture<?> scheduledFuture1 =
+        executorService.scheduleWithFixedDelay(new CountingRunnable(count1), 100, 400,
+            TimeUnit.MILLISECONDS);
+    final ScheduledFuture<?> scheduledFuture2 =
+        executorService.scheduleWithFixedDelay(new CountingRunnable(count2), 200, 500,
+            TimeUnit.MILLISECONDS);
+    assertThat(scheduledFuture1.isDone()).isFalse();
+    assertThat(scheduledFuture2.isDone()).isFalse();
+    Thread.sleep(1000);
+    assertThat(scheduledFuture1.cancel(true)).isTrue();
+    assertThat(scheduledFuture2.cancel(true)).isTrue();
+    assertThat(scheduledFuture1.isDone()).isTrue();
+    assertThat(scheduledFuture2.isDone()).isTrue();
+    assertThat(count1.get()).isEqualTo(3);
+    assertThat(count2.get()).isEqualTo(2);
+  }
+
+  @Test
+  public void runnableFutureFixedRate() throws Exception {
+    final ScheduledExecutorService executorService =
+        ExecutorServices.asScheduled(ExecutorServices.localExecutor());
+    final AtomicInteger count1 = new AtomicInteger();
+    final AtomicInteger count2 = new AtomicInteger();
+    final ScheduledFuture<?> scheduledFuture1 =
+        executorService.scheduleAtFixedRate(new CountingRunnable(count1), 100, 400,
+            TimeUnit.MILLISECONDS);
+    final ScheduledFuture<?> scheduledFuture2 =
+        executorService.scheduleAtFixedRate(new CountingRunnable(count2), 200, 500,
+            TimeUnit.MILLISECONDS);
+    assertThat(scheduledFuture1.isDone()).isFalse();
+    assertThat(scheduledFuture2.isDone()).isFalse();
+    Thread.sleep(1000);
+    assertThat(scheduledFuture1.cancel(true)).isTrue();
+    assertThat(scheduledFuture2.cancel(true)).isTrue();
+    assertThat(scheduledFuture1.isDone()).isTrue();
+    assertThat(scheduledFuture2.isDone()).isTrue();
+    assertThat(count1.get()).isEqualTo(3);
+    assertThat(count2.get()).isEqualTo(2);
+  }
+
+  @Test
+  public void scheduledExecutorWrapping() {
+    final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    assertThat(ExecutorServices.asScheduled(executorService)).isSameAs(executorService);
+    executorService.shutdown();
   }
 
   @Test
@@ -261,6 +439,14 @@ public class ExecutorServicesTest {
     executor.shutdown();
     assertThat(isDone).isTrue();
     assertThat(isFailed.get()).isFalse();
+  }
+
+  @Test
+  public void throttlingExecutorWrapping() {
+    final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    assertThat(ExecutorServices.withThrottling(1, (ExecutorService) executorService)).isInstanceOf(
+        ScheduledExecutorService.class);
+    executorService.shutdown();
   }
 
   @Test
@@ -347,6 +533,14 @@ public class ExecutorServicesTest {
   @SuppressWarnings("ConstantConditions")
   public void timeoutExecutorUnitNPE() {
     ExecutorServices.withTimeout(1, null, true, ExecutorServices.localExecutor());
+  }
+
+  @Test
+  public void timeoutExecutorWrapping() {
+    final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    assertThat(ExecutorServices.withTimeout(3, TimeUnit.SECONDS, true,
+        (ExecutorService) executorService)).isInstanceOf(ScheduledExecutorService.class);
+    executorService.shutdown();
   }
 
   @Test
@@ -736,6 +930,26 @@ public class ExecutorServicesTest {
         mIsRunning.set(false);
         mLatch.countDown();
       }
+    }
+  }
+
+  private static class ThrowingRunnable implements Runnable {
+
+    private final RuntimeException mException;
+
+    ThrowingRunnable(@NotNull final RuntimeException exception) {
+      mException = exception;
+    }
+
+    public void run() {
+      throw mException;
+    }
+  }
+
+  private static class TimeCallable implements Callable<Long> {
+
+    public Long call() {
+      return System.currentTimeMillis();
     }
   }
 
