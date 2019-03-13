@@ -16,10 +16,12 @@
 
 package dm.shakespeare.util;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
@@ -130,8 +132,26 @@ public class ConstantConditionsTest {
   }
 
   @Test
+  public void notNullElementsGenericIterable() {
+    final GenericIterable<Object> iterable = new GenericIterable<Object>(Collections.emptyList());
+    assertThat(ConstantConditions.notNullElements(iterable)).isSameAs(iterable);
+  }
+
+  @Test
+  public void notNullElementsGenericIterableFailure() {
+    final GenericIterable<Integer> iterable = new GenericIterable<Integer>(Arrays.asList(1, null));
+    try {
+      ConstantConditions.notNullElements(iterable);
+      fail();
+
+    } catch (final NullPointerException e) {
+      assertThat(e.getMessage()).contains("objects");
+    }
+  }
+
+  @Test
   public void notNullElementsIterable() {
-    assertThat(ConstantConditions.notNullElements(Collections.emptyList())).isEqualTo(
+    assertThat(ConstantConditions.notNullElements(Collections.emptyList())).isSameAs(
         Collections.emptyList());
   }
 
@@ -159,13 +179,13 @@ public class ConstantConditionsTest {
 
   @Test
   public void notNullElementsIterableNamed() {
-    assertThat(ConstantConditions.notNullElements("test", Collections.emptyList())).isEqualTo(
+    assertThat(ConstantConditions.notNullElements("test", Collections.emptyList())).isSameAs(
         Collections.emptyList());
   }
 
   @Test
   public void nullity() {
-    assertThat(ConstantConditions.notNull(this)).isEqualTo(this);
+    assertThat(ConstantConditions.notNull(this)).isSameAs(this);
   }
 
   @Test
@@ -195,7 +215,7 @@ public class ConstantConditionsTest {
   @Test
   @SuppressWarnings("ObviousNullCheck")
   public void nullityNamed() {
-    assertThat(ConstantConditions.notNull("test", this)).isEqualTo(this);
+    assertThat(ConstantConditions.notNull("test", this)).isSameAs(this);
   }
 
   @Test
@@ -301,5 +321,19 @@ public class ConstantConditionsTest {
 
   private void unsupportedMethod() {
     ConstantConditions.unsupported("test", "unsupportedMethod");
+  }
+
+  private static class GenericIterable<T> implements Iterable<T> {
+
+    private final Iterable<T> mIterable;
+
+    private GenericIterable(@NotNull final Iterable<T> iterable) {
+      mIterable = iterable;
+    }
+
+    @NotNull
+    public Iterator<T> iterator() {
+      return mIterable.iterator();
+    }
   }
 }

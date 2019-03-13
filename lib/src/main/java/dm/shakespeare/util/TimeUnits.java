@@ -37,44 +37,44 @@ public class TimeUnits {
   /**
    * Returns the current time in the specified unit.
    *
-   * @param timeUnit the time unit.
+   * @param unit the time unit.
    * @return the current time.
    */
-  public static long currentTimeIn(@NotNull final TimeUnit timeUnit) {
-    if (timeUnit == TimeUnit.NANOSECONDS) {
-      ConstantConditions.notNull("timeUnit", timeUnit);
+  public static long currentTimeIn(@NotNull final TimeUnit unit) {
+    if (unit == TimeUnit.NANOSECONDS) {
+      ConstantConditions.notNull("unit", unit);
       return System.nanoTime();
     }
-    return timeUnit.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+    return unit.convert(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
   }
 
   /**
    * Performs a {@link Thread#sleep(long, int)} using the specified duration as timeout,
    * ensuring that the sleep time is respected even if spurious wake-ups happen in the while.
    *
-   * @param time     the time value.
-   * @param timeUnit the time unit.
+   * @param time the time value.
+   * @param unit the time unit.
    * @throws InterruptedException if the current thread is interrupted.
    */
-  public static void sleepAtLeast(final long time, @NotNull final TimeUnit timeUnit) throws
+  public static void sleepAtLeast(final long time, @NotNull final TimeUnit unit) throws
       InterruptedException {
     if (time == 0) {
-      ConstantConditions.notNull("timeUnit", timeUnit);
+      ConstantConditions.notNull("unit", unit);
       return;
     }
 
-    if ((timeUnit.compareTo(TimeUnit.MILLISECONDS) >= 0) || (
-        (timeUnit.toNanos(time) % ONE_MILLI_NANOS) == 0)) {
+    if ((unit.compareTo(TimeUnit.MILLISECONDS) >= 0) || ((unit.toNanos(time) % ONE_MILLI_NANOS)
+        == 0)) {
       final long startMillis = System.currentTimeMillis();
       while (true) {
-        if (!sleepSinceMillis(time, timeUnit, startMillis)) {
+        if (!sleepSinceMillis(time, unit, startMillis)) {
           return;
         }
       }
     }
     final long startNanos = System.nanoTime();
     while (true) {
-      if (!sleepSinceNanos(time, timeUnit, startNanos)) {
+      if (!sleepSinceNanos(time, unit, startNanos)) {
         return;
       }
     }
@@ -85,22 +85,22 @@ public class TimeUnits {
    * milliseconds, by using the specified time as timeout.
    *
    * @param time      the time value.
-   * @param timeUnit  the time unit.
+   * @param unit      the time unit.
    * @param milliTime the starting system time in milliseconds.
    * @return whether the sleep happened at all.
    * @throws IllegalStateException if this duration overflows the maximum sleep time.
    * @throws InterruptedException  if the current thread is interrupted.
    * @see System#currentTimeMillis()
    */
-  public static boolean sleepSinceMillis(final long time, @NotNull final TimeUnit timeUnit,
+  public static boolean sleepSinceMillis(final long time, @NotNull final TimeUnit unit,
       final long milliTime) throws InterruptedException {
     if (time == 0) {
-      ConstantConditions.notNull("timeUnit", timeUnit);
+      ConstantConditions.notNull("unit", unit);
       return false;
     }
-    final long millisToSleep = milliTime - System.currentTimeMillis() + timeUnit.toMillis(time);
+    final long millisToSleep = milliTime - System.currentTimeMillis() + unit.toMillis(time);
     if (millisToSleep <= 0) {
-      ConstantConditions.notNull("timeUnit", timeUnit);
+      ConstantConditions.notNull("unit", unit);
       return false;
     }
     TimeUnit.MILLISECONDS.sleep(millisToSleep);
@@ -112,74 +112,130 @@ public class TimeUnits {
    * system time in nanoseconds, by using the specified time as timeout.
    *
    * @param time     the time value.
-   * @param timeUnit the time unit.
+   * @param unit     the time unit.
    * @param nanoTime the starting system time in nanoseconds.
    * @return whether the sleep happened at all.
    * @throws IllegalStateException if this duration overflows the maximum sleep time.
    * @throws InterruptedException  if the current thread is interrupted.
    * @see System#nanoTime()
    */
-  public static boolean sleepSinceNanos(final long time, @NotNull final TimeUnit timeUnit,
+  public static boolean sleepSinceNanos(final long time, @NotNull final TimeUnit unit,
       final long nanoTime) throws InterruptedException {
     if (time == 0) {
-      ConstantConditions.notNull("timeUnit", timeUnit);
+      ConstantConditions.notNull("unit", unit);
       return false;
     }
-    final long nanosToSleep = nanoTime - System.nanoTime() + timeUnit.toNanos(time);
+    final long nanosToSleep = nanoTime - System.nanoTime() + unit.toNanos(time);
     if (nanosToSleep <= 0) {
-      ConstantConditions.notNull("timeUnit", timeUnit);
+      ConstantConditions.notNull("unit", unit);
       return false;
     }
     TimeUnit.NANOSECONDS.sleep(nanosToSleep);
     return true;
   }
 
-  public static long toDays(final float value, @NotNull final TimeUnit timeUnit) {
-    if (timeUnit.compareTo(TimeUnit.DAYS) < 0) {
-      return Math.round(value / timeUnit.convert(1, TimeUnit.DAYS));
+  /**
+   * Converts the specified time in floating point to number of days.
+   *
+   * @param value the time value.
+   * @param unit  the time unit.
+   * @return the number of days.
+   */
+  public static long toDays(final float value, @NotNull final TimeUnit unit) {
+    if (unit.compareTo(TimeUnit.DAYS) < 0) {
+      return (long) Math.floor(value / unit.convert(1, TimeUnit.DAYS));
     }
-    return Math.round(value * TimeUnit.DAYS.convert(1, timeUnit));
+    return Math.round(value * TimeUnit.DAYS.convert(1, unit));
   }
 
-  public static long toHours(final float value, @NotNull final TimeUnit timeUnit) {
-    if (timeUnit.compareTo(TimeUnit.HOURS) < 0) {
-      return Math.round(value / timeUnit.convert(1, TimeUnit.HOURS));
+  /**
+   * Converts the specified time in floating point to number of hours.
+   *
+   * @param value the time value.
+   * @param unit  the time unit.
+   * @return the number of hours.
+   */
+  public static long toHours(final float value, @NotNull final TimeUnit unit) {
+    if (unit.compareTo(TimeUnit.HOURS) < 0) {
+      return (long) Math.floor(value / unit.convert(1, TimeUnit.HOURS));
     }
-    return Math.round(value * TimeUnit.HOURS.convert(1, timeUnit));
+    return Math.round(value * TimeUnit.HOURS.convert(1, unit));
   }
 
-  public static long toMicros(final float value, @NotNull final TimeUnit timeUnit) {
-    if (timeUnit.compareTo(TimeUnit.MICROSECONDS) < 0) {
-      return Math.round(value / timeUnit.convert(1, TimeUnit.MICROSECONDS));
+  /**
+   * Converts the specified time in floating point to number of microseconds.
+   *
+   * @param value the time value.
+   * @param unit  the time unit.
+   * @return the number of microseconds.
+   */
+  public static long toMicros(final float value, @NotNull final TimeUnit unit) {
+    if (unit.compareTo(TimeUnit.MICROSECONDS) < 0) {
+      return (long) Math.floor(value / unit.convert(1, TimeUnit.MICROSECONDS));
     }
-    return Math.round(value * TimeUnit.MICROSECONDS.convert(1, timeUnit));
+    return Math.round(value * TimeUnit.MICROSECONDS.convert(1, unit));
   }
 
-  public static long toMillis(final float value, @NotNull final TimeUnit timeUnit) {
-    if (timeUnit.compareTo(TimeUnit.MILLISECONDS) < 0) {
-      return Math.round(value / timeUnit.convert(1, TimeUnit.MILLISECONDS));
+  /**
+   * Converts the specified time in floating point to number of milliseconds.
+   *
+   * @param value the time value.
+   * @param unit  the time unit.
+   * @return the number of milliseconds.
+   */
+  public static long toMillis(final float value, @NotNull final TimeUnit unit) {
+    if (unit.compareTo(TimeUnit.MILLISECONDS) < 0) {
+      return (long) Math.floor(value / unit.convert(1, TimeUnit.MILLISECONDS));
     }
-    return Math.round(value * TimeUnit.MILLISECONDS.convert(1, timeUnit));
+    return Math.round(value * TimeUnit.MILLISECONDS.convert(1, unit));
   }
 
-  public static long toMinutes(final float value, @NotNull final TimeUnit timeUnit) {
-    if (timeUnit.compareTo(TimeUnit.MINUTES) < 0) {
-      return Math.round(value / timeUnit.convert(1, TimeUnit.MINUTES));
+  /**
+   * Converts the specified time in floating point to number of minutes.
+   *
+   * @param value the time value.
+   * @param unit  the time unit.
+   * @return the number of minutes.
+   */
+  public static long toMinutes(final float value, @NotNull final TimeUnit unit) {
+    if (unit.compareTo(TimeUnit.MINUTES) < 0) {
+      return (long) Math.floor(value / unit.convert(1, TimeUnit.MINUTES));
     }
-    return Math.round(value * TimeUnit.MINUTES.convert(1, timeUnit));
+    return Math.round(value * TimeUnit.MINUTES.convert(1, unit));
   }
 
-  public static long toNanos(final float value, @NotNull final TimeUnit timeUnit) {
-    return Math.round(value * timeUnit.toNanos(1));
+  /**
+   * Converts the specified time in floating point to number of nanoseconds.
+   *
+   * @param value the time value.
+   * @param unit  the time unit.
+   * @return the number of nanoseconds.
+   */
+  public static long toNanos(final float value, @NotNull final TimeUnit unit) {
+    return Math.round(value * unit.toNanos(1));
   }
 
-  public static long toSeconds(final float value, @NotNull final TimeUnit timeUnit) {
-    if (timeUnit.compareTo(TimeUnit.SECONDS) < 0) {
-      return Math.round(value / timeUnit.convert(1, TimeUnit.SECONDS));
+  /**
+   * Converts the specified time in floating point to number of seconds.
+   *
+   * @param value the time value.
+   * @param unit  the time unit.
+   * @return the number of seconds.
+   */
+  public static long toSeconds(final float value, @NotNull final TimeUnit unit) {
+    if (unit.compareTo(TimeUnit.SECONDS) < 0) {
+      return (long) Math.floor(value / unit.convert(1, TimeUnit.SECONDS));
     }
-    return Math.round(value * TimeUnit.SECONDS.convert(1, timeUnit));
+    return Math.round(value * TimeUnit.SECONDS.convert(1, unit));
   }
 
+  /**
+   * Computes a timestamp in nanoseconds by adding the specified delay to the current time.
+   *
+   * @param delay the delay value.
+   * @param unit  the delay unit.
+   * @return the timestamp in number of nanoseconds.
+   */
   public static long toTimestampNanos(final long delay, @NotNull final TimeUnit unit) {
     final long delayNano = TimeUnit.NANOSECONDS.convert(Math.max(0, delay), unit);
     final long nanoTime = System.nanoTime();
@@ -192,28 +248,28 @@ public class TimeUnits {
    * If the specified time is negative, the method will wait indefinitely.
    *
    * @param target    the target object.
-   * @param milliTime the starting system time in milliseconds.
    * @param time      the time value.
-   * @param timeUnit  the time unit.
+   * @param unit      the time unit.
+   * @param milliTime the starting system time in milliseconds.
    * @return whether the wait happened at all.
    * @throws InterruptedException if the current thread is interrupted.
    * @see System#currentTimeMillis()
    */
-  public static boolean waitSinceMillis(@NotNull final Object target, final long milliTime,
-      final long time, @NotNull final TimeUnit timeUnit) throws InterruptedException {
+  public static boolean waitSinceMillis(@NotNull final Object target, final long time,
+      @NotNull final TimeUnit unit, final long milliTime) throws InterruptedException {
     if (time == 0) {
-      ConstantConditions.notNull("timeUnit", timeUnit);
+      ConstantConditions.notNull("unit", unit);
       return false;
     }
 
     if (time < 0) {
-      ConstantConditions.notNull("timeUnit", timeUnit);
+      ConstantConditions.notNull("unit", unit);
       target.wait();
       return true;
     }
-    final long millisToWait = milliTime - System.currentTimeMillis() + timeUnit.toMillis(time);
+    final long millisToWait = milliTime - System.currentTimeMillis() + unit.toMillis(time);
     if (millisToWait <= 0) {
-      ConstantConditions.notNull("timeUnit", timeUnit);
+      ConstantConditions.notNull("unit", unit);
       return false;
     }
     TimeUnit.MILLISECONDS.timedWait(target, millisToWait);
@@ -226,28 +282,28 @@ public class TimeUnits {
    * If the specified time is negative, the method will wait indefinitely.
    *
    * @param target   the target object.
-   * @param nanoTime the starting system time in nanoseconds.
    * @param time     the time value.
-   * @param timeUnit the time unit.
+   * @param unit     the time unit.
+   * @param nanoTime the starting system time in nanoseconds.
    * @return whether the wait happened at all.
    * @throws InterruptedException if the current thread is interrupted.
    * @see System#nanoTime()
    */
-  public static boolean waitSinceNanos(@NotNull final Object target, final long nanoTime,
-      final long time, @NotNull final TimeUnit timeUnit) throws InterruptedException {
+  public static boolean waitSinceNanos(@NotNull final Object target, final long time,
+      @NotNull final TimeUnit unit, final long nanoTime) throws InterruptedException {
     if (time == 0) {
-      ConstantConditions.notNull("timeUnit", timeUnit);
+      ConstantConditions.notNull("unit", unit);
       return false;
     }
 
     if (time < 0) {
-      ConstantConditions.notNull("timeUnit", timeUnit);
+      ConstantConditions.notNull("unit", unit);
       target.wait();
       return true;
     }
-    final long nanosToWait = nanoTime - System.nanoTime() + timeUnit.toNanos(time);
+    final long nanosToWait = nanoTime - System.nanoTime() + unit.toNanos(time);
     if (nanosToWait <= 0) {
-      ConstantConditions.notNull("timeUnit", timeUnit);
+      ConstantConditions.notNull("unit", unit);
       return false;
     }
     TimeUnit.NANOSECONDS.timedWait(target, nanosToWait);
@@ -260,31 +316,32 @@ public class TimeUnits {
    * If the specified time is negative, the method will wait indefinitely.
    *
    * @param target    the target object.
-   * @param condition the condition to verify.
    * @param time      the time value.
-   * @param timeUnit  the time unit.
+   * @param unit      the time unit.
+   * @param condition the condition to verify.
    * @return whether the check became true before the timeout elapsed.
    * @throws InterruptedException if the current thread is interrupted.
    */
-  public static boolean waitUntil(@NotNull final Object target, @NotNull final Condition condition,
-      final long time, @NotNull final TimeUnit timeUnit) throws InterruptedException {
+  public static boolean waitUntil(@NotNull final Object target, final long time,
+      @NotNull final TimeUnit unit, @NotNull final Condition condition) throws
+      InterruptedException {
     if (time == 0) {
-      ConstantConditions.notNull("timeUnit", timeUnit);
+      ConstantConditions.notNull("unit", unit);
       return condition.isTrue();
     }
 
     if (time < 0) {
-      ConstantConditions.notNull("timeUnit", timeUnit);
+      ConstantConditions.notNull("unit", unit);
       while (!condition.isTrue()) {
         target.wait();
       }
       return true;
     }
 
-    if ((timeUnit.toNanos(time) % ONE_MILLI_NANOS) == 0) {
+    if ((unit.toNanos(time) % ONE_MILLI_NANOS) == 0) {
       final long startMillis = System.currentTimeMillis();
       while (!condition.isTrue()) {
-        if (!waitSinceMillis(target, startMillis, time, timeUnit)) {
+        if (!waitSinceMillis(target, time, unit, startMillis)) {
           return false;
         }
       }
@@ -292,7 +349,7 @@ public class TimeUnits {
     } else {
       final long startNanos = System.nanoTime();
       while (!condition.isTrue()) {
-        if (!waitSinceNanos(target, startNanos, time, timeUnit)) {
+        if (!waitSinceNanos(target, time, unit, startNanos)) {
           return false;
         }
       }

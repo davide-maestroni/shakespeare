@@ -92,12 +92,12 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
 
   public V get() throws InterruptedException, ExecutionException {
     synchronized (mMutex) {
-      if (TimeUnits.waitUntil(mMutex, new Condition() {
+      if (TimeUnits.waitUntil(mMutex, -1, TimeUnit.MILLISECONDS, new Condition() {
 
         public boolean isTrue() {
           return (mFuture != null);
         }
-      }, -1, TimeUnit.MILLISECONDS)) {
+      })) {
         return mFuture.get();
       }
     }
@@ -109,12 +109,12 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
       ExecutionException, TimeoutException {
     synchronized (mMutex) {
       final long startTime = System.currentTimeMillis();
-      if (TimeUnits.waitUntil(mMutex, new Condition() {
+      if (TimeUnits.waitUntil(mMutex, timeout, timeUnit, new Condition() {
 
         public boolean isTrue() {
           return (mFuture != null);
         }
-      }, timeout, timeUnit)) {
+      })) {
         return mFuture.get(timeUnit.toMillis(timeout) + startTime - System.currentTimeMillis(),
             TimeUnit.MILLISECONDS);
       }
