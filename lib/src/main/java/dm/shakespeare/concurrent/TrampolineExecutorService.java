@@ -25,6 +25,7 @@ import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,7 +33,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 03/07/2019.
+ * Class implementing a {@link ExecutorService} maintaining a queue of commands which are consumed
+ * in the calling threads.
  */
 public class TrampolineExecutorService extends AbstractExecutorService {
 
@@ -40,10 +42,18 @@ public class TrampolineExecutorService extends AbstractExecutorService {
   private final AtomicBoolean mIsRunning = new AtomicBoolean();
   private final AtomicBoolean mIsShutdown = new AtomicBoolean();
 
+  /**
+   * Creates a new trampoline executor service.
+   */
   TrampolineExecutorService() {
     mCommands = new ConcurrentLinkedQueue<Runnable>();
   }
 
+  /**
+   * Creates a new trampoline executor service.
+   *
+   * @param commandQueue the internal command queue.
+   */
   TrampolineExecutorService(@NotNull final BlockingQueue<Runnable> commandQueue) {
     mCommands = ConstantConditions.notNull("commandQueue", commandQueue);
   }

@@ -26,23 +26,38 @@ import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.TimeUnits;
 
 /**
- * Created by davide-maestroni on 09/24/2018.
+ * Scheduled future implementation wrapping a {@link Runnable}.
  */
 class RunnableFuture extends AbstractFuture<Object> {
 
-  private final ExecutorService mExecutor;
+  private final ExecutorService mExecutorService;
   private final long mPeriod;
   private final Runnable mRunnable;
 
-  RunnableFuture(@NotNull final ExecutorService executor, @NotNull final Runnable runnable,
+  /**
+   * Creates a new future wrapping the specified runnable instance.
+   *
+   * @param executorService the underlying executor service.
+   * @param runnable        the runnable to wrap.
+   * @param timestamp       the execution timestamp in number of nanoseconds.
+   */
+  RunnableFuture(@NotNull final ExecutorService executorService, @NotNull final Runnable runnable,
       final long timestamp) {
-    this(executor, runnable, timestamp, 0);
+    this(executorService, runnable, timestamp, 0);
   }
 
-  RunnableFuture(@NotNull final ExecutorService executor, @NotNull final Runnable runnable,
+  /**
+   * Creates a new future wrapping the specified runnable instance.
+   *
+   * @param executorService the underlying executor service.
+   * @param runnable        the runnable to wrap.
+   * @param timestamp       the execution timestamp in number of nanoseconds.
+   * @param period          the execution period in number of nanoseconds.
+   */
+  RunnableFuture(@NotNull final ExecutorService executorService, @NotNull final Runnable runnable,
       final long timestamp, final long period) {
     super(timestamp);
-    mExecutor = ConstantConditions.notNull("executor", executor);
+    mExecutorService = ConstantConditions.notNull("executorService", executorService);
     mRunnable = ConstantConditions.notNull("runnable", runnable);
     mPeriod = period;
   }
@@ -75,7 +90,7 @@ class RunnableFuture extends AbstractFuture<Object> {
   @NotNull
   @SuppressWarnings("unchecked")
   Future<Object> submit() {
-    return (Future<Object>) mExecutor.submit(new Runnable() {
+    return (Future<Object>) mExecutorService.submit(new Runnable() {
 
       public void run() {
         mRunnable.run();

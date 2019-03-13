@@ -23,15 +23,13 @@ import java.util.Collection;
 
 /**
  * Utility class for verifying constant conditions.
- * <p>
- * Created by davide-maestroni on 03/27/2016.
  */
 public class ConstantConditions {
 
   /**
    * Avoid explicit instantiation.
    */
-  protected ConstantConditions() {
+  private ConstantConditions() {
     avoid();
   }
 
@@ -88,8 +86,7 @@ public class ConstantConditions {
    */
   public static long notNegative(final String name, final long number) {
     if (number < 0) {
-      throw new IllegalArgumentException(
-          "the " + name + " must not be negative, but is: " + number);
+      throw new IllegalArgumentException(name + " must not be negative, but is: " + number);
     }
     return number;
   }
@@ -119,7 +116,7 @@ public class ConstantConditions {
   @NotNull
   public static <T> T notNull(final String name, final T object) {
     if (object == null) {
-      throw new NullPointerException("the " + name + " must not be null");
+      throw new NullPointerException(name + " must not be null");
     }
     return object;
   }
@@ -134,7 +131,7 @@ public class ConstantConditions {
     ConstantConditions.notNull(name, array);
     for (final E element : array) {
       if (element == null) {
-        throw new NullPointerException("the " + name + " array must not contain null elements");
+        throw new NullPointerException(name + " array must not contain null elements");
       }
     }
     return array;
@@ -150,15 +147,13 @@ public class ConstantConditions {
     ConstantConditions.notNull(name, collection);
     if (collection instanceof Collection) {
       if (((Collection<?>) collection).contains(null)) {
-        throw new NullPointerException(
-            "the " + name + " collection must not contain null elements");
+        throw new NullPointerException(name + " collection must not contain null elements");
       }
 
     } else {
       for (final Object element : collection) {
         if (element == null) {
-          throw new NullPointerException(
-              "the " + name + " collection must not contain null elements");
+          throw new NullPointerException(name + " collection must not contain null elements");
         }
       }
     }
@@ -209,7 +204,7 @@ public class ConstantConditions {
    */
   public static long positive(final String name, final long number) {
     if (number <= 0) {
-      throw new IllegalArgumentException("the " + name + " must be positive, but is: " + number);
+      throw new IllegalArgumentException(name + " must be positive, but is: " + number);
     }
     return number;
   }
@@ -219,7 +214,7 @@ public class ConstantConditions {
    *
    * @param <R> the desired return type.
    * @return nothing.
-   * @throws UnsupportedOperationException if the method is called.
+   * @throws UnsupportedOperationException always.
    */
   public static <R> R unsupported() {
     throw new UnsupportedOperationException(buildUnsupportedMethodName(null));

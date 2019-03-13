@@ -21,12 +21,18 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.ExecutorService;
 
 /**
- * Created by davide-maestroni on 01/13/2019.
+ * Specialized executor service implementation used by Actors to ensure that code execution is
+ * sequential.
  */
 public class ActorExecutorService extends ThrottledExecutorService {
 
-  ActorExecutorService(@NotNull final ExecutorService executor) {
-    super(executor, 1);
+  /**
+   * Creates a new executor service wrapping the specified instance.
+   *
+   * @param executorService the executor service to wrap.
+   */
+  ActorExecutorService(@NotNull final ExecutorService executorService) {
+    super(executorService, 1);
   }
 
   @Override

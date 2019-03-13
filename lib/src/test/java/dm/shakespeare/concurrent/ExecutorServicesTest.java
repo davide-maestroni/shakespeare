@@ -44,7 +44,7 @@ import dm.shakespeare.test.concurrent.TestScheduledExecutorService;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Created by davide-maestroni on 03/05/2019.
+ * {@link ExecutorServices} unit tests.
  */
 public class ExecutorServicesTest {
 

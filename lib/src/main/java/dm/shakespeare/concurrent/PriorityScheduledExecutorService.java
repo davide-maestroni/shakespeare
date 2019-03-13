@@ -27,17 +27,27 @@ import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.TimeUnits;
 
 /**
- * Created by davide-maestroni on 06/06/2018.
+ * Class wrapping an {@link ScheduledExecutorService} instance so to run the passed tasks with the
+ * specified priority.<br>
+ * Several prioritizing services can be created from the same instance. Submitted commands will
+ * age every time an higher priority one takes the precedence, so that older commands slowly
+ * increase their priority. Such mechanism effectively prevents starvation of low priority tasks.
  */
 class PriorityScheduledExecutorService extends PriorityExecutorService
     implements ScheduledExecutorService {
 
-  private final ScheduledExecutorService mExecutor;
+  private final ScheduledExecutorService mExecutorService;
 
-  PriorityScheduledExecutorService(@NotNull final ScheduledExecutorService executor,
+  /**
+   * Creates a new executor service wrapping the specified instance.
+   *
+   * @param executorService the executor service to wrap.
+   * @param priority        the tasks priority.
+   */
+  PriorityScheduledExecutorService(@NotNull final ScheduledExecutorService executorService,
       final int priority) {
-    super(executor, priority);
-    mExecutor = executor;
+    super(executorService, priority);
+    mExecutorService = executorService;
   }
 
   @NotNull
@@ -45,7 +55,7 @@ class PriorityScheduledExecutorService extends PriorityExecutorService
       @NotNull final TimeUnit unit) {
     final RunnableFuture future =
         new RunnableFuture(this, command, TimeUnits.toTimestampNanos(delay, unit));
-    future.setFuture(mExecutor.schedule(future, delay, unit));
+    future.setFuture(mExecutorService.schedule(future, delay, unit));
     return future;
   }
 
@@ -54,7 +64,7 @@ class PriorityScheduledExecutorService extends PriorityExecutorService
       @NotNull final TimeUnit unit) {
     final CallableFuture<V> future =
         new CallableFuture<V>(this, callable, TimeUnits.toTimestampNanos(delay, unit));
-    future.setFuture(mExecutor.schedule(future, delay, unit));
+    future.setFuture(mExecutorService.schedule(future, delay, unit));
     return future;
   }
 
@@ -64,7 +74,7 @@ class PriorityScheduledExecutorService extends PriorityExecutorService
     final RunnableFuture future =
         new RunnableFuture(this, command, TimeUnits.toTimestampNanos(initialDelay, unit),
             unit.toNanos(ConstantConditions.positive("period", period)));
-    future.setFuture(mExecutor.scheduleAtFixedRate(future, initialDelay, period, unit));
+    future.setFuture(mExecutorService.scheduleAtFixedRate(future, initialDelay, period, unit));
     return future;
   }
 
@@ -74,7 +84,7 @@ class PriorityScheduledExecutorService extends PriorityExecutorService
     final RunnableFuture future =
         new RunnableFuture(this, command, TimeUnits.toTimestampNanos(initialDelay, unit),
             unit.toNanos(-ConstantConditions.positive("delay", delay)));
-    future.setFuture(mExecutor.scheduleWithFixedDelay(future, initialDelay, delay, unit));
+    future.setFuture(mExecutorService.scheduleWithFixedDelay(future, initialDelay, delay, unit));
     return future;
   }
 }

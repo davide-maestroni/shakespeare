@@ -28,11 +28,12 @@ import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 06/06/2018.
+ * Class wrapping an {@link ExecutorService} instance so to limit the number of parallely running
+ * tasks to the specified maximum number.
  */
 class ThrottledExecutorService extends AbstractExecutorService implements QueuedExecutorService {
 
-  private final ExecutorService mExecutor;
+  private final ExecutorService mExecutorService;
   private final int mMaxConcurrency;
   private final Object mMutex = new Object();
   private final CQueue<Runnable> mQueue = new CQueue<Runnable>();
@@ -40,8 +41,15 @@ class ThrottledExecutorService extends AbstractExecutorService implements Queued
 
   private int mPendingCount;
 
-  ThrottledExecutorService(@NotNull final ExecutorService executor, final int maxConcurrency) {
-    mExecutor = ConstantConditions.notNull("executor", executor);
+  /**
+   * Creates a new executor service wrapping the specified instance.
+   *
+   * @param executorService the executor service to wrap.
+   * @param maxConcurrency  the maximum number of parallel tasks.
+   */
+  ThrottledExecutorService(@NotNull final ExecutorService executorService,
+      final int maxConcurrency) {
+    mExecutorService = ConstantConditions.notNull("executorService", executorService);
     mMaxConcurrency = ConstantConditions.positive("maxConcurrency", maxConcurrency);
   }
 
@@ -53,7 +61,7 @@ class ThrottledExecutorService extends AbstractExecutorService implements Queued
       }
       ++mPendingCount;
     }
-    mExecutor.execute(mRunnable);
+    mExecutorService.execute(mRunnable);
   }
 
   public void executeNext(@NotNull final Runnable command) {
@@ -64,16 +72,16 @@ class ThrottledExecutorService extends AbstractExecutorService implements Queued
       }
       ++mPendingCount;
     }
-    mExecutor.execute(mRunnable);
+    mExecutorService.execute(mRunnable);
   }
 
   public void shutdown() {
-    mExecutor.shutdown();
+    mExecutorService.shutdown();
   }
 
   @NotNull
   public List<Runnable> shutdownNow() {
-    mExecutor.shutdownNow();
+    mExecutorService.shutdownNow();
     final ArrayList<Runnable> runnables;
     synchronized (mMutex) {
       final CQueue<Runnable> queue = mQueue;
@@ -84,25 +92,20 @@ class ThrottledExecutorService extends AbstractExecutorService implements Queued
   }
 
   public boolean isShutdown() {
-    return mExecutor.isShutdown();
+    return mExecutorService.isShutdown();
   }
 
   public boolean isTerminated() {
-    return mExecutor.isTerminated();
+    return mExecutorService.isTerminated();
   }
 
   public boolean awaitTermination(final long timeout, @NotNull final TimeUnit unit) throws
       InterruptedException {
-    return mExecutor.awaitTermination(timeout, unit);
+    return mExecutorService.awaitTermination(timeout, unit);
   }
 
-  /**
-   * Runnable used to dequeue and run pending runnables, when the maximum concurrency count allows
-   * it.
-   */
   private class ThrottledRunnable implements Runnable {
 
-    @SuppressWarnings("unchecked")
     public void run() {
       final Runnable runnable;
       synchronized (mMutex) {
@@ -117,7 +120,7 @@ class ThrottledExecutorService extends AbstractExecutorService implements Queued
         runnable.run();
 
       } finally {
-        mExecutor.execute(this);
+        mExecutorService.execute(this);
       }
     }
   }

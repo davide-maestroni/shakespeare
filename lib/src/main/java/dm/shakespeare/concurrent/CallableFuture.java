@@ -25,17 +25,26 @@ import java.util.concurrent.Future;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 09/24/2018.
+ * Scheduled future implementation wrapping a {@link Callable}.
+ *
+ * @param <V> the returned result type.
  */
 class CallableFuture<V> extends AbstractFuture<V> {
 
   private final Callable<V> mCallable;
-  private final ExecutorService mExecutor;
+  private final ExecutorService mExecutorService;
 
-  CallableFuture(@NotNull final ExecutorService executor, @NotNull final Callable<V> callable,
-      final long timestamp) {
+  /**
+   * Creates a new future wrapping the specified callable instance.
+   *
+   * @param executorService the underlying executor service.
+   * @param callable        the callable to wrap.
+   * @param timestamp       the execution timestamp in number of nanoseconds.
+   */
+  CallableFuture(@NotNull final ExecutorService executorService,
+      @NotNull final Callable<V> callable, final long timestamp) {
     super(timestamp);
-    mExecutor = ConstantConditions.notNull("executor", executor);
+    mExecutorService = ConstantConditions.notNull("executorService", executorService);
     mCallable = ConstantConditions.notNull("callable", callable);
   }
 
@@ -65,6 +74,6 @@ class CallableFuture<V> extends AbstractFuture<V> {
 
   @NotNull
   Future<V> submit() {
-    return mExecutor.submit(mCallable);
+    return mExecutorService.submit(mCallable);
   }
 }

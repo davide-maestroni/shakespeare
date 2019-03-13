@@ -18,6 +18,7 @@ package dm.shakespeare.concurrent;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.WeakHashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -25,7 +26,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import dm.shakespeare.util.ConstantConditions;
-import dm.shakespeare.util.WeakIdentityHashMap;
 
 /**
  * Utility class providing constructors for several {@link ExecutorService} and
@@ -33,8 +33,8 @@ import dm.shakespeare.util.WeakIdentityHashMap;
  */
 public class ExecutorServices {
 
-  private static final WeakIdentityHashMap<ExecutorService, ScheduledExecutorService>
-      sScheduledExecutors = new WeakIdentityHashMap<ExecutorService, ScheduledExecutorService>();
+  private static final WeakHashMap<ExecutorService, ScheduledExecutorService> sScheduledExecutors =
+      new WeakHashMap<ExecutorService, ScheduledExecutorService>();
 
   /**
    * Avoid instantiation.
@@ -94,8 +94,7 @@ public class ExecutorServices {
     }
     ScheduledExecutorService scheduledExecutor;
     synchronized (sScheduledExecutors) {
-      final WeakIdentityHashMap<ExecutorService, ScheduledExecutorService> executors =
-          sScheduledExecutors;
+      final WeakHashMap<ExecutorService, ScheduledExecutorService> executors = sScheduledExecutors;
       scheduledExecutor = executors.get(executorService);
       if (scheduledExecutor == null) {
         scheduledExecutor = new ScheduledThreadPoolWrapper(executorService);
@@ -190,7 +189,9 @@ public class ExecutorServices {
   }
 
   /**
-   * Creates a new trampoline executor service instance.
+   * Creates a new trampoline executor service instance.<br>
+   * A trampoline executor is an {@link ExecutorService} implementation maintaining a queue of
+   * commands which are consumed in the calling threads.
    *
    * @return the executor instance.
    */
@@ -200,7 +201,9 @@ public class ExecutorServices {
   }
 
   /**
-   * Creates a new trampoline executor service instance.
+   * Creates a new trampoline executor service instance.<br>
+   * A trampoline executor is an {@link ExecutorService} implementation maintaining a queue of
+   * commands which are consumed in the calling threads.
    *
    * @param commandQueue the internal command queue.
    * @return the executor instance.
@@ -211,50 +214,117 @@ public class ExecutorServices {
     return new TrampolineExecutorService(commandQueue);
   }
 
+  /**
+   * Wraps the specified {@link ExecutorService} instance so to run the passed tasks with the
+   * specified priority.<br>
+   * Several prioritizing services can be created from the same instance. Submitted commands will
+   * age every time an higher priority one takes the precedence, so that older commands slowly
+   * increase their priority. Such mechanism effectively prevents starvation of low priority tasks.
+   * <br>
+   * When assigning priority to services, it is important to keep in mind that the difference
+   * between two priorities corresponds to the maximum age the lower priority commands will have,
+   * before getting precedence over the higher priority ones.
+   *
+   * @param priority        the execution priority.
+   * @param executorService the executor service to wrap.
+   * @return the prioritizing executor service.
+   */
   @NotNull
   public static ExecutorService withPriority(final int priority,
-      @NotNull final ExecutorService executor) {
-    if (executor instanceof ScheduledExecutorService) {
-      return withPriority(priority, (ScheduledExecutorService) executor);
+      @NotNull final ExecutorService executorService) {
+    if (executorService instanceof ScheduledExecutorService) {
+      return withPriority(priority, (ScheduledExecutorService) executorService);
     }
-    return new PriorityExecutorService(executor, priority);
+    return new PriorityExecutorService(executorService, priority);
   }
 
+  /**
+   * Wraps the specified {@link ScheduledExecutorService} instance so to run the passed tasks
+   * with the specified priority.<br>
+   * Several prioritizing services can be created from the same instance. Submitted commands will
+   * age every time an higher priority one takes the precedence, so that older commands slowly
+   * increase their priority. Such mechanism effectively prevents starvation of low priority tasks.
+   * <br>
+   * When assigning priority to services, it is important to keep in mind that the difference
+   * between two priorities corresponds to the maximum age the lower priority commands will have,
+   * before getting precedence over the higher priority ones.
+   *
+   * @param priority        the execution priority.
+   * @param executorService the executor service to wrap.
+   * @return the prioritizing executor service.
+   */
   @NotNull
   public static ScheduledExecutorService withPriority(final int priority,
-      @NotNull final ScheduledExecutorService executor) {
-    return new PriorityScheduledExecutorService(executor, priority);
+      @NotNull final ScheduledExecutorService executorService) {
+    return new PriorityScheduledExecutorService(executorService, priority);
   }
 
+  /**
+   * Wraps the specified {@link ExecutorService} instance so to limit the number of parallely
+   * running tasks to the specified maximum number.
+   *
+   * @param maxConcurrency  the maximum number of parallel tasks.
+   * @param executorService the executor service to wrap.
+   * @return the throttled executor service.
+   */
   @NotNull
-  public static ExecutorService withThrottling(final int maxExecutions,
-      @NotNull final ExecutorService executor) {
-    if (executor instanceof ScheduledExecutorService) {
-      return withThrottling(maxExecutions, (ScheduledExecutorService) executor);
+  public static ExecutorService withThrottling(final int maxConcurrency,
+      @NotNull final ExecutorService executorService) {
+    if (executorService instanceof ScheduledExecutorService) {
+      return withThrottling(maxConcurrency, (ScheduledExecutorService) executorService);
     }
-    return new ThrottledExecutorService(executor, maxExecutions);
+    return new ThrottledExecutorService(executorService, maxConcurrency);
   }
 
+  /**
+   * Wraps the specified {@link ScheduledExecutorService} instance so to limit the number of
+   * parallely running tasks to the specified maximum number.
+   *
+   * @param maxConcurrency  the maximum number of parallel tasks.
+   * @param executorService the executor service to wrap.
+   * @return the throttled executor service.
+   */
   @NotNull
-  public static ScheduledExecutorService withThrottling(final int maxExecutions,
-      @NotNull final ScheduledExecutorService executor) {
-    return new ThrottledScheduledExecutorService(executor, maxExecutions);
+  public static ScheduledExecutorService withThrottling(final int maxConcurrency,
+      @NotNull final ScheduledExecutorService executorService) {
+    return new ThrottledScheduledExecutorService(executorService, maxConcurrency);
   }
 
+  /**
+   * Wraps the specified {@link ExecutorService} instance so to limit the execution time of each
+   * submitted task.
+   *
+   * @param timeout               the execution timeout.
+   * @param timeUnit              the timeout unit.
+   * @param mayInterruptIfRunning whether to interrupt running tasks when the timeout elapses.
+   * @param executorService       the executor service to wrap.
+   * @return the timing out executor service.
+   */
   @NotNull
   public static ExecutorService withTimeout(final long timeout, @NotNull final TimeUnit timeUnit,
-      final boolean mayInterruptIfRunning, @NotNull final ExecutorService executor) {
-    if (executor instanceof ScheduledExecutorService) {
+      final boolean mayInterruptIfRunning, @NotNull final ExecutorService executorService) {
+    if (executorService instanceof ScheduledExecutorService) {
       return withTimeout(timeout, timeUnit, mayInterruptIfRunning,
-          (ScheduledExecutorService) executor);
+          (ScheduledExecutorService) executorService);
     }
-    return new TimeoutExecutorService(executor, timeout, timeUnit, mayInterruptIfRunning);
+    return new TimeoutExecutorService(executorService, timeout, timeUnit, mayInterruptIfRunning);
   }
 
+  /**
+   * Wraps the specified {@link ScheduledExecutorService} instance so to limit the execution time
+   * of each submitted task.
+   *
+   * @param timeout               the execution timeout.
+   * @param timeUnit              the timeout unit.
+   * @param mayInterruptIfRunning whether to interrupt running tasks when the timeout elapses.
+   * @param executorService       the executor service to wrap.
+   * @return the timing out executor service.
+   */
   @NotNull
   public static ScheduledExecutorService withTimeout(final long timeout,
       @NotNull final TimeUnit timeUnit, final boolean mayInterruptIfRunning,
-      @NotNull final ScheduledExecutorService executor) {
-    return new TimeoutScheduledExecutorService(executor, timeout, timeUnit, mayInterruptIfRunning);
+      @NotNull final ScheduledExecutorService executorService) {
+    return new TimeoutScheduledExecutorService(executorService, timeout, timeUnit,
+        mayInterruptIfRunning);
   }
 }

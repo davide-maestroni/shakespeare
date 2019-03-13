@@ -30,7 +30,9 @@ import dm.shakespeare.util.TimeUnits;
 import dm.shakespeare.util.TimeUnits.Condition;
 
 /**
- * Created by davide-maestroni on 02/14/2019.
+ * Abstract base implementation of a scheduled future proxying another future.
+ *
+ * @param <V> the returned result type.
  */
 abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
 
@@ -40,6 +42,11 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
   private Future<V> mFuture;
   private ScheduledFuture<?> mScheduledFuture;
 
+  /**
+   * Creates a new future instance to be executed at the specified timestamp.
+   *
+   * @param timestamp the execution timestamp in number of nanoseconds.
+   */
   AbstractFuture(final long timestamp) {
     mTimestamp = new AtomicLong(timestamp);
   }
@@ -164,8 +171,8 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
     return mTimestamp;
   }
 
-  void setFuture(@NotNull final ScheduledFuture<?> future) {
-    mScheduledFuture = future;
+  void setFuture(@NotNull final ScheduledFuture<?> scheduledFuture) {
+    mScheduledFuture = scheduledFuture;
   }
 
   @NotNull

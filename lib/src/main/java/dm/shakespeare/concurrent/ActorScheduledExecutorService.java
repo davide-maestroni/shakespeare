@@ -21,12 +21,18 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * Created by davide-maestroni on 01/13/2019.
+ * Specialized scheduled executor service implementation used by Actors to ensure that code
+ * execution is sequential.
  */
 public class ActorScheduledExecutorService extends ThrottledScheduledExecutorService {
 
-  ActorScheduledExecutorService(@NotNull final ScheduledExecutorService executor) {
-    super(executor, 1);
+  /**
+   * Creates a new executor service wrapping the specified instance.
+   *
+   * @param executorService the executor service to wrap.
+   */
+  ActorScheduledExecutorService(@NotNull final ScheduledExecutorService executorService) {
+    super(executorService, 1);
   }
 
   @Override

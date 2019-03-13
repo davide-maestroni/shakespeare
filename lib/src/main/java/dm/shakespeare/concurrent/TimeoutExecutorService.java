@@ -30,7 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 06/06/2018.
+ * Class wrapping an {@link ExecutorService} instance so to limit the execution time of each
+ * submitted task.
  */
 class TimeoutExecutorService extends AbstractExecutorService {
 
@@ -39,15 +40,23 @@ class TimeoutExecutorService extends AbstractExecutorService {
   private static long sCount;
   private static ScheduledExecutorService sTimeoutService;
 
-  private final ExecutorService mExecutor;
+  private final ExecutorService mExecutorService;
   private final AtomicBoolean mIsShutdown = new AtomicBoolean();
   private final boolean mMayInterruptIfRunning;
   private final TimeUnit mTimeUnit;
   private final long mTimeout;
 
-  TimeoutExecutorService(@NotNull final ExecutorService executor, final long timeout,
+  /**
+   * Creates a new executor service wrapping the specified instance.
+   *
+   * @param executorService       the executor service to wrap.
+   * @param timeout               the execution timeout.
+   * @param timeUnit              the execution timeout unit.
+   * @param mayInterruptIfRunning whether to interrupt running tasks when the timeout elapses.
+   */
+  TimeoutExecutorService(@NotNull final ExecutorService executorService, final long timeout,
       @NotNull final TimeUnit timeUnit, final boolean mayInterruptIfRunning) {
-    mExecutor = ConstantConditions.notNull("executor", executor);
+    mExecutorService = ConstantConditions.notNull("executorService", executorService);
     mTimeout = ConstantConditions.positive("timeout", timeout);
     mTimeUnit = ConstantConditions.notNull("timeUnit", timeUnit);
     mMayInterruptIfRunning = mayInterruptIfRunning;
@@ -71,11 +80,11 @@ class TimeoutExecutorService extends AbstractExecutorService {
   }
 
   public void execute(@NotNull final Runnable command) {
-    timeout(mExecutor.submit(command));
+    timeout(mExecutorService.submit(command));
   }
 
   public void shutdown() {
-    mExecutor.shutdown();
+    mExecutorService.shutdown();
     if (!mIsShutdown.getAndSet(true)) {
       shutdownGlobalService();
     }
@@ -83,7 +92,7 @@ class TimeoutExecutorService extends AbstractExecutorService {
 
   @NotNull
   public List<Runnable> shutdownNow() {
-    final List<Runnable> runnables = mExecutor.shutdownNow();
+    final List<Runnable> runnables = mExecutorService.shutdownNow();
     if (!mIsShutdown.getAndSet(true)) {
       shutdownGlobalService();
     }
@@ -91,16 +100,16 @@ class TimeoutExecutorService extends AbstractExecutorService {
   }
 
   public boolean isShutdown() {
-    return mExecutor.isShutdown();
+    return mExecutorService.isShutdown();
   }
 
   public boolean isTerminated() {
-    return mExecutor.isTerminated();
+    return mExecutorService.isTerminated();
   }
 
   public boolean awaitTermination(final long timeout, @NotNull final TimeUnit unit) throws
       InterruptedException {
-    return mExecutor.awaitTermination(timeout, unit);
+    return mExecutorService.awaitTermination(timeout, unit);
   }
 
   @NotNull

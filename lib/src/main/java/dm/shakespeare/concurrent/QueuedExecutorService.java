@@ -21,9 +21,15 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.ExecutorService;
 
 /**
- * Created by davide-maestroni on 01/15/2019.
+ * Interface defining an {@link ExecutorService} maintaining an internal queue of commands.
  */
 public interface QueuedExecutorService extends ExecutorService {
 
+  /**
+   * Adds the specified command to the head of the internal queue so that it will be the next to be
+   * executed.
+   *
+   * @param command the command.
+   */
   void executeNext(@NotNull Runnable command);
 }

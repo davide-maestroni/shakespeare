@@ -23,38 +23,47 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.WeakHashMap;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import dm.shakespeare.util.ConstantConditions;
-import dm.shakespeare.util.WeakIdentityHashMap;
 
 /**
- * Created by davide-maestroni on 06/06/2018.
+ * Class wrapping an {@link ExecutorService} instance so to run the passed tasks with the
+ * specified priority.<br>
+ * Several prioritizing services can be created from the same instance. Submitted commands will
+ * age every time an higher priority one takes the precedence, so that older commands slowly
+ * increase their priority. Such mechanism effectively prevents starvation of low priority tasks.
  */
 class PriorityExecutorService extends AbstractExecutorService {
 
   private static final PriorityRunnableComparator PRIORITY_RUNNABLE_COMPARATOR =
       new PriorityRunnableComparator();
-
-  private static final WeakIdentityHashMap<ExecutorService, PriorityContext> sContexts =
-      new WeakIdentityHashMap<ExecutorService, PriorityContext>();
+  private static final WeakHashMap<ExecutorService, PriorityContext> sContexts =
+      new WeakHashMap<ExecutorService, PriorityContext>();
 
   private final PriorityContext mContext;
-  private final ExecutorService mExecutor;
+  private final ExecutorService mExecutorService;
   private final int mPriority;
   private final PriorityRunnable mRunnable = new PriorityRunnable();
 
-  PriorityExecutorService(@NotNull final ExecutorService executor, final int priority) {
-    mExecutor = ConstantConditions.notNull("executor", executor);
+  /**
+   * Creates a new executor service wrapping the specified instance.
+   *
+   * @param executorService the executor service to wrap.
+   * @param priority        the tasks priority.
+   */
+  PriorityExecutorService(@NotNull final ExecutorService executorService, final int priority) {
+    mExecutorService = ConstantConditions.notNull("executorService", executorService);
     mPriority = priority;
     synchronized (sContexts) {
-      final WeakIdentityHashMap<ExecutorService, PriorityContext> contexts = sContexts;
-      PriorityContext context = contexts.get(executor);
+      final WeakHashMap<ExecutorService, PriorityContext> contexts = sContexts;
+      PriorityContext context = contexts.get(executorService);
       if (context == null) {
         context = new PriorityContext();
-        contexts.put(executor, context);
+        contexts.put(executorService, context);
       }
       mContext = context;
     }
@@ -71,16 +80,16 @@ class PriorityExecutorService extends AbstractExecutorService {
           new WrappedRunnable(ConstantConditions.notNull("command", command), mPriority,
               context.age--));
     }
-    mExecutor.execute(mRunnable);
+    mExecutorService.execute(mRunnable);
   }
 
   public void shutdown() {
-    mExecutor.shutdown();
+    mExecutorService.shutdown();
   }
 
   @NotNull
   public List<Runnable> shutdownNow() {
-    mExecutor.shutdownNow();
+    mExecutorService.shutdownNow();
     final ArrayList<Runnable> runnables;
     synchronized (mContext) {
       final PriorityQueue<WrappedRunnable> queue = mContext.queue;
@@ -91,16 +100,16 @@ class PriorityExecutorService extends AbstractExecutorService {
   }
 
   public boolean isShutdown() {
-    return mExecutor.isShutdown();
+    return mExecutorService.isShutdown();
   }
 
   public boolean isTerminated() {
-    return mExecutor.isTerminated();
+    return mExecutorService.isTerminated();
   }
 
   public boolean awaitTermination(final long timeout, @NotNull final TimeUnit unit) throws
       InterruptedException {
-    return mExecutor.awaitTermination(timeout, unit);
+    return mExecutorService.awaitTermination(timeout, unit);
   }
 
   private static class PriorityContext {
@@ -111,9 +120,6 @@ class PriorityExecutorService extends AbstractExecutorService {
     private long age = Long.MAX_VALUE - Integer.MAX_VALUE;
   }
 
-  /**
-   * Comparator of priority command instances.
-   */
   private static class PriorityRunnableComparator
       implements Comparator<WrappedRunnable>, Serializable {
 
@@ -130,23 +136,12 @@ class PriorityExecutorService extends AbstractExecutorService {
     }
   }
 
-  /**
-   * Runnable implementation providing a comparison based on priority and the wrapped command
-   * age.
-   */
   private static class WrappedRunnable implements Runnable {
 
     private final long mAge;
     private final int mPriority;
     private final Runnable mRunnable;
 
-    /**
-     * Constructor.
-     *
-     * @param runnable the wrapped command.
-     * @param priority the command priority.
-     * @param age      the command age.
-     */
     private WrappedRunnable(@NotNull final Runnable runnable, final int priority, final long age) {
       mRunnable = runnable;
       mPriority = priority;
@@ -158,10 +153,6 @@ class PriorityExecutorService extends AbstractExecutorService {
     }
   }
 
-  /**
-   * Runnable used to dequeue and run pending runnables, when the maximum concurrency count allows
-   * it.
-   */
   private class PriorityRunnable implements Runnable {
 
     public void run() {

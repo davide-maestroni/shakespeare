@@ -21,15 +21,25 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by davide-maestroni on 07/18/2017.
+ * Utility class for handling time units.
  */
 public class TimeUnits {
 
   private static final long ONE_MILLI_NANOS = TimeUnit.MILLISECONDS.toNanos(1);
 
+  /**
+   * Avoid explicit instantiation.
+   */
   private TimeUnits() {
+    ConstantConditions.avoid();
   }
 
+  /**
+   * Returns the current time in the specified unit.
+   *
+   * @param timeUnit the time unit.
+   * @return the current time.
+   */
   public static long currentTimeIn(@NotNull final TimeUnit timeUnit) {
     if (timeUnit == TimeUnit.NANOSECONDS) {
       ConstantConditions.notNull("timeUnit", timeUnit);
@@ -71,8 +81,8 @@ public class TimeUnits {
   }
 
   /**
-   * Performs a {@link Thread#sleep(long, int)} as if started from the specified system
-   * time in milliseconds, by using the specified time as timeout.
+   * Performs a {@link Thread#sleep(long, int)} as if started from the specified system time in
+   * milliseconds, by using the specified time as timeout.
    *
    * @param time      the time value.
    * @param timeUnit  the time unit.
@@ -98,8 +108,8 @@ public class TimeUnits {
   }
 
   /**
-   * Performs a {@link Thread#sleep(long, int)} as if started from the specified high
-   * precision system time in nanoseconds, by using the specified time as timeout.
+   * Performs a {@link Thread#sleep(long, int)} as if started from the specified high precision
+   * system time in nanoseconds, by using the specified time as timeout.
    *
    * @param time     the time value.
    * @param timeUnit the time unit.
@@ -138,10 +148,6 @@ public class TimeUnits {
     return Math.round(value * TimeUnit.HOURS.convert(1, timeUnit));
   }
 
-  public static long toManos(final float value, @NotNull final TimeUnit timeUnit) {
-    return Math.round(value * timeUnit.toNanos(1));
-  }
-
   public static long toMicros(final float value, @NotNull final TimeUnit timeUnit) {
     if (timeUnit.compareTo(TimeUnit.MICROSECONDS) < 0) {
       return Math.round(value / timeUnit.convert(1, TimeUnit.MICROSECONDS));
@@ -163,6 +169,10 @@ public class TimeUnits {
     return Math.round(value * TimeUnit.MINUTES.convert(1, timeUnit));
   }
 
+  public static long toNanos(final float value, @NotNull final TimeUnit timeUnit) {
+    return Math.round(value * timeUnit.toNanos(1));
+  }
+
   public static long toSeconds(final float value, @NotNull final TimeUnit timeUnit) {
     if (timeUnit.compareTo(TimeUnit.SECONDS) < 0) {
       return Math.round(value / timeUnit.convert(1, TimeUnit.SECONDS));
@@ -178,8 +188,7 @@ public class TimeUnits {
 
   /**
    * Performs an {@link Object#wait()} as if started from the specified system time in
-   * milliseconds, by using the specified time.
-   * <br>
+   * milliseconds, by using the specified time.<br>
    * If the specified time is negative, the method will wait indefinitely.
    *
    * @param target    the target object.
@@ -212,9 +221,8 @@ public class TimeUnits {
   }
 
   /**
-   * Performs an {@link Object#wait()} as if started from the specified high precision
-   * system time in nanoseconds, by using the specified time.
-   * <br>
+   * Performs an {@link Object#wait()} as if started from the specified high precision system time
+   * in nanoseconds, by using the specified time.<br>
    * If the specified time is negative, the method will wait indefinitely.
    *
    * @param target   the target object.
@@ -247,9 +255,8 @@ public class TimeUnits {
   }
 
   /**
-   * Waits for the specified condition to be true by performing an {@link Object#wait()}
-   * and using the specified time.
-   * <br>
+   * Waits for the specified condition to be true by performing an {@link Object#wait()} and using
+   * the specified time.<br>
    * If the specified time is negative, the method will wait indefinitely.
    *
    * @param target    the target object.

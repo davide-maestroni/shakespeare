@@ -28,14 +28,11 @@ import java.util.NoSuchElementException;
 import java.util.Queue;
 
 /**
- * Minimal implementation of a light-weight queue, storing elements into a dynamically increasing
- * circular buffer.
- * <br>
- * Note that, even if the class implements a {@code Queue}, null elements are supported, so the
- * values returned by {@link #peek()} and {@link #poll()} methods could not be used to detect
- * whether the queue is empty or not.
- * <p>
- * Created by davide-maestroni on 09/27/2014.
+ * Class implementing a light-weight queue, storing elements into a dynamically increasing
+ * circular buffer.<br>
+ * Note that, even if the class implements the {@link Queue} interface, {@code null} elements are
+ * supported, so the values returned by {@link #peek()} and {@link #poll()} methods might not be
+ * used to detect whether the queue is empty or not.
  *
  * @param <E> the element type.
  */
@@ -50,7 +47,7 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
   private int mSize;
 
   /**
-   * Constructor.
+   * Creates a new empty queue with a pre-defined initial capacity.
    */
   public CQueue() {
     mData = new Object[DEFAULT_SIZE];
@@ -58,7 +55,7 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
   }
 
   /**
-   * Constructor.
+   * Creates a new empty queue with the specified minimum capacity.
    *
    * @param minCapacity the minimum capacity.
    * @throws IllegalArgumentException if the specified capacity is less than 1.
@@ -71,9 +68,8 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
   }
 
   /**
-   * Adds the specified element as the first element of the queue.
-   * <p>
-   * Note that the element can be null.
+   * Adds the specified element as the first element of the queue.<br>
+   * The element can be null.
    *
    * @param element the element to add.
    */
@@ -88,9 +84,8 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
   }
 
   /**
-   * Adds the specified element to end of the queue.
-   * <p>
-   * Note that the element can be null.
+   * Adds the specified element to end of the queue.<br>
+   * The element can be null.
    *
    * @param element the element to add.
    */
@@ -104,16 +99,13 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
   }
 
   /**
-   * Removes all the elements from this queue and put them into the specified array, starting from
-   * {@code dstPos} position.
-   * <br>
+   * Removes all the elements from this queue and puts them into the specified array, starting from
+   * {@code destPos} position.<br>
    * If the array is bigger than the required length, the remaining elements will stay untouched,
-   * and the number of transferred data will be returned.
-   * <br>
+   * and the number of transferred data will be returned.<br>
    * On the contrary, if the array is not big enough to contain all the data, only the fitting
    * number of elements will be transferred, and a negative number, whose absolute value represents
-   * the number of data still remaining in the queue, will be returned.
-   * <br>
+   * the number of data still remaining in the queue, will be returned.<br>
    * If the queue is empty, {@code 0} will be returned.
    *
    * @param dst     the destination array.
@@ -145,6 +137,23 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     return (n - destPos);
   }
 
+  /**
+   * Removes at maximum {@code maxElements} number of elements from this queue and puts them into
+   * the specified array, starting from {@code destPos} position.<br>
+   * If the array is bigger than the required length, the remaining elements will stay untouched,
+   * and the number of transferred data will be returned.<br>
+   * On the contrary, if the array is not big enough to contain all the data, only the fitting
+   * number of elements will be transferred, and a negative number, whose absolute value represents
+   * the number of data still remaining in the queue, will be returned.<br>
+   * If the queue is empty, {@code 0} will be returned.
+   *
+   * @param dst         the destination array.
+   * @param destPos     the destination position in the array.
+   * @param maxElements the maximum number of elements to remove.
+   * @param <T>         the array component type.
+   * @return the number of transferred elements or the negated number of elements still remaining
+   * in the queue.
+   */
   @SuppressWarnings("unchecked")
   public <T> int drainTo(@NotNull final T[] dst, final int destPos, final int maxElements) {
     final Object[] data = mData;
@@ -170,7 +179,7 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
   }
 
   /**
-   * Removes all the elements from this queue and add them to the specified collection.
+   * Removes all the elements from this queue and adds them to the specified collection.
    *
    * @param collection the collection to fill.
    */
@@ -190,6 +199,13 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     mSize = 0;
   }
 
+  /**
+   * Removes at maximum {@code maxElements} number of elements from this queue and adds them to
+   * the specified collection.
+   *
+   * @param collection  the collection to fill.
+   * @param maxElements the maximum number of elements to remove.
+   */
   @SuppressWarnings("unchecked")
   public void drainTo(@NotNull final Collection<? super E> collection, final int maxElements) {
     final Object[] data = mData;
@@ -213,7 +229,13 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     mSize = 0;
   }
 
-  // TODO: 08/08/2017 javadoc
+  /**
+   * Returns the element at the specified position in this queue.
+   *
+   * @param index index of the element to return.
+   * @return the element at the specified position in this queue.
+   * @throws IndexOutOfBoundsException if the index is out of range (index < 0 || index >= size()).
+   */
   @SuppressWarnings("unchecked")
   public E get(final int index) {
     if ((index < 0) || (index >= size())) {
@@ -222,28 +244,43 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     return (E) mData[(mFirst + index) & mMask];
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   @Override
   public Iterator<E> iterator() {
-    return new DoubleQueueIterator();
+    return new CQueueIterator();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public int size() {
     return mSize;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public boolean isEmpty() {
     return mSize == 0;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   @Override
   public Object[] toArray() {
     return copyElements(new Object[size()]);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   @Override
   @SuppressWarnings("unchecked")
@@ -262,12 +299,18 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     return array;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public boolean add(@Nullable final E element) {
     addLast(element);
     return true;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public void clear() {
     final int mask = mMask;
@@ -283,15 +326,24 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     mSize = 0;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public boolean offer(final E e) {
     addLast(e);
     return true;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public E remove() {
     return removeFirst();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public E poll() {
     if (isEmpty()) {
       return null;
@@ -299,10 +351,16 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     return unsafeRemoveFirst();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public E element() {
     return peekFirst();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @SuppressWarnings("unchecked")
   public E peek() {
     if (isEmpty()) {
@@ -312,9 +370,9 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
   }
 
   /**
-   * Peeks the first element of the queue.
+   * Peeks the first element in the queue.
    *
-   * @return the element.
+   * @return the first element.
    * @throws NoSuchElementException if the queue is empty.
    */
   @SuppressWarnings("unchecked")
@@ -326,9 +384,9 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
   }
 
   /**
-   * Peeks the last element of the queue.
+   * Peeks the last element in the queue.
    *
-   * @return the element.
+   * @return the last element.
    * @throws NoSuchElementException if the queue is empty.
    */
   @SuppressWarnings("unchecked")
@@ -340,20 +398,24 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     return (E) mData[(mLast - 1) & mask];
   }
 
-  // TODO: 30/07/2017 javadoc
-  public void remove(final int index) {
-    final int first = mFirst;
-    final int last = mLast;
-    if ((first <= last) ? (index < first) || (index >= last) : (index < first) && (index >= last)) {
-      throw new IndexOutOfBoundsException();
-    }
-    removeElement(index);
+  /**
+   * Removes the element at the specified position in this queue. Shifts any subsequent elements
+   * to the left (subtracts one from their indices).
+   *
+   * @param index the index of the element to be removed.
+   * @return the element that was removed from the queue.
+   * @throws IndexOutOfBoundsException if the index is out of range (index < 0 || index >= size()).
+   */
+  public E remove(final int index) {
+    final E element = get(index);
+    removeElement((mFirst + index) & mMask);
+    return element;
   }
 
   /**
-   * Removes the first element of the queue.
+   * Removes the first element in the queue.
    *
-   * @return the element.
+   * @return the first element.
    * @throws NoSuchElementException if the queue is empty.
    */
   public E removeFirst() {
@@ -364,9 +426,9 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
   }
 
   /**
-   * Removes the last element of the queue.
+   * Removes the last element in the queue.
    *
-   * @return the element.
+   * @return the last element.
    * @throws NoSuchElementException if the queue is empty.
    */
   public E removeLast() {
@@ -376,7 +438,14 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     return unsafeRemoveLast();
   }
 
-  // TODO: 08/08/2017 javadoc
+  /**
+   * Replaces the element at the specified position in this queue with the specified element.
+   *
+   * @param index   the index of the element to replace
+   * @param element element to be stored at the specified position.
+   * @return the element that was removed from the queue.
+   * @throws IndexOutOfBoundsException if the index is out of range (index < 0 || index >= size()).
+   */
   @SuppressWarnings("unchecked")
   public E set(final int index, @Nullable final E element) {
     if ((index < 0) || (index >= size())) {
@@ -484,20 +553,14 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     return (E) output;
   }
 
-  /**
-   * Queue iterator implementation.
-   */
-  private class DoubleQueueIterator implements Iterator<E> {
+  private class CQueueIterator implements Iterator<E> {
 
     private boolean mIsRemoved;
     private int mOriginalFirst;
     private int mOriginalLast;
     private int mPointer;
 
-    /**
-     * Constructor.
-     */
-    private DoubleQueueIterator() {
+    private CQueueIterator() {
       mPointer = (mOriginalFirst = mFirst);
       mOriginalLast = mLast;
     }

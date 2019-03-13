@@ -25,12 +25,7 @@ import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.CQueue;
 
 /**
- * Class maintaining a queue of commands.
- * <p>
- * The implementation ensures that recursive commands are broken into commands handled inside a
- * consuming loop, running in the same thread.
- * <p>
- * Created by davide-maestroni on 09/18/2014.
+ * {@link Executor} implementation maintaining a queue of commands.
  */
 class LocalExecutor implements Executor {
 
@@ -42,11 +37,6 @@ class LocalExecutor implements Executor {
 
   private boolean mIsRunning;
 
-  /**
-   * Executes the specified command.
-   *
-   * @param command the command.
-   */
   public void execute(@NotNull final Runnable command) {
     mCommands.add(command);
     if (!mIsRunning) {

@@ -24,40 +24,50 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by davide-maestroni on 06/06/2018.
+ * Class wrapping an {@link ScheduledExecutorService} instance so to limit the execution time of
+ * each
+ * submitted task.
  */
 class TimeoutScheduledExecutorService extends TimeoutExecutorService
     implements ScheduledExecutorService {
 
-  private final ScheduledExecutorService mExecutor;
+  private final ScheduledExecutorService mExecutorService;
 
-  TimeoutScheduledExecutorService(@NotNull final ScheduledExecutorService executor,
+  /**
+   * Creates a new executor service wrapping the specified instance.
+   *
+   * @param executorService       the executor service to wrap.
+   * @param timeout               the execution timeout.
+   * @param timeUnit              the execution timeout unit.
+   * @param mayInterruptIfRunning whether to interrupt running tasks when the timeout elapses.
+   */
+  TimeoutScheduledExecutorService(@NotNull final ScheduledExecutorService executorService,
       final long timeout, @NotNull final TimeUnit timeUnit, final boolean mayInterruptIfRunning) {
-    super(executor, timeout, timeUnit, mayInterruptIfRunning);
-    mExecutor = executor;
+    super(executorService, timeout, timeUnit, mayInterruptIfRunning);
+    mExecutorService = executorService;
   }
 
   @NotNull
   public ScheduledFuture<?> schedule(@NotNull final Runnable command, final long delay,
       @NotNull final TimeUnit unit) {
-    return timeout(mExecutor.schedule(command, delay, unit));
+    return timeout(mExecutorService.schedule(command, delay, unit));
   }
 
   @NotNull
   public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> callable, final long delay,
       @NotNull final TimeUnit unit) {
-    return timeout(mExecutor.schedule(callable, delay, unit));
+    return timeout(mExecutorService.schedule(callable, delay, unit));
   }
 
   @NotNull
   public ScheduledFuture<?> scheduleAtFixedRate(@NotNull final Runnable command,
       final long initialDelay, final long period, @NotNull final TimeUnit unit) {
-    return timeout(mExecutor.scheduleAtFixedRate(command, initialDelay, period, unit));
+    return timeout(mExecutorService.scheduleAtFixedRate(command, initialDelay, period, unit));
   }
 
   @NotNull
   public ScheduledFuture<?> scheduleWithFixedDelay(@NotNull final Runnable command,
       final long initialDelay, final long delay, @NotNull final TimeUnit unit) {
-    return timeout(mExecutor.scheduleWithFixedDelay(command, initialDelay, delay, unit));
+    return timeout(mExecutorService.scheduleWithFixedDelay(command, initialDelay, delay, unit));
   }
 }

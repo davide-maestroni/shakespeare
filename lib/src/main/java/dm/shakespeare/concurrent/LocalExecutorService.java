@@ -25,9 +25,8 @@ import java.util.concurrent.TimeUnit;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Class maintaining a queue of commands which is local to the calling thread.
- * <p>
- * Created by davide-maestroni on 05/28/2018.
+ * {@link java.util.concurrent.ExecutorService} implementation maintaining a queue of commands
+ * which is local to the calling thread.
  */
 class LocalExecutorService extends AbstractExecutorService implements QueuedExecutorService {
 
@@ -77,9 +76,6 @@ class LocalExecutorService extends AbstractExecutorService implements QueuedExec
     return false;
   }
 
-  /**
-   * Thread local initializing the queue instance.
-   */
   private static class LocalExecutorThreadLocal extends ThreadLocal<LocalExecutor> {
 
     @Override
