@@ -33,10 +33,22 @@ import java.util.Set;
  */
 public class Iterables {
 
+  /**
+   * Avoid explicit instantiation.
+   */
   private Iterables() {
     ConstantConditions.avoid();
   }
 
+  /**
+   * Adds all the iterable elements to the specified collection.
+   *
+   * @param iterable   the source iterable.
+   * @param collection the target collection.
+   * @param <T>        the iterable elements type.
+   * @param <C>        the collection elements type.
+   * @return the filled collection.
+   */
   @NotNull
   public static <T, C extends Collection<T>> C addAll(@NotNull final Iterable<? extends T> iterable,
       @NotNull final C collection) {
@@ -46,6 +58,16 @@ public class Iterables {
     return ConstantConditions.notNull("collection", collection);
   }
 
+  /**
+   * Converts the specified iterable into a {@link List}.<br>
+   * If the specified instance already implements a {@link List} interface the method will just
+   * return it, otherwise a new collection will be created and filled with the iterable elements
+   * (see {@link #toList(Iterable)}).
+   *
+   * @param iterable the iterable to convert.
+   * @param <T>      the iterable elements type.
+   * @return the collection containing the iterable elements.
+   */
   @NotNull
   @SuppressWarnings("unchecked")
   public static <T> List<T> asList(@NotNull final Iterable<T> iterable) {
@@ -55,6 +77,16 @@ public class Iterables {
     return toList(iterable);
   }
 
+  /**
+   * Converts the specified iterable into a {@link Set}.<br>
+   * If the specified instance already implements a {@link Set} interface the method will just
+   * return it, otherwise a new collection will be created and filled with the iterable elements
+   * (see {@link #toSet(Iterable)}).
+   *
+   * @param iterable the iterable to convert.
+   * @param <T>      the iterable elements type.
+   * @return the collection containing the iterable elements.
+   */
   @NotNull
   @SuppressWarnings("unchecked")
   public static <T> Set<T> asSet(@NotNull final Iterable<T> iterable) {
@@ -64,6 +96,15 @@ public class Iterables {
     return toSet(iterable);
   }
 
+  /**
+   * Concatenates the specified iterable elements into a new iterable.<br>
+   * The returned iterators might support different operations based on the underlying iterable
+   * instances. For example, one iterable might support elements removal and another.
+   *
+   * @param iterables the iterables.
+   * @param <T>       the iterables elements type.
+   * @return the concatenating iterable.
+   */
   @NotNull
   public static <T> Iterable<T> concat(
       @NotNull final Iterable<? extends Iterable<? extends T>> iterables) {
@@ -362,7 +403,10 @@ public class Iterables {
     }
 
     public void remove() {
-      throw new UnsupportedOperationException("remove");
+      if (mIterator == null) {
+        throw new IllegalStateException();
+      }
+      mIterator.remove();
     }
   }
 }
