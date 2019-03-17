@@ -111,14 +111,22 @@ public class Iterables {
     return new ConcatIterable<T>(iterables);
   }
 
-  public static boolean contains(@NotNull final Iterable<?> iterable, final Object element) {
+  /**
+   * Verifies that an object is part of the specified iterable elements (see
+   * {@link Collection#contains(Object)}).
+   *
+   * @param iterable the iterable.
+   * @param o        the object whose presence is to be tested.
+   * @return {@code true} if at least one iterable element is equal to the object.
+   */
+  public static boolean contains(@NotNull final Iterable<?> iterable, final Object o) {
     if (iterable instanceof Collection) {
-      return ((Collection<?>) iterable).contains(element);
+      return ((Collection<?>) iterable).contains(o);
     }
 
-    if (element != null) {
+    if (o != null) {
       for (final Object object : iterable) {
-        if ((object == element) || element.equals(object)) {
+        if ((object == o) || o.equals(object)) {
           return true;
         }
       }
@@ -133,6 +141,15 @@ public class Iterables {
     return false;
   }
 
+  /**
+   * Verifies that all the elements of a collection are part in the specified iterable ones (see
+   * {@link Collection#containsAll(Collection)}).
+   *
+   * @param iterable   the iterable.
+   * @param collection the collection to be checked for containment.
+   * @return {@code true} if all the elements in the collection are equal to at least one iterable
+   * element.
+   */
   public static boolean containsAll(@NotNull final Iterable<?> iterable,
       @NotNull final Collection<?> collection) {
     if (iterable instanceof Collection) {
@@ -158,14 +175,38 @@ public class Iterables {
     return true;
   }
 
+  /**
+   * Returns the first element of the specified iterable.
+   *
+   * @param iterable the iterable instance.
+   * @param <T>      the iterables elements type.
+   * @return the first element.
+   * @throws NoSuchElementException if the iterable contains no elements.
+   */
   public static <T> T first(@NotNull final Iterable<T> iterable) {
     return get(iterable, 0);
   }
 
+  /**
+   * Returns the element of the specified iterable at the position {@code index}.<br>
+   * If the passed iterable implements a {@link List} interface the method {@link List#get(int)}
+   * will be called.
+   *
+   * @param iterable the iterable instance.
+   * @param index    the index of the element to return
+   * @param <T>      the iterables elements type.
+   * @return the element at the specified position.
+   * @throws NoSuchElementException if the index is out of range.
+   */
   @SuppressWarnings("unchecked")
   public static <T> T get(@NotNull final Iterable<T> iterable, final int index) {
     if (iterable instanceof List) {
-      return ((List<T>) iterable).get(index);
+      try {
+        return ((List<T>) iterable).get(index);
+
+      } catch (final IndexOutOfBoundsException e) {
+        throw new NoSuchElementException(e.getMessage());
+      }
     }
     final Iterator<T> iterator = iterable.iterator();
     int i = 0;
@@ -175,21 +216,36 @@ public class Iterables {
     return iterator.next();
   }
 
+  /**
+   * Verifies that the specified iterable is empty.
+   *
+   * @param iterable the iterable instance.
+   * @return {@code true} if the iterable contains no elements.
+   */
   public static boolean isEmpty(@NotNull final Iterable<?> iterable) {
     return (iterable instanceof Collection) ? ((Collection<?>) iterable).isEmpty()
         : !iterable.iterator().hasNext();
   }
 
-  public static boolean remove(@NotNull final Iterable<?> iterable, final Object element) {
+  /**
+   * Removes the first occurrence of the specified object from the iterable elements (see
+   * {@link Collection#remove(Object)}).
+   *
+   * @param iterable the iterable instance.
+   * @param o        the object to remove.
+   * @return {@code true} if an element was removed as a result of this call.
+   * @throws UnsupportedOperationException if the remove operation is not supported by the iterable.
+   */
+  public static boolean remove(@NotNull final Iterable<?> iterable, final Object o) {
     if (iterable instanceof Collection) {
-      return ((Collection<?>) iterable).remove(element);
+      return ((Collection<?>) iterable).remove(o);
     }
 
-    if (element != null) {
+    if (o != null) {
       final Iterator<?> iterator = iterable.iterator();
       while (iterator.hasNext()) {
         final Object object = iterator.next();
-        if ((object == element) || element.equals(object)) {
+        if ((object == o) || o.equals(object)) {
           iterator.remove();
           return true;
         }
@@ -208,6 +264,17 @@ public class Iterables {
     return false;
   }
 
+  /**
+   * Removes all of the elements of a collection from the specified iterable ones (see
+   * {@link Collection#removeAll(Collection)}).<br>
+   * After this call returns, the iterable will contain no elements in common with the specified
+   * collection.
+   *
+   * @param iterable   the iterable instance.
+   * @param collection the collection of object to remove.
+   * @return {@code true} if at least one element was removed as a result of this call.
+   * @throws UnsupportedOperationException if the remove operation is not supported by the iterable.
+   */
   @SuppressWarnings("unchecked")
   public static boolean removeAll(@NotNull final Iterable<?> iterable,
       @NotNull final Collection<?> collection) {
@@ -240,12 +307,20 @@ public class Iterables {
     return found;
   }
 
+  /**
+   * Retains only the elements of a collection by removing all the other objects from the specified
+   * iterable ones (see {@link Collection#retainAll(Collection)}).
+   *
+   * @param iterable   the iterable instance.
+   * @param collection the collection of object to retain.
+   * @return {@code true} if at least one element was removed as a result of this call.
+   * @throws UnsupportedOperationException if the remove operation is not supported by the iterable.
+   */
   public static boolean retainAll(@NotNull final Iterable<?> iterable,
       @NotNull final Collection<?> collection) {
     if (iterable instanceof Collection) {
       return ((Collection<?>) iterable).retainAll(collection);
     }
-    ConstantConditions.notNull("collection", collection);
     boolean isModified = false;
     final Iterator<?> iterator = iterable.iterator();
     while (iterator.hasNext()) {
@@ -254,9 +329,16 @@ public class Iterables {
         isModified = true;
       }
     }
+    ConstantConditions.notNull("collection", collection);
     return isModified;
   }
 
+  /**
+   * Returns the number of elements of the specified iterable.
+   *
+   * @param iterable the iterable instance.
+   * @return the number of elements.
+   */
   public static int size(@NotNull final Iterable<?> iterable) {
     int size;
     if (iterable instanceof Collection) {
@@ -271,6 +353,13 @@ public class Iterables {
     return size;
   }
 
+  /**
+   * Returns an array containing all of the elements of the specified iterable (see
+   * {@link Collection#toArray()}).
+   *
+   * @param iterable the iterable instance.
+   * @return an array containing all of the iterable elements.
+   */
   @NotNull
   public static Object[] toArray(@NotNull final Iterable<?> iterable) {
     if (iterable instanceof Collection) {
@@ -286,6 +375,21 @@ public class Iterables {
     return list.toArray();
   }
 
+  /**
+   * Returns an array containing all of the elements of the specified iterable (see
+   * {@link Collection#toArray(Object[])}).<br>
+   * If the elements fit in the specified array, it is returned therein. Otherwise, a new array is
+   * allocated with the runtime type of the specified array and the size of the iterable elements.
+   * <br>
+   * If the elements fit in the specified array with room to spare (i.e., the array has more
+   * elements than the iterable), the element in the array immediately following the end of the
+   * collection is set to null.
+   *
+   * @param iterable the iterable instance.
+   * @param array    the array into which the elements are to be stored.
+   * @param <T>      the runtime type of the array to contain the collection.
+   * @return an array containing the elements of the iterable.
+   */
   @NotNull
   @SuppressWarnings("unchecked")
   public static <T> T[] toArray(@NotNull final Iterable<? extends T> iterable, @NotNull T[] array) {
@@ -315,16 +419,37 @@ public class Iterables {
     return list.toArray(array);
   }
 
+  /**
+   * Returns a new {@link List} containing all the elements of the specified iterable in the same
+   * order.
+   *
+   * @param iterable the iterable instance.
+   * @param <T>      the iterables elements type.
+   * @return the collection containing the iterable elements.
+   */
   @NotNull
   public static <T> List<T> toList(@NotNull final Iterable<? extends T> iterable) {
     return addAll(iterable, new ArrayList<T>());
   }
 
+  /**
+   * Returns a new {@link Set} containing all the elements of the specified iterable.
+   *
+   * @param iterable the iterable instance.
+   * @param <T>      the iterables elements type.
+   * @return the collection containing the iterable elements.
+   */
   @NotNull
   public static <T> Set<T> toSet(@NotNull final Iterable<? extends T> iterable) {
     return addAll(iterable, new HashSet<T>());
   }
 
+  /**
+   * Returns a string representing the data in the specified iterable.
+   *
+   * @param iterable the iterable instance.
+   * @return a string representation of the iterable elements.
+   */
   @NotNull
   public static String toString(@Nullable final Iterable<?> iterable) {
     if (iterable == null) {
