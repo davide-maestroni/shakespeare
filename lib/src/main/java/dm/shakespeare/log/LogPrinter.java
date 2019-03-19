@@ -20,16 +20,11 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Interface defining a log printer object responsible for formatting and writing the log messages.
- * <p>
- * A default printer instance can be set by invoking the proper logger methods. Note, however, that
- * the instance employed cannot be dynamically changed after the logger instantiation.
  * <br>
- * Note also that a printer instance is typically accessed from different threads, so, it is
- * responsibility of the implementing class to avoid concurrency issues by synchronizing mutable
- * fields when required.
+ * A printer instance is typically accessed from different threads, so, it is responsibility of the
+ * implementing class to avoid concurrency issues by synchronizing mutable fields when required.
  * <p>
- * To avoid an excessive number of log messages, it is sufficient to set an higher log level.
- * Though, it is also possible to completely remove the log source code (and related strings) from
+ * It is also possible to completely remove the log source code (and related strings) from
  * the released code by using Proguard and adding, for example, the following rule to the
  * configuration file:
  * <pre><code>
@@ -37,17 +32,30 @@ import org.jetbrains.annotations.NotNull;
  *   public void dbg(...);
  * }
  * </code></pre>
- * <p>
- * Created by davide-maestroni on 10/03/2014.
  *
  * @see dm.shakespeare.log.Logger Logger
  */
 public interface LogPrinter {
 
+  /**
+   * Verifies if the printer can log debug messages.
+   *
+   * @return {@code true} if the printer can log debug messages.
+   */
   boolean canLogDbg();
 
+  /**
+   * Verifies if the printer can log error messages.
+   *
+   * @return {@code true} if the printer can log error messages.
+   */
   boolean canLogErr();
 
+  /**
+   * Verifies if the printer can log warning messages.
+   *
+   * @return {@code true} if the printer can log warning messages.
+   */
   boolean canLogWrn();
 
   /**

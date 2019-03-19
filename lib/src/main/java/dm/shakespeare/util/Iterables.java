@@ -19,7 +19,6 @@ package dm.shakespeare.util;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -97,9 +96,9 @@ public class Iterables {
   }
 
   /**
-   * Concatenates the specified iterable elements into a new iterable.<br>
+   * Concatenates the specified iterables elements into a new iterable.<br>
    * The returned iterators might support different operations based on the underlying iterable
-   * instances. For example, one iterable might support elements removal and another.
+   * instances. For example, one iterable might support elements removal and another not.
    *
    * @param iterables the iterables.
    * @param <T>       the iterables elements type.
@@ -155,14 +154,10 @@ public class Iterables {
     if (iterable instanceof Collection) {
       return ((Collection<?>) iterable).containsAll(collection);
     }
-    final ArrayList<Object> objects = new ArrayList<Object>(collection);
-    for (final Object object : iterable) {
+    for (final Object object : collection) {
       boolean found = false;
-      final Iterator<Object> iterator = objects.iterator();
-      while (iterator.hasNext()) {
-        final Object next = iterator.next();
+      for (final Object next : iterable) {
         if ((object == next) || ((next != null) && next.equals(object))) {
-          iterator.remove();
           found = true;
           break;
         }
@@ -172,6 +167,7 @@ public class Iterables {
         return false;
       }
     }
+    ConstantConditions.notNull("iterable", iterable);
     return true;
   }
 
@@ -208,9 +204,12 @@ public class Iterables {
         throw new NoSuchElementException(e.getMessage());
       }
     }
+    if (index < 0) {
+      throw new NoSuchElementException();
+    }
     final Iterator<T> iterator = iterable.iterator();
     int i = 0;
-    while (++i < index) {
+    while (++i <= index) {
       iterator.next();
     }
     return iterator.next();
@@ -304,6 +303,7 @@ public class Iterables {
         }
       }
     }
+    ConstantConditions.notNull("iterable", iterable);
     return found;
   }
 
@@ -363,16 +363,9 @@ public class Iterables {
   @NotNull
   public static Object[] toArray(@NotNull final Iterable<?> iterable) {
     if (iterable instanceof Collection) {
-      final Object[] array = new Object[((Collection<?>) iterable).size()];
-      final Iterator<?> iterator = iterable.iterator();
-      for (int i = 0; iterator.hasNext(); ++i) {
-        array[i] = iterator.next();
-      }
-      return array;
+      return ((Collection<?>) iterable).toArray();
     }
-    final ArrayList<Object> list = new ArrayList<Object>();
-    addAll(iterable, list);
-    return list.toArray();
+    return toList(iterable).toArray();
   }
 
   /**
@@ -394,29 +387,9 @@ public class Iterables {
   @SuppressWarnings("unchecked")
   public static <T> T[] toArray(@NotNull final Iterable<? extends T> iterable, @NotNull T[] array) {
     if (iterable instanceof Collection) {
-      final int size = ((Collection<?>) iterable).size();
-      if (array.length < size) {
-        final Class<? extends Object[]> arrayClass = array.getClass();
-        if (arrayClass == Object[].class) {
-          array = (T[]) new Object[size];
-
-        } else {
-          array = (T[]) Array.newInstance(arrayClass.getComponentType(), size);
-        }
-      }
-      final Iterator<?> iterator = iterable.iterator();
-      for (int i = 0; iterator.hasNext(); ++i) {
-        array[i] = (T) iterator.next();
-      }
-
-      if (array.length > size) {
-        array[size] = null;
-      }
-      return array;
+      return ((Collection<? extends T>) iterable).toArray(array);
     }
-    final ArrayList<T> list = new ArrayList<T>();
-    addAll(iterable, list);
-    return list.toArray(array);
+    return toList(iterable).toArray(array);
   }
 
   /**

@@ -24,9 +24,12 @@ import java.util.Locale;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Utility class used for logging messages.
- * <p>
- * Created by davide-maestroni on 10/03/2014.
+ * Utility class used for logging messages.<br>
+ * The levels of logging has been reduced to 3 in order to simplify the implementation and avoid
+ * misinterpretations. More in details, the {@code ERROR} level is meant to trace all those events
+ * which represent code malfunctioning or unexpected behaviors; the {@code WARNING} level is used
+ * to signal those events which are not completely unexpected but might represent an error in the
+ * usage of the exposed APIs; the {@code DEBUG} level collects all any other type of event.
  */
 @SuppressWarnings("WeakerAccess")
 public class Logger {
@@ -34,22 +37,29 @@ public class Logger {
   private final Locale mLocale;
   private final LogPrinter mPrinter;
 
-  /**
-   * Constructor.
-   *
-   * @param printer the logs printer.
-   * @param locale  the locale instance.
-   */
   private Logger(@NotNull final LogPrinter printer, @NotNull final Locale locale) {
     mPrinter = ConstantConditions.notNull("printer", printer);
     mLocale = ConstantConditions.notNull("locale", locale);
   }
 
+  /**
+   * Returns a new {@link Logger} instance initialized with {@link Locale#ENGLISH} locale.
+   *
+   * @param printer the logs printer.
+   * @return the new logger.
+   */
   @NotNull
   public static Logger newLogger(@NotNull final LogPrinter printer) {
-    return new Logger(printer, Locale.ENGLISH);
+    return newLogger(printer, Locale.ENGLISH);
   }
 
+  /**
+   * Returns a new {@link Logger} instance initialized with the specified locale.
+   *
+   * @param printer the logs printer.
+   * @param locale  the logs locale.
+   * @return the new logger.
+   */
   @NotNull
   public static Logger newLogger(@NotNull final LogPrinter printer, @NotNull final Locale locale) {
     return new Logger(printer, locale);
@@ -441,15 +451,20 @@ public class Logger {
     }
   }
 
+  /**
+   * Returns the logger locale.
+   *
+   * @return the logger locale.
+   */
   @NotNull
   public Locale getLocale() {
     return mLocale;
   }
 
   /**
-   * Returns the log instance of this logger.
+   * Returns the printer instance of this logger.
    *
-   * @return the log instance.
+   * @return the printer instance.
    */
   @NotNull
   public LogPrinter getPrinter() {

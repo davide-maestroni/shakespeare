@@ -24,11 +24,9 @@ import java.io.StringWriter;
 import java.util.Locale;
 
 /**
- * Created by davide-maestroni on 02/15/2019.
+ * Class storing the information about a log message.
  */
 public class LogMessage {
-
-  private static final Object[] NO_ARGS = new Object[0];
 
   private final Object[] mArgs;
   private final Thread mCallingThread;
@@ -37,11 +35,26 @@ public class LogMessage {
   private final String mMessage;
   private final Throwable mThrowable;
 
+  /**
+   * Creates a new log message with the specified formatted message.
+   *
+   * @param locale    the message default locale.
+   * @param throwable the optional throwable instance.
+   * @param message   the pre-formatted message.
+   */
   LogMessage(@NotNull final Locale locale, @Nullable final Throwable throwable,
       @Nullable final String message) {
     this(locale, throwable, message, null, (Object[]) null);
   }
 
+  /**
+   * Creates a new log message with the specified format and arguments.
+   *
+   * @param locale    the message default locale.
+   * @param throwable the optional throwable instance.
+   * @param format    the message format.
+   * @param args      the format arguments.
+   */
   LogMessage(@NotNull final Locale locale, @Nullable final Throwable throwable,
       @NotNull final String format, @Nullable final Object... args) {
     this(locale, throwable, null, format, args);
@@ -54,10 +67,20 @@ public class LogMessage {
     mThrowable = throwable;
     mMessage = message;
     mFormat = format;
-    mArgs = (args != null) ? args : NO_ARGS;
+    mArgs = args;
     mCallingThread = Thread.currentThread();
   }
 
+  /**
+   * Abbreviates the specified message so that its size does not exceed a maximum size.<br>
+   * The returned string will terminate with "..." when the original message length is greater than
+   * the specified maximum size.<br>
+   * If the input message is {@code null}, the output will be {@code null}.
+   *
+   * @param message the message to abbreviate.
+   * @param maxSize the output maximum size.
+   * @return the abbreviated message.
+   */
   @Nullable
   public static String abbreviate(@Nullable final String message, final int maxSize) {
     if (message != null) {
@@ -82,13 +105,35 @@ public class LogMessage {
     return writer.toString();
   }
 
+  /**
+   * Formats this log message by using the specified locale.<br>
+   * The arguments passed to the format will be, in the order: the calling thread, the (optionally
+   * abbreviated) text message, the stack trace of the logged throwable (if any).
+   *
+   * @param locale         the format locale.
+   * @param format         the format string.
+   * @param maxMessageSize the maximum size of the text message.
+   * @return the formatted log message.
+   */
   @Nullable
   public String formatLogMessage(@NotNull final Locale locale, @NotNull final String format,
       final int maxMessageSize) {
     return String.format(locale, format, mCallingThread,
-        abbreviate(formatMessage(locale), maxMessageSize), printStackTrace());
+        abbreviate(formatTextMessage(locale), maxMessageSize), printStackTrace());
   }
 
+  /**
+   * Formats this log message by using the specified locale.<br>
+   * The arguments passed to the format will be, in the order: the calling thread, the (optionally
+   * abbreviated) text message, the stack trace of the logged throwable (if any), the specified
+   * additional arguments.
+   *
+   * @param locale         the format locale.
+   * @param format         the format string.
+   * @param maxMessageSize the maximum size of the text message.
+   * @param additionalArgs the list of additional arguments.
+   * @return the formatted log message.
+   */
   @Nullable
   public String formatLogMessage(@NotNull final Locale locale, @NotNull final String format,
       final int maxMessageSize, @Nullable final Object... additionalArgs) {
@@ -98,73 +143,146 @@ public class LogMessage {
     final int length = additionalArgs.length;
     final Object[] args = new Object[3 + length];
     args[0] = mCallingThread;
-    args[1] = abbreviate(formatMessage(locale), maxMessageSize);
+    args[1] = abbreviate(formatTextMessage(locale), maxMessageSize);
     args[2] = printStackTrace();
     System.arraycopy(additionalArgs, 0, args, 3, length);
     return String.format(locale, format, args);
   }
 
+  /**
+   * Formats this log message by using the logger locale.<br>
+   * The arguments passed to the format will be, in the order: the calling thread, the (optionally
+   * abbreviated) text message, the stack trace of the logged throwable (if any).
+   *
+   * @param format         the format string.
+   * @param maxMessageSize the maximum size of the text message.
+   * @return the formatted log message.
+   */
   @Nullable
   public String formatLogMessage(@NotNull final String format, final int maxMessageSize) {
     return formatLogMessage(mLocale, format, maxMessageSize);
   }
 
+  /**
+   * Formats this log message by using the logger locale.<br>
+   * The arguments passed to the format will be, in the order: the calling thread, the (optionally
+   * abbreviated) text message, the stack trace of the logged throwable (if any), the specified
+   * additional arguments.
+   *
+   * @param format         the format string.
+   * @param maxMessageSize the maximum size of the text message.
+   * @param additionalArgs the list of additional arguments.
+   * @return the formatted log message.
+   */
   @Nullable
   public String formatLogMessage(@NotNull final String format, final int maxMessageSize,
       @Nullable final Object... additionalArgs) {
     return formatLogMessage(mLocale, format, maxMessageSize, additionalArgs);
   }
 
+  /**
+   * Formats the text message initialized in the constructor by using the logger locale.
+   *
+   * @return the formatted message or {@code null}.
+   */
   @Nullable
-  public String formatMessage() {
-    return formatMessage(mLocale);
+  public String formatTextMessage() {
+    return formatTextMessage(mLocale);
   }
 
+  /**
+   * Formats the text message initialized in the constructor by using the specified locale.
+   *
+   * @param locale the format locale.
+   * @return the formatted message or {@code null}.
+   */
   @Nullable
-  public String formatMessage(@NotNull final Locale locale) {
+  public String formatTextMessage(@NotNull final Locale locale) {
     final String format = mFormat;
     return (format != null) ? String.format(locale, format, mArgs) : mMessage;
   }
 
+  /**
+   * Returns a copy of the text format arguments.
+   *
+   * @return the arguments or {@code null}.
+   */
   @Nullable
   public Object[] getArgs() {
-    return mArgs.clone();
+    final Object[] args = mArgs;
+    return (args != null) ? args.clone() : null;
   }
 
+  /**
+   * Returns the logger calling thread.
+   *
+   * @return the thread instance.
+   */
   @NotNull
   public Thread getCallingThread() {
     return mCallingThread;
   }
 
+  /**
+   * Returns the text format.
+   *
+   * @return the format or {@code null}.
+   */
   @Nullable
   public String getFormat() {
     return mFormat;
   }
 
+  /**
+   * Returns the logger locale.
+   *
+   * @return the locale instance.
+   */
   @NotNull
   public Locale getLocale() {
     return mLocale;
   }
 
+  /**
+   * Returns the pre-formatted text message.
+   *
+   * @return the message or {@code null}.
+   */
   @Nullable
   public String getMessage() {
     return mMessage;
   }
 
+  /**
+   * Returns the optional throwable.
+   *
+   * @return the throwable or {@code null}.
+   */
   @Nullable
   public Throwable getThrowable() {
     return mThrowable;
   }
 
+  /**
+   * Prints the logged throwable stack trace into a string.<br>
+   * If no throwable was set {@code null} will be returned.
+   *
+   * @return the stack trace or {@code null}.
+   */
   @Nullable
   public String printStackTrace() {
     final Throwable throwable = mThrowable;
     return (throwable != null) ? printStackTrace(throwable) : null;
   }
 
+  /**
+   * Returns a string representation of this object as the formatted text message.
+   *
+   * @return the formatted message.
+   */
   @Override
   public String toString() {
-    final String message = formatMessage();
+    final String message = formatTextMessage();
     return (message != null) ? message : "null";
   }
 }

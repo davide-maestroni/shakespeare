@@ -24,7 +24,7 @@ import java.util.logging.Logger;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 02/04/2019.
+ * {@link LogPrinter} implementation leveraging the built-in Java logging framework.
  */
 class JavaLogPrinter implements LogPrinter {
 
@@ -36,10 +36,22 @@ class JavaLogPrinter implements LogPrinter {
   private final int mMaxLineSize;
   private final int mMaxMessageSize;
 
+  /**
+   * Creates a new printer with a default configuration.
+   *
+   * @param logger the wrapped Java logger instance.
+   */
   JavaLogPrinter(@NotNull final Logger logger) {
     this(logger, DEFAULT_MAX_MESSAGE_SIZE, DEFAULT_MAX_LINE_SIZE);
   }
 
+  /**
+   * Creates a new printer with the specified configuration.
+   *
+   * @param logger         the wrapped Java logger instance.
+   * @param maxMessageSize the maximum size of a log message.
+   * @param maxLineSize    the maximum size of a log line.
+   */
   JavaLogPrinter(@NotNull final Logger logger, final int maxMessageSize, final int maxLineSize) {
     mLogger = ConstantConditions.notNull("logger", logger);
     mMaxMessageSize = maxMessageSize;
