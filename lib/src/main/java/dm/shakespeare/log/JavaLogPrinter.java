@@ -33,8 +33,8 @@ class JavaLogPrinter implements LogPrinter {
   private static final String FORMAT = "[%s] %s";
 
   private final Logger mLogger;
-  private final int mMaxLineSize;
   private final int mMaxMessageSize;
+  private final int mMaxTextSize;
 
   /**
    * Creates a new printer with a default configuration.
@@ -49,13 +49,13 @@ class JavaLogPrinter implements LogPrinter {
    * Creates a new printer with the specified configuration.
    *
    * @param logger         the wrapped Java logger instance.
+   * @param maxTextSize    the maximum size of a text message.
    * @param maxMessageSize the maximum size of a log message.
-   * @param maxLineSize    the maximum size of a log line.
    */
-  JavaLogPrinter(@NotNull final Logger logger, final int maxMessageSize, final int maxLineSize) {
+  JavaLogPrinter(@NotNull final Logger logger, final int maxTextSize, final int maxMessageSize) {
     mLogger = ConstantConditions.notNull("logger", logger);
+    mMaxTextSize = maxTextSize;
     mMaxMessageSize = maxMessageSize;
-    mMaxLineSize = maxLineSize;
   }
 
   public boolean canLogDbg() {
@@ -83,6 +83,6 @@ class JavaLogPrinter implements LogPrinter {
   }
 
   private String printMessage(@NotNull final LogMessage message) {
-    return LogMessage.abbreviate(message.formatLogMessage(FORMAT, mMaxMessageSize), mMaxLineSize);
+    return LogMessage.abbreviate(message.formatLogMessage(FORMAT, mMaxTextSize), mMaxMessageSize);
   }
 }

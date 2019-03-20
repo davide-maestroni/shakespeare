@@ -24,12 +24,18 @@ import java.util.HashSet;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 02/04/2019.
+ * Implementation of a {@link LogPrinter} broadcasting the log messages to a list of printer
+ * instances.
  */
 class MultiPrinter implements LogPrinter {
 
   private final HashSet<LogPrinter> mPrinters;
 
+  /**
+   * Creates a new broadcasting printer.
+   *
+   * @param printers the log printers which will receive the broadcast messages.
+   */
   MultiPrinter(@NotNull final Collection<? extends LogPrinter> printers) {
     mPrinters = new HashSet<LogPrinter>(ConstantConditions.notNullElements("printers", printers));
   }
