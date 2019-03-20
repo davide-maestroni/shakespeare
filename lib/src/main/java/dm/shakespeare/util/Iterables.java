@@ -28,7 +28,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
- * Created by davide-maestroni on 08/17/2017.
+ * Utility class providing several methods to handle iterable instances.
  */
 public class Iterables {
 
