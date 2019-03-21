@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template;
+package dm.shakespeare.template.script;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -22,16 +22,16 @@ import java.lang.reflect.Method;
 
 import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.actor.BehaviorBuilder;
-import dm.shakespeare.template.annotation.OnStop;
+import dm.shakespeare.template.annotation.OnStart;
 
 /**
  * Created by davide-maestroni on 09/07/2018.
  */
-class OnStopHandler implements AnnotationHandler<OnStop> {
+class OnStartHandler implements AnnotationHandler<OnStart> {
 
   @SuppressWarnings("unchecked")
   public void handle(@NotNull final BehaviorBuilder builder, @NotNull final Object object,
-      @NotNull final Method method, @NotNull final OnStop annotation) {
+      @NotNull final Method method, @NotNull final OnStart annotation) {
     final String name = method.getName();
     final Class<?>[] parameterTypes = method.getParameterTypes();
     if (parameterTypes.length > 0) {
@@ -41,6 +41,6 @@ class OnStopHandler implements AnnotationHandler<OnStop> {
         }
       }
     }
-    builder.onStop(new MethodObserver(object, method));
+    builder.onStart(new MethodObserver(object, method));
   }
 }

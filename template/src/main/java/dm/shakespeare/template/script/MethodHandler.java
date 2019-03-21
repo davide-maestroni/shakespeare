@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template;
+package dm.shakespeare.template.script;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.actor.BehaviorBuilder.Handler;
 import dm.shakespeare.actor.Envelop;
+import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -36,7 +37,7 @@ class MethodHandler implements Handler<Object> {
 
   MethodHandler(@NotNull final Object object, @NotNull final Method method) {
     mObject = ConstantConditions.notNull("object", object);
-    mMethod = Methods.makeAccessible(method);
+    mMethod = Reflections.makeAccessible(method);
   }
 
   static void handleReturnValue(@NotNull final Method method, final Object value,

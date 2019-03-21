@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template;
+package dm.shakespeare.template.script;
 
 import dm.shakespeare.util.ConstantConditions;
 

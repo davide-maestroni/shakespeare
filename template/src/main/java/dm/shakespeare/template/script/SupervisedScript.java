@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template;
+package dm.shakespeare.template.script;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -33,8 +33,9 @@ import dm.shakespeare.message.DeadLetter;
 import dm.shakespeare.message.Failure;
 import dm.shakespeare.message.IllegalRecipientException;
 import dm.shakespeare.message.Receipt;
-import dm.shakespeare.template.SupervisedScript.SupervisedRecovery.RecoveryType;
+import dm.shakespeare.template.actor.ContextWrapper;
 import dm.shakespeare.template.config.BuildConfig;
+import dm.shakespeare.template.script.SupervisedScript.SupervisedRecovery.RecoveryType;
 import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
 

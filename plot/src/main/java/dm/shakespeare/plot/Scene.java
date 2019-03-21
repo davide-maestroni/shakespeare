@@ -31,6 +31,7 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class Scene {
 
+  // TODO: 20/03/2019 Narrator => Memory?
   // TODO: 05/02/2019 Story PROGRESS???
   // TODO: 15/02/2019 untriggered actors, serialization
   // TODO: 28/02/2019 Story.isBoundless()?, swagger converter

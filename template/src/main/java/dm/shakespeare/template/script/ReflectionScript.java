@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template;
+package dm.shakespeare.template.script;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -36,6 +36,7 @@ import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
 import dm.shakespeare.actor.SerializableScript;
 import dm.shakespeare.template.config.BuildConfig;
+import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -44,14 +45,13 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class ReflectionScript extends SerializableScript {
 
-  private static final ThreadLocal<CQueue<Context>> CONTEXTS =
-      new ThreadLocal<CQueue<Context>>() {
+  private static final ThreadLocal<CQueue<Context>> CONTEXTS = new ThreadLocal<CQueue<Context>>() {
 
-        @Override
-        protected CQueue<Context> initialValue() {
-          return new CQueue<Context>();
-        }
-      };
+    @Override
+    protected CQueue<Context> initialValue() {
+      return new CQueue<Context>();
+    }
+  };
   private static final HashMap<Class<?>, Object> DEFAULT_RETURN_VALUES =
       new HashMap<Class<?>, Object>() {{
         put(boolean.class, false);
@@ -63,14 +63,13 @@ public class ReflectionScript extends SerializableScript {
         put(float.class, (float) 0);
         put(double.class, (double) 0);
       }};
-  private static final ThreadLocal<CQueue<Envelop>> ENVELOPS =
-      new ThreadLocal<CQueue<Envelop>>() {
+  private static final ThreadLocal<CQueue<Envelop>> ENVELOPS = new ThreadLocal<CQueue<Envelop>>() {
 
-        @Override
-        protected CQueue<Envelop> initialValue() {
-          return new CQueue<Envelop>();
-        }
-      };
+    @Override
+    protected CQueue<Envelop> initialValue() {
+      return new CQueue<Envelop>();
+    }
+  };
 
   private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 
@@ -121,7 +120,7 @@ public class ReflectionScript extends SerializableScript {
         final Invoke invoke = (Invoke) message;
         final Method method;
         try {
-          method = Methods.makeAccessible(
+          method = Reflections.makeAccessible(
               object.getClass().getMethod(invoke.getMethodName(), invoke.getParameterTypeArray()));
 
         } catch (final NoSuchMethodException e) {

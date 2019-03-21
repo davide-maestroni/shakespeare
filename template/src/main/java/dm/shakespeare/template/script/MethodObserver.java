@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template;
+package dm.shakespeare.template.script;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -23,6 +23,7 @@ import java.util.Collections;
 
 import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.function.Observer;
+import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -37,7 +38,7 @@ class MethodObserver implements Observer<Context> {
 
   MethodObserver(@NotNull final Object object, @NotNull final Method method) {
     mObject = ConstantConditions.notNull("object", object);
-    mMethod = Methods.makeAccessible(method);
+    mMethod = Reflections.makeAccessible(method);
   }
 
   public void accept(final Context context) throws Exception {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template;
+package dm.shakespeare.template.script;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -28,6 +28,7 @@ import dm.shakespeare.actor.BehaviorBuilder.Handler;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.function.Tester;
 import dm.shakespeare.template.annotation.OnParams;
+import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.Iterables;
 
 /**
@@ -47,7 +48,7 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
 
     private MessageHandler(@NotNull final Object object, @NotNull final Method method) {
       mObject = object;
-      mMethod = Methods.makeAccessible(method);
+      mMethod = Reflections.makeAccessible(method);
     }
 
     public void handle(final Iterable<?> params, @NotNull final Envelop envelop,

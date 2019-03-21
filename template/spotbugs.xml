@@ -20,7 +20,7 @@
   xmlns="https://github.com/spotbugs/filter/3.0.0"
   xsi:schemaLocation="https://github.com/spotbugs/filter/3.0.0 https://raw.githubusercontent.com/spotbugs/spotbugs/3.1.0/spotbugs/etc/findbugsfilter.xsd">
   <Match>
-    <Class name="dm.shakespeare.template.SerializableScriptWrapper"/>
+    <Class name="dm.shakespeare.template.script.SerializableScriptWrapper"/>
     <Method name="writeObject"/>
     <Bug pattern="DMI_NONSERIALIZABLE_OBJECT_WRITTEN"/>
   </Match>

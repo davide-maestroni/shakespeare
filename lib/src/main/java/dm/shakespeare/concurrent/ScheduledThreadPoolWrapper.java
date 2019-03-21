@@ -54,6 +54,7 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
     super(1);
     mExecutorService = ConstantConditions.notNull("executorService", executorService);
     if (executorService instanceof QueuedExecutorService) {
+      // TODO: 21/03/2019 avoid using next since it might break dismiss()/restart()
       mFutureExecutorService = new FutureExecutorService((QueuedExecutorService) executorService);
 
     } else {

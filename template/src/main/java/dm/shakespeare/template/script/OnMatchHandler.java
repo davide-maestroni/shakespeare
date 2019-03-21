@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template;
+package dm.shakespeare.template.script;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -26,6 +26,7 @@ import dm.shakespeare.actor.BehaviorBuilder.Matcher;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.template.annotation.OnMatch;
 import dm.shakespeare.template.annotation.VoidMatcher;
+import dm.shakespeare.template.util.Reflections;
 
 /**
  * Created by davide-maestroni on 09/07/2018.
@@ -87,7 +88,7 @@ class OnMatchHandler implements AnnotationHandler<OnMatch> {
 
     private MessageMatcher(@NotNull final Object object, @NotNull final Method method) {
       mObject = object;
-      mMethod = Methods.makeAccessible(method);
+      mMethod = Reflections.makeAccessible(method);
     }
 
     public boolean match(final Object message, @NotNull final Envelop envelop,
