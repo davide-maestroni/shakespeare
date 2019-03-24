@@ -25,8 +25,18 @@
     <Bug pattern="WA_NOT_IN_LOOP"/>
   </Match>
   <Match>
+    <Class name="dm.shakespeare.concurrent.AbstractFuture"/>
+    <Method name="get"/>
+    <Bug pattern="UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
+  </Match>
+  <Match>
     <Class name="dm.shakespeare.concurrent.TimeoutExecutorService"/>
     <Method name="timeout"/>
     <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/>
+  </Match>
+  <Match>
+    <Class name="dm.shakespeare.log.LogMessage"/>
+    <Method name="getArgs"/>
+    <Bug pattern="PZLA_PREFER_ZERO_LENGTH_ARRAYS"/>
   </Match>
 </FindBugsFilter>

@@ -30,8 +30,8 @@ import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
+import dm.shakespeare.concurrent.ActorExecutorService;
 import dm.shakespeare.concurrent.ExecutorServices;
-import dm.shakespeare.concurrent.QueuedExecutorService;
 import dm.shakespeare.function.Observer;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.message.Bounce;
@@ -47,7 +47,7 @@ class LocalContext implements Context {
 
   private static final DeadLetter DEAD_LETTER = new DeadLetter();
 
-  private final QueuedExecutorService mActorExecutor;
+  private final ActorExecutorService mActorExecutor;
   private final Logger mLogger;
   private final HashSet<Actor> mObservers = new HashSet<Actor>();
   private final Observer<Actor> mRemover;
@@ -90,7 +90,7 @@ class LocalContext implements Context {
   @NotNull
   public ExecutorService getExecutor() {
     if (mContextExecutor == null) {
-      final QueuedExecutorService actorExecutor = mActorExecutor;
+      final ActorExecutorService actorExecutor = mActorExecutor;
       if (actorExecutor instanceof ScheduledExecutorService) {
         mContextExecutor = (mContextScheduledExecutor =
             new ContextScheduledExecutorService((ScheduledExecutorService) actorExecutor, this));
@@ -110,7 +110,7 @@ class LocalContext implements Context {
   @NotNull
   public ScheduledExecutorService getScheduledExecutor() {
     if (mContextScheduledExecutor == null) {
-      final QueuedExecutorService actorExecutor = mActorExecutor;
+      final ActorExecutorService actorExecutor = mActorExecutor;
       if (actorExecutor instanceof ScheduledExecutorService) {
         mContextExecutor = (mContextScheduledExecutor =
             new ContextScheduledExecutorService((ScheduledExecutorService) actorExecutor, this));
@@ -181,7 +181,7 @@ class LocalContext implements Context {
   }
 
   @NotNull
-  QueuedExecutorService getActorExecutor() {
+  ActorExecutorService getActorExecutor() {
     return mActorExecutor;
   }
 

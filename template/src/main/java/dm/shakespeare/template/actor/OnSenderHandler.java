@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.script;
+package dm.shakespeare.template.actor;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -24,54 +24,39 @@ import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.actor.BehaviorBuilder;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.function.Tester;
-import dm.shakespeare.template.annotation.OnMessage;
+import dm.shakespeare.template.annotation.OnSender;
 import dm.shakespeare.template.annotation.VoidTester;
 import dm.shakespeare.template.util.Reflections;
 
 /**
  * Created by davide-maestroni on 09/07/2018.
  */
-class OnMessageHandler implements AnnotationHandler<OnMessage> {
+class OnSenderHandler implements AnnotationHandler<OnSender> {
 
-  @SuppressWarnings("unchecked")
   public void handle(@NotNull final BehaviorBuilder builder, @NotNull final Object object,
-      @NotNull final Method method, @NotNull final OnMessage annotation) throws Exception {
-    Tester<?> tester = null;
-    final Class<?>[] messageClasses = annotation.messageClasses();
-    final Class<? extends Tester<?>> testerClass = annotation.testerClass();
+      @NotNull final Method method, @NotNull final OnSender annotation) throws Exception {
+    Tester<? super Envelop> tester = null;
+    final Class<? extends Tester<? super Envelop>> testerClass = annotation.testerClass();
     final String name = annotation.testerName();
-    if (messageClasses.length > 0) {
-      if ((testerClass != VoidTester.class) || !name.isEmpty()) {
-        throw new IllegalArgumentException(
-            "only one of messageClasses, testerClass and testerName parameters must be specified");
-      }
-
-      if (messageClasses.length == 1) {
-        tester = new ClassTester(messageClasses[0]);
-
-      } else {
-        tester = new ClassesTester(messageClasses);
-      }
-
-    } else if (testerClass != VoidTester.class) {
+    if (testerClass != VoidTester.class) {
       if (!name.isEmpty()) {
         throw new IllegalArgumentException(
-            "only one of messageClasses, testerClass and testerName parameters must be specified");
+            "only one of idRegexp, testerClass and testerName parameters must be specified");
       }
       tester = testerClass.newInstance();
 
     } else {
       if (name.isEmpty()) {
         throw new IllegalArgumentException(
-            "at least one of messageClasses, testerClass and testerName parameters must be "
-                + "specified");
+            "at least one of idRegexp, testerClass and testerName parameters must be specified");
       }
 
       for (final Method testerMethod : object.getClass().getMethods()) {
         final Class<?> returnType = testerMethod.getReturnType();
         final Class<?>[] parameterTypes = testerMethod.getParameterTypes();
         if (name.equals(testerMethod.getName()) && ((returnType == Boolean.class) || (returnType
-            == boolean.class)) && (parameterTypes.length == 1)) {
+            == boolean.class)) && (parameterTypes.length == 1)
+            && parameterTypes[0].isAssignableFrom(Envelop.class)) {
           tester = new MessageTester(object, testerMethod);
           break;
         }
@@ -91,41 +76,10 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
         }
       }
     }
-    builder.onMessage((Tester<? super Object>) tester, new MethodHandler(object, method));
+    builder.onSender(tester, new MethodHandler(object, method));
   }
 
-  private static class ClassTester implements Tester<Object> {
-
-    private final Class<?> mClass;
-
-    private ClassTester(@NotNull final Class<?> messageClass) {
-      mClass = messageClass;
-    }
-
-    public boolean test(final Object message) {
-      return mClass.isInstance(message);
-    }
-  }
-
-  private static class ClassesTester implements Tester<Object> {
-
-    private final Class<?>[] mClasses;
-
-    private ClassesTester(@NotNull final Class<?>[] messageClasses) {
-      mClasses = messageClasses;
-    }
-
-    public boolean test(final Object message) {
-      for (final Class<?> messageClass : mClasses) {
-        if (messageClass.isInstance(message)) {
-          return true;
-        }
-      }
-      return false;
-    }
-  }
-
-  private static class MessageTester implements Tester<Object> {
+  private static class MessageTester implements Tester<Envelop> {
 
     private final Method mMethod;
     private final Object mObject;
@@ -135,8 +89,8 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
       mMethod = Reflections.makeAccessible(method);
     }
 
-    public boolean test(final Object message) throws Exception {
-      return (Boolean) mMethod.invoke(mObject, message);
+    public boolean test(final Envelop envelop) throws Exception {
+      return (Boolean) mMethod.invoke(mObject, envelop);
     }
   }
 }

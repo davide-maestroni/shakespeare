@@ -17,11 +17,24 @@
 package dm.shakespeare.actor;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * Created by davide-maestroni on 01/17/2019.
  */
 public abstract class AbstractBehavior implements Behavior {
+
+  protected static void safeTell(@NotNull final Actor actor, final Object message,
+      @Nullable final Options options, @NotNull final Context context) {
+    try {
+      actor.tell(message, options, context.getSelf());
+
+    } catch (final RejectedExecutionException e) {
+      context.getLogger().err(e, "ignoring exception");
+    }
+  }
 
   public void onStart(@NotNull final Context context) throws Exception {
   }

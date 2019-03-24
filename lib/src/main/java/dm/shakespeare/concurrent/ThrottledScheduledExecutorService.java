@@ -18,8 +18,6 @@ package dm.shakespeare.concurrent;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
-import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -36,7 +34,6 @@ class ThrottledScheduledExecutorService extends ThrottledExecutorService
     implements ScheduledExecutorService {
 
   private final ScheduledExecutorService mExecutorService;
-  private final FutureExecutorService mFutureExecutor;
 
   /**
    * Creates a new executor service wrapping the specified instance.
@@ -48,14 +45,13 @@ class ThrottledScheduledExecutorService extends ThrottledExecutorService
       final int maxConcurrency) {
     super(executorService, maxConcurrency);
     mExecutorService = executorService;
-    mFutureExecutor = new FutureExecutorService(this);
   }
 
   @NotNull
   public ScheduledFuture<?> schedule(@NotNull final Runnable command, final long delay,
       @NotNull final TimeUnit unit) {
     final RunnableFuture future =
-        new RunnableFuture(mFutureExecutor, command, TimeUnits.toTimestampNanos(delay, unit));
+        new RunnableFuture(mExecutorService, command, TimeUnits.toTimestampNanos(delay, unit));
     future.setFuture(mExecutorService.schedule(future, delay, unit));
     return future;
   }
@@ -64,7 +60,7 @@ class ThrottledScheduledExecutorService extends ThrottledExecutorService
   public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> callable, final long delay,
       @NotNull final TimeUnit unit) {
     final CallableFuture<V> future =
-        new CallableFuture<V>(mFutureExecutor, callable, TimeUnits.toTimestampNanos(delay, unit));
+        new CallableFuture<V>(mExecutorService, callable, TimeUnits.toTimestampNanos(delay, unit));
     future.setFuture(mExecutorService.schedule(future, delay, unit));
     return future;
   }
@@ -72,9 +68,9 @@ class ThrottledScheduledExecutorService extends ThrottledExecutorService
   @NotNull
   public ScheduledFuture<?> scheduleAtFixedRate(@NotNull final Runnable command,
       final long initialDelay, final long period, @NotNull final TimeUnit unit) {
-    final RunnableFuture future =
-        new RunnableFuture(mFutureExecutor, command, TimeUnits.toTimestampNanos(initialDelay, unit),
-            unit.toNanos(ConstantConditions.positive("period", period)));
+    final RunnableFuture future = new RunnableFuture(mExecutorService, command,
+        TimeUnits.toTimestampNanos(initialDelay, unit),
+        unit.toNanos(ConstantConditions.positive("period", period)));
     future.setFuture(mExecutorService.scheduleAtFixedRate(future, initialDelay, period, unit));
     return future;
   }
@@ -82,45 +78,10 @@ class ThrottledScheduledExecutorService extends ThrottledExecutorService
   @NotNull
   public ScheduledFuture<?> scheduleWithFixedDelay(@NotNull final Runnable command,
       final long initialDelay, final long delay, @NotNull final TimeUnit unit) {
-    final RunnableFuture future =
-        new RunnableFuture(mFutureExecutor, command, TimeUnits.toTimestampNanos(initialDelay, unit),
-            unit.toNanos(-ConstantConditions.positive("delay", delay)));
+    final RunnableFuture future = new RunnableFuture(mExecutorService, command,
+        TimeUnits.toTimestampNanos(initialDelay, unit),
+        unit.toNanos(-ConstantConditions.positive("delay", delay)));
     future.setFuture(mExecutorService.scheduleWithFixedDelay(future, initialDelay, delay, unit));
     return future;
-  }
-
-  private static class FutureExecutorService extends AbstractExecutorService {
-
-    private final ThrottledExecutorService mExecutorService;
-
-    private FutureExecutorService(@NotNull final ThrottledExecutorService executorService) {
-      mExecutorService = executorService;
-    }
-
-    public void execute(@NotNull final Runnable command) {
-      mExecutorService.executeNext(command);
-    }
-
-    public void shutdown() {
-      mExecutorService.shutdown();
-    }
-
-    @NotNull
-    public List<Runnable> shutdownNow() {
-      return mExecutorService.shutdownNow();
-    }
-
-    public boolean isShutdown() {
-      return mExecutorService.isShutdown();
-    }
-
-    public boolean isTerminated() {
-      return mExecutorService.isTerminated();
-    }
-
-    public boolean awaitTermination(final long timeout, @NotNull final TimeUnit unit) throws
-        InterruptedException {
-      return mExecutorService.awaitTermination(timeout, unit);
-    }
   }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.script;
+package dm.shakespeare.template.actor;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -22,25 +22,28 @@ import java.lang.reflect.Method;
 
 import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.actor.BehaviorBuilder;
-import dm.shakespeare.template.annotation.OnStop;
+import dm.shakespeare.actor.Envelop;
+import dm.shakespeare.template.annotation.OnAny;
 
 /**
  * Created by davide-maestroni on 09/07/2018.
  */
-class OnStopHandler implements AnnotationHandler<OnStop> {
+class OnAnyHandler implements AnnotationHandler<OnAny> {
 
   @SuppressWarnings("unchecked")
   public void handle(@NotNull final BehaviorBuilder builder, @NotNull final Object object,
-      @NotNull final Method method, @NotNull final OnStop annotation) {
+      @NotNull final Method method, @NotNull final OnAny annotation) {
     final String name = method.getName();
     final Class<?>[] parameterTypes = method.getParameterTypes();
-    if (parameterTypes.length > 0) {
-      for (final Class<?> parameterType : parameterTypes) {
-        if (parameterType != Context.class) {
+    final int length = parameterTypes.length;
+    if (length > 1) {
+      for (int i = 1; i < length; ++i) {
+        final Class<?> parameterType = parameterTypes[i];
+        if ((parameterType != Envelop.class) && (parameterType != Context.class)) {
           throw new IllegalArgumentException("invalid method parameters: " + name);
         }
       }
     }
-    builder.onStop(new MethodObserver(object, method));
+    builder.onAny(new MethodHandler(object, method));
   }
 }

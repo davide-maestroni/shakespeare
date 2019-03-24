@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.script;
+package dm.shakespeare.template.actor;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -24,9 +24,11 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.BehaviorBuilder;
-import dm.shakespeare.actor.SerializableScript;
+import dm.shakespeare.actor.Envelop;
+import dm.shakespeare.actor.Script;
 import dm.shakespeare.template.annotation.OnAny;
 import dm.shakespeare.template.annotation.OnMatch;
 import dm.shakespeare.template.annotation.OnMessage;
@@ -35,13 +37,11 @@ import dm.shakespeare.template.annotation.OnParams;
 import dm.shakespeare.template.annotation.OnSender;
 import dm.shakespeare.template.annotation.OnStart;
 import dm.shakespeare.template.annotation.OnStop;
-import dm.shakespeare.template.config.BuildConfig;
-import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 01/17/2019.
+ * Created by davide-maestroni on 03/24/2019.
  */
-public class AnnotationScript extends SerializableScript {
+public class AnnotationBehavior extends AbstractBehavior {
 
   private static final HashMap<Class<? extends Annotation>, AnnotationHandler<?>>
       sAnnotationHandlers = new HashMap<Class<? extends Annotation>, AnnotationHandler<?>>() {{
@@ -55,24 +55,12 @@ public class AnnotationScript extends SerializableScript {
     put(OnNoMatch.class, new OnNoMatchHandler());
   }};
 
-  private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
+  private final Behavior mBehavior;
 
-  private final Object mObject;
-
-  public AnnotationScript() {
-    mObject = this;
-  }
-
-  public AnnotationScript(@NotNull final Object object) {
-    mObject = ConstantConditions.notNull("object", object);
-  }
-
-  @NotNull
   @SuppressWarnings("unchecked")
-  public Behavior getBehavior(@NotNull final String id) throws Exception {
-    final Object object = mObject;
+  AnnotationBehavior(@NotNull final Object object) throws Exception {
     final Class<?> objectClass = object.getClass();
-    final BehaviorBuilder builder = newBehavior();
+    final BehaviorBuilder builder = Script.newBehavior();
     final Set<Entry<Class<? extends Annotation>, AnnotationHandler<?>>> entries =
         sAnnotationHandlers.entrySet();
     for (final Method method : objectClass.getMethods()) {
@@ -84,6 +72,11 @@ public class AnnotationScript extends SerializableScript {
         }
       }
     }
-    return builder.build();
+    mBehavior = builder.build();
+  }
+
+  public void onMessage(final Object message, @NotNull final Envelop envelop,
+      @NotNull final Context context) throws Exception {
+    mBehavior.onMessage(message, envelop, context);
   }
 }

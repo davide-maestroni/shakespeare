@@ -44,13 +44,6 @@ class LocalExecutor implements Executor {
     }
   }
 
-  public void executeNext(@NotNull final Runnable command) {
-    mCommands.addFirst(command);
-    if (!mIsRunning) {
-      execute();
-    }
-  }
-
   private void execute() {
     mIsRunning = true;
     @SuppressWarnings("UnnecessaryLocalVariable") final CQueue<Runnable> commands = mCommands;

@@ -31,7 +31,7 @@ import dm.shakespeare.util.ConstantConditions;
  * Class wrapping an {@link ExecutorService} instance so to limit the number of parallely running
  * tasks to the specified maximum number.
  */
-class ThrottledExecutorService extends AbstractExecutorService implements QueuedExecutorService {
+class ThrottledExecutorService extends AbstractExecutorService {
 
   private final ExecutorService mExecutorService;
   private final int mMaxConcurrency;
@@ -56,17 +56,6 @@ class ThrottledExecutorService extends AbstractExecutorService implements Queued
   public void execute(@NotNull final Runnable command) {
     synchronized (mMutex) {
       mQueue.add(ConstantConditions.notNull("command", command));
-      if (mPendingCount >= mMaxConcurrency) {
-        return;
-      }
-      ++mPendingCount;
-    }
-    mExecutorService.execute(mRunnable);
-  }
-
-  public void executeNext(@NotNull final Runnable command) {
-    synchronized (mMutex) {
-      mQueue.addFirst(ConstantConditions.notNull("command", command));
       if (mPendingCount >= mMaxConcurrency) {
         return;
       }
@@ -102,6 +91,17 @@ class ThrottledExecutorService extends AbstractExecutorService implements Queued
   public boolean awaitTermination(final long timeout, @NotNull final TimeUnit unit) throws
       InterruptedException {
     return mExecutorService.awaitTermination(timeout, unit);
+  }
+
+  void executeNext(@NotNull final Runnable command) {
+    synchronized (mMutex) {
+      mQueue.addFirst(ConstantConditions.notNull("command", command));
+      if (mPendingCount >= mMaxConcurrency) {
+        return;
+      }
+      ++mPendingCount;
+    }
+    mExecutorService.execute(mRunnable);
   }
 
   private class ThrottledRunnable implements Runnable {

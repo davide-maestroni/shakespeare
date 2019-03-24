@@ -25,29 +25,32 @@ import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Script;
 import dm.shakespeare.actor.SerializableScript;
 import dm.shakespeare.log.Logger;
+import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Created by davide-maestroni on 03/21/2019.
  */
-public class ScriptFolder extends SerializableScript {
+public class FolderScript extends SerializableScript {
 
   private static final Object[] NO_ARGS = new Object[0];
+  private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 
   private final Serializable[] mScriptArgs;
   private final Class<? extends Script> mScriptClass;
+
   private transient Script mScript;
 
-  public ScriptFolder(@NotNull final Class<? extends Script> scriptClass) {
+  public FolderScript(@NotNull final Class<? extends Script> scriptClass) {
     mScriptClass = ConstantConditions.notNull("scriptClass", scriptClass);
     mScriptArgs = null;
   }
 
-  public ScriptFolder(@NotNull final Class<? extends Script> scriptClass,
+  public FolderScript(@NotNull final Class<? extends Script> scriptClass,
       @NotNull final Serializable... scriptArgs) {
     mScriptClass = ConstantConditions.notNull("scriptClass", scriptClass);
-    mScriptArgs = ConstantConditions.notNull("scriptArgs", scriptArgs);
+    mScriptArgs = ConstantConditions.notNull("scriptArgs", scriptArgs).clone();
   }
 
   @NotNull
@@ -73,13 +76,22 @@ public class ScriptFolder extends SerializableScript {
     return getScriptInstance().getQuota(id);
   }
 
+  void resetScriptInstance() {
+    mScript = newScriptInstance();
+  }
+
   @NotNull
   private Script getScriptInstance() {
     if (mScript == null) {
-      final Serializable[] scriptArgs = mScriptArgs;
-      mScript = Reflections.newInstance(mScriptClass,
-          ((scriptArgs != null) && (scriptArgs.length > 0)) ? scriptArgs : NO_ARGS);
+      mScript = newScriptInstance();
     }
     return mScript;
+  }
+
+  @NotNull
+  private Script newScriptInstance() {
+    final Serializable[] scriptArgs = mScriptArgs;
+    return Reflections.newInstance(mScriptClass,
+        ((scriptArgs != null) && (scriptArgs.length > 0)) ? scriptArgs : NO_ARGS);
   }
 }

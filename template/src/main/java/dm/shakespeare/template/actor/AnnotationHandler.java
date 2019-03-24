@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.script;
+package dm.shakespeare.template.actor;
 
 import org.jetbrains.annotations.NotNull;
 

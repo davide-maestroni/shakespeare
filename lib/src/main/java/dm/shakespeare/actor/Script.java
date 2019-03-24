@@ -17,15 +17,12 @@
 package dm.shakespeare.actor;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicLong;
 
-import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.actor.BehaviorBuilder.Handler;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.function.Mapper;
@@ -67,16 +64,6 @@ public abstract class Script {
   @NotNull
   public static BehaviorBuilder newBehavior() {
     return new DefaultBehaviorBuilder();
-  }
-
-  protected static void safeTell(@NotNull final Actor actor, final Object message,
-      @Nullable final Options options, @NotNull final Context context) {
-    try {
-      actor.tell(message, options, context.getSelf());
-
-    } catch (final RejectedExecutionException e) {
-      context.getLogger().err(e, "ignoring exception");
-    }
   }
 
   @NotNull

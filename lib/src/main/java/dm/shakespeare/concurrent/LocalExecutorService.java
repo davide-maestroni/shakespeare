@@ -28,7 +28,7 @@ import dm.shakespeare.util.ConstantConditions;
  * {@link java.util.concurrent.ExecutorService} implementation maintaining a queue of commands
  * which is local to the calling thread.
  */
-class LocalExecutorService extends AbstractExecutorService implements QueuedExecutorService {
+class LocalExecutorService extends AbstractExecutorService {
 
   private static final LocalExecutorService sInstance = new LocalExecutorService();
 
@@ -47,10 +47,6 @@ class LocalExecutorService extends AbstractExecutorService implements QueuedExec
 
   public void execute(@NotNull final Runnable command) {
     mLocalExecutor.get().execute(ConstantConditions.notNull("command", command));
-  }
-
-  public void executeNext(@NotNull final Runnable command) {
-    mLocalExecutor.get().executeNext(ConstantConditions.notNull("command", command));
   }
 
   public void shutdown() {
