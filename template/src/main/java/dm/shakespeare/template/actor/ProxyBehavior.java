@@ -59,7 +59,7 @@ public class ProxyBehavior extends AbstractBehavior {
     final Options options = envelop.getOptions();
     if (actor == null) {
       if (options.getReceiptId() != null) {
-        safeTell(sender, new Bounce(message, options), options.threadOnly(), context);
+        sender.tell(new Bounce(message, options), options.threadOnly(), context.getSelf());
       }
 
       for (final Actor proxy : senderToProxyMap.values()) {
@@ -69,16 +69,16 @@ public class ProxyBehavior extends AbstractBehavior {
 
     } else if (actor.equals(sender)) {
       if (options.getReceiptId() != null) {
-        safeTell(sender, new Failure(message, options,
+        sender.tell(new Failure(message, options,
                 new IllegalRecipientException("an actor can't proxy itself")), options.threadOnly(),
-            context);
+            context.getSelf());
       }
 
     } else if (proxyToSenderMap.containsKey(sender)) {
       final Actor recipient = proxyToSenderMap.get(sender).get();
       if (recipient == null) {
         if (options.getReceiptId() != null) {
-          safeTell(sender, new Bounce(message, options), options.threadOnly(), context);
+          sender.tell(new Bounce(message, options), options.threadOnly(), context.getSelf());
 
         } else {
           sender.dismiss(false);

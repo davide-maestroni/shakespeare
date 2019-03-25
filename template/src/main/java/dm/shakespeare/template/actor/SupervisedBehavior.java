@@ -87,8 +87,9 @@ public class SupervisedBehavior extends AbstractBehavior {
       final Envelop envelop = failureMessage.getEnvelop();
       final Options options = envelop.getOptions();
       if (options.getReceiptId() != null) {
-        safeTell(envelop.getSender(), new Bounce(failureMessage.getMessage(), options),
-            options.threadOnly(), context);
+        envelop.getSender()
+            .tell(new Bounce(failureMessage.getMessage(), options), options.threadOnly(),
+                context.getSelf());
       }
     }
     resetFailure(context);
@@ -102,8 +103,9 @@ public class SupervisedBehavior extends AbstractBehavior {
       final Envelop envelop = delayedMessage.getEnvelop();
       final Options options = envelop.getOptions();
       if (options.getReceiptId() != null) {
-        safeTell(envelop.getSender(), new Bounce(delayedMessage.getMessage(), options),
-            options.threadOnly(), context);
+        envelop.getSender()
+            .tell(new Bounce(delayedMessage.getMessage(), options), options.threadOnly(),
+                context.getSelf());
       }
     }
     mDelayedMessages = new CQueue<DelayedMessage>();
@@ -240,9 +242,9 @@ public class SupervisedBehavior extends AbstractBehavior {
           sender.addObserver(context.getSelf());
 
         } else if (options.getReceiptId() != null) {
-          safeTell(sender, new Failure(message, options,
+          sender.tell(new Failure(message, options,
                   new IllegalRecipientException("an actor can't supervise itself")),
-              options.threadOnly(), context);
+              options.threadOnly(), self);
           envelop.preventReceipt();
         }
 
@@ -259,9 +261,9 @@ public class SupervisedBehavior extends AbstractBehavior {
           mSupervisorThread = null;
 
         } else if (options.getReceiptId() != null) {
-          safeTell(sender, new Failure(message, options,
+          sender.tell(new Failure(message, options,
                   new IllegalStateException("sender is not the current supervisor")),
-              options.threadOnly(), context);
+              options.threadOnly(), context.getSelf());
           envelop.preventReceipt();
         }
 
@@ -271,9 +273,9 @@ public class SupervisedBehavior extends AbstractBehavior {
           context.getLogger().wrn("ignoring recovery message: " + message);
 
         } else if (options.getReceiptId() != null) {
-          safeTell(sender, new Failure(message, options,
+          sender.tell(new Failure(message, options,
                   new IllegalStateException("sender is not the current supervisor")),
-              options.threadOnly(), context);
+              options.threadOnly(), context.getSelf());
           envelop.preventReceipt();
         }
 
@@ -360,9 +362,9 @@ public class SupervisedBehavior extends AbstractBehavior {
           }
 
         } else if (options.getReceiptId() != null) {
-          safeTell(sender, new Failure(message, options,
+          sender.tell(new Failure(message, options,
                   new IllegalRecipientException("an actor can't supervise itself")),
-              options.threadOnly(), context);
+              options.threadOnly(), self);
           envelop.preventReceipt();
         }
 
@@ -372,9 +374,9 @@ public class SupervisedBehavior extends AbstractBehavior {
           context.dismissSelf();
 
         } else if (options.getReceiptId() != null) {
-          safeTell(sender, new Failure(message, options,
+          sender.tell(new Failure(message, options,
                   new IllegalStateException("sender is not the current supervisor")),
-              options.threadOnly(), context);
+              options.threadOnly(), context.getSelf());
           envelop.preventReceipt();
         }
 
@@ -395,9 +397,9 @@ public class SupervisedBehavior extends AbstractBehavior {
               final Envelop failureEnvelop = failureMessage.getEnvelop();
               final Options failureOptions = failureEnvelop.getOptions();
               if (failureOptions.getReceiptId() != null) {
-                safeTell(failureEnvelop.getSender(),
-                    new Failure(failureMessage.getMessage(), failureOptions, mFailure),
-                    failureOptions.threadOnly(), context);
+                failureEnvelop.getSender()
+                    .tell(new Failure(failureMessage.getMessage(), failureOptions, mFailure),
+                        failureOptions.threadOnly(), context.getSelf());
               }
               resetFailure(context);
               mHandler = new ResumeHandler();
@@ -414,9 +416,9 @@ public class SupervisedBehavior extends AbstractBehavior {
               final Envelop failureEnvelop = failureMessage.getEnvelop();
               final Options failureOptions = failureEnvelop.getOptions();
               if (failureOptions.getReceiptId() != null) {
-                safeTell(failureEnvelop.getSender(),
-                    new Failure(failureMessage.getMessage(), failureOptions, mFailure),
-                    failureOptions.threadOnly(), context);
+                failureEnvelop.getSender()
+                    .tell(new Failure(failureMessage.getMessage(), failureOptions, mFailure),
+                        failureOptions.threadOnly(), context.getSelf());
               }
               resetFailure(context);
               mHandler = new ResumeHandler();
@@ -431,16 +433,16 @@ public class SupervisedBehavior extends AbstractBehavior {
             }
 
           } else if (options.getReceiptId() != null) {
-            safeTell(sender,
+            sender.tell(
                 new Failure(message, options, new IllegalArgumentException("invalid failure ID")),
-                options.threadOnly(), context);
+                options.threadOnly(), context.getSelf());
             envelop.preventReceipt();
           }
 
         } else if (options.getReceiptId() != null) {
-          safeTell(sender, new Failure(message, options,
+          sender.tell(new Failure(message, options,
                   new IllegalStateException("sender is not the current supervisor")),
-              options.threadOnly(), context);
+              options.threadOnly(), context.getSelf());
           envelop.preventReceipt();
         }
 
