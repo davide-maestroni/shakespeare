@@ -319,7 +319,7 @@ public class CQueueTest {
     for (int i = 0; i < 7; i++) {
       queue.add(i);
     }
-    queue.get(-2);
+    assertThat(queue.get(-2));
   }
 
   @Test(expected = IndexOutOfBoundsException.class)
@@ -329,7 +329,7 @@ public class CQueueTest {
     for (int i = 0; i < 7; i++) {
       queue.add(i);
     }
-    queue.get(10);
+    assertThat(queue.get(10));
   }
 
   @Test
@@ -382,8 +382,11 @@ public class CQueueTest {
       queue.add(i);
     }
 
-    for (final Integer ignored : queue) {
+    for (final Integer i : queue) {
       queue.add(8);
+      if (i < 0) {
+        break;
+      }
     }
   }
 

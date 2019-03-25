@@ -19,7 +19,6 @@ package dm.shakespeare.util;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import dm.shakespeare.util.TimeUnits.Condition;
 
@@ -253,27 +252,17 @@ public class TimeUnitsTest {
 
   @Test
   public void waitSinceMillisIndefinite() throws InterruptedException {
-    final AtomicBoolean isCalled = new AtomicBoolean();
-    new Thread() {
+    final WaitSinceThread thread = new WaitSinceThread() {
 
-      @Override
-      public void run() {
-        synchronized (isCalled) {
-          try {
-            assertThat(TimeUnits.waitSinceMillis(isCalled, -1, TimeUnit.MILLISECONDS, 0)).isTrue();
-            isCalled.set(true);
-
-          } catch (InterruptedException ignored) {
-          }
-        }
+      boolean await() throws InterruptedException {
+        return TimeUnits.waitSinceMillis(this, -1, TimeUnit.MILLISECONDS, 0);
       }
-    }.start();
+    };
+    thread.start();
     Thread.sleep(200);
-    synchronized (isCalled) {
-      isCalled.notifyAll();
-    }
+    thread.unlock();
     Thread.sleep(200);
-    assertThat(isCalled.get()).isTrue();
+    assertThat(thread.isCalled()).isTrue();
   }
 
   @Test(expected = NullPointerException.class)
@@ -318,27 +307,17 @@ public class TimeUnitsTest {
 
   @Test
   public void waitSinceNanosIndefinite() throws InterruptedException {
-    final AtomicBoolean isCalled = new AtomicBoolean();
-    new Thread() {
+    final WaitSinceThread thread = new WaitSinceThread() {
 
-      @Override
-      public void run() {
-        synchronized (isCalled) {
-          try {
-            assertThat(TimeUnits.waitSinceNanos(isCalled, -1, TimeUnit.MILLISECONDS, 0)).isTrue();
-            isCalled.set(true);
-
-          } catch (InterruptedException ignored) {
-          }
-        }
+      boolean await() throws InterruptedException {
+        return TimeUnits.waitSinceNanos(this, -1, TimeUnit.MILLISECONDS, 0);
       }
-    }.start();
+    };
+    thread.start();
     Thread.sleep(200);
-    synchronized (isCalled) {
-      isCalled.notifyAll();
-    }
+    thread.unlock();
     Thread.sleep(200);
-    assertThat(isCalled.get()).isTrue();
+    assertThat(thread.isCalled()).isTrue();
   }
 
   @Test(expected = NullPointerException.class)
@@ -389,28 +368,17 @@ public class TimeUnitsTest {
 
   @Test
   public void waitUntilIndefinite() throws InterruptedException {
-    final AtomicBoolean isCalled = new AtomicBoolean();
-    new Thread() {
+    final WaitSinceThread thread = new WaitSinceThread() {
 
-      @Override
-      public void run() {
-        synchronized (isCalled) {
-          try {
-            assertThat(TimeUnits.waitUntil(isCalled, -1, TimeUnit.MILLISECONDS,
-                new TrueCondition())).isTrue();
-            isCalled.set(true);
-
-          } catch (InterruptedException ignored) {
-          }
-        }
+      boolean await() throws InterruptedException {
+        return TimeUnits.waitUntil(this, -1, TimeUnit.MILLISECONDS, new TrueCondition());
       }
-    }.start();
+    };
+    thread.start();
     Thread.sleep(200);
-    synchronized (isCalled) {
-      isCalled.notifyAll();
-    }
+    thread.unlock();
     Thread.sleep(200);
-    assertThat(isCalled.get()).isTrue();
+    assertThat(thread.isCalled()).isTrue();
   }
 
   @Test(expected = NullPointerException.class)
@@ -460,6 +428,40 @@ public class TimeUnitsTest {
 
     public boolean isTrue() {
       return true;
+    }
+  }
+
+  private abstract static class WaitSinceThread extends Thread {
+
+    private boolean mIsCalled;
+
+    @Override
+    public void run() {
+      synchronized (this) {
+        try {
+          assertThat(await()).isTrue();
+          mIsCalled = true;
+
+        } catch (InterruptedException ignored) {
+        }
+      }
+    }
+
+    abstract boolean await() throws InterruptedException;
+
+    boolean isCalled() {
+      synchronized (this) {
+        return mIsCalled;
+      }
+    }
+
+    boolean unlock() {
+      final boolean isCalled;
+      synchronized (this) {
+        isCalled = mIsCalled;
+        notifyAll();
+      }
+      return isCalled;
     }
   }
 }

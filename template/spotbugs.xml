@@ -24,4 +24,8 @@
     <Method name="writeObject"/>
     <Bug pattern="DMI_NONSERIALIZABLE_OBJECT_WRITTEN"/>
   </Match>
+  <Match>
+    <Class name="dm.shakespeare.template.script.FolderScript"/>
+    <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED"/>
+  </Match>
 </FindBugsFilter>

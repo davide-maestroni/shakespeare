@@ -35,16 +35,10 @@ import dm.shakespeare.log.Logger;
  */
 public abstract class Script {
 
-  // TODO: 06/03/2019 shutdown?
-  private static final ScheduledExecutorService DEFAULT_EXECUTOR =
-      ExecutorServices.newDynamicScheduledThreadPool(new ThreadFactory() {
+  private static final AtomicLong sCount = new AtomicLong();
+  private static final Object sMutex = new Object();
 
-        private final AtomicLong mCount = new AtomicLong();
-
-        public Thread newThread(@NotNull final Runnable runnable) {
-          return new Thread(runnable, "shakespeare-thread-" + mCount.getAndIncrement());
-        }
-      });
+  private static ScheduledExecutorService sDefaultExecutor;
 
   @NotNull
   public static <T> Handler<T> accept(@NotNull final Observer<T> observer) {
@@ -58,7 +52,17 @@ public abstract class Script {
 
   @NotNull
   public static ExecutorService defaultExecutor() {
-    return DEFAULT_EXECUTOR;
+    synchronized (sMutex) {
+      if ((sDefaultExecutor == null) || sDefaultExecutor.isShutdown()) {
+        sDefaultExecutor = ExecutorServices.newDynamicScheduledThreadPool(new ThreadFactory() {
+
+          public Thread newThread(@NotNull final Runnable runnable) {
+            return new Thread(runnable, "shakespeare-thread-" + sCount.getAndIncrement());
+          }
+        });
+      }
+    }
+    return sDefaultExecutor;
   }
 
   @NotNull
@@ -71,7 +75,7 @@ public abstract class Script {
 
   @NotNull
   public ExecutorService getExecutor(@NotNull final String id) throws Exception {
-    return DEFAULT_EXECUTOR;
+    return defaultExecutor();
   }
 
   @NotNull

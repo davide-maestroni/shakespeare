@@ -55,7 +55,6 @@ public class FolderScript extends SerializableScript {
 
   @NotNull
   public Behavior getBehavior(@NotNull final String id) throws Exception {
-    // TODO: 21/03/2019 wrap behavior??
     return getScriptInstance().getBehavior(id);
   }
 
@@ -76,8 +75,11 @@ public class FolderScript extends SerializableScript {
     return getScriptInstance().getQuota(id);
   }
 
-  void resetScriptInstance() {
-    mScript = newScriptInstance();
+  @NotNull
+  protected Script newScriptInstance() {
+    final Serializable[] scriptArgs = mScriptArgs;
+    return Reflections.newInstance(mScriptClass,
+        ((scriptArgs != null) && (scriptArgs.length > 0)) ? scriptArgs : NO_ARGS);
   }
 
   @NotNull
@@ -86,12 +88,5 @@ public class FolderScript extends SerializableScript {
       mScript = newScriptInstance();
     }
     return mScript;
-  }
-
-  @NotNull
-  private Script newScriptInstance() {
-    final Serializable[] scriptArgs = mScriptArgs;
-    return Reflections.newInstance(mScriptClass,
-        ((scriptArgs != null) && (scriptArgs.length > 0)) ? scriptArgs : NO_ARGS);
   }
 }

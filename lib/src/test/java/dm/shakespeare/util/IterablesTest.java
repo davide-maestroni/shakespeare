@@ -293,7 +293,7 @@ public class IterablesTest {
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void containsNPE() {
-    Iterables.contains(null, 2);
+    assertThat(Iterables.contains(null, 2));
   }
 
   @Test
@@ -409,7 +409,7 @@ public class IterablesTest {
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void isEmptyNPE() {
-    Iterables.isEmpty(null);
+    assertThat(Iterables.isEmpty(null));
   }
 
   @Test
@@ -695,7 +695,7 @@ public class IterablesTest {
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void sizeNPE() {
-    Iterables.size(null);
+    assertThat(Iterables.size(null));
   }
 
   @Test

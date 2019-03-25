@@ -53,7 +53,20 @@ public class WeakIdentityHashMapTest {
     assertThat(map).isEmpty();
   }
 
-  @Test
+  @Test(expected = IllegalStateException.class)
+  public void testEntryIteratorDoubleRemove() {
+    final WeakIdentityHashMap<Object, String> map =
+        new WeakIdentityHashMap<Object, String>(4, 0.75f);
+    final Object key0 = new Object();
+    map.put(key0, "test0");
+    final Iterator<Entry<Object, String>> entryIterator = map.entrySet().iterator();
+    final Entry<Object, String> nextEntry = entryIterator.next();
+    assertThat(map.get(nextEntry.getKey())).isEqualTo(nextEntry.getValue());
+    entryIterator.remove();
+    entryIterator.remove();
+  }
+
+  @Test(expected = NoSuchElementException.class)
   public void testEntryIteratorRemove() {
     final WeakIdentityHashMap<Object, String> map =
         new WeakIdentityHashMap<Object, String>(4, 0.75f);
@@ -63,25 +76,13 @@ public class WeakIdentityHashMapTest {
     final Entry<Object, String> nextEntry = entryIterator.next();
     assertThat(map.get(nextEntry.getKey())).isEqualTo(nextEntry.getValue());
     entryIterator.remove();
-    try {
-      entryIterator.remove();
-      fail();
-
-    } catch (final Exception ignored) {
-    }
     assertThat(map).doesNotContainKey(nextEntry.getKey());
     assertThat(map).doesNotContainValue(nextEntry.getValue());
     assertThat(map).isEmpty();
     while (entryIterator.hasNext()) {
       entryIterator.next();
     }
-
-    try {
-      entryIterator.next();
-      fail();
-
-    } catch (final NoSuchElementException ignored) {
-    }
+    entryIterator.next();
   }
 
   @Test
@@ -119,7 +120,24 @@ public class WeakIdentityHashMapTest {
     assertThat(map).contains(MapEntry.entry(key1, "test1"));
   }
 
-  @Test
+  @Test(expected = IllegalStateException.class)
+  public void testKeyIteratorDoubleRemove() {
+    final WeakIdentityHashMap<Object, String> map =
+        new WeakIdentityHashMap<Object, String>(4, 0.75f);
+    final Object key0 = new Object();
+    final Object key1 = new Object();
+    final Object key3 = new Object();
+    map.put(key0, "test0");
+    map.put(key1, "test1");
+    map.put(key3, "test3");
+    final Iterator<Object> keyIterator = map.keySet().iterator();
+    final Object nextKey = keyIterator.next();
+    assertThat(map).containsKey(nextKey);
+    keyIterator.remove();
+    keyIterator.remove();
+  }
+
+  @Test(expected = NoSuchElementException.class)
   public void testKeyIteratorRemove() {
     final WeakIdentityHashMap<Object, String> map =
         new WeakIdentityHashMap<Object, String>(4, 0.75f);
@@ -133,24 +151,12 @@ public class WeakIdentityHashMapTest {
     final Object nextKey = keyIterator.next();
     assertThat(map).containsKey(nextKey);
     keyIterator.remove();
-    try {
-      keyIterator.remove();
-      fail();
-
-    } catch (final Exception ignored) {
-    }
     assertThat(map).doesNotContainKey(nextKey);
     assertThat(map).hasSize(2);
     while (keyIterator.hasNext()) {
       keyIterator.next();
     }
-
-    try {
-      keyIterator.next();
-      fail();
-
-    } catch (final NoSuchElementException ignored) {
-    }
+    keyIterator.next();
   }
 
   @Test
@@ -227,7 +233,22 @@ public class WeakIdentityHashMapTest {
     assertThat(map.get(entry.getKey())).isEqualTo("test");
   }
 
-  @Test
+  @Test(expected = IllegalStateException.class)
+  public void testValueIteratorDoubleRemove() {
+    final WeakIdentityHashMap<Object, String> map =
+        new WeakIdentityHashMap<Object, String>(4, 0.75f);
+    final Object key0 = new Object();
+    final Object key1 = new Object();
+    map.put(key0, "test0");
+    map.put(key1, "test1");
+    final Iterator<String> valueIterator = map.values().iterator();
+    final String nextValue = valueIterator.next();
+    assertThat(map).containsValue(nextValue);
+    valueIterator.remove();
+    valueIterator.remove();
+  }
+
+  @Test(expected = NoSuchElementException.class)
   public void testValueIteratorRemove() {
     final WeakIdentityHashMap<Object, String> map =
         new WeakIdentityHashMap<Object, String>(4, 0.75f);
@@ -239,24 +260,12 @@ public class WeakIdentityHashMapTest {
     final String nextValue = valueIterator.next();
     assertThat(map).containsValue(nextValue);
     valueIterator.remove();
-    try {
-      valueIterator.remove();
-      fail();
-
-    } catch (final Exception ignored) {
-    }
     assertThat(map).doesNotContainValue(nextValue);
     assertThat(map).hasSize(1);
     while (valueIterator.hasNext()) {
       valueIterator.next();
     }
-
-    try {
-      valueIterator.next();
-      fail();
-
-    } catch (final NoSuchElementException ignored) {
-    }
+    valueIterator.next();
   }
 
   @Test

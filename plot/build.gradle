@@ -78,6 +78,7 @@ jacocoTestReport {
 spotbugs {
   effort = 'max'
   reportLevel = 'low'
+  excludeFilter = file('spotbugs.xml')
   toolVersion project.getProperty('spotbugsVersion')
 }
 

@@ -31,8 +31,6 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class CopyScript extends FolderScript {
 
-  // TODO: 24/03/2019 makes no sense
-
   private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 
   public CopyScript(@NotNull final Class<? extends Script> scriptClass) {
@@ -51,8 +49,7 @@ public class CopyScript extends FolderScript {
 
   private class CopyBehavior implements Behavior {
 
-    private final Behavior mBehavior;
-
+    private Behavior mBehavior;
     private boolean mIsStopped;
 
     private CopyBehavior(@NotNull final Behavior behavior) {
@@ -67,7 +64,7 @@ public class CopyScript extends FolderScript {
     public void onStart(@NotNull final Context context) throws Exception {
       if (mIsStopped) {
         mIsStopped = false;
-        resetScriptInstance();
+        mBehavior = newScriptInstance().getBehavior(context.getSelf().getId());
       }
       mBehavior.onStart(context);
     }
