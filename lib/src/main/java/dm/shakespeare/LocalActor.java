@@ -61,7 +61,7 @@ class LocalActor implements Actor {
   @NotNull
   public Actor addObserver(@NotNull final Actor observer) {
     mLogger.dbg("[%s] adding observer: observer=%s", this, observer);
-    mContext.getActorExecutor().executeNext(new Runnable() {
+    mContext.getActorExecutorService().executeNext(new Runnable() {
 
       public void run() {
         mContext.addObserver(observer);
@@ -83,7 +83,7 @@ class LocalActor implements Actor {
   @NotNull
   public Actor removeObserver(@NotNull final Actor observer) {
     mLogger.dbg("[%s] removing observer: observer=%s", this, observer);
-    mContext.getActorExecutor().executeNext(new Runnable() {
+    mContext.getActorExecutorService().executeNext(new Runnable() {
 
       public void run() {
         mContext.removeObserver(observer);
@@ -99,7 +99,7 @@ class LocalActor implements Actor {
         message);
     if (mQuotaHandler.consumeQuota()) {
       try {
-        mContext.getActorExecutor().execute(new DefaultEnvelop(sender, options) {
+        mContext.getActorExecutorService().execute(new DefaultEnvelop(sender, options) {
 
           void open() {
             mQuotaHandler.releaseQuota();
@@ -130,7 +130,7 @@ class LocalActor implements Actor {
         messages);
     if (mQuotaHandler.consumeQuota()) {
       try {
-        mContext.getActorExecutor().execute(new DefaultEnvelop(sender, options) {
+        mContext.getActorExecutorService().execute(new DefaultEnvelop(sender, options) {
 
           void open() {
             mQuotaHandler.releaseQuota();

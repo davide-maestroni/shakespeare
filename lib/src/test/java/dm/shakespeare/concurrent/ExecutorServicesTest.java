@@ -65,6 +65,54 @@ public class ExecutorServicesTest {
   }
 
   @Test
+  public void actorExecutorNext() {
+    final TestExecutorService testExecutorService = new TestExecutorService();
+    final ActorExecutorService actorExecutorService =
+        ExecutorServices.asActorExecutor(testExecutorService);
+    final AtomicInteger integer = new AtomicInteger();
+    actorExecutorService.execute(new Runnable() {
+
+      public void run() {
+        integer.set(0);
+      }
+    });
+    actorExecutorService.executeNext(new Runnable() {
+
+      public void run() {
+        integer.set(1);
+      }
+    });
+    testExecutorService.consume(1);
+    assertThat(integer.get()).isEqualTo(1);
+    testExecutorService.consume(1);
+    assertThat(integer.get()).isEqualTo(0);
+  }
+
+  @Test
+  public void actorExecutorNextNext() {
+    final TestExecutorService testExecutorService = new TestExecutorService();
+    final ActorExecutorService actorExecutorService =
+        ExecutorServices.asActorExecutor(testExecutorService);
+    final AtomicInteger integer = new AtomicInteger();
+    actorExecutorService.executeNext(new Runnable() {
+
+      public void run() {
+        integer.set(0);
+      }
+    });
+    actorExecutorService.executeNext(new Runnable() {
+
+      public void run() {
+        integer.set(1);
+      }
+    });
+    testExecutorService.consume(1);
+    assertThat(integer.get()).isEqualTo(1);
+    testExecutorService.consume(1);
+    assertThat(integer.get()).isEqualTo(0);
+  }
+
+  @Test
   public void actorExecutorShutdown() throws Exception {
     testShutdown(ExecutorServices.asActorExecutor(Executors.newSingleThreadExecutor()));
   }

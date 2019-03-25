@@ -38,8 +38,8 @@ public class ContextWrapper implements Context {
   }
 
   @NotNull
-  public ExecutorService getExecutor() {
-    return mContext.getExecutor();
+  public ExecutorService getExecutorService() {
+    return mContext.getExecutorService();
   }
 
   @NotNull
@@ -48,8 +48,8 @@ public class ContextWrapper implements Context {
   }
 
   @NotNull
-  public ScheduledExecutorService getScheduledExecutor() {
-    return mContext.getScheduledExecutor();
+  public ScheduledExecutorService getScheduledExecutorService() {
+    return mContext.getScheduledExecutorService();
   }
 
   @NotNull

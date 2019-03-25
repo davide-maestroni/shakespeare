@@ -37,7 +37,7 @@ abstract class LocalSceneScript extends Script {
 
   @NotNull
   @Override
-  public ExecutorService getExecutor(@NotNull final String id) {
+  public ExecutorService getExecutorService(@NotNull final String id) {
     return mSetting.getLocalExecutor();
   }
 

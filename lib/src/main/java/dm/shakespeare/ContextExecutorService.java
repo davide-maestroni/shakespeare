@@ -36,27 +36,28 @@ class ContextExecutorService implements ExecutorService {
 
   private final Context mContext;
   private final ExecutorService mExecutor;
-  private final WeakHashMap<Future<?>, Void> mFutures = new WeakHashMap<Future<?>, Void>();
+  private final WeakHashMap<Future<?>, Void> mTasks = new WeakHashMap<Future<?>, Void>();
 
-  ContextExecutorService(@NotNull final ExecutorService executor, @NotNull final Context context) {
-    mExecutor = ConstantConditions.notNull("executor", executor);
+  ContextExecutorService(@NotNull final ExecutorService executorService,
+      @NotNull final Context context) {
+    mExecutor = ConstantConditions.notNull("executorService", executorService);
     mContext = ConstantConditions.notNull("context", context);
   }
 
-  public void execute(@NotNull final Runnable runnable) {
-    mFutures.put(mExecutor.submit(runnable), null);
+  public void execute(@NotNull final Runnable command) {
+    mTasks.put(mExecutor.submit(command), null);
   }
 
   public void shutdown() {
     mExecutor.shutdown();
-    mFutures.clear();
+    mTasks.clear();
   }
 
   @NotNull
   public List<Runnable> shutdownNow() {
-    final List<Runnable> runnables = mExecutor.shutdownNow();
-    mFutures.clear();
-    return runnables;
+    final List<Runnable> commands = mExecutor.shutdownNow();
+    mTasks.clear();
+    return commands;
   }
 
   public boolean isShutdown() {
@@ -110,16 +111,16 @@ class ContextExecutorService implements ExecutorService {
 
   <V, F extends Future<V>> F addFuture(final F future) {
     if (future != null) {
-      mFutures.put(future, null);
+      mTasks.put(future, null);
     }
     return future;
   }
 
   void cancelAll(final boolean mayInterruptIfRunning) {
-    for (final Future<?> future : mFutures.keySet()) {
+    for (final Future<?> future : mTasks.keySet()) {
       future.cancel(mayInterruptIfRunning);
     }
-    mFutures.clear();
+    mTasks.clear();
   }
 
   @NotNull

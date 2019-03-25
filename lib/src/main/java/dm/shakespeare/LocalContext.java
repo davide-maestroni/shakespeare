@@ -47,7 +47,7 @@ class LocalContext implements Context {
 
   private static final DeadLetter DEAD_LETTER = new DeadLetter();
 
-  private final ActorExecutorService mActorExecutor;
+  private final ActorExecutorService mActorExecutorService;
   private final Logger mLogger;
   private final HashSet<Actor> mObservers = new HashSet<Actor>();
   private final Observer<Actor> mRemover;
@@ -55,8 +55,8 @@ class LocalContext implements Context {
   private Actor mActor;
   private Behavior mBehavior;
   private BehaviorWrapper mBehaviorWrapper = new BehaviorStarter();
-  private ContextExecutorService mContextExecutor;
-  private ContextScheduledExecutorService mContextScheduledExecutor;
+  private ContextExecutorService mContextExecutorService;
+  private ContextScheduledExecutorService mContextScheduledExecutorService;
   private Runnable mDismissRunnable;
   private volatile boolean mDismissed;
   private Runnable mRestartRunnable;
@@ -64,12 +64,13 @@ class LocalContext implements Context {
   private boolean mStopped;
 
   LocalContext(@NotNull final Observer<Actor> remover, @NotNull final Behavior behavior,
-      @NotNull final ExecutorService executor, @NotNull final Logger logger) {
+      @NotNull final ExecutorService executorService, @NotNull final Logger logger) {
     mRemover = ConstantConditions.notNull("remover", remover);
     mBehavior = ConstantConditions.notNull("behavior", behavior);
-    mActorExecutor =
-        (executor instanceof ScheduledExecutorService) ? ExecutorServices.asActorExecutor(
-            (ScheduledExecutorService) executor) : ExecutorServices.asActorExecutor(executor);
+    mActorExecutorService =
+        (executorService instanceof ScheduledExecutorService) ? ExecutorServices.asActorExecutor(
+            (ScheduledExecutorService) executorService)
+            : ExecutorServices.asActorExecutor(executorService);
     mLogger = ConstantConditions.notNull("logger", logger);
   }
 
@@ -84,22 +85,23 @@ class LocalContext implements Context {
         }
       };
     }
-    mActorExecutor.executeNext(mDismissRunnable);
+    mActorExecutorService.executeNext(mDismissRunnable);
   }
 
   @NotNull
-  public ExecutorService getExecutor() {
-    if (mContextExecutor == null) {
-      final ActorExecutorService actorExecutor = mActorExecutor;
-      if (actorExecutor instanceof ScheduledExecutorService) {
-        mContextExecutor = (mContextScheduledExecutor =
-            new ContextScheduledExecutorService((ScheduledExecutorService) actorExecutor, this));
+  public ExecutorService getExecutorService() {
+    if (mContextExecutorService == null) {
+      final ActorExecutorService actorExecutorService = mActorExecutorService;
+      if (actorExecutorService instanceof ScheduledExecutorService) {
+        mContextExecutorService = (mContextScheduledExecutorService =
+            new ContextScheduledExecutorService((ScheduledExecutorService) actorExecutorService,
+                this));
 
       } else {
-        mContextExecutor = new ContextExecutorService(actorExecutor, this);
+        mContextExecutorService = new ContextExecutorService(actorExecutorService, this);
       }
     }
-    return mContextExecutor;
+    return mContextExecutorService;
   }
 
   @NotNull
@@ -108,19 +110,21 @@ class LocalContext implements Context {
   }
 
   @NotNull
-  public ScheduledExecutorService getScheduledExecutor() {
-    if (mContextScheduledExecutor == null) {
-      final ActorExecutorService actorExecutor = mActorExecutor;
-      if (actorExecutor instanceof ScheduledExecutorService) {
-        mContextExecutor = (mContextScheduledExecutor =
-            new ContextScheduledExecutorService((ScheduledExecutorService) actorExecutor, this));
+  public ScheduledExecutorService getScheduledExecutorService() {
+    if (mContextScheduledExecutorService == null) {
+      final ActorExecutorService actorExecutorService = mActorExecutorService;
+      if (actorExecutorService instanceof ScheduledExecutorService) {
+        mContextExecutorService = (mContextScheduledExecutorService =
+            new ContextScheduledExecutorService((ScheduledExecutorService) actorExecutorService,
+                this));
 
       } else {
-        mContextScheduledExecutor =
-            new ContextScheduledExecutorService(ExecutorServices.asScheduled(mActorExecutor), this);
+        mContextScheduledExecutorService =
+            new ContextScheduledExecutorService(ExecutorServices.asScheduled(mActorExecutorService),
+                this);
       }
     }
-    return mContextScheduledExecutor;
+    return mContextScheduledExecutorService;
   }
 
   @NotNull
@@ -153,7 +157,7 @@ class LocalContext implements Context {
         }
       };
     }
-    mActorExecutor.executeNext(mRestartRunnable);
+    mActorExecutorService.executeNext(mRestartRunnable);
   }
 
   public void setBehavior(@NotNull final Behavior behavior) {
@@ -181,8 +185,8 @@ class LocalContext implements Context {
   }
 
   @NotNull
-  ActorExecutorService getActorExecutor() {
-    return mActorExecutor;
+  ActorExecutorService getActorExecutorService() {
+    return mActorExecutorService;
   }
 
   void message(final Object message, @NotNull final Envelop envelop) {
@@ -259,13 +263,14 @@ class LocalContext implements Context {
   }
 
   private void cancelTasks() {
-    final ContextExecutorService executor = mContextExecutor;
-    if (executor != null) {
-      executor.cancelAll(true);
+    final ContextExecutorService executorService = mContextExecutorService;
+    if (executorService != null) {
+      executorService.cancelAll(true);
     }
-    final ContextScheduledExecutorService scheduledExecutor = mContextScheduledExecutor;
-    if (scheduledExecutor != null) {
-      scheduledExecutor.cancelAll(true);
+    final ContextScheduledExecutorService scheduledExecutorService =
+        mContextScheduledExecutorService;
+    if (scheduledExecutorService != null) {
+      scheduledExecutorService.cancelAll(true);
     }
   }
 

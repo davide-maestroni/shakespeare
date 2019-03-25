@@ -90,13 +90,13 @@ class PriorityExecutorService extends AbstractExecutorService {
   @NotNull
   public List<Runnable> shutdownNow() {
     mExecutorService.shutdownNow();
-    final ArrayList<Runnable> runnables;
+    final ArrayList<Runnable> commands;
     synchronized (mContext) {
       final PriorityQueue<WrappedRunnable> queue = mContext.queue;
-      runnables = new ArrayList<Runnable>(queue);
+      commands = new ArrayList<Runnable>(queue);
       queue.clear();
     }
-    return runnables;
+    return commands;
   }
 
   public boolean isShutdown() {
@@ -156,13 +156,13 @@ class PriorityExecutorService extends AbstractExecutorService {
   private class PriorityRunnable implements Runnable {
 
     public void run() {
-      final Runnable runnable;
+      final Runnable command;
       synchronized (mContext) {
-        runnable = mContext.queue.poll();
+        command = mContext.queue.poll();
       }
 
-      if (runnable != null) {
-        runnable.run();
+      if (command != null) {
+        command.run();
       }
     }
   }

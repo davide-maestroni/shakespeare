@@ -50,8 +50,8 @@ public class SerializableScriptWrapper extends SerializableScript {
 
   @NotNull
   @Override
-  public ExecutorService getExecutor(@NotNull final String id) throws Exception {
-    return mScript.getExecutor(id);
+  public ExecutorService getExecutorService(@NotNull final String id) throws Exception {
+    return mScript.getExecutorService(id);
   }
 
   @NotNull

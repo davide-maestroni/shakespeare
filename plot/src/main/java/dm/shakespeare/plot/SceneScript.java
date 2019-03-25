@@ -37,9 +37,9 @@ abstract class SceneScript extends Script {
 
   @NotNull
   @Override
-  public ExecutorService getExecutor(@NotNull final String id) throws Exception {
+  public ExecutorService getExecutorService(@NotNull final String id) throws Exception {
     final ExecutorService executor = mSetting.getExecutor();
-    return (executor != null) ? executor : super.getExecutor(id);
+    return (executor != null) ? executor : super.getExecutorService(id);
   }
 
   @NotNull

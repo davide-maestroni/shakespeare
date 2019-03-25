@@ -60,8 +60,8 @@ public class FolderScript extends SerializableScript {
 
   @NotNull
   @Override
-  public ExecutorService getExecutor(@NotNull final String id) throws Exception {
-    return getScriptInstance().getExecutor(id);
+  public ExecutorService getExecutorService(@NotNull final String id) throws Exception {
+    return getScriptInstance().getExecutorService(id);
   }
 
   @NotNull

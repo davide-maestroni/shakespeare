@@ -72,9 +72,9 @@ public class BackStage {
       @NotNull final Observer<Actor> remover) throws Exception {
     final int quota = script.getQuota(id);
     final Logger logger = script.getLogger(id);
-    final ExecutorService executor = script.getExecutor(id);
+    final ExecutorService executorService = script.getExecutorService(id);
     final Behavior behavior = script.getBehavior(id);
-    final LocalContext context = new LocalContext(remover, behavior, executor, logger);
+    final LocalContext context = new LocalContext(remover, behavior, executorService, logger);
     final LocalActor actor = new LocalActor(id, quota, context);
     context.setActor(actor);
     return actor;

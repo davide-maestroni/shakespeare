@@ -40,13 +40,13 @@ public interface Behavior {
     void dismissSelf();
 
     @NotNull
-    ExecutorService getExecutor();
+    ExecutorService getExecutorService();
 
     @NotNull
     Logger getLogger();
 
     @NotNull
-    ScheduledExecutorService getScheduledExecutor();
+    ScheduledExecutorService getScheduledExecutorService();
 
     @NotNull
     Actor getSelf();

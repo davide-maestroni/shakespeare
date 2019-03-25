@@ -71,13 +71,13 @@ class ThrottledExecutorService extends AbstractExecutorService {
   @NotNull
   public List<Runnable> shutdownNow() {
     mExecutorService.shutdownNow();
-    final ArrayList<Runnable> runnables;
+    final ArrayList<Runnable> commands;
     synchronized (mMutex) {
       final CQueue<Runnable> queue = mQueue;
-      runnables = new ArrayList<Runnable>(queue);
+      commands = new ArrayList<Runnable>(queue);
       queue.clear();
     }
-    return runnables;
+    return commands;
   }
 
   public boolean isShutdown() {
@@ -107,17 +107,17 @@ class ThrottledExecutorService extends AbstractExecutorService {
   private class ThrottledRunnable implements Runnable {
 
     public void run() {
-      final Runnable runnable;
+      final Runnable command;
       synchronized (mMutex) {
-        runnable = mQueue.poll();
-        if (runnable == null) {
+        command = mQueue.poll();
+        if (command == null) {
           --mPendingCount;
           return;
         }
       }
 
       try {
-        runnable.run();
+        command.run();
 
       } finally {
         mExecutorService.execute(this);

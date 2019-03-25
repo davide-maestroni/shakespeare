@@ -38,7 +38,7 @@ public abstract class Script {
   private static final AtomicLong sCount = new AtomicLong();
   private static final Object sMutex = new Object();
 
-  private static ScheduledExecutorService sDefaultExecutor;
+  private static ScheduledExecutorService sDefaultExecutorService;
 
   @NotNull
   public static <T> Handler<T> accept(@NotNull final Observer<T> observer) {
@@ -51,18 +51,19 @@ public abstract class Script {
   }
 
   @NotNull
-  public static ExecutorService defaultExecutor() {
+  public static ExecutorService defaultExecutorService() {
     synchronized (sMutex) {
-      if ((sDefaultExecutor == null) || sDefaultExecutor.isShutdown()) {
-        sDefaultExecutor = ExecutorServices.newDynamicScheduledThreadPool(new ThreadFactory() {
+      if ((sDefaultExecutorService == null) || sDefaultExecutorService.isShutdown()) {
+        sDefaultExecutorService =
+            ExecutorServices.newDynamicScheduledThreadPool(new ThreadFactory() {
 
-          public Thread newThread(@NotNull final Runnable runnable) {
-            return new Thread(runnable, "shakespeare-thread-" + sCount.getAndIncrement());
-          }
-        });
+              public Thread newThread(@NotNull final Runnable runnable) {
+                return new Thread(runnable, "shakespeare-thread-" + sCount.getAndIncrement());
+              }
+            });
       }
     }
-    return sDefaultExecutor;
+    return sDefaultExecutorService;
   }
 
   @NotNull
@@ -74,8 +75,8 @@ public abstract class Script {
   public abstract Behavior getBehavior(@NotNull String id) throws Exception;
 
   @NotNull
-  public ExecutorService getExecutor(@NotNull final String id) throws Exception {
-    return defaultExecutor();
+  public ExecutorService getExecutorService(@NotNull final String id) throws Exception {
+    return defaultExecutorService();
   }
 
   @NotNull

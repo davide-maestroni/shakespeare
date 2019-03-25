@@ -801,7 +801,7 @@ public abstract class Event<T> {
 
     @NotNull
     @Override
-    public ExecutorService getExecutor(@NotNull final String id) {
+    public ExecutorService getExecutorService(@NotNull final String id) {
       return ExecutorServices.localExecutor();
     }
   }
@@ -1047,8 +1047,8 @@ public abstract class Event<T> {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
-          mScheduledFuture =
-              context.getScheduledExecutor().schedule(ScheduleWithDelayEvent.this, mDelay, mUnit);
+          mScheduledFuture = context.getScheduledExecutorService()
+              .schedule(ScheduleWithDelayEvent.this, mDelay, mUnit);
           context.setBehavior(new InputBehavior());
 
         } else if (message == CANCEL) {

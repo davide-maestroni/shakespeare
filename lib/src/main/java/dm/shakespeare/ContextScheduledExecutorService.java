@@ -33,38 +33,38 @@ import dm.shakespeare.util.ConstantConditions;
 class ContextScheduledExecutorService extends ContextExecutorService
     implements ScheduledExecutorService {
 
-  private final ScheduledExecutorService mExecutor;
+  private final ScheduledExecutorService mExecutorService;
 
-  ContextScheduledExecutorService(@NotNull final ScheduledExecutorService executor,
+  ContextScheduledExecutorService(@NotNull final ScheduledExecutorService executorService,
       @NotNull final Context context) {
-    super(executor, context);
-    mExecutor = executor;
+    super(executorService, context);
+    mExecutorService = executorService;
   }
 
   @NotNull
   public ScheduledFuture<?> schedule(@NotNull final Runnable command, final long delay,
       @NotNull final TimeUnit unit) {
-    return wrap(addFuture(mExecutor.schedule(wrap(command), delay, unit)));
+    return wrap(addFuture(mExecutorService.schedule(wrap(command), delay, unit)));
   }
 
   @NotNull
   public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> callable, final long delay,
       @NotNull final TimeUnit unit) {
-    return wrap(addFuture(mExecutor.schedule(wrap(callable), delay, unit)));
+    return wrap(addFuture(mExecutorService.schedule(wrap(callable), delay, unit)));
   }
 
   @NotNull
   public ScheduledFuture<?> scheduleAtFixedRate(@NotNull final Runnable command,
       final long initialDelay, final long period, @NotNull final TimeUnit unit) {
     return wrap(
-        addFuture(mExecutor.scheduleAtFixedRate(wrap(command), initialDelay, period, unit)));
+        addFuture(mExecutorService.scheduleAtFixedRate(wrap(command), initialDelay, period, unit)));
   }
 
   @NotNull
   public ScheduledFuture<?> scheduleWithFixedDelay(@NotNull final Runnable command,
       final long initialDelay, final long delay, @NotNull final TimeUnit unit) {
-    return wrap(
-        addFuture(mExecutor.scheduleWithFixedDelay(wrap(command), initialDelay, delay, unit)));
+    return wrap(addFuture(
+        mExecutorService.scheduleWithFixedDelay(wrap(command), initialDelay, delay, unit)));
   }
 
   @NotNull

@@ -92,11 +92,11 @@ class TimeoutExecutorService extends AbstractExecutorService {
 
   @NotNull
   public List<Runnable> shutdownNow() {
-    final List<Runnable> runnables = mExecutorService.shutdownNow();
+    final List<Runnable> commands = mExecutorService.shutdownNow();
     if (!mIsShutdown.getAndSet(true)) {
       shutdownGlobalService();
     }
-    return runnables;
+    return commands;
   }
 
   public boolean isShutdown() {

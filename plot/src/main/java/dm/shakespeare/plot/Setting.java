@@ -53,7 +53,7 @@ class Setting {
 
   Setting(@Nullable final ExecutorService executor, @Nullable final Logger logger) {
     mExecutor =
-        (executor != null) ? asActorExecutor(executor) : asActorExecutor(Script.defaultExecutor());
+        (executor != null) ? asActorExecutor(executor) : asActorExecutor(Script.defaultExecutorService());
     mLogger = logger;
   }
 
