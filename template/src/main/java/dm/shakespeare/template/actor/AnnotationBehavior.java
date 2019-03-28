@@ -34,7 +34,7 @@ import dm.shakespeare.template.annotation.OnMatch;
 import dm.shakespeare.template.annotation.OnMessage;
 import dm.shakespeare.template.annotation.OnNoMatch;
 import dm.shakespeare.template.annotation.OnParams;
-import dm.shakespeare.template.annotation.OnSender;
+import dm.shakespeare.template.annotation.OnEnvelop;
 import dm.shakespeare.template.annotation.OnStart;
 import dm.shakespeare.template.annotation.OnStop;
 
@@ -51,7 +51,7 @@ public class AnnotationBehavior extends AbstractBehavior {
     put(OnAny.class, new OnAnyHandler());
     put(OnMatch.class, new OnMatchHandler());
     put(OnMessage.class, new OnMessageHandler());
-    put(OnSender.class, new OnSenderHandler());
+    put(OnEnvelop.class, new OnEnvelopHandler());
     put(OnNoMatch.class, new OnNoMatchHandler());
   }};
 

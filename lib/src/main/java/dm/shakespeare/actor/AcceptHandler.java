@@ -24,16 +24,26 @@ import dm.shakespeare.function.Observer;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 01/19/2019.
+ * {@link Handler} implementation wrapping an {@link Observer} function.
+ *
+ * @param <T> the observed type.
  */
 class AcceptHandler<T> implements Handler<T> {
 
   private final Observer<T> mObserver;
 
+  /**
+   * Creates a new handler wrapping the specified observer instance.
+   *
+   * @param observer the observer to wrap.
+   */
   AcceptHandler(@NotNull final Observer<T> observer) {
     mObserver = ConstantConditions.notNull("observer", observer);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void handle(final T message, @NotNull final Envelop envelop,
       @NotNull final Context context) throws Exception {
     mObserver.accept(message);

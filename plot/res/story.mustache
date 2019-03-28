@@ -393,7 +393,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public void playEach(@NotNull final StoryObserver<? super T> storyObserver) {
     final Actor actor = BackStage.newActor(new StoryObserverScript<T>(storyObserver));
     final String actorId = actor.getId();
-    getActor().tell(NEXT, new Options().withReceiptId(actorId).withThread(actorId), actor);
+    getActor().tell(NEXT, new Options().withReceiptId(actorId).withThreadId(actorId), actor);
   }
 
   @NotNull
@@ -723,7 +723,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
           if (next(context)) {
             context.setBehavior(new InputBehavior());
           }
@@ -732,7 +732,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           final Options options = envelop.getOptions().threadOnly();
           final SenderIterator sender = new SenderIterator(envelop.getSender(), options);
           sender.setIterator(mMemory.iterator());
-          mNextSenders.put(options.getThread(), sender);
+          mNextSenders.put(options.getThreadId(), sender);
           if (next(context)) {
             context.setBehavior(new InputBehavior());
           }
@@ -755,30 +755,30 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           final HashMap<String, Sender> getSenders = mGetSenders;
           final boolean wasEmpty = getSenders.isEmpty();
           final Options options = envelop.getOptions().threadOnly();
-          getSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          getSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
           if (wasEmpty) {
             next(context);
           }
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           if (mGetSenders.isEmpty()) {
             next(context);
           }
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == AVAILABLE) {
           if (mGetSenders.isEmpty()) {
@@ -1012,8 +1012,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private void setThreadIds(final int count) {
       final Options options = mOptions;
-      mContinueOptions = options.withThread(mContinueThread + "#" + count);
-      mOutputOptions = options.withThread(mOutputThread + "#" + count);
+      mContinueOptions = options.withThreadId(mContinueThread + "#" + count);
+      mOutputOptions = options.withThreadId(mOutputThread + "#" + count);
     }
 
     private void tellInputActors(final Object message, @NotNull final Context context) {
@@ -1025,7 +1025,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         final StringBuilder builder = new StringBuilder();
         for (final Actor actor : getInputActors()) {
           final String threadId = inputThread + builder.append('#').toString();
-          final Options inputOptions = options.withThread(threadId);
+          final Options inputOptions = options.withThreadId(threadId);
           inputActors.put(actor, inputOptions);
           actor.tell(message, inputOptions, self);
         }
@@ -1043,35 +1043,35 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           sender.tellNext(context.getSelf());
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else {
           final Options outputOptions = mOutputOptions;
-          if (isSame(outputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(outputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
             mOutputActor.tell(BREAK, outputOptions, context.getSelf());
             fail(Conflict.ofCancel(), context);
 
           } else {
-            final String thread = envelop.getOptions().getThread();
-            if ((thread != null) && thread.startsWith(mInputThread)) {
+            final String threadId = envelop.getOptions().getThreadId();
+            if ((threadId != null) && threadId.startsWith(mInputThread)) {
               if (++mInputCount == mInputs.length) {
                 final Conflict conflict = Conflict.ofCancel();
                 try {
@@ -1100,25 +1100,25 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           sender.tellNext(context.getSelf());
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == CANCEL) {
           mContinueActor.tell(CANCEL, null, context.getSelf());
@@ -1126,8 +1126,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           context.setBehavior(new CancelBehavior());
 
         } else {
-          final String thread = envelop.getOptions().getThread();
-          if (isSame(mContinueOptions.getThread(), thread)) {
+          final String threadId = envelop.getOptions().getThreadId();
+          if (isSame(mContinueOptions.getThreadId(), threadId)) {
             if (message instanceof Conflict) {
               fail((Conflict) message, context);
 
@@ -1155,14 +1155,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
           next(mContinueCount, context);
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions().threadOnly();
           final SenderIterator sender = new SenderIterator(envelop.getSender(), options);
           sender.setIterator(mMemory.iterator());
-          mNextSenders.put(options.getThread(), sender);
+          mNextSenders.put(options.getThreadId(), sender);
           next(mContinueCount, context);
 
         } else if (message == CANCEL) {
@@ -1179,25 +1179,25 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           sender.tellNext(context.getSelf());
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == CANCEL) {
           cancelInputActors(context);
@@ -1205,8 +1205,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final String inputThread = mInputThread;
-          final String thread = envelop.getOptions().getThread();
-          if ((thread != null) && thread.startsWith(inputThread)) {
+          final String threadId = envelop.getOptions().getThreadId();
+          if ((threadId != null) && threadId.startsWith(inputThread)) {
             if (message == END) {
               tellInputActors(BREAK, context);
               done(context);
@@ -1231,7 +1231,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               }
 
             } else {
-              final int index = thread.length() - inputThread.length() - 1;
+              final int index = threadId.length() - inputThread.length() - 1;
               final Object[] inputs = mInputs;
               if ((index >= 0) && (index < inputs.length)) {
                 inputs[index] = message;
@@ -1287,21 +1287,21 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
           next(++mContinueCount, context);
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           final Actor self = context.getSelf();
           if (!sender.tellNext(self)) {
@@ -1309,7 +1309,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == CANCEL) {
           cancelInputActors(context);
@@ -1325,22 +1325,22 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
           mOutputActor.tell(NEXT, mOutputOptions, context.getSelf());
           context.setBehavior(new OutputBehavior());
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           final Actor self = context.getSelf();
           if (!sender.tellNext(self)) {
@@ -1349,7 +1349,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == CANCEL) {
           final Actor self = context.getSelf();
@@ -1367,25 +1367,25 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           sender.tellNext(context.getSelf());
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == CANCEL) {
           mOutputActor.tell(CANCEL, null, context.getSelf());
@@ -1394,7 +1394,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options outputOptions = mOutputOptions;
-          if (isSame(outputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(outputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
             if (message == END) {
               mOutputActor.tell(BREAK, outputOptions, context.getSelf());
               next(++mContinueCount, context);
@@ -1465,7 +1465,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       })).getId();
       final Options options = (mOptions = new Options().withReceiptId(actorId));
       mOutputThread = actorId + ":output";
-      mInputOptions = options.withThread(actorId + ":input");
+      mInputOptions = options.withThreadId(actorId + ":input");
     }
 
     private void done(@NotNull final Context context) {
@@ -1516,32 +1516,32 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           sender.tellNext(context.getSelf());
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
-        } else if (isSame(mInputOptions.getThread(), envelop.getOptions().getThread())) {
+        } else if (isSame(mInputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
           fail(Conflict.ofCancel(), context);
 
         } else {
           final Options outputOptions = mOutputOptions;
-          if (isSame(outputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(outputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
             mOutputActor.tell(BREAK, mOutputOptions, context.getSelf());
             fail(Conflict.ofCancel(), context);
           }
@@ -1556,7 +1556,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
           mInputActor.tell(GET, mInputOptions, context.getSelf());
           context.setBehavior(new InputBehavior());
 
@@ -1564,7 +1564,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           final Options options = envelop.getOptions().threadOnly();
           final SenderIterator sender = new SenderIterator(envelop.getSender(), options);
           sender.setIterator(mMemory.iterator());
-          mNextSenders.put(options.getThread(), sender);
+          mNextSenders.put(options.getThreadId(), sender);
           mInputActor.tell(GET, mInputOptions, context.getSelf());
           context.setBehavior(new InputBehavior());
 
@@ -1582,30 +1582,30 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == CANCEL) {
           mInputActor.tell(CANCEL, null, context.getSelf());
           context.setBehavior(new CancelBehavior());
 
-        } else if (isSame(mInputOptions.getThread(), envelop.getOptions().getThread())) {
+        } else if (isSame(mInputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
           if (message instanceof Conflict) {
             fail((Conflict) message, context);
 
@@ -1618,7 +1618,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               final Actor outputActor = (mOutputActor = getNextOutputActor());
               if (outputActor != null) {
                 final String outputThreadId = mOutputThread + "#" + mOutputCount++;
-                final Options options = (mOutputOptions = mOptions.withThread(outputThreadId));
+                final Options options = (mOutputOptions = mOptions.withThreadId(outputThreadId));
                 outputActor.tell(NEXT, options, context.getSelf());
                 context.setBehavior(new OutputBehavior());
 
@@ -1644,20 +1644,20 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           final Actor self = context.getSelf();
           if (!sender.tellNext(self)) {
@@ -1666,7 +1666,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == CANCEL) {
           final Actor self = context.getSelf();
@@ -1684,25 +1684,25 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           sender.tellNext(context.getSelf());
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == CANCEL) {
           final Actor self = context.getSelf();
@@ -1712,7 +1712,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options outputOptions = mOutputOptions;
-          if (isSame(outputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(outputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
             if (message == END) {
               final Actor self = context.getSelf();
               mOutputActor.tell(BREAK, outputOptions, self);
@@ -1720,7 +1720,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 final Actor outputActor = (mOutputActor = getNextOutputActor());
                 if (outputActor != null) {
                   final String outputThreadId = mOutputThread + "#" + mOutputCount++;
-                  final Options options = (mOutputOptions = mOptions.withThread(outputThreadId));
+                  final Options options = (mOutputOptions = mOptions.withThreadId(outputThreadId));
                   outputActor.tell(NEXT, options, context.getSelf());
 
                 } else {
@@ -1745,7 +1745,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 final Actor outputActor = (mOutputActor = getNextOutputActor());
                 if (outputActor != null) {
                   final String outputThreadId = mOutputThread + "#" + mOutputCount++;
-                  final Options options = (mOutputOptions = mOptions.withThread(outputThreadId));
+                  final Options options = (mOutputOptions = mOptions.withThreadId(outputThreadId));
                   outputActor.tell(NEXT, options, context.getSelf());
 
                 } else {
@@ -1826,7 +1826,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       })).getId();
       final Options options = (mOptions = new Options().withReceiptId(actorId));
       mOutputThread = actorId + ":output";
-      mInputOptions = options.withThread(actorId + ":input");
+      mInputOptions = options.withThreadId(actorId + ":input");
     }
 
     private void done(@NotNull final Context context) {
@@ -1861,29 +1861,29 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           sender.tellNext(context.getSelf());
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
             mInputActor.tell(BREAK, inputOptions, context.getSelf());
             mInputsEnded = true;
             if (mOutputActors.isEmpty()) {
@@ -1891,8 +1891,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             }
 
           } else {
-            final String thread = envelop.getOptions().getThread();
-            if ((thread != null) && thread.startsWith(mOutputThread)) {
+            final String threadId = envelop.getOptions().getThreadId();
+            if ((threadId != null) && threadId.startsWith(mOutputThread)) {
               final HashMap<Actor, Options> outputActors = mOutputActors;
               final Actor sender = envelop.getSender();
               sender.tell(BREAK, outputActors.get(sender), context.getSelf());
@@ -1913,7 +1913,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
           mInputActor.tell(NEXT, mInputOptions, context.getSelf());
           context.setBehavior(new InputBehavior());
 
@@ -1921,7 +1921,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           final Options options = envelop.getOptions().threadOnly();
           final SenderIterator sender = new SenderIterator(envelop.getSender(), options);
           sender.setIterator(mMemory.iterator());
-          mNextSenders.put(options.getThread(), sender);
+          mNextSenders.put(options.getThreadId(), sender);
           mInputActor.tell(NEXT, mInputOptions, context.getSelf());
           context.setBehavior(new InputBehavior());
 
@@ -1939,24 +1939,24 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == CANCEL) {
           mInputActor.tell(CANCEL, null, context.getSelf());
@@ -1964,7 +1964,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
             if (message == END) {
               mInputActor.tell(BREAK, inputOptions, context.getSelf());
               done(context);
@@ -1981,7 +1981,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 final Actor outputActor = getOutputActor(message);
                 if (outputActor != null) {
                   final String outputThreadId = mOutputThread + "#" + mOutputCount++;
-                  final Options options = mOptions.withThread(outputThreadId);
+                  final Options options = mOptions.withThreadId(outputThreadId);
                   final HashMap<Actor, Options> outputActors = mOutputActors;
                   outputActors.put(outputActor, options);
                   outputActor.tell(NEXT, options, context.getSelf());
@@ -2014,7 +2014,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
           final HashMap<Actor, Options> nextActors = mNextActors;
           final Actor self = context.getSelf();
           for (final Entry<Actor, Options> entry : nextActors.entrySet()) {
@@ -2024,16 +2024,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           final HashMap<Actor, Options> outputActors = mOutputActors;
           if (!sender.tellNext(context.getSelf()) && (mNextActors.size() == outputActors.size())) {
@@ -2044,7 +2044,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == CANCEL) {
           final Actor self = context.getSelf();
@@ -2056,7 +2056,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
             if (message == END) {
               mInputActor.tell(BREAK, inputOptions, context.getSelf());
               mInputsEnded = true;
@@ -2084,7 +2084,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 final Actor outputActor = getOutputActor(message);
                 if (outputActor != null) {
                   final String outputThreadId = mOutputThread + "#" + mOutputCount++;
-                  final Options options = mOptions.withThread(outputThreadId);
+                  final Options options = mOptions.withThreadId(outputThreadId);
                   final HashMap<Actor, Options> outputActors = mOutputActors;
                   outputActors.put(outputActor, options);
                   outputActor.tell(NEXT, options, context.getSelf());
@@ -2110,8 +2110,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             }
 
           } else {
-            final String thread = envelop.getOptions().getThread();
-            if ((thread != null) && thread.startsWith(mOutputThread)) {
+            final String threadId = envelop.getOptions().getThreadId();
+            if ((threadId != null) && threadId.startsWith(mOutputThread)) {
               if (message == END) {
                 final Actor self = context.getSelf();
                 final Actor sender = envelop.getSender();
@@ -2209,16 +2209,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       } else if (message == NEXT) {
         final Actor self = context.getSelf();
         final Options options = envelop.getOptions().threadOnly();
-        final String thread = options.getThread();
+        final String threadId = options.getThreadId();
         final Map<String, SenderIterator> nextSenders = mNextSenders;
-        SenderIterator sender = nextSenders.get(thread);
+        SenderIterator sender = nextSenders.get(threadId);
         if (sender != null) {
           sender.waitNext();
 
         } else {
           sender = new SenderIterator(envelop.getSender(), options);
           sender.setIterator(mEffects.iterator());
-          nextSenders.put(thread, sender);
+          nextSenders.put(threadId, sender);
         }
 
         if (!sender.tellNext(self)) {
@@ -2226,7 +2226,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         }
 
       } else if (message == BREAK) {
-        mNextSenders.remove(envelop.getOptions().getThread());
+        mNextSenders.remove(envelop.getOptions().getThreadId());
       }
       envelop.preventReceipt();
     }
@@ -2256,11 +2256,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               } else if (message == NEXT) {
                 final HashSet<String> threads = mThreads;
                 final Options options = envelop.getOptions().threadOnly();
-                final String thread = options.getThread();
-                if (!threads.contains(thread)) {
+                final String threadId = options.getThreadId();
+                if (!threads.contains(threadId)) {
                   envelop.getSender()
                       .tell(effect, envelop.getOptions().threadOnly(), context.getSelf());
-                  threads.add(thread);
+                  threads.add(threadId);
 
                 } else {
                   envelop.getSender()
@@ -2268,7 +2268,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 }
 
               } else if (message == BREAK) {
-                mThreads.remove(envelop.getOptions().getThread());
+                mThreads.remove(envelop.getOptions().getThreadId());
               }
               envelop.preventReceipt();
             }
@@ -2310,17 +2310,17 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               } else if (message == NEXT) {
                 final HashMap<String, Iterator<? extends T>> threads = mThreads;
                 final Options options = envelop.getOptions().threadOnly();
-                final String thread = options.getThread();
-                Iterator<? extends T> iterator = threads.get(thread);
+                final String threadId = options.getThreadId();
+                Iterator<? extends T> iterator = threads.get(threadId);
                 if (iterator == null) {
                   iterator = effects.iterator();
-                  threads.put(thread, iterator);
+                  threads.put(threadId, iterator);
                 }
                 envelop.getSender()
                     .tell(iterator.hasNext() ? iterator.next() : END, options, context.getSelf());
 
               } else if (message == BREAK) {
-                mThreads.remove(envelop.getOptions().getThread());
+                mThreads.remove(envelop.getOptions().getThreadId());
               }
               envelop.preventReceipt();
             }
@@ -2356,7 +2356,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           return new InitBehavior();
         }
       })).getId();
-      mOptions = new Options().withReceiptId(actorId).withThread(actorId);
+      mOptions = new Options().withReceiptId(actorId).withThreadId(actorId);
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
@@ -2374,26 +2374,26 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions().threadOnly();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else {
-          if (context.getSelf().getId().equals(envelop.getOptions().getThread())) {
+          if (context.getSelf().getId().equals(envelop.getOptions().getThreadId())) {
             fail(Conflict.ofCancel(), context);
           }
         }
@@ -2407,13 +2407,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
           mInputActor.tell(GET, mOptions, context.getSelf());
           context.setBehavior(new InputBehavior());
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions().threadOnly();
-          mNextSenders.put(options.getThread(), new SenderIterator(envelop.getSender(), options));
+          mNextSenders.put(options.getThreadId(), new SenderIterator(envelop.getSender(), options));
           mInputActor.tell(GET, mOptions, context.getSelf());
           context.setBehavior(new InputBehavior());
 
@@ -2431,23 +2431,23 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions().threadOnly();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == CANCEL) {
           mInputActor.tell(CANCEL, null, context.getSelf());
@@ -2455,7 +2455,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Actor self = context.getSelf();
-          if (self.getId().equals(envelop.getOptions().getThread())) {
+          if (self.getId().equals(envelop.getOptions().getThreadId())) {
             if (message instanceof Conflict) {
               fail((Conflict) message, context);
 
@@ -2624,10 +2624,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               } else if (message == NEXT) {
                 final HashSet<String> threads = mThreads;
                 final Options options = envelop.getOptions().threadOnly();
-                final String thread = options.getThread();
-                if (!threads.contains(thread)) {
+                final String threadId = options.getThreadId();
+                if (!threads.contains(threadId)) {
                   envelop.getSender().tell(conflict, options, context.getSelf());
-                  threads.add(thread);
+                  threads.add(threadId);
 
                 } else {
                   envelop.getSender()
@@ -2635,7 +2635,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 }
 
               } else if (message == BREAK) {
-                mThreads.remove(envelop.getOptions().getThread());
+                mThreads.remove(envelop.getOptions().getThreadId());
               }
               envelop.preventReceipt();
             }
@@ -2678,18 +2678,18 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               } else if (message == NEXT) {
                 final HashMap<String, Iterator<? extends Throwable>> threads = mThreads;
                 final Options options = envelop.getOptions().threadOnly();
-                final String thread = options.getThread();
-                Iterator<? extends Throwable> iterator = threads.get(thread);
+                final String threadId = options.getThreadId();
+                Iterator<? extends Throwable> iterator = threads.get(threadId);
                 if (iterator == null) {
                   iterator = incidents.iterator();
-                  threads.put(thread, iterator);
+                  threads.put(threadId, iterator);
                 }
                 envelop.getSender()
                     .tell(iterator.hasNext() ? new Conflict(iterator.next()) : END, options,
                         context.getSelf());
 
               } else if (message == BREAK) {
-                mThreads.remove(envelop.getOptions().getThread());
+                mThreads.remove(envelop.getOptions().getThreadId());
               }
               envelop.preventReceipt();
             }
@@ -2748,7 +2748,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       })).getId();
       final Options options = (mOptions = new Options().withReceiptId(actorId));
       mOutputThread = actorId + ":output";
-      mInputOptions = options.withThread(actorId + ":input");
+      mInputOptions = options.withThreadId(actorId + ":input");
     }
 
     private void done(@NotNull final Context context) {
@@ -2780,29 +2780,29 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           sender.tellNext(context.getSelf());
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
             mInputActor.tell(BREAK, inputOptions, context.getSelf());
             mInputsEnded = true;
             if (mActorCount == 0) {
@@ -2810,8 +2810,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             }
 
           } else {
-            final String thread = envelop.getOptions().getThread();
-            if ((thread != null) && thread.startsWith(mOutputThread)) {
+            final String threadId = envelop.getOptions().getThreadId();
+            if ((threadId != null) && threadId.startsWith(mOutputThread)) {
               final Actor sender = envelop.getSender();
               sender.tell(BREAK, mOutputEffects.get(sender).getOptions(), context.getSelf());
               if ((--mActorCount == 0) && mInputsEnded) {
@@ -2830,7 +2830,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
           mInputActor.tell(NEXT, mInputOptions, context.getSelf());
           context.setBehavior(new InputBehavior());
 
@@ -2838,7 +2838,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           final Options options = envelop.getOptions().threadOnly();
           final SenderIterator sender = new SenderIterator(envelop.getSender(), options);
           sender.setIterator(mMemory.iterator());
-          mNextSenders.put(options.getThread(), sender);
+          mNextSenders.put(options.getThreadId(), sender);
           mInputActor.tell(NEXT, mInputOptions, context.getSelf());
           context.setBehavior(new InputBehavior());
 
@@ -2856,24 +2856,24 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == CANCEL) {
           mInputActor.tell(CANCEL, null, context.getSelf());
@@ -2881,7 +2881,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
             if (message == END) {
               mInputActor.tell(BREAK, inputOptions, context.getSelf());
               done(context);
@@ -2897,7 +2897,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               try {
                 final Actor outputActor = getOutputActor(message);
                 final String outputThreadId = mOutputThread + "#" + mOutputCount++;
-                final Options options = mOptions.withThread(outputThreadId);
+                final Options options = mOptions.withThreadId(outputThreadId);
                 final LinkedHashMap<Actor, OutputEffect> outputEffects = mOutputEffects;
                 outputEffects.put(outputActor, new OutputEffect(options));
                 outputActor.tell(GET, options, context.getSelf());
@@ -2927,25 +2927,25 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           sender.tellNext(context.getSelf());
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == CANCEL) {
           final Actor self = context.getSelf();
@@ -2960,7 +2960,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
             if (message == END) {
               mInputActor.tell(BREAK, inputOptions, context.getSelf());
               mInputsEnded = true;
@@ -2987,7 +2987,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               try {
                 final Actor outputActor = getOutputActor(message);
                 final String outputThreadId = mOutputThread + "#" + mOutputCount++;
-                final Options options = mOptions.withThread(outputThreadId);
+                final Options options = mOptions.withThreadId(outputThreadId);
                 final LinkedHashMap<Actor, OutputEffect> outputEffects = mOutputEffects;
                 outputEffects.put(outputActor, new OutputEffect(options));
                 outputActor.tell(GET, options, context.getSelf());
@@ -3010,8 +3010,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             }
 
           } else {
-            final String thread = envelop.getOptions().getThread();
-            if ((thread != null) && thread.startsWith(mOutputThread)) {
+            final String threadId = envelop.getOptions().getThreadId();
+            if ((threadId != null) && threadId.startsWith(mOutputThread)) {
               final Object effect;
               if (message instanceof Bounce) {
                 effect = Conflict.ofBounce((Bounce) message);
@@ -3202,7 +3202,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           return new InitBehavior();
         }
       })).getId();
-      mInputOptions = new Options().withReceiptId(actorId).withThread(actorId + ":input");
+      mInputOptions = new Options().withReceiptId(actorId).withThreadId(actorId + ":input");
     }
 
     private void done(@NotNull final Context context) {
@@ -3229,29 +3229,29 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           sender.tellNext(context.getSelf());
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
             mInputActor.tell(BREAK, inputOptions, context.getSelf());
             fail(Conflict.ofCancel(), context);
           }
@@ -3266,7 +3266,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
           mScheduledFuture = context.getScheduledExecutorService()
               .scheduleAtFixedRate(ScheduleAtFixedRateStory.this, mInitialDelay, mPeriod, mUnit);
           context.setBehavior(new InputBehavior());
@@ -3275,7 +3275,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           final Options options = envelop.getOptions().threadOnly();
           final SenderIterator sender = new SenderIterator(envelop.getSender(), options);
           sender.setIterator(mMemory.iterator());
-          mNextSenders.put(options.getThread(), sender);
+          mNextSenders.put(options.getThreadId(), sender);
           mScheduledFuture = context.getScheduledExecutorService()
               .scheduleAtFixedRate(ScheduleAtFixedRateStory.this, mInitialDelay, mPeriod, mUnit);
           context.setBehavior(new InputBehavior());
@@ -3294,25 +3294,25 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           sender.tellNext(context.getSelf());
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == CANCEL) {
           mInputActor.tell(CANCEL, null, context.getSelf());
@@ -3325,7 +3325,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
             if (message == END) {
               mInputActor.tell(BREAK, inputOptions, context.getSelf());
               done(context);
@@ -3394,7 +3394,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           return new InitBehavior();
         }
       })).getId();
-      mInputOptions = new Options().withReceiptId(actorId).withThread(actorId + ":input");
+      mInputOptions = new Options().withReceiptId(actorId).withThreadId(actorId + ":input");
     }
 
     private void done(@NotNull final Context context) {
@@ -3421,29 +3421,29 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           sender.tellNext(context.getSelf());
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
             mInputActor.tell(BREAK, inputOptions, context.getSelf());
             fail(Conflict.ofCancel(), context);
           }
@@ -3458,7 +3458,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
           mScheduledFuture = context.getScheduledExecutorService()
               .schedule(ScheduleWithFixedDelayStory.this, mInitialDelay, mUnit);
           context.setBehavior(new InputBehavior());
@@ -3467,7 +3467,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           final Options options = envelop.getOptions().threadOnly();
           final SenderIterator sender = new SenderIterator(envelop.getSender(), options);
           sender.setIterator(mMemory.iterator());
-          mNextSenders.put(options.getThread(), sender);
+          mNextSenders.put(options.getThreadId(), sender);
           mScheduledFuture = context.getScheduledExecutorService()
               .schedule(ScheduleWithFixedDelayStory.this, mInitialDelay, mUnit);
           context.setBehavior(new InputBehavior());
@@ -3486,25 +3486,25 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          SenderIterator sender = nextSenders.get(thread);
+          SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
             sender = new SenderIterator(envelop.getSender(), options.threadOnly());
             sender.setIterator(mMemory.iterator());
-            nextSenders.put(thread, sender);
+            nextSenders.put(threadId, sender);
           }
           sender.tellNext(context.getSelf());
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == CANCEL) {
           mInputActor.tell(CANCEL, null, context.getSelf());
@@ -3517,7 +3517,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else {
           final Options inputOptions = mInputOptions;
-          if (isSame(inputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(inputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
             if (message == END) {
               mInputActor.tell(BREAK, inputOptions, context.getSelf());
               done(context);
@@ -3618,7 +3618,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     @NotNull
     public Behavior getBehavior(@NotNull final String id) {
-      final Options options = new Options().withReceiptId(id).withThread(id);
+      final Options options = new Options().withReceiptId(id).withThreadId(id);
       return new AbstractBehavior() {
 
         private Actor mSender;
@@ -3726,7 +3726,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         }
       })).getId();
       mInputThreadId = actorId;
-      mInputOptions = new Options().withReceiptId(actorId).withThread(actorId);
+      mInputOptions = new Options().withReceiptId(actorId).withThreadId(actorId);
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
@@ -3744,24 +3744,24 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          final SenderIterator sender = nextSenders.get(thread);
+          final SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
-            nextSenders.put(thread, new SenderIterator(envelop.getSender(), options.threadOnly()));
+            nextSenders.put(threadId, new SenderIterator(envelop.getSender(), options.threadOnly()));
           }
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
-        } else if (mInputThreadId.equals(envelop.getOptions().getThread())) {
+        } else if (mInputThreadId.equals(envelop.getOptions().getThreadId())) {
           fail(Conflict.ofCancel(), context);
         }
       }
@@ -3773,13 +3773,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
           mInputActor.tell(GET, mInputOptions, context.getSelf());
           context.setBehavior(new InputBehavior());
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions().threadOnly();
-          mNextSenders.put(options.getThread(), new SenderIterator(envelop.getSender(), options));
+          mNextSenders.put(options.getThreadId(), new SenderIterator(envelop.getSender(), options));
           mInputActor.tell(GET, mInputOptions, context.getSelf());
           context.setBehavior(new InputBehavior());
 
@@ -3797,28 +3797,28 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
-          final String thread = options.getThread();
+          final String threadId = options.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = mNextSenders;
-          final SenderIterator sender = nextSenders.get(thread);
+          final SenderIterator sender = nextSenders.get(threadId);
           if (sender != null) {
             sender.waitNext();
 
           } else {
-            nextSenders.put(thread, new SenderIterator(envelop.getSender(), options.threadOnly()));
+            nextSenders.put(threadId, new SenderIterator(envelop.getSender(), options.threadOnly()));
           }
 
         } else if (message == BREAK) {
-          mNextSenders.remove(envelop.getOptions().getThread());
+          mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == CANCEL) {
           mInputActor.tell(CANCEL, null, context.getSelf());
           context.setBehavior(new CancelBehavior());
 
-        } else if (mInputThreadId.equals(envelop.getOptions().getThread())) {
+        } else if (mInputThreadId.equals(envelop.getOptions().getThreadId())) {
           if (message instanceof Conflict) {
             fail((Conflict) message, context);
 

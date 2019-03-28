@@ -24,19 +24,29 @@ import dm.shakespeare.function.Mapper;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 01/19/2019.
+ * {@link Handler} implementation wrapping a {@link Mapper} function.
+ *
+ * @param <T> the observed type.
  */
 class ApplyHandler<T> implements Handler<T> {
 
-  private final Mapper<T, ?> mApply;
+  private final Mapper<T, ?> mMapper;
 
+  /**
+   * Creates a new handler wrapping the specified mapper instance.
+   *
+   * @param mapper the mapper to wrap.
+   */
   ApplyHandler(@NotNull final Mapper<T, ?> mapper) {
-    mApply = ConstantConditions.notNull("mapper", mapper);
+    mMapper = ConstantConditions.notNull("mapper", mapper);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void handle(final T message, @NotNull final Envelop envelop,
       @NotNull final Context context) throws Exception {
     envelop.getSender()
-        .tell(mApply.apply(message), envelop.getOptions().threadOnly(), context.getSelf());
+        .tell(mMapper.apply(message), envelop.getOptions().threadOnly(), context.getSelf());
   }
 }

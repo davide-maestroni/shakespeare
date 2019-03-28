@@ -29,7 +29,7 @@ import dm.shakespeare.function.Tester;
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface OnSender {
+public @interface OnEnvelop {
 
   Class<? extends Tester<? super Envelop>> testerClass() default VoidTester.class;
 

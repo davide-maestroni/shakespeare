@@ -24,9 +24,15 @@ import org.jetbrains.annotations.NotNull;
  */
 public abstract class AbstractBehavior implements Behavior {
 
+  /**
+   * {@inheritDoc}
+   */
   public void onStart(@NotNull final Context context) throws Exception {
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void onStop(@NotNull final Context context) throws Exception {
   }
 }

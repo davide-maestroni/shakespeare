@@ -24,17 +24,17 @@ import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.actor.BehaviorBuilder;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.function.Tester;
-import dm.shakespeare.template.annotation.OnSender;
+import dm.shakespeare.template.annotation.OnEnvelop;
 import dm.shakespeare.template.annotation.VoidTester;
 import dm.shakespeare.template.util.Reflections;
 
 /**
  * Created by davide-maestroni on 09/07/2018.
  */
-class OnSenderHandler implements AnnotationHandler<OnSender> {
+class OnEnvelopHandler implements AnnotationHandler<OnEnvelop> {
 
   public void handle(@NotNull final BehaviorBuilder builder, @NotNull final Object object,
-      @NotNull final Method method, @NotNull final OnSender annotation) throws Exception {
+      @NotNull final Method method, @NotNull final OnEnvelop annotation) throws Exception {
     Tester<? super Envelop> tester = null;
     final Class<? extends Tester<? super Envelop>> testerClass = annotation.testerClass();
     final String name = annotation.testerName();
@@ -76,7 +76,7 @@ class OnSenderHandler implements AnnotationHandler<OnSender> {
         }
       }
     }
-    builder.onSender(tester, new MethodHandler(object, method));
+    builder.onEnvelop(tester, new MethodHandler(object, method));
   }
 
   private static class MessageTester implements Tester<Envelop> {

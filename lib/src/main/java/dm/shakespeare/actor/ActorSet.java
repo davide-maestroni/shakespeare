@@ -22,15 +22,63 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Set;
 
 /**
- * Created by davide-maestroni on 01/08/2019.
+ * {@link Set} of {@link Actor}s replicating the actor interface.
  */
 public interface ActorSet extends Set<Actor> {
 
+  /**
+   * Adds an observer that will be notified with a {@link dm.shakespeare.message.DeadLetter}
+   * message when an actor in this set is dismissed.
+   *
+   * @param observer the observer actor.
+   * @return this actor set.
+   * @see Actor#addObserver(Actor)
+   */
+  @NotNull
+  ActorSet addObserver(@NotNull Actor observer);
+
+  /**
+   * Dismiss all the actors in this set.
+   *
+   * @param mayInterruptIfRunning whether the currently running thread (if any) can be interrupted
+   *                              to stop the processing of messages. Be aware that, based on the
+   *                              actor executor service, interrupting the running thread might
+   *                              cause the behavior to never receive a stop notification.
+   * @see Actor#dismiss(boolean)
+   */
   void dismiss(boolean mayInterruptIfRunning);
 
+  /**
+   * Removes an observer which should be notified of the dismissal of an actor in this set.
+   *
+   * @param observer the observer actor.
+   * @return this actor set.
+   * @see Actor#removeObserver(Actor)
+   */
+  @NotNull
+  ActorSet removeObserver(@NotNull Actor observer);
+
+  /**
+   * Tells the specified message to all the actors in this set.
+   *
+   * @param message the message instance (may be {@code null}).
+   * @param options the delivery options.
+   * @param sender  the sender actor.
+   * @return this actor set.
+   * @see Actor#tell(Object, Options, Actor)
+   */
   @NotNull
   ActorSet tell(Object message, @Nullable Options options, @NotNull Actor sender);
 
+  /**
+   * Tells the specified batch of messages to all the actors in this set.
+   *
+   * @param messages the messages (may contains {@code null} objects).
+   * @param options  the delivery options.
+   * @param sender   the sender actor.
+   * @return this actor set.
+   * @see Actor#tellAll(Iterable, Options, Actor)
+   */
   @NotNull
   ActorSet tellAll(@NotNull Iterable<?> messages, @Nullable Options options, @NotNull Actor sender);
 }

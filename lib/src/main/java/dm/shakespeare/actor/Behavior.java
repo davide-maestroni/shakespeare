@@ -18,43 +18,151 @@ package dm.shakespeare.actor;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
 import dm.shakespeare.log.Logger;
 
 /**
- * Created by davide-maestroni on 09/10/2018.
+ * Interface defining an actor behavior.<br>
+ * The behavior represents the actor business logic, that is, how the actor reacts to received
+ * messages.<br>
+ * The behavior instance is notified of three type of events:<ul>
+ * <li>{@code onStart}: called when the actor starts or after a restart cycle</li>
+ * <li>{@code onMessage}: called each time a new message is received</li>
+ * <li>{@code onStop}: called when the actor is dismissed or at the beginning of a restart
+ * cycle</li></ul><br>
+ * It is always possible to know whether the behavior is stopped as a result of actor dismissal or
+ * a simple restart by calling {@link Context#isDismissed()}.<p>
+ * The actor data, executor services and logger should always be accessed through the
+ * {@link Context} instance. The provided executor services can be safely used to perform
+ * asynchronous operations, since they employ the same synchronization mechanism as the actor
+ * executor service (see {@link Actor}), but do not support any blocking method (like
+ * {@link ExecutorService#invokeAll(Collection)} or {@link ExecutorService#invokeAny(Collection)}).
+ * <br>
+ * Any scheduled task will be automatically cancelled when the actor is dismissed.<br>
+ * Through the context object it is also possible to dynamically change the behavior instance
+ * and to dismiss and restart the actor. Any command initiated by calling a context method will
+ * take place after the current behavior method execution ends, and it takes precedence over any
+ * pending message still in the inbox.<p>
+ * The behavior implementation should take into account that a restart cycle may be applied, hence
+ * it should perform the proper clean-up and re-initialization operations in the
+ * {@link #onStop(Context)} and {@link #onStart(Context)} methods respectively.<br>
+ * In any case, if an exception escapes those two methods, the actor will be automatically
+ * dismissed.<p>
+ * Each received message will come with an envelop containing the sender data and the delivery
+ * options. The options include a time offset (used to modify the send time), a thread ID (useful
+ * to identify messages belonging to the same thread) and a receipt ID (indicating that the sender
+ * wants to be notified of the message delivery). The actor will automatically employ the optional
+ * receipt ID to send back notifications (unless {@link Envelop#preventReceipt()} is called). All
+ * the replies to the sender should contain in the delivery options the same thread ID as the
+ * originating message.
  */
 public interface Behavior {
 
+  /**
+   * Notifies the behavior that a new message has been received.
+   *
+   * @param message the message object.
+   * @param envelop the message envelop.
+   * @param context the behavior context.
+   * @throws Exception when an unexpected error occurs.
+   */
   void onMessage(Object message, @NotNull Envelop envelop, @NotNull Context context) throws
       Exception;
 
+  /**
+   * Notifies the behavior that the actor has been started.
+   *
+   * @param context the behavior context.
+   * @throws Exception when an unexpected error occurs.
+   */
   void onStart(@NotNull Context context) throws Exception;
 
+  /**
+   * Notifies the behavior that the actor has been stopped.
+   *
+   * @param context the behavior context.
+   * @throws Exception when an unexpected error occurs.
+   */
   void onStop(@NotNull Context context) throws Exception;
 
+  /**
+   * Interface defining the {@link Behavior} context.<br>
+   * Any command initiated by calling a context method will take place after the current behavior
+   * method execution ends, and it takes precedence over any pending message still in the inbox.
+   */
   interface Context {
 
+    /**
+     * Dismiss the actor and remove it from its stage.
+     */
     void dismissSelf();
 
+    /**
+     * Returns the context executor service.<br>
+     * The returned instance can be safely used to perform asynchronous operations, since it
+     * employs the same synchronization mechanism as the actor executor service (see {@link Actor}),
+     * but do not support any blocking method (like {@link ExecutorService#invokeAll(Collection)} or
+     * {@link ExecutorService#invokeAny(Collection)}).
+     *
+     * @return the executor service instance.
+     */
     @NotNull
     ExecutorService getExecutorService();
 
+    /**
+     * Returns the context logger.
+     *
+     * @return the logger instance.
+     */
     @NotNull
     Logger getLogger();
 
+    /**
+     * Returns the context scheduled executor service.<br>
+     * The returned instance can be safely used to perform asynchronous operations, since it
+     * employs the same synchronization mechanism as the actor executor service (see {@link Actor}),
+     * but do not support any blocking method (like {@link ExecutorService#invokeAll(Collection)} or
+     * {@link ExecutorService#invokeAny(Collection)}).
+     *
+     * @return the scheduled executor service instance.
+     */
     @NotNull
     ScheduledExecutorService getScheduledExecutorService();
 
+    /**
+     * Returns the context actor.
+     *
+     * @return the actor instance.
+     */
     @NotNull
     Actor getSelf();
 
+    /**
+     * Verifies whether the actor has been dismissed.
+     *
+     * @return {@code true} if {@link Context#dismissSelf()} or {@link Actor#dismiss(boolean)} has
+     * been called.
+     */
     boolean isDismissed();
 
+    /**
+     * Initiate a restart cycle.<br>
+     * The current behavior {@link #onStop(Context)} and {@link #onStart(Context)} methods will be
+     * called in sequence.
+     */
     void restartSelf();
 
+    /**
+     * Modifies the current behavior.<br>
+     * The previous behavior {@link #onStop(Context)} method will not be automatically called as
+     * a result of this method invocation. It it responsibility of the caller to perform the
+     * proper clean-up operations when needed.
+     *
+     * @param behavior the new behavior instance.
+     */
     void setBehavior(@NotNull Behavior behavior);
   }
 }

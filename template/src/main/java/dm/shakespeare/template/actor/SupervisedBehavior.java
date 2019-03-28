@@ -238,7 +238,7 @@ public class SupervisedBehavior extends AbstractBehavior {
         final Actor sender = envelop.getSender();
         if (!sender.equals(self)) {
           mSupervisor = sender;
-          mSupervisorThread = options.getThread();
+          mSupervisorThread = options.getThreadId();
           sender.addObserver(context.getSelf());
 
         } else if (options.getReceiptId() != null) {
@@ -299,7 +299,7 @@ public class SupervisedBehavior extends AbstractBehavior {
             if (supervisor != null) {
               final String failureId = UUID.randomUUID().toString();
               supervisor.tell(new SupervisedFailure(failureId, t),
-                  new Options().withThread(mSupervisorThread).withReceiptId(mReceiptId),
+                  new Options().withThreadId(mSupervisorThread).withReceiptId(mReceiptId),
                   context.getSelf());
               mFailure = t;
               mFailureId = failureId;
@@ -355,10 +355,10 @@ public class SupervisedBehavior extends AbstractBehavior {
           if (!sender.equals(mSupervisor)) {
             // TODO: 14/01/2019 notify old supervisor???
             mSupervisor = sender;
-            mSupervisorThread = options.getThread();
+            mSupervisorThread = options.getThreadId();
             sender.addObserver(self);
             sender.tell(new SupervisedFailure(mFailureId, mFailure),
-                new Options().withThread(mSupervisorThread).withReceiptId(mReceiptId), self);
+                new Options().withThreadId(mSupervisorThread).withReceiptId(mReceiptId), self);
           }
 
         } else if (options.getReceiptId() != null) {

@@ -70,18 +70,8 @@ public class ExecutorServicesTest {
     final ActorExecutorService actorExecutorService =
         ExecutorServices.asActorExecutor(testExecutorService);
     final AtomicInteger integer = new AtomicInteger();
-    actorExecutorService.execute(new Runnable() {
-
-      public void run() {
-        integer.set(0);
-      }
-    });
-    actorExecutorService.executeNext(new Runnable() {
-
-      public void run() {
-        integer.set(1);
-      }
-    });
+    actorExecutorService.execute(new IntegerRunnable(integer, 0));
+    actorExecutorService.executeNext(new IntegerRunnable(integer, 1));
     testExecutorService.consume(1);
     assertThat(integer.get()).isEqualTo(1);
     testExecutorService.consume(1);
@@ -94,18 +84,8 @@ public class ExecutorServicesTest {
     final ActorExecutorService actorExecutorService =
         ExecutorServices.asActorExecutor(testExecutorService);
     final AtomicInteger integer = new AtomicInteger();
-    actorExecutorService.executeNext(new Runnable() {
-
-      public void run() {
-        integer.set(0);
-      }
-    });
-    actorExecutorService.executeNext(new Runnable() {
-
-      public void run() {
-        integer.set(1);
-      }
-    });
+    actorExecutorService.executeNext(new IntegerRunnable(integer, 0));
+    actorExecutorService.executeNext(new IntegerRunnable(integer, 1));
     testExecutorService.consume(1);
     assertThat(integer.get()).isEqualTo(1);
     testExecutorService.consume(1);
@@ -904,6 +884,21 @@ public class ExecutorServicesTest {
     @NotNull
     TimeUnit getTimeUnit() {
       return mTimeUnit;
+    }
+  }
+
+  private static class IntegerRunnable implements Runnable {
+
+    private final AtomicInteger mInteger;
+    private final int mValue;
+
+    private IntegerRunnable(@NotNull final AtomicInteger integer, final int value) {
+      mInteger = integer;
+      mValue = value;
+    }
+
+    public void run() {
+      mInteger.set(mValue);
     }
   }
 

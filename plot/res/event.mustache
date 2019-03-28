@@ -187,7 +187,7 @@ public abstract class Event<T> {
   public void play(@NotNull final EventObserver<? super T> eventObserver) {
     final Actor actor = BackStage.newActor(new EventObserverScript<T>(eventObserver));
     final String threadId = actor.getId();
-    getActor().tell(GET, new Options().withReceiptId(threadId).withThread(threadId), actor);
+    getActor().tell(GET, new Options().withReceiptId(threadId).withThreadId(threadId), actor);
   }
 
   public void play(@Nullable final Observer<? super T> effectObserver,
@@ -368,7 +368,7 @@ public abstract class Event<T> {
 
           } else {
             final Options options = envelop.getOptions().threadOnly();
-            mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+            mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
             context.setBehavior(new InputBehavior());
           }
 
@@ -387,7 +387,7 @@ public abstract class Event<T> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == CANCEL) {
           final Conflict conflict = Conflict.ofCancel();
@@ -469,7 +469,7 @@ public abstract class Event<T> {
       })).getId();
       final Options options = (mOptions = new Options().withReceiptId(actorId));
       mInputThread = actorId + ":input";
-      mOutputOptions = options.withThread(actorId + ":output");
+      mOutputOptions = options.withThreadId(actorId + ":output");
     }
 
     void endAction() throws Exception {
@@ -555,7 +555,7 @@ public abstract class Event<T> {
         final StringBuilder builder = new StringBuilder();
         for (final Actor actor : getInputActors()) {
           final String threadId = mInputThread + builder.append('#').toString();
-          final Options inputOptions = options.withThread(threadId);
+          final Options inputOptions = options.withThreadId(threadId);
           inputActors.put(actor, inputOptions);
           actor.tell(GET, inputOptions, self);
         }
@@ -573,13 +573,13 @@ public abstract class Event<T> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
-        } else if (isSame(mOutputOptions.getThread(), envelop.getOptions().getThread())) {
+        } else if (isSame(mOutputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
           fail(Conflict.ofCancel(), context);
 
         } else {
-          final String thread = envelop.getOptions().getThread();
+          final String thread = envelop.getOptions().getThreadId();
           if ((thread != null) && thread.startsWith(mInputThread)) {
             if (++mInputCount == mInputs.length) {
               final Conflict conflict = Conflict.ofCancel();
@@ -608,7 +608,7 @@ public abstract class Event<T> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
           getInputActors(context);
           context.setBehavior(new InputBehavior());
 
@@ -626,7 +626,7 @@ public abstract class Event<T> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == CANCEL) {
           cancelInputActors(context);
@@ -634,7 +634,7 @@ public abstract class Event<T> {
 
         } else {
           final String inputThread = mInputThread;
-          final String thread = envelop.getOptions().getThread();
+          final String thread = envelop.getOptions().getThreadId();
           if ((thread != null) && thread.startsWith(inputThread)) {
             if (message instanceof Conflict) {
               if (mConflict == null) {
@@ -700,14 +700,14 @@ public abstract class Event<T> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == CANCEL) {
           cancelInputActors(context);
           context.setBehavior(new CancelBehavior());
 
         } else {
-          if (isSame(mOutputOptions.getThread(), envelop.getOptions().getThread())) {
+          if (isSame(mOutputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
             if (message instanceof Conflict) {
               fail((Conflict) message, context);
 
@@ -1000,7 +1000,7 @@ public abstract class Event<T> {
           return new InitBehavior();
         }
       })).getId();
-      mInputOptions = new Options().withReceiptId(actorId).withThread(actorId + ":input");
+      mInputOptions = new Options().withReceiptId(actorId).withThreadId(actorId + ":input");
     }
 
     public void run() {
@@ -1032,9 +1032,9 @@ public abstract class Event<T> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
-        } else if (isSame(mInputOptions.getThread(), envelop.getOptions().getThread())) {
+        } else if (isSame(mInputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
           fail(Conflict.ofCancel(), context);
         }
       }
@@ -1046,7 +1046,7 @@ public abstract class Event<T> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
           mScheduledFuture = context.getScheduledExecutorService()
               .schedule(ScheduleWithDelayEvent.this, mDelay, mUnit);
           context.setBehavior(new InputBehavior());
@@ -1065,7 +1065,7 @@ public abstract class Event<T> {
           @NotNull final Context context) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
-          mSenders.put(options.getThread(), new Sender(envelop.getSender(), options));
+          mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == CANCEL) {
           mInputActor.tell(CANCEL, null, mActor);
@@ -1076,7 +1076,7 @@ public abstract class Event<T> {
             fail(Conflict.ofCancel(), context);
           }
 
-        } else if (isSame(mInputOptions.getThread(), envelop.getOptions().getThread())) {
+        } else if (isSame(mInputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
           if (message instanceof Conflict) {
             fail((Conflict) message, context);
 

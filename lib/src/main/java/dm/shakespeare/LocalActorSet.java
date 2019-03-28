@@ -40,10 +40,26 @@ class LocalActorSet extends AbstractSet<Actor> implements ActorSet {
     mActors = Collections.unmodifiableSet(ConstantConditions.notNullElements("actors", actors));
   }
 
+  @NotNull
+  public ActorSet addObserver(@NotNull final Actor observer) {
+    for (final Actor actor : mActors) {
+      actor.addObserver(observer);
+    }
+    return this;
+  }
+
   public void dismiss(final boolean mayInterruptIfRunning) {
     for (final Actor actor : mActors) {
       actor.dismiss(mayInterruptIfRunning);
     }
+  }
+
+  @NotNull
+  public ActorSet removeObserver(@NotNull final Actor observer) {
+    for (final Actor actor : mActors) {
+      actor.removeObserver(observer);
+    }
+    return this;
   }
 
   @NotNull

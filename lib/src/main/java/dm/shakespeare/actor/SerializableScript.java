@@ -21,7 +21,7 @@ import java.io.Serializable;
 import dm.shakespeare.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 01/24/2019.
+ * Serializable implementation of a {@link Script}.
  */
 public abstract class SerializableScript extends Script implements Serializable {
 

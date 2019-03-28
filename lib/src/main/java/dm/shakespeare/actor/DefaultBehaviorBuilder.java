@@ -28,7 +28,7 @@ import dm.shakespeare.function.Tester;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 09/10/2018.
+ * Default implementation of a {@link BehaviorBuilder}.
  */
 class DefaultBehaviorBuilder implements BehaviorBuilder {
 
@@ -106,6 +106,15 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
   }
 
   @NotNull
+  public <T> BehaviorBuilder onEnvelop(@NotNull final Tester<? super Envelop> tester,
+      @NotNull final Handler<? super T> handler) {
+    mMessageHandlers.add(
+        new SenderTesterMessageHandler(ConstantConditions.notNull("tester", tester),
+            ConstantConditions.notNull("handler", handler)));
+    return this;
+  }
+
+  @NotNull
   public <T> BehaviorBuilder onMatch(@NotNull final Matcher<? super T> matcher,
       @NotNull final Handler<? super T> handler) {
     mMessageHandlers.add(new MatcherMessageHandler(ConstantConditions.notNull("matcher", matcher),
@@ -151,15 +160,6 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
   @NotNull
   public BehaviorBuilder onNoMatch(@NotNull final Handler<? super Object> handler) {
     mNoMatchHandlers.add(ConstantConditions.notNull("handler", handler));
-    return this;
-  }
-
-  @NotNull
-  public <T> BehaviorBuilder onSender(@NotNull final Tester<? super Envelop> tester,
-      @NotNull final Handler<? super T> handler) {
-    mMessageHandlers.add(
-        new SenderTesterMessageHandler(ConstantConditions.notNull("tester", tester),
-            ConstantConditions.notNull("handler", handler)));
     return this;
   }
 

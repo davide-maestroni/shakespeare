@@ -24,72 +24,134 @@ import java.io.Serializable;
 import dm.shakespeare.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 01/08/2019.
+ * Object containing the message delivery options.<br>
+ * The options include a time offset (used to modify the send time), a thread ID (useful to
+ * identify messages belonging to the same thread) and a receipt ID (indicating that the sender
+ * wants to be notified of the message delivery).<br>
+ * The instances of this class are immutable and, inherently, thread safe.
  */
 public class Options implements Serializable {
 
+  /**
+   * Empty options instance.
+   */
   public static final Options EMPTY = new Options();
 
   private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 
   private final String mReceiptId;
-  private final String mThread;
+  private final String mThreadId;
   private final long mTimeOffset;
 
+  /**
+   * Creates a new options instance with an empty configuration.
+   */
   public Options() {
-    mThread = null;
+    mThreadId = null;
     mReceiptId = null;
     mTimeOffset = 0;
   }
 
   private Options(@Nullable final String threadId, final String receiptId, final long timeOffset) {
-    mThread = threadId;
+    mThreadId = threadId;
     mReceiptId = receiptId;
     mTimeOffset = timeOffset;
   }
 
+  /**
+   * Creates a new options instance with a modified time offset so that the message will result as
+   * sent as the specified Epoch time in milliseconds.<br>
+   * All the other configurations will be retained.
+   *
+   * @param timeMillis the timestamp in number of milliseconds.
+   * @return the new options instance.
+   */
   @NotNull
   public Options asSentAt(final long timeMillis) {
     return withTimeOffset(System.currentTimeMillis() - timeMillis + mTimeOffset);
   }
 
+  /**
+   * Returns the configured receipt ID.
+   *
+   * @return the receipt ID or {@code null}.
+   */
   @Nullable
   public String getReceiptId() {
     return mReceiptId;
   }
 
+  /**
+   * Returns the configured thread ID.
+   *
+   * @return the thread ID or {@code null}.
+   */
   @Nullable
-  public String getThread() {
-    return mThread;
+  public String getThreadId() {
+    return mThreadId;
   }
 
+  /**
+   * Returns the configured time offset.
+   *
+   * @return the time offset in number of milliseconds.
+   */
   public long getTimeOffset() {
     return mTimeOffset;
   }
 
+  /**
+   * Creates a new options instance retaining only the configured thread ID.
+   *
+   * @return the new options instance.
+   */
   @NotNull
   public Options threadOnly() {
-    return new Options(mThread, null, 0);
+    return new Options(mThreadId, null, 0);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public String toString() {
-    return "Options{" + "mReceiptId='" + mReceiptId + '\'' + ", mThread='" + mThread + '\''
-        + ", mTimeOffset=" + mTimeOffset + '}';
+    return "Options{" + "receiptId='" + mReceiptId + '\'' + ", threadId='" + mThreadId + '\''
+        + ", timeOffset=" + mTimeOffset + '}';
   }
 
+  /**
+   * Creates a new options instance configured with the specified receipt ID.<br>
+   * All the other configurations will be retained.
+   *
+   * @param receiptId the new receipt ID.
+   * @return the new options instance.
+   */
   @NotNull
   public Options withReceiptId(@Nullable final String receiptId) {
-    return new Options(mThread, receiptId, mTimeOffset);
+    return new Options(mThreadId, receiptId, mTimeOffset);
   }
 
+  /**
+   * Creates a new options instance configured with the specified thread ID.<br>
+   * All the other configurations will be retained.
+   *
+   * @param threadId the new thread ID.
+   * @return the new options instance.
+   */
   @NotNull
-  public Options withThread(@Nullable final String threadId) {
+  public Options withThreadId(@Nullable final String threadId) {
     return new Options(threadId, mReceiptId, mTimeOffset);
   }
 
+  /**
+   * Creates a new options instance configured with the specified time offset.<br>
+   * All the other configurations will be retained.
+   *
+   * @param offsetMillis the time offset in number of milliseconds.
+   * @return the new options instance.
+   */
   @NotNull
   public Options withTimeOffset(final long offsetMillis) {
-    return new Options(mThread, mReceiptId, offsetMillis);
+    return new Options(mThreadId, mReceiptId, offsetMillis);
   }
 }
