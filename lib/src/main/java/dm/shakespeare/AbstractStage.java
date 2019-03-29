@@ -33,18 +33,26 @@ import dm.shakespeare.function.Tester;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 01/08/2019.
+ * Base abstract implementation of a {@link Stage}.<br>
+ * The implementing classes just need to provide new actors instantiation. The ID validation and
+ * actor registration are automatically performed by this class.
  */
 public abstract class AbstractStage implements Stage {
 
   private final HashMap<String, Actor> mActors = new HashMap<String, Actor>();
   private final Object mMutex = new Object();
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public ActorSet findAll(@NotNull final Pattern idPattern) {
-    return findAll(new PatternTester(ConstantConditions.notNull("idPattern", idPattern)));
+    return findAll(new PatternTester(idPattern));
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public ActorSet findAll(@NotNull final Tester<? super Actor> tester) {
     ConstantConditions.notNull("tester", tester);
@@ -71,11 +79,17 @@ public abstract class AbstractStage implements Stage {
     return new LocalActorSet(actors);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public Actor findAny(@NotNull final Pattern idPattern) {
-    return findAny(new PatternTester(ConstantConditions.notNull("idPattern", idPattern)));
+    return findAny(new PatternTester(idPattern));
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public Actor findAny(@NotNull final Tester<? super Actor> tester) {
     ConstantConditions.notNull("tester", tester);
@@ -101,6 +115,9 @@ public abstract class AbstractStage implements Stage {
     throw new IllegalArgumentException("cannot find an actor satisfying the tester: " + tester);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public Actor get(@NotNull final String id) {
     ConstantConditions.notNull("id", id);
@@ -115,6 +132,9 @@ public abstract class AbstractStage implements Stage {
     return actor;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public ActorSet getAll() {
     final HashSet<Actor> actors;
@@ -125,6 +145,9 @@ public abstract class AbstractStage implements Stage {
     return new LocalActorSet(actors);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public Actor newActor(@NotNull final Script script) {
     String id;
@@ -139,6 +162,9 @@ public abstract class AbstractStage implements Stage {
     return registerActor(id, script);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public Actor newActor(@NotNull final String id, @NotNull final Script script) {
     synchronized (mMutex) {
@@ -152,6 +178,14 @@ public abstract class AbstractStage implements Stage {
     return registerActor(id, script);
   }
 
+  /**
+   * Creates a new actor with the specified ID.
+   *
+   * @param id     the actor ID.
+   * @param script the actor script.
+   * @return the new actor instance.
+   * @throws Exception when an unexpected error occurs.
+   */
   @NotNull
   protected abstract Actor createActor(@NotNull String id, @NotNull Script script) throws Exception;
 
@@ -188,8 +222,8 @@ public abstract class AbstractStage implements Stage {
 
     private final Pattern mPattern;
 
-    PatternTester(@NotNull final Pattern idPattern) {
-      mPattern = idPattern;
+    private PatternTester(@NotNull final Pattern idPattern) {
+      mPattern = ConstantConditions.notNull("idPattern", idPattern);
     }
 
     public boolean test(final Actor actor) {

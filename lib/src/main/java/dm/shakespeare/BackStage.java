@@ -29,26 +29,49 @@ import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 01/27/2019.
+ * Utility class acting as a simple creator of actors.<br>
+ * The actor references are not retained by this class. It's up to the caller to avoid garbage
+ * collection of the returned instances.
  */
 public class BackStage {
+
+  /**
+   * Stand-in actor instance.<br>
+   * This actor methods will have no effect when invoked.
+   */
+  public static final Actor STAND_IN = new StandInActor();
 
   private static final Observer<Actor> EMPTY_REMOVER = new Observer<Actor>() {
 
     public void accept(final Actor actor) {
     }
   };
-  private static final StandInActor STAND_IN_ACTOR = new StandInActor();
 
+  /**
+   * Avoid explicit instantiation.
+   */
   private BackStage() {
     ConstantConditions.avoid();
   }
 
+  /**
+   * Creates a new actor with a random ID.
+   *
+   * @param script the actor script.
+   * @return the new actor instance.
+   */
   @NotNull
   public static Actor newActor(@NotNull final Script script) {
     return newActor(UUID.randomUUID().toString(), script);
   }
 
+  /**
+   * Creates a new actor with the specified ID.
+   *
+   * @param id     the actor ID.
+   * @param script the actor script.
+   * @return the new actor instance.
+   */
   @NotNull
   public static Actor newActor(@NotNull final String id, @NotNull final Script script) {
     try {
@@ -62,11 +85,15 @@ public class BackStage {
     }
   }
 
-  @NotNull
-  public static Actor standIn() {
-    return STAND_IN_ACTOR;
-  }
-
+  /**
+   * Creates a new actor with the specified ID.
+   *
+   * @param id      the actor ID.
+   * @param script  the actor script.
+   * @param remover the observer to be called when the actor is dismissed.
+   * @return the new actor instance.
+   * @throws Exception when an unexpected error occurs.
+   */
   @NotNull
   static Actor newActor(@NotNull final String id, @NotNull final Script script,
       @NotNull final Observer<Actor> remover) throws Exception {

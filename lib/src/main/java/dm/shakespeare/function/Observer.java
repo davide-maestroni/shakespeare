@@ -17,9 +17,17 @@
 package dm.shakespeare.function;
 
 /**
- * Created by davide-maestroni on 07/20/2017.
+ * Function observing a value.
+ *
+ * @param <T> the input value type.
  */
 public interface Observer<T> {
 
+  /**
+   * Accepts the specified value.
+   *
+   * @param value the input value.
+   * @throws Exception when an unexpected error occurs.
+   */
   void accept(T value) throws Exception;
 }

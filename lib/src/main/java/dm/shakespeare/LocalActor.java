@@ -31,7 +31,7 @@ import dm.shakespeare.message.QuotaExceeded;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 08/03/2018.
+ * Class implementing a local actor.
  */
 class LocalActor implements Actor {
 
@@ -50,6 +50,13 @@ class LocalActor implements Actor {
   private final Logger mLogger;
   private final QuotaHandler mQuotaHandler;
 
+  /**
+   * Creates a new actor instance.
+   *
+   * @param id      the actor ID.
+   * @param quota   the actor inbox quota.
+   * @param context the context instance.
+   */
   LocalActor(@NotNull final String id, final int quota, @NotNull final LocalContext context) {
     mId = ConstantConditions.notNull("id", id);
     mContext = ConstantConditions.notNull("context", context);

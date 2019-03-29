@@ -86,7 +86,7 @@ public interface Actor {
    * If the number of unprocessed messages still in the inbox exceeds the configured quota, the
    * message will be bounced (see {@link dm.shakespeare.message.Bounce}).<br>
    * In case no reply is expected or no actor is interested in receiving it, it is possible to
-   * use a {@link dm.shakespeare.BackStage#standIn()} as sender.
+   * use a {@link dm.shakespeare.BackStage#STAND_IN} as sender.
    *
    * @param message the message instance (may be {@code null}).
    * @param options the delivery options.
@@ -111,7 +111,7 @@ public interface Actor {
    * message will be bounced (see {@link dm.shakespeare.message.Bounce}).<br>
    * The batch object will count as one message in the inbox quota.<br>
    * In case no reply is expected or no actor is interested in receiving it, it is possible to
-   * use a {@link dm.shakespeare.BackStage#standIn()} as sender.
+   * use a {@link dm.shakespeare.BackStage#STAND_IN} as sender.
    *
    * @param messages the messages (may contains {@code null} objects).
    * @param options  the delivery options.

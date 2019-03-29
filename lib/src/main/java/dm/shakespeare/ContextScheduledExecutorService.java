@@ -18,8 +18,10 @@ package dm.shakespeare;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Delayed;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -28,13 +30,22 @@ import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 01/11/2019.
+ * Class wrapping an {@link ScheduledExecutorService} so to provide a way to cancel all the
+ * submitted tasks.<br>
+ * This class instances do not support any blocking method (like
+ * {@link ExecutorService#invokeAll(Collection)} or {@link ExecutorService#invokeAny(Collection)}).
  */
 class ContextScheduledExecutorService extends ContextExecutorService
     implements ScheduledExecutorService {
 
   private final ScheduledExecutorService mExecutorService;
 
+  /**
+   * Creates a new scheduled executor service wrapping the specified one.
+   *
+   * @param executorService the executor service to wrap.
+   * @param context         the behavior context.
+   */
   ContextScheduledExecutorService(@NotNull final ScheduledExecutorService executorService,
       @NotNull final Context context) {
     super(executorService, context);

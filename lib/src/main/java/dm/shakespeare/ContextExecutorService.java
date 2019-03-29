@@ -30,7 +30,10 @@ import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 01/11/2019.
+ * Class wrapping an {@link ExecutorService} so to provide a way to cancel all the submitted tasks.
+ * <br>
+ * This class instances do not support any blocking method (like
+ * {@link ExecutorService#invokeAll(Collection)} or {@link ExecutorService#invokeAny(Collection)}).
  */
 class ContextExecutorService implements ExecutorService {
 
@@ -38,6 +41,12 @@ class ContextExecutorService implements ExecutorService {
   private final ExecutorService mExecutor;
   private final WeakHashMap<Future<?>, Void> mTasks = new WeakHashMap<Future<?>, Void>();
 
+  /**
+   * Creates a new executor service wrapping the specified one.
+   *
+   * @param executorService the executor service to wrap.
+   * @param context         the behavior context.
+   */
   ContextExecutorService(@NotNull final ExecutorService executorService,
       @NotNull final Context context) {
     mExecutor = ConstantConditions.notNull("executorService", executorService);

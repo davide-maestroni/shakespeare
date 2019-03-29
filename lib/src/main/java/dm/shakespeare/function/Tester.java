@@ -17,9 +17,18 @@
 package dm.shakespeare.function;
 
 /**
- * Created by davide-maestroni on 02/19/2018.
+ * Function testing a value.
+ *
+ * @param <T> the input value type.
  */
 public interface Tester<T> {
 
+  /**
+   * Tests the specified value.
+   *
+   * @param value the input value.
+   * @return {@code true} if the test passed for the input value.
+   * @throws Exception when an unexpected error occurs.
+   */
   boolean test(T value) throws Exception;
 }

@@ -23,7 +23,7 @@ import dm.shakespeare.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 10/01/2018.
+ * {@link Receipt} implementation notifying that the sent message has been rejected after a failure.
  */
 public class Failure extends Bounce {
 
@@ -31,12 +31,24 @@ public class Failure extends Bounce {
 
   private final Throwable mCause;
 
+  /**
+   * Creates a new failure message.
+   *
+   * @param message the bounced message.
+   * @param options the original message delivery options.
+   * @param cause   the cause of the failure.
+   */
   public Failure(final Object message, @NotNull final Options options,
       @NotNull final Throwable cause) {
     super(message, options);
     mCause = ConstantConditions.notNull("cause", cause);
   }
 
+  /**
+   * Returns the cause of the failure.
+   *
+   * @return the throwable describing the failure reason.
+   */
   @NotNull
   public final Throwable getCause() {
     return mCause;

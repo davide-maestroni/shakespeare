@@ -30,12 +30,17 @@ import dm.shakespeare.actor.Options;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 08/06/2018.
+ * Class implementing a local actor set.
  */
 class LocalActorSet extends AbstractSet<Actor> implements ActorSet {
 
   private final Set<Actor> mActors;
 
+  /**
+   * Creates a new actor set.
+   *
+   * @param actors the set of actors.
+   */
   LocalActorSet(@NotNull final Set<? extends Actor> actors) {
     mActors = Collections.unmodifiableSet(ConstantConditions.notNullElements("actors", actors));
   }

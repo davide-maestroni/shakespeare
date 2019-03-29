@@ -41,7 +41,7 @@ import dm.shakespeare.message.Failure;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 01/10/2019.
+ * Class implementing a local behavior context.
  */
 class LocalContext implements Context {
 
@@ -63,6 +63,14 @@ class LocalContext implements Context {
   private volatile Thread mRunner;
   private boolean mStopped;
 
+  /**
+   * Creates a new context instance.
+   *
+   * @param remover         the observer to be called when the actor is dismissed.
+   * @param behavior        the initial behavior instance
+   * @param executorService the backing executor service.
+   * @param logger          the logger instance.
+   */
   LocalContext(@NotNull final Observer<Actor> remover, @NotNull final Behavior behavior,
       @NotNull final ExecutorService executorService, @NotNull final Logger logger) {
     mRemover = ConstantConditions.notNull("remover", remover);

@@ -24,7 +24,7 @@ import dm.shakespeare.actor.Options;
 import dm.shakespeare.message.Delivery;
 
 /**
- * Created by davide-maestroni on 01/14/2019.
+ * Class implementing an actor reacting in no way to the sent messages.
  */
 class StandInActor implements Actor {
 

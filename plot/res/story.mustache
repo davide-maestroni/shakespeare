@@ -640,7 +640,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           mException = new NarrationStoppedException();
         }
         if (mQueue.isEmpty()) {
-          mActor.tell(AVAILABLE, null, BackStage.standIn());
+          mActor.tell(AVAILABLE, null, BackStage.STAND_IN);
         }
       }
     }
@@ -682,7 +682,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       final boolean wasEmpty = queue.isEmpty();
       if (queue.offer(resolution, timeout, unit)) {
         if (wasEmpty) {
-          mActor.tell(AVAILABLE, null, BackStage.standIn());
+          mActor.tell(AVAILABLE, null, BackStage.STAND_IN);
         }
         return true;
       }
@@ -691,7 +691,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private boolean next(@NotNull final Context context) {
       final Actor self = context.getSelf();
-      Object effect = mQueue.poll();
+      final BlockingQueue<Object> queue = mQueue;
+      Object effect = queue.poll();
       if (effect != null) {
         if (effect == NULL) {
           effect = null;
@@ -707,12 +708,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       }
 
       if (!mGetSenders.isEmpty()) {
-        context.getExecutorService().execute(new Runnable() {
-
-          public void run() {
-            next(context);
+        while((effect = queue.poll()) != null) {
+          if (effect == NULL) {
+            effect = null;
           }
-        });
+          mMemory.put(effect);
+        }
       }
       return true;
     }
@@ -773,7 +774,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             sender.setIterator(mMemory.iterator());
             nextSenders.put(threadId, sender);
           }
-          if (mGetSenders.isEmpty()) {
+          if (!sender.tellNext(context.getSelf())) {
             next(context);
           }
 
@@ -781,9 +782,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           mNextSenders.remove(envelop.getOptions().getThreadId());
 
         } else if (message == AVAILABLE) {
-          if (mGetSenders.isEmpty()) {
-            next(context);
-          }
+          next(context);
 
         } else if (message == CANCEL) {
           final Conflict conflict = Conflict.ofCancel();

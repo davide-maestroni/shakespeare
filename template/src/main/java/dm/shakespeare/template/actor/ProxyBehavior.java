@@ -33,7 +33,6 @@ import dm.shakespeare.actor.Script;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.Failure;
-import dm.shakespeare.message.IllegalRecipientException;
 import dm.shakespeare.util.ConstantConditions;
 
 /**

@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.message;
+package dm.shakespeare.template.actor;
 
 /**
- * Created by davide-maestroni on 01/17/2019.
+ * Exception indicating that the recipient of the sent message was invalid.
  */
 public class IllegalRecipientException extends RuntimeException {
 
+  /**
+   * Creates a new exception instance.
+   *
+   * @param message the error message.
+   */
   public IllegalRecipientException(final String message) {
     super(message);
   }

@@ -176,7 +176,7 @@ public abstract class Event<T> {
   }
 
   public void cancel() {
-    getActor().tell(CANCEL, null, BackStage.standIn());
+    getActor().tell(CANCEL, null, BackStage.STAND_IN);
   }
 
   @NotNull
@@ -300,7 +300,7 @@ public abstract class Event<T> {
           mException = new NarrationStoppedException();
         }
         if (mQueue.isEmpty()) {
-          mActor.tell(AVAILABLE, null, BackStage.standIn());
+          mActor.tell(AVAILABLE, null, BackStage.STAND_IN);
         }
       }
     }
@@ -343,7 +343,7 @@ public abstract class Event<T> {
       if (queue.offer(resolution, timeout, unit)) {
         close();
         if (wasEmpty) {
-          mActor.tell(AVAILABLE, null, BackStage.standIn());
+          mActor.tell(AVAILABLE, null, BackStage.STAND_IN);
         }
         return true;
       }

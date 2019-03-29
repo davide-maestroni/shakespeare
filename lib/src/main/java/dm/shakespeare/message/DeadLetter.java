@@ -21,7 +21,7 @@ import java.io.Serializable;
 import dm.shakespeare.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 01/15/2019.
+ * Message implementation notifying that the sender actor has been dismissed.
  */
 public class DeadLetter implements Serializable {
 

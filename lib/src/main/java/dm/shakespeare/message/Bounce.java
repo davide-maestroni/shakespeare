@@ -22,12 +22,18 @@ import dm.shakespeare.actor.Options;
 import dm.shakespeare.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 01/09/2019.
+ * {@link Receipt} implementation notifying that the sent message has been bounced.
  */
 public class Bounce extends Receipt {
 
   private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 
+  /**
+   * Creates a new bounce message.
+   *
+   * @param message the bounced message.
+   * @param options the original message delivery options.
+   */
   public Bounce(final Object message, @NotNull final Options options) {
     super(message, options);
   }

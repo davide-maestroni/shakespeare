@@ -22,12 +22,18 @@ import dm.shakespeare.actor.Options;
 import dm.shakespeare.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 01/16/2019.
+ * {@link Receipt} implementation notifying that the sent message has been successfully delivered.
  */
 public class Delivery extends Receipt {
 
   private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 
+  /**
+   * Creates a new delivery message.
+   *
+   * @param message the delivered message.
+   * @param options the original message delivery options.
+   */
   public Delivery(final Object message, @NotNull final Options options) {
     super(message, options);
   }

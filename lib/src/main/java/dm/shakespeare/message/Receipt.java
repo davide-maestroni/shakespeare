@@ -26,7 +26,10 @@ import dm.shakespeare.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 01/09/2019.
+ * Base receipt message sent in response to a received message when the delivery options contains
+ * a receipt ID.
+ *
+ * @see Options
  */
 public class Receipt implements Serializable {
 
@@ -35,20 +38,43 @@ public class Receipt implements Serializable {
   private final Object mMessage;
   private final Options mOptions;
 
+  /**
+   * Creates a new receipt message.
+   *
+   * @param message the received message.
+   * @param options the original message delivery options.
+   */
   public Receipt(final Object message, @NotNull final Options options) {
     mMessage = message;
     mOptions = ConstantConditions.notNull("options", options);
   }
 
+  /**
+   * Verifies that a message is a receipt with the specified ID.
+   *
+   * @param message   the message to check.
+   * @param receiptId the receipt ID.
+   * @return {@code true} if the message is a receipt and it's ID is equal to the specified one.
+   */
   public static boolean isReceipt(@Nullable final Object message, @NotNull final String receiptId) {
     return (message instanceof Receipt) && receiptId.equals(
         ((Receipt) message).getOptions().getReceiptId());
   }
 
+  /**
+   * Returns the original message.
+   *
+   * @return the message object.
+   */
   public final Object getMessage() {
     return mMessage;
   }
 
+  /**
+   * Returns the original message delivery options.
+   *
+   * @return the delivery options.
+   */
   @NotNull
   public final Options getOptions() {
     return mOptions;

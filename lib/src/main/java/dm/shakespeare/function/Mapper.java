@@ -17,9 +17,19 @@
 package dm.shakespeare.function;
 
 /**
- * Created by davide-maestroni on 07/20/2017.
+ * Function mapping a value into another one.
+ *
+ * @param <T> the input value type.
+ * @param <R> the output value type.
  */
 public interface Mapper<T, R> {
 
+  /**
+   * Applies the mapping function to the specified value.
+   *
+   * @param value the input value.
+   * @return the mapped value.
+   * @throws Exception when an unexpected error occurs.
+   */
   R apply(T value) throws Exception;
 }

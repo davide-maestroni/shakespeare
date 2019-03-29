@@ -23,7 +23,7 @@ import dm.shakespeare.actor.Script;
 import dm.shakespeare.function.Observer;
 
 /**
- * Created by davide-maestroni on 01/08/2019.
+ * {@link dm.shakespeare.actor.Stage} implementation managing local actor objects.
  */
 public class LocalStage extends AbstractStage {
 

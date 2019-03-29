@@ -31,7 +31,6 @@ import dm.shakespeare.actor.Options;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.DeadLetter;
 import dm.shakespeare.message.Failure;
-import dm.shakespeare.message.IllegalRecipientException;
 import dm.shakespeare.message.Receipt;
 import dm.shakespeare.template.actor.SupervisedBehavior.SupervisedRecovery.RecoveryType;
 import dm.shakespeare.template.config.BuildConfig;

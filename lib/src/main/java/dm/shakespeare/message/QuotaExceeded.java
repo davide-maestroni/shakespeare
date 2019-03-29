@@ -22,12 +22,19 @@ import dm.shakespeare.actor.Options;
 import dm.shakespeare.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 01/09/2019.
+ * {@link Receipt} implementation notifying that the sent message has been rejected because the
+ * inbox quota was exceeded.
  */
 public class QuotaExceeded extends Bounce {
 
   private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 
+  /**
+   * Creates a new quota exceeded message.
+   *
+   * @param message the bounced message.
+   * @param options the original message delivery options.
+   */
   public QuotaExceeded(final Object message, @NotNull final Options options) {
     super(message, options);
   }

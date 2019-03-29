@@ -25,7 +25,7 @@ import dm.shakespeare.actor.Options;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 06/15/2018.
+ * Default implementation of an {@link Envelop}.
  */
 abstract class DefaultEnvelop implements Envelop, Runnable {
 
@@ -35,6 +35,12 @@ abstract class DefaultEnvelop implements Envelop, Runnable {
   private boolean mPreventReceipt;
   private long mReceivedAt = -1;
 
+  /**
+   * Creates a new envelop.
+   *
+   * @param sender  the sender actor.
+   * @param options the delivery options.
+   */
   DefaultEnvelop(@NotNull final Actor sender, @Nullable final Options options) {
     mSender = ConstantConditions.notNull("sender", sender);
     mOptions = (options != null) ? options : Options.EMPTY;
@@ -74,8 +80,8 @@ abstract class DefaultEnvelop implements Envelop, Runnable {
 
   @Override
   public String toString() {
-    return "DefaultEnvelop{" + "mOptions=" + mOptions + ", mSender=" + mSender + ", mSentAt="
-        + mSentAt + ", mPreventReceipt=" + mPreventReceipt + ", mReceivedAt=" + mReceivedAt + '}';
+    return "DefaultEnvelop{" + "options=" + mOptions + ", sender=" + mSender + ", sentAt=" + mSentAt
+        + ", preventReceipt=" + mPreventReceipt + ", receivedAt=" + mReceivedAt + '}';
   }
 
   abstract void open();
