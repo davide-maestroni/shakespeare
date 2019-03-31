@@ -881,6 +881,7 @@ public abstract class Event<T> {
     }
 
     @NotNull
+    @Override
     @SuppressWarnings("unchecked")
     Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
       Setting.set(getSetting());
@@ -1125,6 +1126,7 @@ public abstract class Event<T> {
     }
 
     @NotNull
+    @Override
     @SuppressWarnings("unchecked")
     Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
       Setting.set(getSetting());

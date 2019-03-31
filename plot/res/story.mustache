@@ -712,7 +712,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       }
 
       if (!mGetSenders.isEmpty()) {
-        while((effect = queue.poll()) != null) {
+        while ((effect = queue.poll()) != null) {
           if (effect == NULL) {
             effect = null;
           }
@@ -890,16 +890,28 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
 
     @Nullable
-    Actor getConflictActor(@NotNull final Conflict conflict) throws Exception {
-      return BackStage.STAND_IN;
+    Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Context context) throws
+        Exception {
+      mMemory.put(conflict);
+      final Actor self = context.getSelf();
+      for (final SenderIterator sender : mNextSenders.values()) {
+        sender.tellNext(self);
+      }
+      return null;
     }
 
     @NotNull
     abstract List<Actor> getInputActors();
 
     @Nullable
-    Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
-      return BackStage.STAND_IN;
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Context context) throws
+        Exception {
+      mMemory.put(inputs[0]);
+      final Actor self = context.getSelf();
+      for (final SenderIterator sender : mNextSenders.values()) {
+        sender.tellNext(self);
+      }
+      return null;
     }
 
     @NotNull
@@ -917,7 +929,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private void conflict(@NotNull Conflict conflict, @NotNull final Context context) {
       Actor conflictActor = null;
       try {
-        conflictActor = getConflictActor(conflict);
+        conflictActor = getConflictActor(conflict, context);
 
       } catch (final Throwable t) {
         conflict = new Conflict(t);
@@ -927,16 +939,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       }
 
       final Actor self = context.getSelf();
-      if (conflictActor == BackStage.STAND_IN) {
-        mMemory.put(conflict);
-        for (final SenderIterator sender : mNextSenders.values()) {
-          sender.tellNext(self);
-        }
-        conflictActor = null;
-      }
-
       if (conflictActor != null) {
-        (mOutputActor = conflictActor).tell(GET, mOutputOptions, context.getSelf());
+        (mOutputActor = conflictActor).tell(GET, mOutputOptions, self);
         context.setBehavior(new OutputBehavior());
 
       } else {
@@ -1090,7 +1094,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               if (++mInputCount == mInputs.length) {
                 final Conflict conflict = Conflict.ofCancel();
                 try {
-                  final Actor conflictActor = getConflictActor(conflict);
+                  final Actor conflictActor = getConflictActor(conflict, context);
                   if (conflictActor != null) {
                     conflictActor.tell(CANCEL, null, context.getSelf());
                   }
@@ -1274,37 +1278,25 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                     conflict(conflict, context);
 
                   } else {
-                    Object effect = message;
-                    Actor outputActor = null;
                     try {
-                      outputActor = getOutputActor(inputs);
-
-                    } catch (final Throwable t) {
-                      effect = new Conflict(t);
-                      if (t instanceof InterruptedException) {
-                        Thread.currentThread().interrupt();
-                      }
-                    }
-
-                    final Actor self = context.getSelf();
-                    if (outputActor == BackStage.STAND_IN) {
-                      mMemory.put(effect);
-                      for (final SenderIterator sender : mNextSenders.values()) {
-                        sender.tellNext(self);
-                      }
-                      outputActor = null;
-                    }
-
-                    if (outputActor != null) {
-                      (mOutputActor = outputActor).tell(NEXT, mOutputOptions, self);
-                      context.setBehavior(new OutputBehavior());
-
-                    } else {
-                      if (!mGetSenders.isEmpty()) {
-                        next(++mContinueCount, context);
+                      Actor outputActor = getOutputActor(inputs, context);
+                      if (outputActor != null) {
+                        (mOutputActor = outputActor).tell(NEXT, mOutputOptions, context.getSelf());
+                        context.setBehavior(new OutputBehavior());
 
                       } else {
-                        context.setBehavior(new NextContinueBehavior());
+                        if (!mGetSenders.isEmpty()) {
+                          next(++mContinueCount, context);
+
+                        } else {
+                          context.setBehavior(new NextContinueBehavior());
+                        }
+                      }
+
+                    } catch (final Throwable t) {
+                      conflict(new Conflict(t), context);
+                      if (t instanceof InterruptedException) {
+                        Thread.currentThread().interrupt();
                       }
                     }
                   }
@@ -2627,14 +2619,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
     }
 
-    @NotNull
-    List<Actor> getInputActors() {
-      return mInputActors;
-    }
-
     @Nullable
+    @Override
     @SuppressWarnings("unchecked")
-    Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Context context) throws
+        Exception {
       Setting.set(getSetting());
       try {
         final ArrayList<T> inputList = new ArrayList<T>();
@@ -2650,6 +2639,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       } finally {
         Setting.unset();
       }
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return mInputActors;
     }
   }
 
@@ -3200,7 +3194,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     @Nullable
     @Override
-    Actor getConflictActor(@NotNull final Conflict conflict) throws Exception {
+    Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Context context) throws
+        Exception {
       final Throwable incident = conflict.getCause();
       for (final Class<? extends Throwable> incidentType : mIncidentTypes) {
         if (incidentType.isInstance(incident)) {
@@ -3214,7 +3209,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
         }
       }
-      return super.getConflictActor(conflict);
+      return super.getConflictActor(conflict, context);
     }
 
     @NotNull
@@ -3257,6 +3252,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         }
       })).getId();
       mInputOptions = new Options().withReceiptId(actorId).withThreadId(actorId + ":input");
+    }
+
+    public void run() {
+      mInputsPending = true;
+      mInputActor.tell(NEXT, mInputOptions, mActor);
     }
 
     private void done(@NotNull final Context context) {
@@ -3402,11 +3402,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         }
         envelop.preventReceipt();
       }
-    }
-
-    public void run() {
-      mInputsPending = true;
-      mInputActor.tell(NEXT, mInputOptions, mActor);
     }
 
     @NotNull
@@ -3734,14 +3729,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
     }
 
-    @NotNull
-    List<Actor> getInputActors() {
-      return mInputActors;
-    }
-
     @Nullable
+    @Override
     @SuppressWarnings("unchecked")
-    Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Context context) throws
+        Exception {
       Setting.set(getSetting());
       try {
         final Story<? extends R> story = mEffectHandler.call({{#paramTypes}}({{type}}) inputs[{{index}}]{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
@@ -3753,6 +3745,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       } finally {
         Setting.unset();
       }
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return mInputActors;
     }
   }
 {{/arities}}
@@ -3809,7 +3806,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             sender.waitNext();
 
           } else {
-            nextSenders.put(threadId, new SenderIterator(envelop.getSender(), options.threadOnly()));
+            nextSenders.put(threadId,
+                new SenderIterator(envelop.getSender(), options.threadOnly()));
           }
 
         } else if (message == BREAK) {
@@ -3862,7 +3860,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             sender.waitNext();
 
           } else {
-            nextSenders.put(threadId, new SenderIterator(envelop.getSender(), options.threadOnly()));
+            nextSenders.put(threadId,
+                new SenderIterator(envelop.getSender(), options.threadOnly()));
           }
 
         } else if (message == BREAK) {
@@ -3932,7 +3931,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     @Nullable
     @Override
-    Actor getConflictActor(@NotNull final Conflict conflict) throws Exception {
+    Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Context context) throws
+        Exception {
       Setting.set(getSetting());
       try {
         mEventObserver.onIncident(conflict.getCause());
@@ -3940,13 +3940,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       } finally {
         Setting.unset();
       }
-      return super.getConflictActor(conflict);
+      return super.getConflictActor(conflict, context);
     }
 
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
-    Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Context context) throws
+        Exception {
       Setting.set(getSetting());
       try {
         mEventObserver.onEffect((T) inputs[0]);
@@ -3954,7 +3955,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       } finally {
         Setting.unset();
       }
-      return super.getOutputActor(inputs);
+      return super.getOutputActor(inputs, context);
     }
 
     @NotNull

@@ -31,6 +31,7 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class Scene {
 
+  // TODO: 31/03/2019 forWhile(conditionHandler), generate function wrapper
   // TODO: 05/02/2019 Story PROGRESS???
   // TODO: 15/02/2019 untriggered actors, serialization
   // TODO: 28/02/2019 Story.isBoundless()?, swagger converter
