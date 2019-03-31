@@ -344,6 +344,19 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
+  public Story<T> forWhile(
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler) {
+    return forWhile(conditionHandler, new ListMemory());
+  }
+
+  @NotNull
+  public Story<T> forWhile(
+      @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
+      @NotNull final Memory memory) {
+    return new NullaryStory<T>(this, conditionHandler, memory);
+  }
+
+  @NotNull
   public <R> Story<R> forWhile(
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super T, ? extends Story<? extends R>> effectHandler) {
@@ -3141,6 +3154,23 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @SuppressWarnings("unchecked")
     public Story<R> call(final T first) throws Exception {
       return (Story<R>) mStoryEvolver.evolve(first);
+    }
+  }
+
+  private static class NullaryStory<T> extends AbstractStory<T> {
+
+    private final List<Actor> mInputActors;
+
+    private NullaryStory(@NotNull final Story<? extends T> firstStory,
+        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
+        @NotNull final Memory memory) {
+      super(conditionHandler, 1, memory);
+      mInputActors = Collections.singletonList(firstStory.getActor());
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return mInputActors;
     }
   }
 
