@@ -96,14 +96,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   public static <T> Story<T> ofEffects(@NotNull final Iterable<? extends T> effects) {
     final Cache cache = Setting.get().getCache(Story.class);
-    if ((effects == Collections.EMPTY_LIST) || (effects == Collections.EMPTY_SET)) {
-      Story<T> story = cache.get(effects);
-      if (story == null) {
-        story = new EffectsStory<T>(effects);
-        cache.put(effects, story);
-      }
+    Story<T> story = cache.get(effects);
+    if (story == null) {
+      story = new EffectsStory<T>(effects);
+      cache.put(effects, story);
     }
-    return new EffectsStory<T>(effects);
+    return story;
   }
 
   @NotNull
@@ -175,7 +173,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public static <T> Story<T> ofSingleEffect(final T effect) {
-    return new EffectStory<T>(effect);
+    final Cache cache = Setting.get().getCache(Story.class);
+    Story<T> story = cache.get(effect);
+    if (story == null) {
+      story = new EffectStory<T>(effect);
+      cache.put(effect, story);
+    }
+    return story;
   }
 
   @NotNull
@@ -854,6 +858,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private Actor mContinueActor;
     private int mContinueCount;
     private Options mContinueOptions;
+    private Conflict mGetConflict;
     private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private int mInputCount;
     private Memory mMemory;
@@ -886,7 +891,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     @Nullable
     Actor getConflictActor(@NotNull final Conflict conflict) throws Exception {
-      return null;
+      return BackStage.STAND_IN;
     }
 
     @NotNull
@@ -894,7 +899,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     @Nullable
     Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
-      return null;
+      return BackStage.STAND_IN;
     }
 
     @NotNull
@@ -921,23 +926,28 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         }
       }
 
+      final Actor self = context.getSelf();
+      if (conflictActor == BackStage.STAND_IN) {
+        mMemory.put(conflict);
+        for (final SenderIterator sender : mNextSenders.values()) {
+          sender.tellNext(self);
+        }
+        conflictActor = null;
+      }
+
       if (conflictActor != null) {
         (mOutputActor = conflictActor).tell(GET, mOutputOptions, context.getSelf());
         context.setBehavior(new OutputBehavior());
 
       } else {
-        mMemory.put(conflict);
-        final Actor self = context.getSelf();
-        for (final SenderIterator sender : mNextSenders.values()) {
-          sender.tellNext(self);
-        }
-
         if (!mGetSenders.isEmpty()) {
-          next(++mContinueCount, context);
-
-        } else {
-          context.setBehavior(new NextContinueBehavior());
+          mGetConflict = conflict;
+          for (final Sender sender : mGetSenders.values()) {
+            sender.getSender().tell(conflict, sender.getOptions(), self);
+          }
+          mGetSenders.clear();
         }
+        context.setBehavior(new NextContinueBehavior());
       }
     }
 
@@ -1041,8 +1051,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) {
         if (message == GET) {
+          final Conflict conflict = mGetConflict;
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+          if (conflict == null) {
+            mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+
+          } else {
+            envelop.getSender().tell(conflict, options, context.getSelf());
+          }
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
@@ -1098,8 +1114,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) {
         if (message == GET) {
+          final Conflict conflict = mGetConflict;
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+          if (conflict == null) {
+            mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+
+          } else {
+            envelop.getSender().tell(conflict, options, context.getSelf());
+          }
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
@@ -1177,8 +1199,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) {
         if (message == GET) {
+          final Conflict conflict = mGetConflict;
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+          if (conflict == null) {
+            mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+
+          } else {
+            envelop.getSender().tell(conflict, options, context.getSelf());
+          }
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
@@ -1216,6 +1244,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               }
 
               if (++mInputCount == mInputs.length) {
+                mConflict = null;
+                mInputCount = 0;
                 conflict((Conflict) message, context);
               }
 
@@ -1226,6 +1256,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               }
 
               if (++mInputCount == mInputs.length) {
+                mConflict = null;
+                mInputCount = 0;
                 conflict(conflict, context);
               }
 
@@ -1237,7 +1269,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 if (++mInputCount == inputs.length) {
                   mInputCount = 0;
                   if (mConflict != null) {
-                    conflict(mConflict, context);
+                    final Conflict conflict = mConflict;
+                    mConflict = null;
+                    conflict(conflict, context);
 
                   } else {
                     Object effect = message;
@@ -1253,16 +1287,19 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                     }
 
                     final Actor self = context.getSelf();
+                    if (outputActor == BackStage.STAND_IN) {
+                      mMemory.put(effect);
+                      for (final SenderIterator sender : mNextSenders.values()) {
+                        sender.tellNext(self);
+                      }
+                      outputActor = null;
+                    }
+
                     if (outputActor != null) {
                       (mOutputActor = outputActor).tell(NEXT, mOutputOptions, self);
                       context.setBehavior(new OutputBehavior());
 
                     } else {
-                      mMemory.put(effect);
-                      for (final SenderIterator sender : mNextSenders.values()) {
-                        sender.tellNext(self);
-                      }
-
                       if (!mGetSenders.isEmpty()) {
                         next(++mContinueCount, context);
 
@@ -1285,9 +1322,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) {
         if (message == GET) {
+          final Conflict conflict = mGetConflict;
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
-          next(++mContinueCount, context);
+          if (conflict == null) {
+            mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+            next(++mContinueCount, context);
+
+          } else {
+            envelop.getSender().tell(conflict, options, context.getSelf());
+          }
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
@@ -1323,10 +1366,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) {
         if (message == GET) {
+          final Conflict conflict = mGetConflict;
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
-          mOutputActor.tell(NEXT, mOutputOptions, context.getSelf());
-          context.setBehavior(new OutputBehavior());
+          if (conflict == null) {
+            mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+            mOutputActor.tell(NEXT, mOutputOptions, context.getSelf());
+            context.setBehavior(new OutputBehavior());
+
+          } else {
+            envelop.getSender().tell(conflict, options, context.getSelf());
+          }
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();
@@ -1365,8 +1414,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Context context) {
         if (message == GET) {
+          final Conflict conflict = mGetConflict;
           final Options options = envelop.getOptions().threadOnly();
-          mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+          if (conflict == null) {
+            mGetSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+
+          } else {
+            envelop.getSender().tell(conflict, options, context.getSelf());
+          }
 
         } else if (message == NEXT) {
           final Options options = envelop.getOptions();

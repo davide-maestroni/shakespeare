@@ -17,6 +17,7 @@
 package dm.shakespeare.util;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
@@ -29,60 +30,59 @@ import java.util.Set;
 
 /**
  * Map implementation combining the features of {@link java.util.IdentityHashMap} and
- * {@link java.util.WeakHashMap}.
- * <p>
- * Note that iterating through the map keys might produce one or more null values.
- * <p>
- * Created by davide-maestroni on 11/17/2014.
+ * {@link java.util.WeakHashMap}.<br>
+ * Iterating through the map keys might produce one or more null values.
  *
  * @param <K> the key type.
  * @param <V> the value type.
  */
-public class WeakIdentityHashMap<K, V> implements Map<K, V> {
+public class IdentityWeakHashMap<K, V> implements Map<K, V> {
 
   private final HashMap<IdentityWeakReference, V> mMap;
+  private final ProbeReference mProbe = new ProbeReference();
   private final ReferenceQueue<Object> mQueue = new ReferenceQueue<Object>();
 
   private volatile AbstractSet<Entry<K, V>> mEntrySet;
   private volatile AbstractSet<K> mKeySet;
 
   /**
-   * Constructor.
-   *
-   * @see HashMap#HashMap()
+   * Creates a new empty map with the default initial capacity (16) and the default load factor
+   * (0.75).
    */
-  public WeakIdentityHashMap() {
+  public IdentityWeakHashMap() {
     mMap = new HashMap<IdentityWeakReference, V>();
   }
 
   /**
-   * Constructor.
+   * Creates a new empty map with the specified initial capacity and the default load factor (0.75).
    *
    * @param initialCapacity the initial capacity.
-   * @see HashMap#HashMap(int)
+   * @throws IllegalArgumentException if the initial capacity is negative.
    */
-  public WeakIdentityHashMap(final int initialCapacity) {
+  public IdentityWeakHashMap(final int initialCapacity) {
     mMap = new HashMap<IdentityWeakReference, V>(initialCapacity);
   }
 
   /**
-   * Constructor.
+   * Creates a new empty map with the specified initial capacity and load factor.
    *
    * @param initialCapacity the initial capacity.
    * @param loadFactor      the load factor.
-   * @see HashMap#HashMap(int, float)
+   * @throws IllegalArgumentException if the initial capacity is negative or the load factor is
+   *                                  not positive.
    */
-  public WeakIdentityHashMap(final int initialCapacity, final float loadFactor) {
+  public IdentityWeakHashMap(final int initialCapacity, final float loadFactor) {
     mMap = new HashMap<IdentityWeakReference, V>(initialCapacity, loadFactor);
   }
 
   /**
-   * Constructor.
+   * Creates a new map with the same mappings as the specified {@code Map}.<br>
+   * The map is created with default load factor (0.75) and an initial capacity sufficient to hold
+   * the mappings in the specified {@code Map}.
    *
-   * @param map the initial content.
-   * @see HashMap#HashMap(Map)
+   * @param map the initial mapping.
    */
-  public WeakIdentityHashMap(@NotNull final Map<? extends K, ? extends V> map) {
+  public IdentityWeakHashMap(@NotNull final Map<? extends K, ? extends V> map) {
     mMap = new HashMap<IdentityWeakReference, V>(map.size());
     putAll(map);
   }
@@ -98,7 +98,7 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
    * @return this map.
    */
   @NotNull
-  public WeakIdentityHashMap<K, V> prune() {
+  public IdentityWeakHashMap<K, V> prune() {
     @SuppressWarnings("UnnecessaryLocalVariable") final HashMap<IdentityWeakReference, V> map =
         mMap;
     final ReferenceQueue<Object> queue = mQueue;
@@ -110,36 +110,60 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
     return this;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public int size() {
     return mMap.size();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public boolean isEmpty() {
     return mMap.isEmpty();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public boolean containsKey(final Object o) {
-    return mMap.containsKey(new IdentityWeakReference(o));
+    return mMap.containsKey(mProbe.withReferent(o));
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public boolean containsValue(final Object o) {
     return mMap.containsValue(o);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public V get(final Object o) {
-    return mMap.get(new IdentityWeakReference(o));
+    return mMap.get(mProbe.withReferent(o));
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public V put(final K k, final V v) {
     prune();
     return mMap.put(new IdentityWeakReference(k, mQueue), v);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public V remove(final Object o) {
     prune();
-    return mMap.remove(new IdentityWeakReference(o));
+    return mMap.remove(mProbe.withReferent(o));
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void putAll(@NotNull final Map<? extends K, ? extends V> map) {
     prune();
     @SuppressWarnings("UnnecessaryLocalVariable") final ReferenceQueue<Object> queue = mQueue;
@@ -150,10 +174,16 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void clear() {
     mMap.clear();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public Set<K> keySet() {
     if (mKeySet == null) {
@@ -174,11 +204,17 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
     return mKeySet;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public Collection<V> values() {
     return mMap.values();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public Set<Entry<K, V>> entrySet() {
     if (mEntrySet == null) {
@@ -199,22 +235,11 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
     return mEntrySet;
   }
 
-  /**
-   * Weak reference using object identity for comparison.
-   */
   private static class IdentityWeakReference extends WeakReference<Object> {
 
     private final int mHashCode;
-
     private final boolean mIsNull;
 
-    /**
-     * Constructor.
-     *
-     * @param referent the referent instance.
-     * @param queue    the reference queue.
-     * @see WeakReference#WeakReference(Object, ReferenceQueue)
-     */
     private IdentityWeakReference(final Object referent,
         final ReferenceQueue<? super Object> queue) {
       super(referent, queue);
@@ -222,16 +247,14 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
       mHashCode = System.identityHashCode(referent);
     }
 
-    /**
-     * Constructor.
-     *
-     * @param referent the referent instance.
-     * @see WeakReference#WeakReference(Object)
-     */
     private IdentityWeakReference(final Object referent) {
       super(referent);
       mIsNull = (referent == null);
       mHashCode = System.identityHashCode(referent);
+    }
+
+    boolean isNull() {
+      return mIsNull;
     }
 
     @Override
@@ -249,11 +272,11 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
         return false;
       }
       final IdentityWeakReference that = (IdentityWeakReference) obj;
-      if (mIsNull) {
-        return that.mIsNull;
+      if (isNull()) {
+        return that.isNull();
       }
 
-      if (mHashCode != that.mHashCode) {
+      if (hashCode() != that.hashCode()) {
         return false;
       }
       final Object referent = get();
@@ -261,9 +284,41 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
     }
   }
 
-  /**
-   * Map entry iterator.
-   */
+  private static class ProbeReference extends IdentityWeakReference {
+
+    private int mHashCode;
+    private boolean mIsNull;
+    private Object mReferent;
+
+    private ProbeReference() {
+      super(null);
+    }
+
+    @Nullable
+    @Override
+    public Object get() {
+      return mReferent;
+    }
+
+    @Override
+    boolean isNull() {
+      return mIsNull;
+    }
+
+    @Override
+    public int hashCode() {
+      return mHashCode;
+    }
+
+    @NotNull
+    ProbeReference withReferent(final Object referent) {
+      mIsNull = (referent == null);
+      mReferent = referent;
+      mHashCode = System.identityHashCode(referent);
+      return this;
+    }
+  }
+
   private class EntryIterator implements Iterator<Entry<K, V>> {
 
     private final Iterator<IdentityWeakReference> mIterator = mMap.keySet().iterator();
@@ -281,9 +336,6 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
     }
   }
 
-  /**
-   * Map key iterator.
-   */
   private class KeyIterator implements Iterator<K> {
 
     private final Iterator<IdentityWeakReference> mIterator = mMap.keySet().iterator();
@@ -302,18 +354,10 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
     }
   }
 
-  /**
-   * Map entry implementation.
-   */
   private class WeakEntry implements Entry<K, V> {
 
     private final IdentityWeakReference mReference;
 
-    /**
-     * Constructor.
-     *
-     * @param key the key reference.
-     */
     private WeakEntry(@NotNull final IdentityWeakReference key) {
       mReference = key;
     }
@@ -339,10 +383,10 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
       return true;
     }
 
-    if (!(o instanceof WeakIdentityHashMap)) {
+    if (!(o instanceof IdentityWeakHashMap)) {
       return (o instanceof Map) && o.equals(this);
     }
-    final WeakIdentityHashMap<?, ?> that = (WeakIdentityHashMap<?, ?>) o;
+    final IdentityWeakHashMap<?, ?> that = (IdentityWeakHashMap<?, ?>) o;
     return mMap.equals(that.mMap);
   }
 }

@@ -75,24 +75,11 @@ public abstract class Event<T> {
 
   @NotNull
   public static <T> Event<T> ofEffect(final T effect) {
-    Event<T> event;
     final Cache cache = Setting.get().getCache(Event.class);
-    if (effect == null) {
-      event = cache.get(NULL);
-      if (event == null) {
-        event = new EffectEvent<T>(null);
-        cache.put(NULL, event);
-      }
-
-    } else if (Boolean.TRUE.equals(effect) || Boolean.FALSE.equals(effect)) {
-      event = cache.get(effect);
-      if (event == null) {
-        event = new EffectEvent<T>(effect);
-        cache.put(effect, event);
-      }
-
-    } else {
+    Event<T> event = cache.get(effect);
+    if (event == null) {
       event = new EffectEvent<T>(effect);
+      cache.put(effect, event);
     }
     return event;
   }
@@ -163,7 +150,7 @@ public abstract class Event<T> {
 
   static boolean isNull(@Nullable final Event<?> event) {
     final Cache cache = Setting.get().getCache(Event.class);
-    return cache.get(NULL) == event;
+    return cache.get(null) == event;
   }
 
   static boolean isTrue(@Nullable final Event<?> event) {

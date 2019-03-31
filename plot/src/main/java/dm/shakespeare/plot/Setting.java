@@ -19,6 +19,7 @@ package dm.shakespeare.plot;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -30,6 +31,7 @@ import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
+import dm.shakespeare.util.IdentityWeakHashMap;
 
 /**
  * Created by davide-maestroni on 01/25/2019.
@@ -52,8 +54,8 @@ class Setting {
   private ExecutorService mTrampolineExecutor;
 
   Setting(@Nullable final ExecutorService executor, @Nullable final Logger logger) {
-    mExecutor =
-        (executor != null) ? asActorExecutor(executor) : asActorExecutor(Script.defaultExecutorService());
+    mExecutor = (executor != null) ? asActorExecutor(executor)
+        : asActorExecutor(Script.defaultExecutorService());
     mLogger = logger;
   }
 
@@ -116,19 +118,21 @@ class Setting {
 
   static class Cache {
 
-    private final HashMap<Object, Object> mData = new HashMap<Object, Object>();
+    private final IdentityWeakHashMap<Object, WeakReference<Object>> mData =
+        new IdentityWeakHashMap<Object, WeakReference<Object>>();
 
     private Cache() {
     }
 
     @Nullable
     @SuppressWarnings("unchecked")
-    <T> T get(@NotNull final Object key) {
-      return (T) mData.get(key);
+    <T> T get(final Object key) {
+      final WeakReference<Object> reference = mData.get(key);
+      return (reference != null) ? (T) reference.get() : null;
     }
 
     <T> void put(@NotNull final Object key, final T value) {
-      mData.put(key, value);
+      mData.put(key, new WeakReference<Object>(value));
     }
   }
 }

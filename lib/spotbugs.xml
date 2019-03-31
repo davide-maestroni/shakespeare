@@ -40,7 +40,7 @@
     <Bug pattern="WA_NOT_IN_LOOP"/>
   </Match>
   <Match>
-    <Class name="dm.shakespeare.util.WeakIdentityHashMapTest"/>
+    <Class name="dm.shakespeare.util.IdentityWeakHashMapTest"/>
     <Method name="testWeakReference"/>
     <Bug pattern="DLS_DEAD_LOCAL_STORE_OF_NULL"/>
   </Match>

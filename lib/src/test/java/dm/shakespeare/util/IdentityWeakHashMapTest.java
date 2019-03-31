@@ -28,14 +28,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 
 /**
- * {@link WeakIdentityHashMap} unit tests.
+ * {@link IdentityWeakHashMap} unit tests.
  */
-public class WeakIdentityHashMapTest {
+public class IdentityWeakHashMapTest {
 
   @Test
   public void testClear() {
-    final WeakIdentityHashMap<Object, String> map =
-        new WeakIdentityHashMap<Object, String>(4, 0.75f);
+    final IdentityWeakHashMap<Object, String> map =
+        new IdentityWeakHashMap<Object, String>(4, 0.75f);
     final HashMap<Object, String> entries = new HashMap<Object, String>();
     final Object key0 = new Object();
     final Object key1 = new Object();
@@ -55,8 +55,8 @@ public class WeakIdentityHashMapTest {
 
   @Test(expected = IllegalStateException.class)
   public void testEntryIteratorDoubleRemove() {
-    final WeakIdentityHashMap<Object, String> map =
-        new WeakIdentityHashMap<Object, String>(4, 0.75f);
+    final IdentityWeakHashMap<Object, String> map =
+        new IdentityWeakHashMap<Object, String>(4, 0.75f);
     final Object key0 = new Object();
     map.put(key0, "test0");
     final Iterator<Entry<Object, String>> entryIterator = map.entrySet().iterator();
@@ -68,8 +68,8 @@ public class WeakIdentityHashMapTest {
 
   @Test(expected = NoSuchElementException.class)
   public void testEntryIteratorRemove() {
-    final WeakIdentityHashMap<Object, String> map =
-        new WeakIdentityHashMap<Object, String>(4, 0.75f);
+    final IdentityWeakHashMap<Object, String> map =
+        new IdentityWeakHashMap<Object, String>(4, 0.75f);
     final Object key0 = new Object();
     map.put(key0, "test0");
     final Iterator<Entry<Object, String>> entryIterator = map.entrySet().iterator();
@@ -96,8 +96,8 @@ public class WeakIdentityHashMapTest {
     entries.put(key1, "test1");
     entries.put(key2, "test2");
     entries.put(key3, "test3");
-    final WeakIdentityHashMap<Object, String> map =
-        new WeakIdentityHashMap<Object, String>(entries);
+    final IdentityWeakHashMap<Object, String> map =
+        new IdentityWeakHashMap<Object, String>(entries);
     assertThat(map).hasSize(4);
     assertThat(map).contains(MapEntry.entry(key0, "test0"), MapEntry.entry(key1, "test1"),
         MapEntry.entry(key2, "test2"), MapEntry.entry(key3, "test3"));
@@ -112,7 +112,7 @@ public class WeakIdentityHashMapTest {
     final MyInteger key0 = new MyInteger(3);
     final MyInteger key1 = new MyInteger(3);
     assertThat(key0).isEqualTo(key1);
-    final WeakIdentityHashMap<MyInteger, String> map = new WeakIdentityHashMap<MyInteger, String>();
+    final IdentityWeakHashMap<MyInteger, String> map = new IdentityWeakHashMap<MyInteger, String>();
     map.put(key0, "test0");
     map.put(key1, "test1");
     assertThat(map).contains(MapEntry.entry(key0, "test0"), MapEntry.entry(key1, "test1"));
@@ -122,8 +122,8 @@ public class WeakIdentityHashMapTest {
 
   @Test(expected = IllegalStateException.class)
   public void testKeyIteratorDoubleRemove() {
-    final WeakIdentityHashMap<Object, String> map =
-        new WeakIdentityHashMap<Object, String>(4, 0.75f);
+    final IdentityWeakHashMap<Object, String> map =
+        new IdentityWeakHashMap<Object, String>(4, 0.75f);
     final Object key0 = new Object();
     final Object key1 = new Object();
     final Object key3 = new Object();
@@ -139,8 +139,8 @@ public class WeakIdentityHashMapTest {
 
   @Test(expected = NoSuchElementException.class)
   public void testKeyIteratorRemove() {
-    final WeakIdentityHashMap<Object, String> map =
-        new WeakIdentityHashMap<Object, String>(4, 0.75f);
+    final IdentityWeakHashMap<Object, String> map =
+        new IdentityWeakHashMap<Object, String>(4, 0.75f);
     final Object key0 = new Object();
     final Object key1 = new Object();
     final Object key3 = new Object();
@@ -161,7 +161,7 @@ public class WeakIdentityHashMapTest {
 
   @Test
   public void testPut() {
-    final WeakIdentityHashMap<Object, String> map = new WeakIdentityHashMap<Object, String>(13);
+    final IdentityWeakHashMap<Object, String> map = new IdentityWeakHashMap<Object, String>(13);
     assertThat(map).isEmpty();
     final Object key0 = new Object();
     map.put(key0, "test0");
@@ -175,7 +175,7 @@ public class WeakIdentityHashMapTest {
 
   @Test
   public void testPutAll() {
-    final WeakIdentityHashMap<Object, String> map = new WeakIdentityHashMap<Object, String>(13);
+    final IdentityWeakHashMap<Object, String> map = new IdentityWeakHashMap<Object, String>(13);
     assertThat(map).isEmpty();
     final Object key0 = new Object();
     map.put(key0, "test0");
@@ -194,8 +194,8 @@ public class WeakIdentityHashMapTest {
 
   @Test
   public void testRemove() {
-    final WeakIdentityHashMap<Object, String> map =
-        new WeakIdentityHashMap<Object, String>(4, 0.75f);
+    final IdentityWeakHashMap<Object, String> map =
+        new IdentityWeakHashMap<Object, String>(4, 0.75f);
     final Object key0 = new Object();
     final Object key1 = new Object();
     final Object key2 = new Object();
@@ -216,7 +216,7 @@ public class WeakIdentityHashMapTest {
 
   @Test
   public void testSetEntry() {
-    final WeakIdentityHashMap<Object, String> map = new WeakIdentityHashMap<Object, String>(13);
+    final IdentityWeakHashMap<Object, String> map = new IdentityWeakHashMap<Object, String>(13);
     final Object key0 = new Object();
     map.put(key0, "test0");
     final HashMap<Object, String> entries = new HashMap<Object, String>();
@@ -235,8 +235,8 @@ public class WeakIdentityHashMapTest {
 
   @Test(expected = IllegalStateException.class)
   public void testValueIteratorDoubleRemove() {
-    final WeakIdentityHashMap<Object, String> map =
-        new WeakIdentityHashMap<Object, String>(4, 0.75f);
+    final IdentityWeakHashMap<Object, String> map =
+        new IdentityWeakHashMap<Object, String>(4, 0.75f);
     final Object key0 = new Object();
     final Object key1 = new Object();
     map.put(key0, "test0");
@@ -250,8 +250,8 @@ public class WeakIdentityHashMapTest {
 
   @Test(expected = NoSuchElementException.class)
   public void testValueIteratorRemove() {
-    final WeakIdentityHashMap<Object, String> map =
-        new WeakIdentityHashMap<Object, String>(4, 0.75f);
+    final IdentityWeakHashMap<Object, String> map =
+        new IdentityWeakHashMap<Object, String>(4, 0.75f);
     final Object key0 = new Object();
     final Object key1 = new Object();
     map.put(key0, "test0");
@@ -271,7 +271,7 @@ public class WeakIdentityHashMapTest {
   @Test
   @SuppressWarnings("UnusedAssignment")
   public void testWeakReference() throws InterruptedException {
-    final WeakIdentityHashMap<Object, String> map = new WeakIdentityHashMap<Object, String>(4);
+    final IdentityWeakHashMap<Object, String> map = new IdentityWeakHashMap<Object, String>(4);
     final Object key0 = new Object();
     final Object key1 = new Object();
     Object key2 = new Object();
