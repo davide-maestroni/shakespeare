@@ -92,12 +92,12 @@ public class ConstantConditions {
   }
 
   /**
-   * Asserts that the specified object is not null.
+   * Asserts that the specified object is not {@code null}.
    *
    * @param object the object.
    * @param <T>    the object type.
    * @return the object.
-   * @throws NullPointerException is the object is null.
+   * @throws NullPointerException if the object is {@code null}.
    */
   @NotNull
   public static <T> T notNull(final T object) {
@@ -105,13 +105,13 @@ public class ConstantConditions {
   }
 
   /**
-   * Asserts that the specified object is not null.
+   * Asserts that the specified object is not {@code null}.
    *
    * @param name   the name of the parameter used to build the error message.
    * @param object the object.
    * @param <T>    the object type.
    * @return the object.
-   * @throws NullPointerException is the object is null.
+   * @throws NullPointerException if the object is {@code null}.
    */
   @NotNull
   public static <T> T notNull(final String name, final T object) {
@@ -121,12 +121,30 @@ public class ConstantConditions {
     return object;
   }
 
-  // TODO: 01/04/2019 javadoc
+  /**
+   * Asserts that the specified array is not {@code null} and does not contain {@code null}
+   * elements.
+   *
+   * @param array the array.
+   * @param <E>   the array element type.
+   * @return the array.
+   * @throws NullPointerException if the array is {@code null} or contains {@code null} objects.
+   */
   @NotNull
   public static <E> E[] notNullElements(final E[] array) {
     return notNullElements("objects", array);
   }
 
+  /**
+   * Asserts that the specified array is not {@code null} and does not contain {@code null}
+   * elements.
+   *
+   * @param name  the name of the parameter used to build the error message.
+   * @param array the array.
+   * @param <E>   the array element type.
+   * @return the array.
+   * @throws NullPointerException if the array is {@code null} or contains {@code null} objects.
+   */
   @NotNull
   public static <E> E[] notNullElements(final String name, final E[] array) {
     ConstantConditions.notNull(name, array);
@@ -138,11 +156,30 @@ public class ConstantConditions {
     return array;
   }
 
+  /**
+   * Asserts that the specified collection is not {@code null} and does not contain {@code null}
+   * elements.
+   *
+   * @param collection the collection.
+   * @param <T>        the collection runtime type.
+   * @return the collection.
+   * @throws NullPointerException if the array is {@code null} or contains {@code null} objects.
+   */
   @NotNull
   public static <T extends Iterable> T notNullElements(final T collection) {
     return notNullElements("objects", collection);
   }
 
+  /**
+   * Asserts that the specified collection is not {@code null} and does not contain {@code null}
+   * elements.
+   *
+   * @param name       the name of the parameter used to build the error message.
+   * @param collection the collection.
+   * @param <T>        the collection runtime type.
+   * @return the collection.
+   * @throws NullPointerException if the array is {@code null} or contains {@code null} objects.
+   */
   @NotNull
   public static <T extends Iterable> T notNullElements(final String name, final T collection) {
     ConstantConditions.notNull(name, collection);
@@ -221,11 +258,30 @@ public class ConstantConditions {
     throw new UnsupportedOperationException(buildUnsupportedMethodName(null));
   }
 
+  /**
+   * Asserts that the calling method is not called.
+   *
+   * @param message the error message.
+   * @param <R>     the desired return type.
+   * @return nothing.
+   * @throws UnsupportedOperationException always.
+   */
   public static <R> R unsupported(final String message) {
     throw new UnsupportedOperationException(
         buildUnsupportedMethodName(null) + ((message != null) ? ": " + message : ""));
   }
 
+  /**
+   * Asserts that the calling method is not called.<br>
+   * To build the exception message, this method will inspect the stack until finding the caller of
+   * specified method.
+   *
+   * @param message            the error message.
+   * @param callerOfMethodName the name of the unsupported method.
+   * @param <R>                the desired return type.
+   * @return nothing.
+   * @throws UnsupportedOperationException always.
+   */
   public static <R> R unsupported(final String message, @NotNull final String callerOfMethodName) {
     throw new UnsupportedOperationException(
         buildUnsupportedMethodName(notNull("callerOfMethodName", callerOfMethodName)) + (
