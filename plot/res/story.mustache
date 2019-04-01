@@ -709,12 +709,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private boolean next(@NotNull final Context context) {
       final Actor self = context.getSelf();
       final BlockingQueue<Object> queue = mQueue;
+      final Memory memory = mMemory;
       Object effect = queue.poll();
       if (effect != null) {
         if (effect == NULL) {
           effect = null;
         }
-        mMemory.put(effect);
+        memory.put(effect);
         for (final SenderIterator sender : mNextSenders.values()) {
           sender.tellNext(self);
         }
@@ -729,7 +730,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           if (effect == NULL) {
             effect = null;
           }
-          mMemory.put(effect);
+          memory.put(effect);
         }
       }
       return true;

@@ -20,46 +20,60 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.WeakHashMap;
 
 /**
  * Created by davide-maestroni on 02/05/2019.
  */
 public class SingletonMemory implements Memory {
 
-  private boolean mHasIterator;
+  private final WeakHashMap<MemoryIterator, Void> mIterators =
+      new WeakHashMap<MemoryIterator, Void>();
+
   private boolean mHasValue;
   private Object mValue;
 
   @NotNull
   public Iterator<Object> iterator() {
-    if (mHasIterator) {
-      throw new IllegalStateException("singleton memory cannot have more than one iterator");
-    }
-    mHasIterator = true;
-    return new MemoryIterator();
+    final MemoryIterator iterator = new MemoryIterator(mHasValue);
+    mIterators.put(iterator, null);
+    return iterator;
   }
 
   public void put(final Object value) {
     mHasValue = true;
     mValue = value;
+    for (final MemoryIterator iterator : mIterators.keySet()) {
+      iterator.setNext();
+    }
   }
 
   private class MemoryIterator implements Iterator<Object> {
 
+    private boolean mHasNext;
+
+    private MemoryIterator(final boolean hasNext) {
+      mHasNext = hasNext;
+    }
+
     public boolean hasNext() {
-      return mHasValue;
+      return mHasNext;
     }
 
     public Object next() {
-      if (!mHasValue) {
+      if (!mHasNext) {
         throw new NoSuchElementException();
       }
-      mHasValue = false;
+      mHasNext = false;
       return mValue;
     }
 
     public void remove() {
       throw new UnsupportedOperationException("remove");
+    }
+
+    void setNext() {
+      mHasNext = true;
     }
   }
 }

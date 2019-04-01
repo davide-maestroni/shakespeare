@@ -19,6 +19,7 @@ package dm.shakespeare.plot;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.plot.Event.EventNarrator;
@@ -56,11 +57,18 @@ public class Scene {
   }
 
   @NotNull
+  @SuppressWarnings("unchecked")
   public <T> Event<T> includeEvent(
       @NotNull final NullaryFunction<? extends Event<? extends T>> eventCreator) {
     Setting.set(mSetting);
     try {
-      return Event.ofEvent(eventCreator);
+      return (Event<T>) eventCreator.call();
+
+    } catch (final Throwable t) {
+      if (t instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      return Event.ofIncident(t);
 
     } finally {
       Setting.unset();
@@ -68,11 +76,18 @@ public class Scene {
   }
 
   @NotNull
+  @SuppressWarnings("unchecked")
   public <T> Story<T> includeStory(
       @NotNull final NullaryFunction<? extends Story<? extends T>> storyCreator) {
     Setting.set(mSetting);
     try {
-      return Story.ofStory(storyCreator);
+      return (Story<T>) storyCreator.call();
+
+    } catch (final Throwable t) {
+      if (t instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      return Story.ofSingleIncident(t);
 
     } finally {
       Setting.unset();
@@ -82,11 +97,26 @@ public class Scene {
   @NotNull
   @SuppressWarnings("unchecked")
   public <T> EventNarrator<T> narrateEvent(
-      @NotNull final NullaryFunction<? extends EventNarrator<? extends T>> eventCreator) throws
-      Exception {
+      @NotNull final NullaryFunction<? extends EventNarrator<? extends T>> eventCreator) {
     Setting.set(mSetting);
     try {
       return (EventNarrator<T>) eventCreator.call();
+
+    } catch (final Throwable t) {
+      if (t instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+
+      try {
+        final EventNarrator<T> eventNarrator = Event.ofNarration();
+        eventNarrator.report(t, 0, TimeUnit.MILLISECONDS);
+        eventNarrator.close();
+        return eventNarrator;
+
+      } catch (final InterruptedException e) {
+        // it should never happen...
+        throw new IllegalStateException(e);
+      }
 
     } finally {
       Setting.unset();
@@ -96,11 +126,26 @@ public class Scene {
   @NotNull
   @SuppressWarnings("unchecked")
   public <T> StoryNarrator<T> narrateStory(
-      @NotNull final NullaryFunction<? extends StoryNarrator<? extends T>> storyCreator) throws
-      Exception {
+      @NotNull final NullaryFunction<? extends StoryNarrator<? extends T>> storyCreator) {
     Setting.set(mSetting);
     try {
       return (StoryNarrator<T>) storyCreator.call();
+
+    } catch (final Throwable t) {
+      if (t instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+
+      try {
+        final StoryNarrator<T> storyNarrator = Story.ofNarrations();
+        storyNarrator.report(t, 0, TimeUnit.MILLISECONDS);
+        storyNarrator.close();
+        return storyNarrator;
+
+      } catch (final InterruptedException e) {
+        // it should never happen...
+        throw new IllegalStateException(e);
+      }
 
     } finally {
       Setting.unset();
