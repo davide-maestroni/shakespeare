@@ -43,7 +43,7 @@ public class Logger {
   }
 
   /**
-   * Returns a new {@link Logger} instance initialized with {@link Locale#ENGLISH} locale.
+   * Returns a new {@code Logger} instance initialized with {@link Locale#ENGLISH} locale.
    *
    * @param printer the logs printer.
    * @return the new logger.
@@ -54,7 +54,7 @@ public class Logger {
   }
 
   /**
-   * Returns a new {@link Logger} instance initialized with the specified locale.
+   * Returns a new {@code Logger} instance initialized with the specified locale.
    *
    * @param printer the logs printer.
    * @param locale  the logs locale.

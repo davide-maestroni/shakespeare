@@ -28,7 +28,7 @@ import dm.shakespeare.function.Tester;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Default implementation of a {@link BehaviorBuilder}.
+ * Default implementation of a {@code BehaviorBuilder}.
  */
 class DefaultBehaviorBuilder implements BehaviorBuilder {
 

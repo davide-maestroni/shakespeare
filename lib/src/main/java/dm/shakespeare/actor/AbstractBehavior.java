@@ -19,7 +19,7 @@ package dm.shakespeare.actor;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Base abstract implementation of a {@link Behavior}.<br>
+ * Base abstract implementation of a {@code Behavior}.<br>
  * The implementation will just ignore start and stop events.
  */
 public abstract class AbstractBehavior implements Behavior {

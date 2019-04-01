@@ -24,7 +24,7 @@ import java.util.logging.Logger;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * {@link LogPrinter} implementation leveraging the built-in Java logging framework.
+ * {@code LogPrinter} implementation leveraging the built-in Java logging framework.
  */
 class JavaLogPrinter implements LogPrinter {
 

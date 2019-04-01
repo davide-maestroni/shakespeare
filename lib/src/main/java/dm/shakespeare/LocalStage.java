@@ -23,7 +23,7 @@ import dm.shakespeare.actor.Script;
 import dm.shakespeare.function.Observer;
 
 /**
- * {@link dm.shakespeare.actor.Stage} implementation managing local actor objects.
+ * {@link dm.shakespeare.actor.Stage} implementation managing local actor instances.
  */
 public class LocalStage extends AbstractStage {
 
@@ -35,6 +35,7 @@ public class LocalStage extends AbstractStage {
   };
 
   @NotNull
+  @Override
   protected Actor createActor(@NotNull final String id, @NotNull final Script script) throws
       Exception {
     final Actor actor = BackStage.newActor(id, script, mRemover);

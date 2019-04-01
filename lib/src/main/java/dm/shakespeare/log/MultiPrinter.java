@@ -24,7 +24,7 @@ import java.util.HashSet;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Implementation of a {@link LogPrinter} broadcasting the log messages to a list of printer
+ * Implementation of a {@code LogPrinter} broadcasting the log messages to a list of printer
  * instances.
  */
 class MultiPrinter implements LogPrinter {

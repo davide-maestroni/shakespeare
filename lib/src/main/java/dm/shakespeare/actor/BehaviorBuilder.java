@@ -25,7 +25,7 @@ import dm.shakespeare.function.Observer;
 import dm.shakespeare.function.Tester;
 
 /**
- * Interface defining a builder of {@link Behavior} instances.<br>
+ * Interface defining a builder of {@code Behavior} instances.<br>
  * The created behavior instances will call in definition order, upon reception of a new message,
  * all the handlers matching the specified conditions. In case the message or sender match none of
  * them, all the handlers registered by calling {@link #onNoMatch(Handler)} will be invoked.<br>

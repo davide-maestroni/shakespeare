@@ -58,8 +58,8 @@ public class Iterables {
   }
 
   /**
-   * Converts the specified iterable into a {@link List}.<br>
-   * If the specified instance already implements a {@link List} interface the method will just
+   * Converts the specified iterable into a {@code List}.<br>
+   * If the specified instance already implements a {@code List} interface the method will just
    * return it, otherwise a new collection will be created and filled with the iterable elements
    * (see {@link #toList(Iterable)}).
    *
@@ -77,8 +77,8 @@ public class Iterables {
   }
 
   /**
-   * Converts the specified iterable into a {@link Set}.<br>
-   * If the specified instance already implements a {@link Set} interface the method will just
+   * Converts the specified iterable into a {@code Set}.<br>
+   * If the specified instance already implements a {@code Set} interface the method will just
    * return it, otherwise a new collection will be created and filled with the iterable elements
    * (see {@link #toSet(Iterable)}).
    *
@@ -185,7 +185,7 @@ public class Iterables {
 
   /**
    * Returns the element of the specified iterable at the position {@code index}.<br>
-   * If the passed iterable implements a {@link List} interface the method {@link List#get(int)}
+   * If the passed iterable implements a {@code List} interface the method {@link List#get(int)}
    * will be called.
    *
    * @param iterable the iterable instance.
@@ -393,7 +393,7 @@ public class Iterables {
   }
 
   /**
-   * Returns a new {@link List} containing all the elements of the specified iterable in the same
+   * Returns a new {@code List} containing all the elements of the specified iterable in the same
    * order.
    *
    * @param iterable the iterable instance.
@@ -406,7 +406,7 @@ public class Iterables {
   }
 
   /**
-   * Returns a new {@link Set} containing all the elements of the specified iterable.
+   * Returns a new {@code Set} containing all the elements of the specified iterable.
    *
    * @param iterable the iterable instance.
    * @param <T>      the iterables elements type.

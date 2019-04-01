@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Class wrapping an {@link ExecutorService} instance so to run the passed tasks with the
+ * Class wrapping an {@code ExecutorService} instance so to run the passed tasks with the
  * specified priority.<br>
  * Several prioritizing services can be created from the same instance. Submitted commands will
  * age every time an higher priority one takes the precedence, so that older commands slowly

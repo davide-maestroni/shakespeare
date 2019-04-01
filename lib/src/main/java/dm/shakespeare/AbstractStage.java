@@ -33,7 +33,7 @@ import dm.shakespeare.function.Tester;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Base abstract implementation of a {@link Stage}.<br>
+ * Base abstract implementation of a {@code Stage}.<br>
  * The implementing classes just need to provide new actors instantiation. The ID validation and
  * actor registration are automatically performed by this class.
  */

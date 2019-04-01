@@ -22,7 +22,7 @@ import dm.shakespeare.actor.Options;
 import dm.shakespeare.config.BuildConfig;
 
 /**
- * {@link Receipt} implementation notifying that the sent message has been bounced.
+ * {@code Receipt} implementation notifying that the sent message has been bounced.
  */
 public class Bounce extends Receipt {
 

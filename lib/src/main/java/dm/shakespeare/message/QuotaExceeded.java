@@ -22,7 +22,7 @@ import dm.shakespeare.actor.Options;
 import dm.shakespeare.config.BuildConfig;
 
 /**
- * {@link Receipt} implementation notifying that the sent message has been rejected because the
+ * {@code Receipt} implementation notifying that the sent message has been rejected because the
  * inbox quota was exceeded.
  */
 public class QuotaExceeded extends Bounce {

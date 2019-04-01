@@ -23,7 +23,7 @@ import dm.shakespeare.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * {@link Receipt} implementation notifying that the sent message has been rejected after a failure.
+ * {@code Receipt} implementation notifying that the sent message has been rejected after a failure.
  */
 public class Failure extends Bounce {
 

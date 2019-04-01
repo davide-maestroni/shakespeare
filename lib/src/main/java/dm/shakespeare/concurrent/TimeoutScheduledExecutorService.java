@@ -24,7 +24,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Class wrapping an {@link ScheduledExecutorService} instance so to limit the execution time of
+ * Class wrapping an {@code ScheduledExecutorService} instance so to limit the execution time of
  * each
  * submitted task.
  */

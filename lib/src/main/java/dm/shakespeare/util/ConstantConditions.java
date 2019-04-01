@@ -121,6 +121,7 @@ public class ConstantConditions {
     return object;
   }
 
+  // TODO: 01/04/2019 javadoc
   @NotNull
   public static <E> E[] notNullElements(final E[] array) {
     return notNullElements("objects", array);

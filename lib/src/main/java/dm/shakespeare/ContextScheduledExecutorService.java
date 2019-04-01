@@ -30,7 +30,7 @@ import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Class wrapping an {@link ScheduledExecutorService} so to provide a way to cancel all the
+ * Class wrapping an {@code ScheduledExecutorService} so to provide a way to cancel all the
  * submitted tasks.<br>
  * This class instances do not support any blocking method (like
  * {@link ExecutorService#invokeAll(Collection)} or {@link ExecutorService#invokeAny(Collection)}).

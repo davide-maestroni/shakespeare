@@ -30,7 +30,7 @@ import java.util.Queue;
 /**
  * Class implementing a light-weight queue, storing elements into a dynamically increasing
  * circular buffer.<br>
- * Note that, even if the class implements the {@link Queue} interface, {@code null} elements are
+ * Note that, even if the class implements the {@code Queue} interface, {@code null} elements are
  * supported, so the values returned by {@link #peek()} and {@link #poll()} methods might not be
  * used to detect whether the queue is empty or not.
  *

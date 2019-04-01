@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Set;
 
 /**
- * {@link Set} of {@link Actor}s replicating the actor interface.
+ * {@code Set} of {@code Actor}s replicating the actor interface.
  */
 public interface ActorSet extends Set<Actor> {
 

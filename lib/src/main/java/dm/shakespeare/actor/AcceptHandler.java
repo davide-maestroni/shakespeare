@@ -24,7 +24,7 @@ import dm.shakespeare.function.Observer;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * {@link Handler} implementation wrapping an {@link Observer} function.
+ * {@code Handler} implementation wrapping an {@link Observer} function.
  *
  * @param <T> the observed type.
  */

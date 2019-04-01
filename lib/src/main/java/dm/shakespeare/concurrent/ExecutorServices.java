@@ -44,8 +44,8 @@ public class ExecutorServices {
   }
 
   /**
-   * Converts the specified instance into an {@link ActorExecutorService}.<br>
-   * If the input parameter is already an {@link ActorExecutorService}, the same object is returned.
+   * Converts the specified instance into an {@code ActorExecutorService}.<br>
+   * If the input parameter is already an {@code ActorExecutorService}, the same object is returned.
    *
    * @param executorService the executor service to convert.
    * @return the converted instance.
@@ -60,8 +60,8 @@ public class ExecutorServices {
   }
 
   /**
-   * Converts the specified instance into an {@link ActorScheduledExecutorService}.<br>
-   * If the input parameter is already an {@link ActorScheduledExecutorService}, the same object
+   * Converts the specified instance into an {@code ActorScheduledExecutorService}.<br>
+   * If the input parameter is already an {@code ActorScheduledExecutorService}, the same object
    * is returned.
    *
    * @param executorService the executor service to convert.
@@ -77,8 +77,8 @@ public class ExecutorServices {
   }
 
   /**
-   * Converts the specified instance into an {@link ScheduledExecutorService}.<br>
-   * If the input parameter is already an {@link ScheduledExecutorService}, the same object is
+   * Converts the specified instance into an {@code ScheduledExecutorService}.<br>
+   * If the input parameter is already an {@code ScheduledExecutorService}, the same object is
    * returned.<br>
    * The wrapping objects are cached so that calling this method with the same instance as input
    * will produce the same result.
@@ -106,9 +106,9 @@ public class ExecutorServices {
 
   /**
    * Returns the global local executor instance.<br>
-   * A local executor is an {@link ExecutorService} implementation maintaining a queue of
+   * A local executor is an {@code ExecutorService} implementation maintaining a queue of
    * commands local to each calling thread. It may act as a trampoline of tasks and comply to the
-   * {@link ExecutorService} but for its {@code shutdown} methods. In fact, the local executor
+   * {@code ExecutorService} but for its {@code shutdown} methods. In fact, the local executor
    * instance cannot be stopped and will throw an {@link UnsupportedOperationException} if an
    * attempt is made.
    *
@@ -202,7 +202,7 @@ public class ExecutorServices {
 
   /**
    * Creates a new trampoline executor service instance.<br>
-   * A trampoline executor is an {@link ExecutorService} implementation maintaining a queue of
+   * A trampoline executor is an {@code ExecutorService} implementation maintaining a queue of
    * commands which are consumed in the calling threads.
    *
    * @param commandQueue the internal command queue.
@@ -215,7 +215,7 @@ public class ExecutorServices {
   }
 
   /**
-   * Wraps the specified {@link ExecutorService} instance so to run the passed tasks with the
+   * Wraps the specified {@code ExecutorService} instance so to run the passed tasks with the
    * specified priority.<br>
    * Several prioritizing services can be created from the same instance. Submitted commands will
    * age every time an higher priority one takes the precedence, so that older commands slowly
@@ -239,7 +239,7 @@ public class ExecutorServices {
   }
 
   /**
-   * Wraps the specified {@link ScheduledExecutorService} instance so to run the passed tasks
+   * Wraps the specified {@code ScheduledExecutorService} instance so to run the passed tasks
    * with the specified priority.<br>
    * Several prioritizing services can be created from the same instance. Submitted commands will
    * age every time an higher priority one takes the precedence, so that older commands slowly
@@ -260,7 +260,7 @@ public class ExecutorServices {
   }
 
   /**
-   * Wraps the specified {@link ExecutorService} instance so to limit the number of parallely
+   * Wraps the specified {@code ExecutorService} instance so to limit the number of parallely
    * running tasks to the specified maximum number.
    *
    * @param maxConcurrency  the maximum number of parallel tasks.
@@ -277,7 +277,7 @@ public class ExecutorServices {
   }
 
   /**
-   * Wraps the specified {@link ScheduledExecutorService} instance so to limit the number of
+   * Wraps the specified {@code ScheduledExecutorService} instance so to limit the number of
    * parallely running tasks to the specified maximum number.
    *
    * @param maxConcurrency  the maximum number of parallel tasks.
@@ -291,7 +291,7 @@ public class ExecutorServices {
   }
 
   /**
-   * Wraps the specified {@link ExecutorService} instance so to limit the execution time of each
+   * Wraps the specified {@code ExecutorService} instance so to limit the execution time of each
    * submitted task.
    *
    * @param timeout               the execution timeout.
@@ -311,7 +311,7 @@ public class ExecutorServices {
   }
 
   /**
-   * Wraps the specified {@link ScheduledExecutorService} instance so to limit the execution time
+   * Wraps the specified {@code ScheduledExecutorService} instance so to limit the execution time
    * of each submitted task.
    *
    * @param timeout               the execution timeout.

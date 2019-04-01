@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Class wrapping an {@link ExecutorService} instance so to limit the execution time of each
+ * Class wrapping an {@code ExecutorService} instance so to limit the execution time of each
  * submitted task.
  */
 class TimeoutExecutorService extends AbstractExecutorService {

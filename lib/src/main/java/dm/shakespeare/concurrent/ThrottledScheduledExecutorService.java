@@ -27,7 +27,7 @@ import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.TimeUnits;
 
 /**
- * Class wrapping an {@link ScheduledExecutorService} instance so to limit the number of parallely
+ * Class wrapping an {@code ScheduledExecutorService} instance so to limit the number of parallely
  * running tasks to the specified maximum number.
  */
 class ThrottledScheduledExecutorService extends ThrottledExecutorService

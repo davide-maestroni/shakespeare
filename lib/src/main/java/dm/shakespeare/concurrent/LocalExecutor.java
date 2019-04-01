@@ -25,7 +25,7 @@ import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.CQueue;
 
 /**
- * {@link Executor} implementation maintaining a queue of commands.
+ * {@code Executor} implementation maintaining a queue of commands.
  */
 class LocalExecutor implements Executor {
 

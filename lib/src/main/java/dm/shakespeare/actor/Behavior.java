@@ -36,7 +36,7 @@ import dm.shakespeare.log.Logger;
  * It is always possible to know whether the behavior is stopped as a result of actor dismissal or
  * a simple restart by calling {@link Context#isDismissed()}.<p>
  * The actor data, executor services and logger should always be accessed through the
- * {@link Context} instance. The provided executor services can be safely used to perform
+ * {@code Context} instance. The provided executor services can be safely used to perform
  * asynchronous operations, since they employ the same synchronization mechanism as the actor
  * executor service (see {@link Actor}), but do not support any blocking method (like
  * {@link ExecutorService#invokeAll(Collection)} or {@link ExecutorService#invokeAny(Collection)}).

@@ -24,7 +24,7 @@ import dm.shakespeare.function.Mapper;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * {@link Handler} implementation wrapping a {@link Mapper} function.
+ * {@code Handler} implementation wrapping a {@link Mapper} function.
  *
  * @param <T> the observed type.
  */

@@ -25,7 +25,7 @@ import dm.shakespeare.actor.Options;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Default implementation of an {@link Envelop}.
+ * Default implementation of an {@code Envelop}.
  */
 abstract class DefaultEnvelop implements Envelop, Runnable {
 

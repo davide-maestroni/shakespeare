@@ -27,7 +27,7 @@ import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.TimeUnits;
 
 /**
- * Class wrapping an {@link ScheduledExecutorService} instance so to run the passed tasks with the
+ * Class wrapping an {@code ScheduledExecutorService} instance so to run the passed tasks with the
  * specified priority.<br>
  * Several prioritizing services can be created from the same instance. Submitted commands will
  * age every time an higher priority one takes the precedence, so that older commands slowly

@@ -28,7 +28,7 @@ import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Class wrapping an {@link ExecutorService} instance so to limit the number of parallely running
+ * Class wrapping an {@code ExecutorService} instance so to limit the number of parallely running
  * tasks to the specified maximum number.
  */
 class ThrottledExecutorService extends AbstractExecutorService {
