@@ -414,18 +414,18 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolve(
+  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhile(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final Class<? extends E3> thirdType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
-    return resolve(firstType, secondType, thirdType, conditionHandler, incidentHandler,
+    return resolveWhile(firstType, secondType, thirdType, conditionHandler, incidentHandler,
         new ListMemory());
   }
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolve(
+  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhile(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final Class<? extends E3> thirdType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
@@ -440,35 +440,35 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolve(
+  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhile(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final Class<? extends E3> thirdType,
       @NotNull final StoryEvolver<? super Throwable, ? extends T> storyEvolver) {
-    return resolve(firstType, secondType, thirdType, new LooperConditionHandler(storyEvolver),
+    return resolveWhile(firstType, secondType, thirdType, new LooperConditionHandler(storyEvolver),
         new LooperEffectHandler<Throwable, T>(storyEvolver));
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolve(
+  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhile(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final Class<? extends E3> thirdType,
       @NotNull final StoryEvolver<? super Throwable, ? extends T> storyEvolver,
       @NotNull final Memory memory) {
-    return resolve(firstType, secondType, thirdType, new LooperConditionHandler(storyEvolver),
+    return resolveWhile(firstType, secondType, thirdType, new LooperConditionHandler(storyEvolver),
         new LooperEffectHandler<Throwable, T>(storyEvolver), memory);
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolve(
+  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhile(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
-    return resolve(firstType, secondType, conditionHandler, incidentHandler, new ListMemory());
+    return resolveWhile(firstType, secondType, conditionHandler, incidentHandler, new ListMemory());
   }
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolve(
+  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhile(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler,
@@ -481,32 +481,32 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolve(
+  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhile(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final StoryEvolver<? super Throwable, ? extends T> storyEvolver) {
-    return resolve(firstType, secondType, new LooperConditionHandler(storyEvolver),
+    return resolveWhile(firstType, secondType, new LooperConditionHandler(storyEvolver),
         new LooperEffectHandler<Throwable, T>(storyEvolver));
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolve(
+  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhile(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final StoryEvolver<? super Throwable, ? extends T> storyEvolver,
       @NotNull final Memory memory) {
-    return resolve(firstType, secondType, new LooperConditionHandler(storyEvolver),
+    return resolveWhile(firstType, secondType, new LooperConditionHandler(storyEvolver),
         new LooperEffectHandler<Throwable, T>(storyEvolver), memory);
   }
 
   @NotNull
-  public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
+  public <E1 extends Throwable> Story<T> resolveWhile(@NotNull final Class<? extends E1> firstType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
-    return resolve(firstType, conditionHandler, incidentHandler, new ListMemory());
+    return resolveWhile(firstType, conditionHandler, incidentHandler, new ListMemory());
   }
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
+  public <E1 extends Throwable> Story<T> resolveWhile(@NotNull final Class<? extends E1> firstType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler,
       @NotNull final Memory memory) {
@@ -517,32 +517,32 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
+  public <E1 extends Throwable> Story<T> resolveWhile(@NotNull final Class<? extends E1> firstType,
       @NotNull final StoryEvolver<? super Throwable, ? extends T> storyEvolver) {
-    return resolve(firstType, new LooperConditionHandler(storyEvolver),
+    return resolveWhile(firstType, new LooperConditionHandler(storyEvolver),
         new LooperEffectHandler<Throwable, T>(storyEvolver));
   }
 
   @NotNull
-  public <E1 extends Throwable> Story<T> resolve(@NotNull final Class<? extends E1> firstType,
+  public <E1 extends Throwable> Story<T> resolveWhile(@NotNull final Class<? extends E1> firstType,
       @NotNull final StoryEvolver<? super Throwable, ? extends T> storyEvolver,
       @NotNull final Memory memory) {
-    return resolve(firstType, new LooperConditionHandler(storyEvolver),
+    return resolveWhile(firstType, new LooperConditionHandler(storyEvolver),
         new LooperEffectHandler<Throwable, T>(storyEvolver), memory);
   }
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E extends Throwable> Story<T> resolve(
+  public <E extends Throwable> Story<T> resolveWhile(
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler) {
-    return resolve(incidentTypes, conditionHandler, incidentHandler, new ListMemory());
+    return resolveWhile(incidentTypes, conditionHandler, incidentHandler, new ListMemory());
   }
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E extends Throwable> Story<T> resolve(
+  public <E extends Throwable> Story<T> resolveWhile(
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends Story<? extends T>> incidentHandler,

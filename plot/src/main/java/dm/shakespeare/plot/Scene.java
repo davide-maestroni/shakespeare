@@ -32,7 +32,7 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class Scene {
 
-  // TODO: 01/04/2019 resolveWhile, flat vs value
+  // TODO: 01/04/2019 flat vs value
   // TODO: 31/03/2019 generate function wrapper
   // TODO: 05/02/2019 Story PROGRESS???
   // TODO: 15/02/2019 untriggered actors, serialization
