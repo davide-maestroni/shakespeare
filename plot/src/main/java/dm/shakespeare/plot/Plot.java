@@ -30,9 +30,8 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 01/25/2019.
  */
-public class Scene {
+public class Plot {
 
-  // TODO: 01/04/2019 flat vs value
   // TODO: 31/03/2019 generate function wrapper
   // TODO: 05/02/2019 Story PROGRESS???
   // TODO: 15/02/2019 untriggered actors, serialization
@@ -40,20 +39,20 @@ public class Scene {
 
   private final Setting mSetting;
 
-  public Scene() {
+  public Plot() {
     mSetting = new Setting(null, null);
   }
 
-  public Scene(@NotNull final ExecutorService executor) {
+  public Plot(@NotNull final ExecutorService executor) {
     mSetting = new Setting(ConstantConditions.notNull("executor", executor), null);
   }
 
-  public Scene(@NotNull final ExecutorService executor, @NotNull final Logger logger) {
+  public Plot(@NotNull final ExecutorService executor, @NotNull final Logger logger) {
     mSetting = new Setting(ConstantConditions.notNull("executor", executor),
         ConstantConditions.notNull("logger", logger));
   }
 
-  public Scene(@NotNull final Logger logger) {
+  public Plot(@NotNull final Logger logger) {
     mSetting = new Setting(null, ConstantConditions.notNull("logger", logger));
   }
 

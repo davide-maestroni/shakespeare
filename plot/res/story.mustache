@@ -232,8 +232,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final StoryEvolver<? super List<T>, ? extends R> storyEvolver) {
-    return when(stories, new EvolverConditionHandler(storyEvolver),
-        new EvolverEffectHandler<List<T>, R>(storyEvolver));
+    return when(stories, storyEvolver, new ListMemory());
   }
 
   @NotNull
@@ -282,8 +281,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public static <T, R> Story<R> whenTransform(
       @NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final StoryTransformer<? super List<T>, ? extends R> storyTransformer) {
-    return whenTransform(stories, new TransformerConditionHandler(storyTransformer),
-        new TransformerEffectHandler<List<T>, R>(storyTransformer));
+    return whenTransform(stories, storyTransformer, new ListMemory());
   }
 
   @NotNull
@@ -437,8 +435,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public <R> Story<R> forWhile(@NotNull final StoryEvolver<? super T, ? extends R> storyEvolver) {
-    return forWhile(new EvolverConditionHandler(storyEvolver),
-        new EvolverEffectHandler<T, R>(storyEvolver));
+    return forWhile(storyEvolver, new ListMemory());
   }
 
   @NotNull
@@ -466,8 +463,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   public <R> Story<R> forWhileTransform(
       @NotNull final StoryTransformer<? super T, ? extends R> storyTransformer) {
-    return forWhileTransform(new TransformerConditionHandler(storyTransformer),
-        new TransformerEffectHandler<T, R>(storyTransformer));
+    return forWhileTransform(storyTransformer, new ListMemory());
   }
 
   @NotNull
@@ -538,8 +534,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final Class<? extends E3> thirdType,
       @NotNull final StoryEvolver<? super Throwable, ? extends T> storyEvolver) {
-    return resolveWhile(firstType, secondType, thirdType, new EvolverConditionHandler(storyEvolver),
-        new EvolverEffectHandler<Throwable, T>(storyEvolver));
+    return resolveWhile(firstType, secondType, thirdType, storyEvolver, new ListMemory());
   }
 
   @NotNull
@@ -578,8 +573,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhile(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final StoryEvolver<? super Throwable, ? extends T> storyEvolver) {
-    return resolveWhile(firstType, secondType, new EvolverConditionHandler(storyEvolver),
-        new EvolverEffectHandler<Throwable, T>(storyEvolver));
+    return resolveWhile(firstType, secondType, storyEvolver, new ListMemory());
   }
 
   @NotNull
@@ -613,13 +607,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   public <E1 extends Throwable> Story<T> resolveWhile(@NotNull final Class<? extends E1> firstType,
       @NotNull final StoryEvolver<? super Throwable, ? extends T> storyEvolver) {
-    return resolveWhile(firstType, new EvolverConditionHandler(storyEvolver),
-        new EvolverEffectHandler<Throwable, T>(storyEvolver));
+    return resolveWhile(firstType, storyEvolver, new ListMemory());
   }
 
   @NotNull
-  public <E1 extends Throwable> Story<T> resolveWhile(
-      @NotNull final Class<? extends E1> firstType,
+  public <E1 extends Throwable> Story<T> resolveWhile(@NotNull final Class<? extends E1> firstType,
       @NotNull final StoryEvolver<? super Throwable, ? extends T> storyEvolver,
       @NotNull final Memory memory) {
     return resolveWhile(firstType, new EvolverConditionHandler(storyEvolver),
@@ -677,9 +669,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final Class<? extends E3> thirdType,
       @NotNull final StoryTransformer<? super Throwable, ? extends T> storyTransformer) {
-    return resolveWhileTransform(firstType, secondType, thirdType,
-        new TransformerConditionHandler(storyTransformer),
-        new TransformerEffectHandler<Throwable, T>(storyTransformer));
+    return resolveWhileTransform(firstType, secondType, thirdType, storyTransformer,
+        new ListMemory());
   }
 
   @NotNull
@@ -719,9 +710,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhileTransform(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final StoryTransformer<? super Throwable, ? extends T> storyTransformer) {
-    return resolveWhileTransform(firstType, secondType,
-        new TransformerConditionHandler(storyTransformer),
-        new TransformerEffectHandler<Throwable, T>(storyTransformer));
+    return resolveWhileTransform(firstType, secondType, storyTransformer, new ListMemory());
   }
 
   @NotNull
@@ -758,8 +747,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public <E1 extends Throwable> Story<T> resolveWhileTransform(
       @NotNull final Class<? extends E1> firstType,
       @NotNull final StoryTransformer<? super Throwable, ? extends T> storyTransformer) {
-    return resolveWhileTransform(firstType, new TransformerConditionHandler(storyTransformer),
-        new TransformerEffectHandler<Throwable, T>(storyTransformer));
+    return resolveWhileTransform(firstType, storyTransformer, new ListMemory());
   }
 
   @NotNull
@@ -819,7 +807,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public Story<T> watchAll(@Nullable final Observer<? super T> effectObserver) {
-    return forAllTransform(new WatchAllFunction<T>(effectObserver));
+    return watchAll(effectObserver, new ListMemory());
   }
 
   @NotNull
@@ -842,7 +830,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   public Story<T> watchEach(@Nullable final Observer<? super T> effectObserver,
       @Nullable final Observer<? super Throwable> incidentObserver) {
-    return watchEach(new DefaultEventObserver<T>(effectObserver, incidentObserver));
+    return watchEach(effectObserver, incidentObserver, new ListMemory());
   }
 
   @NotNull
@@ -3161,7 +3149,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
-  private static class EvolverConditionHandler implements NullaryFunction<Event<? extends Boolean>> {
+  private static class EvolverConditionHandler
+      implements NullaryFunction<Event<? extends Boolean>> {
 
     private final StoryEvolver<?, ?> mStoryEvolver;
 
@@ -4500,7 +4489,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 {{/arities}}
 
-  private static class TransformerConditionHandler implements NullaryFunction<Event<? extends Boolean>> {
+  private static class TransformerConditionHandler
+      implements NullaryFunction<Event<? extends Boolean>> {
 
     private final StoryTransformer<?, ?> mStoryTransformer;
 
@@ -4517,7 +4507,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private final StoryTransformer<? super T, ? extends R> mStoryTransformer;
 
-    TransformerEffectHandler(@NotNull final StoryTransformer<? super T, ? extends R> storyTransformer) {
+    TransformerEffectHandler(
+        @NotNull final StoryTransformer<? super T, ? extends R> storyTransformer) {
       mStoryTransformer = ConstantConditions.notNull("storyTransformer", storyTransformer);
     }
 
