@@ -123,13 +123,27 @@ public abstract class Event<T> {
 
   @NotNull
   public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Event<R> when({{#paramTypes}}@NotNull final Event<? extends {{type}}> {{prefix}}Event, {{/paramTypes}}
+      @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends R> effectHandler) {
+    return new {{classPrefix}}Effect<{{#paramTypes}}{{type}}, {{/paramTypes}}R>({{#paramTypes}}{{prefix}}Event, {{/paramTypes}}effectHandler);
+  }
+{{/arities}}
+
+  @NotNull
+  public static <T, R> Event<R> when(@NotNull final Iterable<? extends Event<? extends T>> events,
+      @NotNull final UnaryFunction<? super List<T>, ? extends R> effectHandler) {
+    return new GenericEffect<T, R>(events, effectHandler);
+  }
+{{#arities}}
+
+  @NotNull
+  public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Event<R> whenEvent({{#paramTypes}}@NotNull final Event<? extends {{type}}> {{prefix}}Event, {{/paramTypes}}
       @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends Event<? extends R>> effectHandler) {
     return new {{classPrefix}}Event<{{#paramTypes}}{{type}}, {{/paramTypes}}R>({{#paramTypes}}{{prefix}}Event, {{/paramTypes}}effectHandler);
   }
 {{/arities}}
 
   @NotNull
-  public static <T, R> Event<R> when(@NotNull final Iterable<? extends Event<? extends T>> events,
+  public static <T, R> Event<R> whenEvent(@NotNull final Iterable<? extends Event<? extends T>> events,
       @NotNull final UnaryFunction<? super List<T>, ? extends Event<? extends R>> effectHandler) {
     return new GenericEvent<T, R>(events, effectHandler);
   }
@@ -187,6 +201,51 @@ public abstract class Event<T> {
   public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Event<T> resolve(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final Class<? extends E3> thirdType,
+      @NotNull final UnaryFunction<? super E1, ? extends T> incidentObserver) {
+    final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
+    types.add(firstType);
+    types.add(secondType);
+    types.add(thirdType);
+    return new ResolveEffect<T>(this, types,
+        (UnaryFunction<? super Throwable, ? extends T>) incidentObserver);
+  }
+
+  @NotNull
+  @SuppressWarnings("unchecked")
+  public <E1 extends Throwable, E2 extends Throwable> Event<T> resolve(
+      @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
+      @NotNull final UnaryFunction<? super E1, ? extends T> incidentObserver) {
+    final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
+    types.add(firstType);
+    types.add(secondType);
+    return new ResolveEffect<T>(this, types,
+        (UnaryFunction<? super Throwable, ? extends T>) incidentObserver);
+  }
+
+  @NotNull
+  @SuppressWarnings("unchecked")
+  public <E1 extends Throwable> Event<T> resolve(@NotNull final Class<? extends E1> firstType,
+      @NotNull final UnaryFunction<? super E1, ? extends T> incidentObserver) {
+    final Set<Class<? extends Throwable>> types =
+        Collections.<Class<? extends Throwable>>singleton(firstType);
+    return new ResolveEffect<T>(this, types,
+        (UnaryFunction<? super Throwable, ? extends T>) incidentObserver);
+  }
+
+  @NotNull
+  @SuppressWarnings("unchecked")
+  public <E extends Throwable> Event<T> resolve(
+      @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
+      @NotNull final UnaryFunction<? super E, ? extends T> incidentObserver) {
+    return new ResolveEffect<T>(this, Iterables.<Class<? extends Throwable>>toSet(incidentTypes),
+        (UnaryFunction<? super Throwable, ? extends T>) incidentObserver);
+  }
+
+  @NotNull
+  @SuppressWarnings("unchecked")
+  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Event<T> resolveEvent(
+      @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
+      @NotNull final Class<? extends E3> thirdType,
       @NotNull final UnaryFunction<? super E1, ? extends Event<T>> incidentObserver) {
     final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
     types.add(firstType);
@@ -198,7 +257,7 @@ public abstract class Event<T> {
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E1 extends Throwable, E2 extends Throwable> Event<T> resolve(
+  public <E1 extends Throwable, E2 extends Throwable> Event<T> resolveEvent(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final UnaryFunction<? super E1, ? extends Event<T>> incidentObserver) {
     final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
@@ -210,7 +269,7 @@ public abstract class Event<T> {
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E1 extends Throwable> Event<T> resolve(@NotNull final Class<? extends E1> firstType,
+  public <E1 extends Throwable> Event<T> resolveEvent(@NotNull final Class<? extends E1> firstType,
       @NotNull final UnaryFunction<? super E1, ? extends Event<T>> incidentObserver) {
     final Set<Class<? extends Throwable>> types =
         Collections.<Class<? extends Throwable>>singleton(firstType);
@@ -220,7 +279,7 @@ public abstract class Event<T> {
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E extends Throwable> Event<T> resolve(
+  public <E extends Throwable> Event<T> resolveEvent(
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
       @NotNull final UnaryFunction<? super E, ? extends Event<T>> incidentObserver) {
     return new ResolveEvent<T>(this, Iterables.<Class<? extends Throwable>>toSet(incidentTypes),
@@ -233,9 +292,14 @@ public abstract class Event<T> {
   }
 
   @NotNull
-  public <R> Event<R> then(
-      @NotNull final UnaryFunction<? super T, ? extends Event<R>> effectHandler) {
+  public <R> Event<R> then(@NotNull final UnaryFunction<? super T, ? extends R> effectHandler) {
     return when(this, effectHandler);
+  }
+
+  @NotNull
+  public <R> Event<R> thenEvent(
+      @NotNull final UnaryFunction<? super T, ? extends Event<R>> effectHandler) {
+    return whenEvent(this, effectHandler);
   }
 
   @NotNull
@@ -463,7 +527,9 @@ public abstract class Event<T> {
     }
 
     @Nullable
-    Actor getConflictActor(@NotNull final Conflict conflict) throws Exception {
+    Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Context context) throws
+        Exception {
+      putConflict(conflict, context);
       return null;
     }
 
@@ -471,13 +537,23 @@ public abstract class Event<T> {
     abstract List<Actor> getInputActors();
 
     @Nullable
-    Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Context context) throws
+        Exception {
+      putEffect(inputs[0], context);
       return null;
     }
 
     @NotNull
     Setting getSetting() {
       return mSetting;
+    }
+
+    void putConflict(@NotNull final Conflict conflict, @NotNull final Context context) {
+      fail(conflict, context);
+    }
+
+    void putEffect(final Object effect, @NotNull final Context context) {
+      done(effect, context);
     }
 
     private void cancelInputActors(@NotNull final Context context) {
@@ -489,13 +565,10 @@ public abstract class Event<T> {
 
     private void conflict(@NotNull final Conflict conflict, @NotNull final Context context) {
       try {
-        final Actor conflictActor = getConflictActor(conflict);
+        final Actor conflictActor = getConflictActor(conflict, context);
         if (conflictActor != null) {
           conflictActor.tell(GET, mOutputOptions, context.getSelf());
           context.setBehavior(new OutputBehavior());
-
-        } else {
-          fail(conflict, context);
         }
 
       } catch (final Throwable t) {
@@ -571,11 +644,11 @@ public abstract class Event<T> {
             if (++mInputCount == mInputs.length) {
               final Conflict conflict = Conflict.ofCancel();
               try {
-                final Actor conflictActor = getConflictActor(conflict);
+                final Actor conflictActor = getConflictActor(conflict, context);
                 if (conflictActor != null) {
                   conflictActor.tell(CANCEL, null, context.getSelf());
+                  fail(conflict, context);
                 }
-                fail(conflict, context);
 
               } catch (final Throwable t) {
                 fail(new Conflict(t), context);
@@ -653,13 +726,10 @@ public abstract class Event<T> {
 
                   } else {
                     try {
-                      final Actor outputActor = getOutputActor(inputs);
+                      final Actor outputActor = getOutputActor(inputs, context);
                       if (outputActor != null) {
                         outputActor.tell(GET, mOutputOptions, context.getSelf());
                         context.setBehavior(new OutputBehavior());
-
-                      } else {
-                        done(message, context);
                       }
 
                     } catch (final Throwable t) {
@@ -859,6 +929,48 @@ public abstract class Event<T> {
     }
   }
 
+  private static class GenericEffect<T, R> extends AbstractEvent<R> {
+
+    private final List<Actor> mActors;
+    private final UnaryFunction<? super List<T>, ? extends R> mEffectHandler;
+
+    private GenericEffect(@NotNull final Iterable<? extends Event<? extends T>> events,
+        @NotNull final UnaryFunction<? super List<T>, ? extends R> effectHandler) {
+      super(Iterables.size(events));
+      final ArrayList<Actor> actors = new ArrayList<Actor>();
+      for (final Event<? extends T> event : events) {
+        actors.add(event.getActor());
+      }
+      mActors = actors;
+      mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return mActors;
+    }
+
+    @Nullable
+    @Override
+    @SuppressWarnings("unchecked")
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Context context) throws
+        Exception {
+      Setting.set(getSetting());
+      try {
+        final ArrayList<T> inputList = new ArrayList<T>();
+        for (final Object input : inputs) {
+          inputList.add((T) input);
+        }
+        final R effect = mEffectHandler.call(inputList);
+        putEffect(effect, context);
+        return null;
+
+      } finally {
+        Setting.unset();
+      }
+    }
+  }
+
   private static class GenericEvent<T, R> extends AbstractEvent<R> {
 
     private final List<Actor> mActors;
@@ -880,10 +992,11 @@ public abstract class Event<T> {
       return mActors;
     }
 
-    @NotNull
+    @Nullable
     @Override
     @SuppressWarnings("unchecked")
-    Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Context context) throws
+        Exception {
       Setting.set(getSetting());
       try {
         final ArrayList<T> inputList = new ArrayList<T>();
@@ -922,6 +1035,48 @@ public abstract class Event<T> {
     }
   }
 
+  private static class ResolveEffect<T> extends AbstractEvent<T> {
+
+    private final List<Actor> mActors;
+    private final UnaryFunction<? super Throwable, ? extends T> mIncidentHandler;
+    private final Set<Class<? extends Throwable>> mIncidentTypes;
+
+    private ResolveEffect(@NotNull final Event<? extends T> event,
+        @NotNull final Set<Class<? extends Throwable>> incidentTypes,
+        @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler) {
+      super(1);
+      mActors = Collections.singletonList(event.getActor());
+      mIncidentTypes = ConstantConditions.notNullElements("incidentTypes", incidentTypes);
+      mIncidentHandler = ConstantConditions.notNull("incidentHandler", incidentHandler);
+    }
+
+    @Nullable
+    @Override
+    Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Context context) throws
+        Exception {
+      final Throwable incident = conflict.getCause();
+      for (final Class<? extends Throwable> incidentType : mIncidentTypes) {
+        if (incidentType.isInstance(incident)) {
+          Setting.set(getSetting());
+          try {
+            final T effect = mIncidentHandler.call(incident);
+            putEffect(effect, context);
+            return null;
+
+          } finally {
+            Setting.unset();
+          }
+        }
+      }
+      return super.getConflictActor(conflict, context);
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return mActors;
+    }
+  }
+
   private static class ResolveEvent<T> extends AbstractEvent<T> {
 
     private final List<Actor> mActors;
@@ -939,7 +1094,8 @@ public abstract class Event<T> {
 
     @Nullable
     @Override
-    Actor getConflictActor(@NotNull final Conflict conflict) throws Exception {
+    Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Context context) throws
+        Exception {
       final Throwable incident = conflict.getCause();
       for (final Class<? extends Throwable> incidentType : mIncidentTypes) {
         if (incidentType.isInstance(incident)) {
@@ -953,7 +1109,7 @@ public abstract class Event<T> {
           }
         }
       }
-      return super.getConflictActor(conflict);
+      return super.getConflictActor(conflict, context);
     }
 
     @NotNull
@@ -1115,7 +1271,7 @@ public abstract class Event<T> {
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
     private {{classPrefix}}Event({{#paramTypes}}@NotNull final Event<? extends {{type}}> {{prefix}}Event, {{/paramTypes}}
         @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends Event<? extends R>> effectHandler) {
-      super(1);
+      super({{paramNum}});
       mActors = Arrays.asList({{#paramTypes}}{{prefix}}Event.getActor(){{#hasNext}}, {{/hasNext}}{{/paramTypes}});
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
     }
@@ -1125,14 +1281,50 @@ public abstract class Event<T> {
       return mActors;
     }
 
-    @NotNull
+    @Nullable
     @Override
     @SuppressWarnings("unchecked")
-    Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Context context) throws
+        Exception {
       Setting.set(getSetting());
       try {
         final Event<? extends R> event = mEffectHandler.call({{#paramTypes}}({{type}}) inputs[{{index}}]{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
         return ((event != null) ? event : ofNull()).getActor();
+
+      } finally {
+        Setting.unset();
+      }
+    }
+  }
+
+  private static class {{classPrefix}}Effect<{{#paramTypes}}{{type}}, {{/paramTypes}}R> extends AbstractEvent<R> {
+
+    private final List<Actor> mActors;
+    private final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends R> mEffectHandler;
+
+    @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
+    private {{classPrefix}}Effect({{#paramTypes}}@NotNull final Event<? extends {{type}}> {{prefix}}Event, {{/paramTypes}}
+        @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends R> effectHandler) {
+      super({{paramNum}});
+      mActors = Arrays.asList({{#paramTypes}}{{prefix}}Event.getActor(){{#hasNext}}, {{/hasNext}}{{/paramTypes}});
+      mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return mActors;
+    }
+
+    @Nullable
+    @Override
+    @SuppressWarnings("unchecked")
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Context context) throws
+        Exception {
+      Setting.set(getSetting());
+      try {
+        final R effect = mEffectHandler.call({{#paramTypes}}({{type}}) inputs[{{index}}]{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
+        putEffect(effect, context);
+        return null;
 
       } finally {
         Setting.unset();
@@ -1156,7 +1348,8 @@ public abstract class Event<T> {
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
-    Actor getOutputActor(@NotNull final Object[] inputs) throws Exception {
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Context context) throws
+        Exception {
       Setting.set(getSetting());
       try {
         mEventObserver.onEffect((T) inputs[0]);
@@ -1164,12 +1357,13 @@ public abstract class Event<T> {
       } finally {
         Setting.unset();
       }
-      return super.getOutputActor(inputs);
+      return super.getOutputActor(inputs, context);
     }
 
     @Nullable
     @Override
-    Actor getConflictActor(@NotNull final Conflict conflict) throws Exception {
+    Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Context context) throws
+        Exception {
       Setting.set(getSetting());
       try {
         mEventObserver.onIncident(conflict.getCause());
@@ -1177,7 +1371,7 @@ public abstract class Event<T> {
       } finally {
         Setting.unset();
       }
-      return super.getConflictActor(conflict);
+      return super.getConflictActor(conflict, context);
     }
 
     @NotNull

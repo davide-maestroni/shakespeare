@@ -94,7 +94,8 @@ task generateClasses(type: Task) {
   def scopes = []
   scopes += [
       classPrefix: 'Unary',
-      paramTypes : [[prefix: 'first', type: 'T1', index: 0, hasNext: false]]
+      paramTypes : [[prefix: 'first', type: 'T1', index: 0, hasNext: false]],
+      paramNum   : 1
   ]
   def index = 1
   arities.forEach({ arity ->
@@ -102,7 +103,8 @@ task generateClasses(type: Task) {
     clone.last().hasNext = true
     scopes += [
         classPrefix: arity.prefix.capitalize(),
-        paramTypes : clone + [[prefix: arity.param, type: "T${index + 1}", index: index, hasNext: false]]
+        paramTypes : clone + [[prefix: arity.param, type: "T${index + 1}", index: index, hasNext: false]],
+        paramNum   : index + 1
     ]
     ++index
   })
