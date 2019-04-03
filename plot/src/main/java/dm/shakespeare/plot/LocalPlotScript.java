@@ -27,11 +27,11 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 01/25/2019.
  */
-abstract class LocalSceneScript extends Script {
+abstract class LocalPlotScript extends Script {
 
   private final Setting mSetting;
 
-  LocalSceneScript(@NotNull final Setting setting) {
+  LocalPlotScript(@NotNull final Setting setting) {
     mSetting = ConstantConditions.notNull("setting", setting);
   }
 

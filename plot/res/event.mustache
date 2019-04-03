@@ -338,7 +338,7 @@ public abstract class Event<T> {
     private EventNarrator(@NotNull final BlockingQueue<Object> queue) {
       final Setting setting = Setting.get();
       mQueue = ConstantConditions.notNull("queue", queue);
-      mActor = setting.newActor(new SceneScript(setting) {
+      mActor = setting.newActor(new PlotScript(setting) {
 
         @NotNull
         @Override
@@ -513,7 +513,7 @@ public abstract class Event<T> {
     private AbstractEvent(final int numInputs) {
       mInputs = new Object[numInputs];
       final Setting setting = (mSetting = Setting.get());
-      final String actorId = (mActor = setting.newActor(new SceneScript(setting) {
+      final String actorId = (mActor = setting.newActor(new PlotScript(setting) {
 
         @NotNull
         @Override
@@ -812,7 +812,7 @@ public abstract class Event<T> {
 
     private EffectEvent(final T effect) {
       final Setting setting = Setting.get();
-      mActor = setting.newActor(new LocalSceneScript(setting) {
+      mActor = setting.newActor(new LocalPlotScript(setting) {
 
         @NotNull
         @Override
@@ -1022,7 +1022,7 @@ public abstract class Event<T> {
     private IncidentEvent(@NotNull final Throwable incident) {
       final Setting setting = Setting.get();
       final Conflict conflict = new Conflict(incident);
-      mActor = setting.newActor(new LocalSceneScript(setting) {
+      mActor = setting.newActor(new LocalPlotScript(setting) {
 
         @NotNull
         @Override
@@ -1139,7 +1139,7 @@ public abstract class Event<T> {
       mInputActor = event.getActor();
       mDelay = ConstantConditions.positive("delay", delay);
       mUnit = ConstantConditions.notNull("unit", unit);
-      final String actorId = (mActor = setting.newActor(new SceneScript(setting) {
+      final String actorId = (mActor = setting.newActor(new PlotScript(setting) {
 
         @NotNull
         @Override

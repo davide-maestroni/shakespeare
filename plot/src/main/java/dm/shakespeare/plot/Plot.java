@@ -32,8 +32,6 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class Plot {
 
-  // TODO: 31/03/2019 generate function wrapper
-  // TODO: 05/02/2019 Story PROGRESS???
   // TODO: 15/02/2019 untriggered actors, serialization
   // TODO: 28/02/2019 Story.isBoundless()?, swagger converter
 
