@@ -26,7 +26,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import dm.shakespeare.BackStage;
 import dm.shakespeare.actor.Actor;
-import dm.shakespeare.actor.Script;
+import dm.shakespeare.actor.Role;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.CQueue;
@@ -55,7 +55,7 @@ class Setting {
 
   Setting(@Nullable final ExecutorService executor, @Nullable final Logger logger) {
     mExecutor = (executor != null) ? asActorExecutor(executor)
-        : asActorExecutor(Script.defaultExecutorService());
+        : asActorExecutor(Role.defaultExecutorService());
     mLogger = logger;
   }
 
@@ -65,7 +65,7 @@ class Setting {
       return sLocalSetting.get().get(0);
 
     } catch (final IndexOutOfBoundsException e) {
-      throw new IllegalStateException("code is not running inside a scene");
+      throw new IllegalStateException("code is not running inside a plot");
     }
   }
 
@@ -112,8 +112,8 @@ class Setting {
   }
 
   @NotNull
-  Actor newActor(@NotNull final Script script) {
-    return BackStage.newActor(script);
+  Actor newActor(@NotNull final Role role) {
+    return BackStage.newActor(role);
   }
 
   static class Cache {

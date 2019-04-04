@@ -31,15 +31,15 @@ import dm.shakespeare.log.LogPrinters;
 import dm.shakespeare.log.Logger;
 
 /**
- * Base abstract implementation of a script object.<br>
- * A script is used to instruct an actor on how to behave. In fact, by implementing a script
+ * Base abstract implementation of a role object.<br>
+ * A role is used to instruct an actor on how to behave. In fact, by implementing a {@code Role}
  * object it is possible to configure the {@link ExecutorService} on which the actor business logic
  * will be executed, the inbox message quota, the {@link Logger} instance and the initial actor
  * {@link Behavior}.<br>
- * The script methods are only called once at the actor instantiation, and thread safety is not
- * guaranteed. So, it's advisable to employ a new script instance for each new actor.
+ * The role methods are only called once at the actor instantiation, and thread safety is not
+ * guaranteed. So, it's advisable to employ a new role instance for each new actor.
  */
-public abstract class Script {
+public abstract class Role {
 
   private static final AtomicLong sCount = new AtomicLong();
   private static final Object sMutex = new Object();

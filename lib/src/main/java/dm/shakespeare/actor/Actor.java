@@ -92,7 +92,7 @@ public interface Actor {
    * @param options the delivery options.
    * @param sender  the sender actor.
    * @return this actor.
-   * @see Script
+   * @see Role
    */
   @NotNull
   Actor tell(Object message, @Nullable Options options, @NotNull Actor sender);
@@ -117,7 +117,7 @@ public interface Actor {
    * @param options  the delivery options.
    * @param sender   the sender actor.
    * @return this actor.
-   * @see Script
+   * @see Role
    */
   @NotNull
   Actor tellAll(@NotNull Iterable<?> messages, @Nullable Options options, @NotNull Actor sender);

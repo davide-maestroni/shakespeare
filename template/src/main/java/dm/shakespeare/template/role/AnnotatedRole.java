@@ -14,29 +14,35 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.script;
+package dm.shakespeare.template.role;
 
 import org.jetbrains.annotations.NotNull;
 
 import dm.shakespeare.actor.Behavior;
-import dm.shakespeare.actor.Script;
+import dm.shakespeare.actor.SerializableRole;
 import dm.shakespeare.template.actor.Behaviors;
 import dm.shakespeare.template.config.BuildConfig;
+import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 01/16/2019.
+ * Created by davide-maestroni on 01/17/2019.
  */
-public class PoisonableScript extends SerializableScriptWrapper {
+public class AnnotatedRole extends SerializableRole {
 
   private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 
-  public PoisonableScript(@NotNull final Script script) {
-    super(script);
+  private final Object mObject;
+
+  public AnnotatedRole() {
+    mObject = this;
+  }
+
+  public AnnotatedRole(@NotNull final Object object) {
+    mObject = ConstantConditions.notNull("object", object);
   }
 
   @NotNull
-  @Override
   public Behavior getBehavior(@NotNull final String id) throws Exception {
-    return Behaviors.poisonable(super.getBehavior(id));
+    return Behaviors.annotated(mObject);
   }
 }

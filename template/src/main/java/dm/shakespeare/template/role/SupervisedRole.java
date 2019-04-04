@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.script;
+package dm.shakespeare.template.role;
 
 import org.jetbrains.annotations.NotNull;
 
 import dm.shakespeare.actor.Behavior;
-import dm.shakespeare.actor.Script;
+import dm.shakespeare.actor.Role;
 import dm.shakespeare.template.actor.Behaviors;
 import dm.shakespeare.template.config.BuildConfig;
 
 /**
  * Created by davide-maestroni on 01/16/2019.
  */
-public class SupervisedScript extends SerializableScriptWrapper {
+public class SupervisedRole extends SerializableRoleWrapper {
 
   private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 
-  public SupervisedScript(@NotNull final Script script) {
-    super(script);
+  public SupervisedRole(@NotNull final Role role) {
+    super(role);
   }
 
   @NotNull

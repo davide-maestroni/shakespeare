@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.script;
+package dm.shakespeare.template.role;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -24,18 +24,18 @@ import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.actor.Options;
-import dm.shakespeare.actor.Script;
+import dm.shakespeare.actor.Role;
 import dm.shakespeare.template.actor.ProxyBehavior;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Created by davide-maestroni on 03/24/2019.
  */
-public class ProxyScript extends Script {
+public class ProxyRole extends Role {
 
   private final WeakReference<Actor> mActorRef;
 
-  public ProxyScript(@NotNull final Actor actor) {
+  public ProxyRole(@NotNull final Actor actor) {
     mActorRef = new WeakReference<Actor>(ConstantConditions.notNull("actor", actor));
   }
 
@@ -47,7 +47,7 @@ public class ProxyScript extends Script {
       protected void onIncoming(@NotNull final Actor proxied, @NotNull final Actor sender,
           final Object message, final long sentAt, @NotNull final Options options,
           @NotNull final Context context) throws Exception {
-        if (ProxyScript.this.onIncoming(proxied, sender, message, sentAt, options, context)) {
+        if (ProxyRole.this.onIncoming(proxied, sender, message, sentAt, options, context)) {
           super.onIncoming(proxied, sender, message, sentAt, options, context);
         }
       }
@@ -56,7 +56,7 @@ public class ProxyScript extends Script {
       protected void onOutgoing(@NotNull final Actor proxied, @NotNull final Actor recipient,
           final Object message, final long sentAt, @NotNull final Options options,
           @NotNull final Context context) throws Exception {
-        if (ProxyScript.this.onOutgoing(proxied, recipient, message, sentAt, options, context)) {
+        if (ProxyRole.this.onOutgoing(proxied, recipient, message, sentAt, options, context)) {
           super.onOutgoing(proxied, recipient, message, sentAt, options, context);
         }
       }

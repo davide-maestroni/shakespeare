@@ -19,7 +19,7 @@ package dm.shakespeare;
 import org.jetbrains.annotations.NotNull;
 
 import dm.shakespeare.actor.Actor;
-import dm.shakespeare.actor.Script;
+import dm.shakespeare.actor.Role;
 import dm.shakespeare.function.Observer;
 
 /**
@@ -36,9 +36,8 @@ public class LocalStage extends AbstractStage {
 
   @NotNull
   @Override
-  protected Actor createActor(@NotNull final String id, @NotNull final Script script) throws
-      Exception {
-    final Actor actor = BackStage.newActor(id, script, mRemover);
+  protected Actor createActor(@NotNull final String id, @NotNull final Role role) throws Exception {
+    final Actor actor = BackStage.newActor(id, role, mRemover);
     addActor(id, actor);
     return actor;
   }

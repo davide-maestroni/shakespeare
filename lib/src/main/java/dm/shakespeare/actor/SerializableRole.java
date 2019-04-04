@@ -21,9 +21,9 @@ import java.io.Serializable;
 import dm.shakespeare.config.BuildConfig;
 
 /**
- * Serializable implementation of a {@code Script}.
+ * Serializable implementation of a {@code Role}.
  */
-public abstract class SerializableScript extends Script implements Serializable {
+public abstract class SerializableRole extends Role implements Serializable {
 
   private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 }

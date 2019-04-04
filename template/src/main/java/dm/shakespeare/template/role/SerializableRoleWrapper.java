@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.script;
+package dm.shakespeare.template.role;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -24,8 +24,8 @@ import java.io.ObjectOutputStream;
 import java.util.concurrent.ExecutorService;
 
 import dm.shakespeare.actor.Behavior;
-import dm.shakespeare.actor.Script;
-import dm.shakespeare.actor.SerializableScript;
+import dm.shakespeare.actor.Role;
+import dm.shakespeare.actor.SerializableRole;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
@@ -33,47 +33,47 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 01/16/2019.
  */
-public class SerializableScriptWrapper extends SerializableScript {
+public class SerializableRoleWrapper extends SerializableRole {
 
   private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 
-  private transient Script mScript;
+  private transient Role mRole;
 
-  public SerializableScriptWrapper(@NotNull final Script script) {
-    mScript = ConstantConditions.notNull("script", script);
+  public SerializableRoleWrapper(@NotNull final Role role) {
+    mRole = ConstantConditions.notNull("role", role);
   }
 
   @NotNull
   public Behavior getBehavior(@NotNull final String id) throws Exception {
-    return mScript.getBehavior(id);
+    return mRole.getBehavior(id);
   }
 
   @NotNull
   @Override
   public ExecutorService getExecutorService(@NotNull final String id) throws Exception {
-    return mScript.getExecutorService(id);
+    return mRole.getExecutorService(id);
   }
 
   @NotNull
   @Override
   public Logger getLogger(@NotNull final String id) throws Exception {
-    return mScript.getLogger(id);
+    return mRole.getLogger(id);
   }
 
   @Override
   public int getQuota(@NotNull final String id) throws Exception {
-    return mScript.getQuota(id);
+    return mRole.getQuota(id);
   }
 
   @SuppressWarnings("unchecked")
   private void readObject(@NotNull final ObjectInputStream in) throws IOException,
       ClassNotFoundException {
     in.defaultReadObject();
-    mScript = (Script) in.readObject();
+    mRole = (Role) in.readObject();
   }
 
   private void writeObject(@NotNull final ObjectOutputStream out) throws IOException {
     out.defaultWriteObject();
-    out.writeObject(mScript);
+    out.writeObject(mRole);
   }
 }

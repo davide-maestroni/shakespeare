@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.script;
+package dm.shakespeare.template.role;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -22,24 +22,24 @@ import java.io.Serializable;
 
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
-import dm.shakespeare.actor.Script;
+import dm.shakespeare.actor.Role;
 import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Created by davide-maestroni on 03/21/2019.
  */
-public class CopyScript extends FolderScript {
+public class CopyRole extends FolderRole {
 
   private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 
-  public CopyScript(@NotNull final Class<? extends Script> scriptClass) {
-    super(scriptClass);
+  public CopyRole(@NotNull final Class<? extends Role> roleClass) {
+    super(roleClass);
   }
 
-  public CopyScript(@NotNull final Class<? extends Script> scriptClass,
-      @NotNull final Serializable... scriptArgs) {
-    super(scriptClass, scriptArgs);
+  public CopyRole(@NotNull final Class<? extends Role> roleClass,
+      @NotNull final Serializable... roleArgs) {
+    super(roleClass, roleArgs);
   }
 
   @NotNull
@@ -64,7 +64,7 @@ public class CopyScript extends FolderScript {
     public void onStart(@NotNull final Context context) throws Exception {
       if (mIsStopped) {
         mIsStopped = false;
-        mBehavior = newScriptInstance().getBehavior(context.getSelf().getId());
+        mBehavior = newRoleInstance().getBehavior(context.getSelf().getId());
       }
       mBehavior.onStart(context);
     }

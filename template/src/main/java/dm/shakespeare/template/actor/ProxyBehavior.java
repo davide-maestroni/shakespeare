@@ -29,7 +29,7 @@ import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
-import dm.shakespeare.actor.Script;
+import dm.shakespeare.actor.Role;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.Failure;
@@ -91,7 +91,7 @@ public class ProxyBehavior extends AbstractBehavior {
       final Actor self = context.getSelf();
       if (!senderToProxyMap.containsKey(sender)) {
         proxyToSenderMap.keySet().retainAll(senderToProxyMap.values());
-        final Actor proxy = BackStage.newActor(sender.getId(), new SenderScript(self, actor));
+        final Actor proxy = BackStage.newActor(sender.getId(), new SenderRole(self, actor));
         senderToProxyMap.put(sender, proxy);
         proxyToSenderMap.put(proxy, new WeakReference<Actor>(sender));
       }
@@ -115,12 +115,12 @@ public class ProxyBehavior extends AbstractBehavior {
     recipient.tell(message, options.asSentAt(sentAt), context.getSelf());
   }
 
-  private static class SenderScript extends Script {
+  private static class SenderRole extends Role {
 
     private final Actor mProxied;
     private final Actor mProxy;
 
-    private SenderScript(@NotNull final Actor proxy, @NotNull final Actor proxied) {
+    private SenderRole(@NotNull final Actor proxy, @NotNull final Actor proxied) {
       mProxy = proxy;
       mProxied = proxied;
     }

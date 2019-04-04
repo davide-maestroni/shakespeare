@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.ActorSet;
-import dm.shakespeare.actor.Script;
+import dm.shakespeare.actor.Role;
 import dm.shakespeare.actor.Stage;
 import dm.shakespeare.function.Tester;
 import dm.shakespeare.util.ConstantConditions;
@@ -149,7 +149,7 @@ public abstract class AbstractStage implements Stage {
    * {@inheritDoc}
    */
   @NotNull
-  public Actor newActor(@NotNull final Script script) {
+  public Actor newActor(@NotNull final Role role) {
     String id;
     synchronized (mMutex) {
       final HashMap<String, Actor> actors = mActors;
@@ -159,14 +159,14 @@ public abstract class AbstractStage implements Stage {
       // reserve ID
       actors.put(id, null);
     }
-    return registerActor(id, script);
+    return registerActor(id, role);
   }
 
   /**
    * {@inheritDoc}
    */
   @NotNull
-  public Actor newActor(@NotNull final String id, @NotNull final Script script) {
+  public Actor newActor(@NotNull final String id, @NotNull final Role role) {
     synchronized (mMutex) {
       final HashMap<String, Actor> actors = mActors;
       if (actors.containsKey(id)) {
@@ -175,19 +175,19 @@ public abstract class AbstractStage implements Stage {
       // reserve ID
       actors.put(id, null);
     }
-    return registerActor(id, script);
+    return registerActor(id, role);
   }
 
   /**
    * Creates a new actor with the specified ID.
    *
-   * @param id     the actor ID.
-   * @param script the actor script.
+   * @param id   the actor ID.
+   * @param role the actor role.
    * @return the new actor instance.
    * @throws Exception when an unexpected error occurs.
    */
   @NotNull
-  protected abstract Actor createActor(@NotNull String id, @NotNull Script script) throws Exception;
+  protected abstract Actor createActor(@NotNull String id, @NotNull Role role) throws Exception;
 
   void addActor(@NotNull final String id, @NotNull final Actor actor) {
     synchronized (mMutex) {
@@ -202,9 +202,9 @@ public abstract class AbstractStage implements Stage {
   }
 
   @NotNull
-  private Actor registerActor(@NotNull final String id, @NotNull final Script script) {
+  private Actor registerActor(@NotNull final String id, @NotNull final Role role) {
     try {
-      final Actor actor = createActor(id, script);
+      final Actor actor = createActor(id, role);
       addActor(id, actor);
       return actor;
 

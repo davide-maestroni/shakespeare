@@ -20,18 +20,18 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ExecutorService;
 
-import dm.shakespeare.actor.Script;
+import dm.shakespeare.actor.Role;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Created by davide-maestroni on 01/25/2019.
  */
-abstract class PlotScript extends Script {
+abstract class PlotRole extends Role {
 
   private final Setting mSetting;
 
-  PlotScript(@NotNull final Setting setting) {
+  PlotRole(@NotNull final Setting setting) {
     mSetting = ConstantConditions.notNull("setting", setting);
   }
 

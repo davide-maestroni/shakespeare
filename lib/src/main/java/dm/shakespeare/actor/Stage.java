@@ -87,22 +87,22 @@ public interface Stage {
   ActorSet getAll();
 
   /**
-   * Creates a new actor by employing the specified script.
+   * Creates a new actor playing the specified role.
    *
-   * @param script the actor script.
+   * @param role the actor role.
    * @return the new actor instance.
    */
   @NotNull
-  Actor newActor(@NotNull Script script);
+  Actor newActor(@NotNull Role role);
 
   /**
-   * Creates a new actor with the specified ID, by employing the specified script.
+   * Creates a new actor, with the specified ID, playing the specified role.
    *
-   * @param id     the actor ID.
-   * @param script the actor script.
+   * @param id   the actor ID.
+   * @param role the actor role.
    * @return the new actor instance.
    * @throws IllegalStateException if an actor with the same ID already exists in this stage.
    */
   @NotNull
-  Actor newActor(@NotNull String id, @NotNull Script script);
+  Actor newActor(@NotNull String id, @NotNull Role role);
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.script;
+package dm.shakespeare.template.role;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,7 +27,7 @@ import java.util.HashMap;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Options;
-import dm.shakespeare.actor.SerializableScript;
+import dm.shakespeare.actor.SerializableRole;
 import dm.shakespeare.template.actor.Behaviors;
 import dm.shakespeare.template.actor.ReflectionBehavior;
 import dm.shakespeare.template.config.BuildConfig;
@@ -36,7 +36,7 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 01/17/2019.
  */
-public class ReflectionScript extends SerializableScript {
+public class ReflectionRole extends SerializableRole {
 
   private static final HashMap<Class<?>, Object> DEFAULT_RETURN_VALUES =
       new HashMap<Class<?>, Object>() {{
@@ -54,11 +54,11 @@ public class ReflectionScript extends SerializableScript {
 
   private final Object mObject;
 
-  public ReflectionScript() {
+  public ReflectionRole() {
     mObject = this;
   }
 
-  public ReflectionScript(@NotNull final Object object) {
+  public ReflectionRole(@NotNull final Object object) {
     mObject = ConstantConditions.notNull("object", object);
   }
 

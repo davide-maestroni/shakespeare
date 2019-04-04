@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.script;
+package dm.shakespeare.template.role;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -22,8 +22,8 @@ import java.io.Serializable;
 import java.util.concurrent.ExecutorService;
 
 import dm.shakespeare.actor.Behavior;
-import dm.shakespeare.actor.Script;
-import dm.shakespeare.actor.SerializableScript;
+import dm.shakespeare.actor.Role;
+import dm.shakespeare.actor.SerializableRole;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
@@ -32,61 +32,61 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 03/21/2019.
  */
-public class FolderScript extends SerializableScript {
+public class FolderRole extends SerializableRole {
 
   private static final Object[] NO_ARGS = new Object[0];
   private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 
-  private final Serializable[] mScriptArgs;
-  private final Class<? extends Script> mScriptClass;
+  private final Serializable[] mRoleArgs;
+  private final Class<? extends Role> mRoleClass;
 
-  private transient Script mScript;
+  private transient Role mRole;
 
-  public FolderScript(@NotNull final Class<? extends Script> scriptClass) {
-    mScriptClass = ConstantConditions.notNull("scriptClass", scriptClass);
-    mScriptArgs = null;
+  public FolderRole(@NotNull final Class<? extends Role> roleClass) {
+    mRoleClass = ConstantConditions.notNull("roleClass", roleClass);
+    mRoleArgs = null;
   }
 
-  public FolderScript(@NotNull final Class<? extends Script> scriptClass,
-      @NotNull final Serializable... scriptArgs) {
-    mScriptClass = ConstantConditions.notNull("scriptClass", scriptClass);
-    mScriptArgs = ConstantConditions.notNull("scriptArgs", scriptArgs).clone();
+  public FolderRole(@NotNull final Class<? extends Role> roleClass,
+      @NotNull final Serializable... roleArgs) {
+    mRoleClass = ConstantConditions.notNull("roleClass", roleClass);
+    mRoleArgs = ConstantConditions.notNull("roleArgs", roleArgs).clone();
   }
 
   @NotNull
   public Behavior getBehavior(@NotNull final String id) throws Exception {
-    return getScriptInstance().getBehavior(id);
+    return getRoleInstance().getBehavior(id);
   }
 
   @NotNull
   @Override
   public ExecutorService getExecutorService(@NotNull final String id) throws Exception {
-    return getScriptInstance().getExecutorService(id);
+    return getRoleInstance().getExecutorService(id);
   }
 
   @NotNull
   @Override
   public Logger getLogger(@NotNull final String id) throws Exception {
-    return getScriptInstance().getLogger(id);
+    return getRoleInstance().getLogger(id);
   }
 
   @Override
   public int getQuota(@NotNull final String id) throws Exception {
-    return getScriptInstance().getQuota(id);
+    return getRoleInstance().getQuota(id);
   }
 
   @NotNull
-  protected Script newScriptInstance() {
-    final Serializable[] scriptArgs = mScriptArgs;
-    return Reflections.newInstance(mScriptClass,
-        ((scriptArgs != null) && (scriptArgs.length > 0)) ? scriptArgs : NO_ARGS);
+  protected Role newRoleInstance() {
+    final Serializable[] roleArgs = mRoleArgs;
+    return Reflections.newInstance(mRoleClass,
+        ((roleArgs != null) && (roleArgs.length > 0)) ? roleArgs : NO_ARGS);
   }
 
   @NotNull
-  private Script getScriptInstance() {
-    if (mScript == null) {
-      mScript = newScriptInstance();
+  private Role getRoleInstance() {
+    if (mRole == null) {
+      mRole = newRoleInstance();
     }
-    return mScript;
+    return mRole;
   }
 }

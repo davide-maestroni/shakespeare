@@ -14,37 +14,47 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.plot;
+package dm.shakespeare.template.role;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ExecutorService;
 
-import dm.shakespeare.actor.Script;
+import dm.shakespeare.actor.Behavior;
+import dm.shakespeare.actor.Role;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 01/25/2019.
+ * Created by davide-maestroni on 01/16/2019.
  */
-abstract class LocalPlotScript extends Script {
+public class RoleWrapper extends Role {
 
-  private final Setting mSetting;
+  private final Role mRole;
 
-  LocalPlotScript(@NotNull final Setting setting) {
-    mSetting = ConstantConditions.notNull("setting", setting);
+  public RoleWrapper(@NotNull final Role role) {
+    mRole = ConstantConditions.notNull("role", role);
+  }
+
+  @NotNull
+  public Behavior getBehavior(@NotNull final String id) throws Exception {
+    return mRole.getBehavior(id);
   }
 
   @NotNull
   @Override
-  public ExecutorService getExecutorService(@NotNull final String id) {
-    return mSetting.getLocalExecutor();
+  public ExecutorService getExecutorService(@NotNull final String id) throws Exception {
+    return mRole.getExecutorService(id);
   }
 
   @NotNull
   @Override
   public Logger getLogger(@NotNull final String id) throws Exception {
-    final Logger logger = mSetting.getLogger();
-    return (logger != null) ? logger : super.getLogger(id);
+    return mRole.getLogger(id);
+  }
+
+  @Override
+  public int getQuota(@NotNull final String id) throws Exception {
+    return mRole.getQuota(id);
   }
 }

@@ -28,13 +28,13 @@ import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.BehaviorBuilder;
 import dm.shakespeare.actor.Envelop;
-import dm.shakespeare.actor.Script;
+import dm.shakespeare.actor.Role;
 import dm.shakespeare.template.annotation.OnAny;
+import dm.shakespeare.template.annotation.OnEnvelop;
 import dm.shakespeare.template.annotation.OnMatch;
 import dm.shakespeare.template.annotation.OnMessage;
 import dm.shakespeare.template.annotation.OnNoMatch;
 import dm.shakespeare.template.annotation.OnParams;
-import dm.shakespeare.template.annotation.OnEnvelop;
 import dm.shakespeare.template.annotation.OnStart;
 import dm.shakespeare.template.annotation.OnStop;
 
@@ -60,7 +60,7 @@ public class AnnotationBehavior extends AbstractBehavior {
   @SuppressWarnings("unchecked")
   AnnotationBehavior(@NotNull final Object object) throws Exception {
     final Class<?> objectClass = object.getClass();
-    final BehaviorBuilder builder = Script.newBehavior();
+    final BehaviorBuilder builder = Role.newBehavior();
     final Set<Entry<Class<? extends Annotation>, AnnotationHandler<?>>> entries =
         sAnnotationHandlers.entrySet();
     for (final Method method : objectClass.getMethods()) {

@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.script;
+package dm.shakespeare.template.role;
 
 import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Created by davide-maestroni on 01/13/2019.
  */
-public class ActorScripts {
+public class ActorRoles {
 
-  private ActorScripts() {
+  private ActorRoles() {
     ConstantConditions.avoid();
   }
 

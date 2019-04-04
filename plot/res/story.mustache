@@ -46,7 +46,7 @@ import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Behavior.Context;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
-import dm.shakespeare.actor.Script;
+import dm.shakespeare.actor.Role;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.function.Observer;
 import dm.shakespeare.message.Bounce;
@@ -498,7 +498,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   public void playEach(@NotNull final StoryObserver<? super T> storyObserver) {
-    final Actor actor = BackStage.newActor(new StoryObserverScript<T>(storyObserver));
+    final Actor actor = BackStage.newActor(new StoryObserverRole<T>(storyObserver));
     final String actorId = actor.getId();
     getActor().tell(NEXT, new Options().withReceiptId(actorId).withThreadId(actorId), actor);
   }
@@ -878,7 +878,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       final Setting setting = Setting.get();
       mQueue = ConstantConditions.notNull("queue", queue);
       mMemory = ConstantConditions.notNull("memory", memory);
-      mActor = setting.newActor(new PlotScript(setting) {
+      mActor = setting.newActor(new PlotRole(setting) {
 
         @NotNull
         @Override
@@ -1123,7 +1123,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mInputs = new Object[numInputs];
       mMemory = ConstantConditions.notNull("memory", memory);
       final Setting setting = (mSetting = Setting.get());
-      final String actorId = (mActor = setting.newActor(new PlotScript(setting) {
+      final String actorId = (mActor = setting.newActor(new PlotRole(setting) {
 
         @NotNull
         @Override
@@ -1766,7 +1766,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
       mMemory = ConstantConditions.notNull("memory", memory);
       final Setting setting = (mSetting = Setting.get());
-      final String actorId = (mActor = setting.newActor(new PlotScript(setting) {
+      final String actorId = (mActor = setting.newActor(new PlotRole(setting) {
 
         @NotNull
         @Override
@@ -2177,7 +2177,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
       mMemory = ConstantConditions.notNull("memory", memory);
       final Setting setting = (mSetting = Setting.get());
-      final String actorId = (mActor = setting.newActor(new PlotScript(setting) {
+      final String actorId = (mActor = setting.newActor(new PlotRole(setting) {
 
         @NotNull
         @Override
@@ -2450,7 +2450,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
       mMemory = ConstantConditions.notNull("memory", memory);
       final Setting setting = (mSetting = Setting.get());
-      final String actorId = (mActor = setting.newActor(new PlotScript(setting) {
+      final String actorId = (mActor = setting.newActor(new PlotRole(setting) {
 
         @NotNull
         @Override
@@ -2872,7 +2872,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private EffectStory(final T effect) {
       final Setting setting = Setting.get();
-      mActor = setting.newActor(new LocalPlotScript(setting) {
+      mActor = setting.newActor(new LocalPlotRole(setting) {
 
         private final HashSet<String> mThreads = new HashSet<String>();
 
@@ -2924,7 +2924,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private EffectsStory(@NotNull final Iterable<? extends T> effects) {
       final Setting setting = Setting.get();
       ConstantConditions.notNull("effects", effects);
-      mActor = setting.newActor(new LocalPlotScript(setting) {
+      mActor = setting.newActor(new LocalPlotRole(setting) {
 
         private final HashMap<String, Iterator<? extends T>> mThreads =
             new HashMap<String, Iterator<? extends T>>();
@@ -2982,7 +2982,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private EventStory(@NotNull final Event<? extends T> event) {
       final Setting setting = Setting.get();
       mInputActor = event.getActor();
-      final String actorId = (mActor = setting.newActor(new LocalPlotScript(setting) {
+      final String actorId = (mActor = setting.newActor(new LocalPlotRole(setting) {
 
         @NotNull
         @Override
@@ -3316,7 +3316,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private IncidentStory(@NotNull final Throwable incident) {
       final Setting setting = Setting.get();
       final Conflict conflict = new Conflict(incident);
-      mActor = setting.newActor(new LocalPlotScript(setting) {
+      mActor = setting.newActor(new LocalPlotRole(setting) {
 
         private final HashSet<String> mThreads = new HashSet<String>();
 
@@ -3368,7 +3368,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private IncidentsStory(@NotNull final Iterable<? extends Throwable> incidents) {
       final Setting setting = Setting.get();
       ConstantConditions.notNull("incidents", incidents);
-      mActor = setting.newActor(new LocalPlotScript(setting) {
+      mActor = setting.newActor(new LocalPlotRole(setting) {
 
         private final HashMap<String, Iterator<? extends Throwable>> mThreads =
             new HashMap<String, Iterator<? extends Throwable>>();
@@ -3448,7 +3448,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mEffectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
       mMemory = ConstantConditions.notNull("memory", memory);
       final Setting setting = (mSetting = Setting.get());
-      final String actorId = (mActor = setting.newActor(new PlotScript(setting) {
+      final String actorId = (mActor = setting.newActor(new PlotRole(setting) {
 
         @NotNull
         @Override
@@ -3941,7 +3941,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mPeriod = ConstantConditions.positive("period", period);
       mUnit = ConstantConditions.notNull("unit", unit);
       mMemory = ConstantConditions.notNull("memory", memory);
-      final String actorId = (mActor = setting.newActor(new PlotScript(setting) {
+      final String actorId = (mActor = setting.newActor(new PlotRole(setting) {
 
         @NotNull
         @Override
@@ -4133,7 +4133,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       mDelay = ConstantConditions.positive("delay", delay);
       mUnit = ConstantConditions.notNull("unit", unit);
       mMemory = ConstantConditions.notNull("memory", memory);
-      final String actorId = (mActor = setting.newActor(new PlotScript(setting) {
+      final String actorId = (mActor = setting.newActor(new PlotRole(setting) {
 
         @NotNull
         @Override
@@ -4355,11 +4355,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
-  private static class StoryObserverScript<T> extends Script {
+  private static class StoryObserverRole<T> extends Role {
 
     private final StoryObserver<? super T> mStoryObserver;
 
-    private StoryObserverScript(@NotNull final StoryObserver<? super T> storyObserver) {
+    private StoryObserverRole(@NotNull final StoryObserver<? super T> storyObserver) {
       mStoryObserver = ConstantConditions.notNull("storyObserver", storyObserver);
     }
 
@@ -4532,7 +4532,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private UnfoldStory(@NotNull final Event<? extends Iterable<? extends T>> event) {
       final Setting setting = Setting.get();
       mInputActor = event.getActor();
-      final String actorId = (mActor = setting.newActor(new LocalPlotScript(setting) {
+      final String actorId = (mActor = setting.newActor(new LocalPlotRole(setting) {
 
         @NotNull
         @Override
