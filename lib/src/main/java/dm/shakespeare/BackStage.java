@@ -101,9 +101,9 @@ public class BackStage {
     final Logger logger = role.getLogger(id);
     final ExecutorService executorService = role.getExecutorService(id);
     final Behavior behavior = role.getBehavior(id);
-    final LocalContext context = new LocalContext(remover, behavior, executorService, logger);
-    final LocalActor actor = new LocalActor(id, quota, context);
-    context.setActor(actor);
+    final LocalAgent agent = new LocalAgent(remover, behavior, executorService, logger);
+    final LocalActor actor = new LocalActor(id, quota, agent);
+    agent.setActor(actor);
     return actor;
   }
 }

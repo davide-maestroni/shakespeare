@@ -39,7 +39,7 @@ import dm.shakespeare.BackStage;
 import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
-import dm.shakespeare.actor.Behavior.Context;
+import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
 import dm.shakespeare.actor.Role;
@@ -150,12 +150,12 @@ public abstract class Event<T> {
   }
 
   static void done(final Object message, @NotNull final Map<String, Sender> senders,
-      @NotNull final Context context) {
-    final Actor self = context.getSelf();
+      @NotNull final Agent agent) {
+    final Actor self = agent.getSelf();
     for (final Sender sender : senders.values()) {
       sender.getSender().tell(message, sender.getOptions(), self);
     }
-    context.setBehavior(new DoneBehavior(message));
+    agent.setBehavior(new DoneBehavior(message));
   }
 
   static boolean isFalse(@Nullable final Event<?> event) {
@@ -407,7 +407,7 @@ public abstract class Event<T> {
     private class InitBehavior extends AbstractBehavior {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
-          @NotNull final Context context) {
+          @NotNull final Agent agent) {
         if (message == GET) {
           Object effect = mQueue.poll();
           if (effect != null) {
@@ -415,21 +415,21 @@ public abstract class Event<T> {
             if (effect == NULL) {
               effect = null;
             }
-            context.setBehavior(new DoneBehavior(effect));
+            agent.setBehavior(new DoneBehavior(effect));
 
           } else if (mIsClosed.get()) {
-            context.setBehavior(new DoneBehavior(new Conflict(new NarrationStoppedException())));
+            agent.setBehavior(new DoneBehavior(new Conflict(new NarrationStoppedException())));
 
           } else {
             final Options options = envelop.getOptions().threadOnly();
             mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
-            context.setBehavior(new InputBehavior());
+            agent.setBehavior(new InputBehavior());
           }
 
         } else if (message == CANCEL) {
           final Conflict conflict = Conflict.ofCancel();
           cancel(conflict.getCause());
-          context.setBehavior(new DoneBehavior(conflict));
+          agent.setBehavior(new DoneBehavior(conflict));
         }
         envelop.preventReceipt();
       }
@@ -438,7 +438,7 @@ public abstract class Event<T> {
     private class InputBehavior extends AbstractBehavior {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
-          @NotNull final Context context) {
+          @NotNull final Agent agent) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
@@ -446,7 +446,7 @@ public abstract class Event<T> {
         } else if (message == CANCEL) {
           final Conflict conflict = Conflict.ofCancel();
           cancel(conflict.getCause());
-          context.setBehavior(new DoneBehavior(conflict));
+          agent.setBehavior(new DoneBehavior(conflict));
 
         } else if (message == AVAILABLE) {
           Object effect = mQueue.poll();
@@ -462,12 +462,12 @@ public abstract class Event<T> {
           } else {
             return;
           }
-          final Actor self = context.getSelf();
+          final Actor self = agent.getSelf();
           for (final Sender sender : mSenders.values()) {
             sender.getSender().tell(effect, sender.getOptions(), self);
           }
           mSenders = null;
-          context.setBehavior(new DoneBehavior(effect));
+          agent.setBehavior(new DoneBehavior(effect));
         }
         envelop.preventReceipt();
       }
@@ -530,9 +530,9 @@ public abstract class Event<T> {
     }
 
     @Nullable
-    Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Context context) throws
+    Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Agent agent) throws
         Exception {
-      putConflict(conflict, context);
+      putConflict(conflict, agent);
       return null;
     }
 
@@ -540,9 +540,9 @@ public abstract class Event<T> {
     abstract List<Actor> getInputActors();
 
     @Nullable
-    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Context context) throws
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
         Exception {
-      putEffect(inputs[0], context);
+      putEffect(inputs[0], agent);
       return null;
     }
 
@@ -551,38 +551,38 @@ public abstract class Event<T> {
       return mSetting;
     }
 
-    void putConflict(@NotNull final Conflict conflict, @NotNull final Context context) {
-      fail(conflict, context);
+    void putConflict(@NotNull final Conflict conflict, @NotNull final Agent agent) {
+      fail(conflict, agent);
     }
 
-    void putEffect(final Object effect, @NotNull final Context context) {
-      done(effect, context);
+    void putEffect(final Object effect, @NotNull final Agent agent) {
+      done(effect, agent);
     }
 
-    private void cancelInputActors(@NotNull final Context context) {
-      final Actor self = context.getSelf();
+    private void cancelInputActors(@NotNull final Agent agent) {
+      final Actor self = agent.getSelf();
       for (final Actor actor : getInputActors()) {
         actor.tell(CANCEL, null, self);
       }
     }
 
-    private void conflict(@NotNull final Conflict conflict, @NotNull final Context context) {
+    private void conflict(@NotNull final Conflict conflict, @NotNull final Agent agent) {
       try {
-        final Actor conflictActor = getConflictActor(conflict, context);
+        final Actor conflictActor = getConflictActor(conflict, agent);
         if (conflictActor != null) {
-          conflictActor.tell(GET, mOutputOptions, context.getSelf());
-          context.setBehavior(new OutputBehavior());
+          conflictActor.tell(GET, mOutputOptions, agent.getSelf());
+          agent.setBehavior(new OutputBehavior());
         }
 
       } catch (final Throwable t) {
-        fail(new Conflict(t), context);
+        fail(new Conflict(t), agent);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }
       }
     }
 
-    private void done(Object message, @NotNull final Context context) {
+    private void done(Object message, @NotNull final Agent agent) {
       try {
         endAction();
 
@@ -592,11 +592,11 @@ public abstract class Event<T> {
           Thread.currentThread().interrupt();
         }
       }
-      done(message, mSenders, context);
+      done(message, mSenders, agent);
       mSenders = null;
     }
 
-    private void fail(@NotNull Conflict conflict, @NotNull final Context context) {
+    private void fail(@NotNull Conflict conflict, @NotNull final Agent agent) {
       try {
         endAction();
 
@@ -606,12 +606,12 @@ public abstract class Event<T> {
           Thread.currentThread().interrupt();
         }
       }
-      done(conflict, mSenders, context);
+      done(conflict, mSenders, agent);
       mSenders = null;
     }
 
-    private void getInputActors(@NotNull final Context context) {
-      final Actor self = context.getSelf();
+    private void getInputActors(@NotNull final Agent agent) {
+      final Actor self = agent.getSelf();
       final HashMap<Actor, Options> inputActors = mInputActors;
       if (inputActors.isEmpty()) {
         @SuppressWarnings("UnnecessaryLocalVariable") final Options options = mOptions;
@@ -633,13 +633,13 @@ public abstract class Event<T> {
     private class CancelBehavior extends AbstractBehavior {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
-          @NotNull final Context context) {
+          @NotNull final Agent agent) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (isSame(mOutputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
-          fail(Conflict.ofCancel(), context);
+          fail(Conflict.ofCancel(), agent);
 
         } else {
           final String thread = envelop.getOptions().getThreadId();
@@ -647,14 +647,14 @@ public abstract class Event<T> {
             if (++mInputCount == mInputs.length) {
               final Conflict conflict = Conflict.ofCancel();
               try {
-                final Actor conflictActor = getConflictActor(conflict, context);
+                final Actor conflictActor = getConflictActor(conflict, agent);
                 if (conflictActor != null) {
-                  conflictActor.tell(CANCEL, null, context.getSelf());
-                  fail(conflict, context);
+                  conflictActor.tell(CANCEL, null, agent.getSelf());
+                  fail(conflict, agent);
                 }
 
               } catch (final Throwable t) {
-                fail(new Conflict(t), context);
+                fail(new Conflict(t), agent);
                 if (t instanceof InterruptedException) {
                   Thread.currentThread().interrupt();
                 }
@@ -668,16 +668,16 @@ public abstract class Event<T> {
     private class InitBehavior extends AbstractBehavior {
 
       public void onMessage(Object message, @NotNull final Envelop envelop,
-          @NotNull final Context context) {
+          @NotNull final Agent agent) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
-          getInputActors(context);
-          context.setBehavior(new InputBehavior());
+          getInputActors(agent);
+          agent.setBehavior(new InputBehavior());
 
         } else if (message == CANCEL) {
-          cancelInputActors(context);
-          fail(Conflict.ofCancel(), context);
+          cancelInputActors(agent);
+          fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
       }
@@ -686,14 +686,14 @@ public abstract class Event<T> {
     private class InputBehavior extends AbstractBehavior {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
-          @NotNull final Context context) {
+          @NotNull final Agent agent) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == CANCEL) {
-          cancelInputActors(context);
-          context.setBehavior(new CancelBehavior());
+          cancelInputActors(agent);
+          agent.setBehavior(new CancelBehavior());
 
         } else {
           final String inputThread = mInputThread;
@@ -705,7 +705,7 @@ public abstract class Event<T> {
               }
 
               if (++mInputCount == mInputs.length) {
-                conflict((Conflict) message, context);
+                conflict((Conflict) message, agent);
               }
 
             } else if (message instanceof Bounce) {
@@ -715,7 +715,7 @@ public abstract class Event<T> {
               }
 
               if (++mInputCount == mInputs.length) {
-                conflict(conflict, context);
+                conflict(conflict, agent);
               }
 
             } else {
@@ -725,18 +725,18 @@ public abstract class Event<T> {
                 inputs[index] = message;
                 if (++mInputCount == inputs.length) {
                   if (mConflict != null) {
-                    conflict(mConflict, context);
+                    conflict(mConflict, agent);
 
                   } else {
                     try {
-                      final Actor outputActor = getOutputActor(inputs, context);
+                      final Actor outputActor = getOutputActor(inputs, agent);
                       if (outputActor != null) {
-                        outputActor.tell(GET, mOutputOptions, context.getSelf());
-                        context.setBehavior(new OutputBehavior());
+                        outputActor.tell(GET, mOutputOptions, agent.getSelf());
+                        agent.setBehavior(new OutputBehavior());
                       }
 
                     } catch (final Throwable t) {
-                      fail(new Conflict(t), context);
+                      fail(new Conflict(t), agent);
                       if (t instanceof InterruptedException) {
                         Thread.currentThread().interrupt();
                       }
@@ -745,7 +745,7 @@ public abstract class Event<T> {
                 }
 
               } else {
-                conflict(Conflict.ofCancel(), context);
+                conflict(Conflict.ofCancel(), agent);
               }
             }
           }
@@ -757,25 +757,25 @@ public abstract class Event<T> {
     private class OutputBehavior extends AbstractBehavior {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
-          @NotNull final Context context) {
+          @NotNull final Agent agent) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (message == CANCEL) {
-          cancelInputActors(context);
-          context.setBehavior(new CancelBehavior());
+          cancelInputActors(agent);
+          agent.setBehavior(new CancelBehavior());
 
         } else {
           if (isSame(mOutputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
             if (message instanceof Conflict) {
-              fail((Conflict) message, context);
+              fail((Conflict) message, agent);
 
             } else if (message instanceof Bounce) {
-              fail(Conflict.ofBounce((Bounce) message), context);
+              fail(Conflict.ofBounce((Bounce) message), agent);
 
             } else {
-              done(message, context);
+              done(message, agent);
             }
           }
         }
@@ -798,9 +798,9 @@ public abstract class Event<T> {
     }
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) {
+        @NotNull final Agent agent) {
       if (message == GET) {
-        envelop.getSender().tell(mEffect, envelop.getOptions().threadOnly(), context.getSelf());
+        envelop.getSender().tell(mEffect, envelop.getOptions().threadOnly(), agent.getSelf());
       }
       envelop.preventReceipt();
     }
@@ -842,18 +842,18 @@ public abstract class Event<T> {
 
         @SuppressWarnings("unchecked")
         public void onMessage(final Object message, @NotNull final Envelop envelop,
-            @NotNull final Context context) throws Exception {
+            @NotNull final Agent agent) throws Exception {
           if (message instanceof Conflict) {
             mEventObserver.onIncident(((Conflict) message).getCause());
-            context.dismissSelf();
+            agent.dismissSelf();
 
           } else if (message instanceof Bounce) {
             mEventObserver.onIncident(PlotFailureException.getOrNew((Bounce) message));
-            context.dismissSelf();
+            agent.dismissSelf();
 
           } else if (!(message instanceof Receipt)) {
             mEventObserver.onEffect((T) message);
-            context.dismissSelf();
+            agent.dismissSelf();
           }
         }
       };
@@ -956,7 +956,7 @@ public abstract class Event<T> {
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
-    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Context context) throws
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
         Exception {
       Setting.set(getSetting());
       try {
@@ -997,7 +997,7 @@ public abstract class Event<T> {
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
-    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Context context) throws
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
         Exception {
       Setting.set(getSetting());
       try {
@@ -1006,7 +1006,7 @@ public abstract class Event<T> {
           inputList.add((T) input);
         }
         final R effect = mEffectHandler.call(inputList);
-        putEffect(effect, context);
+        putEffect(effect, agent);
         return null;
 
       } finally {
@@ -1055,7 +1055,7 @@ public abstract class Event<T> {
 
     @Nullable
     @Override
-    Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Context context) throws
+    Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Agent agent) throws
         Exception {
       final Throwable incident = conflict.getCause();
       for (final Class<? extends Throwable> incidentType : mIncidentTypes) {
@@ -1070,7 +1070,7 @@ public abstract class Event<T> {
           }
         }
       }
-      return super.getConflictActor(conflict, context);
+      return super.getConflictActor(conflict, agent);
     }
 
     @NotNull
@@ -1096,7 +1096,7 @@ public abstract class Event<T> {
 
     @Nullable
     @Override
-    Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Context context) throws
+    Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Agent agent) throws
         Exception {
       final Throwable incident = conflict.getCause();
       for (final Class<? extends Throwable> incidentType : mIncidentTypes) {
@@ -1104,7 +1104,7 @@ public abstract class Event<T> {
           Setting.set(getSetting());
           try {
             final T effect = mIncidentHandler.call(incident);
-            putEffect(effect, context);
+            putEffect(effect, agent);
             return null;
 
           } finally {
@@ -1112,7 +1112,7 @@ public abstract class Event<T> {
           }
         }
       }
-      return super.getConflictActor(conflict, context);
+      return super.getConflictActor(conflict, agent);
     }
 
     @NotNull
@@ -1155,34 +1155,34 @@ public abstract class Event<T> {
       mInputActor.tell(GET, mInputOptions, mActor);
     }
 
-    private void done(Object message, @NotNull final Context context) {
+    private void done(Object message, @NotNull final Agent agent) {
       final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
       if (scheduledFuture != null) {
         scheduledFuture.cancel(false);
       }
-      done(message, mSenders, context);
+      done(message, mSenders, agent);
       mSenders = null;
     }
 
-    private void fail(@NotNull final Conflict conflict, @NotNull final Context context) {
+    private void fail(@NotNull final Conflict conflict, @NotNull final Agent agent) {
       final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
       if (scheduledFuture != null) {
         scheduledFuture.cancel(false);
       }
-      done(conflict, mSenders, context);
+      done(conflict, mSenders, agent);
       mSenders = null;
     }
 
     private class CancelBehavior extends AbstractBehavior {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
-          @NotNull final Context context) {
+          @NotNull final Agent agent) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
 
         } else if (isSame(mInputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
-          fail(Conflict.ofCancel(), context);
+          fail(Conflict.ofCancel(), agent);
         }
       }
     }
@@ -1190,17 +1190,17 @@ public abstract class Event<T> {
     private class InitBehavior extends AbstractBehavior {
 
       public void onMessage(Object message, @NotNull final Envelop envelop,
-          @NotNull final Context context) {
+          @NotNull final Agent agent) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
-          mScheduledFuture = context.getScheduledExecutorService()
+          mScheduledFuture = agent.getScheduledExecutorService()
               .schedule(ScheduleWithDelayEvent.this, mDelay, mUnit);
-          context.setBehavior(new InputBehavior());
+          agent.setBehavior(new InputBehavior());
 
         } else if (message == CANCEL) {
           mInputActor.tell(CANCEL, null, mActor);
-          fail(Conflict.ofCancel(), context);
+          fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
       }
@@ -1209,7 +1209,7 @@ public abstract class Event<T> {
     private class InputBehavior extends AbstractBehavior {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
-          @NotNull final Context context) {
+          @NotNull final Agent agent) {
         if (message == GET) {
           final Options options = envelop.getOptions().threadOnly();
           mSenders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
@@ -1217,21 +1217,21 @@ public abstract class Event<T> {
         } else if (message == CANCEL) {
           mInputActor.tell(CANCEL, null, mActor);
           if (mInputPending) {
-            context.setBehavior(new CancelBehavior());
+            agent.setBehavior(new CancelBehavior());
 
           } else {
-            fail(Conflict.ofCancel(), context);
+            fail(Conflict.ofCancel(), agent);
           }
 
         } else if (isSame(mInputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
           if (message instanceof Conflict) {
-            fail((Conflict) message, context);
+            fail((Conflict) message, agent);
 
           } else if (message instanceof Bounce) {
-            fail(Conflict.ofBounce((Bounce) message), context);
+            fail(Conflict.ofBounce((Bounce) message), agent);
 
           } else {
-            done(message, context);
+            done(message, agent);
           }
         }
         envelop.preventReceipt();
@@ -1287,7 +1287,7 @@ public abstract class Event<T> {
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
-    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Context context) throws
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
         Exception {
       Setting.set(getSetting());
       try {
@@ -1321,12 +1321,12 @@ public abstract class Event<T> {
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
-    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Context context) throws
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
         Exception {
       Setting.set(getSetting());
       try {
         final R effect = mEffectHandler.call({{#paramTypes}}({{type}}) inputs[{{index}}]{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
-        putEffect(effect, context);
+        putEffect(effect, agent);
         return null;
 
       } finally {
@@ -1351,7 +1351,7 @@ public abstract class Event<T> {
     @Nullable
     @Override
     @SuppressWarnings("unchecked")
-    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Context context) throws
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
         Exception {
       Setting.set(getSetting());
       try {
@@ -1360,12 +1360,12 @@ public abstract class Event<T> {
       } finally {
         Setting.unset();
       }
-      return super.getOutputActor(inputs, context);
+      return super.getOutputActor(inputs, agent);
     }
 
     @Nullable
     @Override
-    Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Context context) throws
+    Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Agent agent) throws
         Exception {
       Setting.set(getSetting());
       try {
@@ -1374,7 +1374,7 @@ public abstract class Event<T> {
       } finally {
         Setting.unset();
       }
-      return super.getConflictActor(conflict, context);
+      return super.getConflictActor(conflict, agent);
     }
 
     @NotNull

@@ -76,7 +76,7 @@ public class AnnotationBehavior extends AbstractBehavior {
   }
 
   public void onMessage(final Object message, @NotNull final Envelop envelop,
-      @NotNull final Context context) throws Exception {
-    mBehavior.onMessage(message, envelop, context);
+      @NotNull final Agent agent) throws Exception {
+    mBehavior.onMessage(message, envelop, agent);
   }
 }

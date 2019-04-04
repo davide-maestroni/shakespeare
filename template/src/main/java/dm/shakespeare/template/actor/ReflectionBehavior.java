@@ -37,11 +37,11 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class ReflectionBehavior extends AbstractBehavior {
 
-  private static final ThreadLocal<CQueue<Context>> CONTEXTS = new ThreadLocal<CQueue<Context>>() {
+  private static final ThreadLocal<CQueue<Agent>> AGENTS = new ThreadLocal<CQueue<Agent>>() {
 
     @Override
-    protected CQueue<Context> initialValue() {
-      return new CQueue<Context>();
+    protected CQueue<Agent> initialValue() {
+      return new CQueue<Agent>();
     }
   };
   private static final ThreadLocal<CQueue<Envelop>> ENVELOPS = new ThreadLocal<CQueue<Envelop>>() {
@@ -58,8 +58,8 @@ public class ReflectionBehavior extends AbstractBehavior {
     mObject = ConstantConditions.notNull("object", object);
   }
 
-  public static Context getContext() {
-    return CONTEXTS.get().peekFirst();
+  public static Agent getAgent() {
+    return AGENTS.get().peekFirst();
   }
 
   public static Envelop getEnvelop() {
@@ -73,9 +73,9 @@ public class ReflectionBehavior extends AbstractBehavior {
   }
 
   public void onMessage(final Object message, @NotNull final Envelop envelop,
-      @NotNull final Context context) throws Exception {
+      @NotNull final Agent agent) throws Exception {
     if ((message == null) || (message.getClass() != Invoke.class)) {
-      context.getLogger().wrn("ignoring message: %s", message);
+      agent.getLogger().wrn("ignoring message: %s", message);
       return;
     }
 
@@ -87,11 +87,11 @@ public class ReflectionBehavior extends AbstractBehavior {
           object.getClass().getMethod(invoke.getMethodName(), invoke.getParameterTypeArray()));
 
     } catch (final NoSuchMethodException e) {
-      context.getLogger().wrn(e, "ignoring message: %s", message);
+      agent.getLogger().wrn(e, "ignoring message: %s", message);
       return;
     }
 
-    CONTEXTS.get().addFirst(context);
+    AGENTS.get().addFirst(agent);
     ENVELOPS.get().addFirst(envelop);
     try {
       final Object result = method.invoke(object, invoke.getArgumentArray());
@@ -99,16 +99,16 @@ public class ReflectionBehavior extends AbstractBehavior {
       if ((returnType != void.class) && (returnType != Void.class)) {
         try {
           // TODO: 31/08/2018 specific message?
-          envelop.getSender().tell(result, envelop.getOptions().threadOnly(), context.getSelf());
+          envelop.getSender().tell(result, envelop.getOptions().threadOnly(), agent.getSelf());
 
         } catch (final RejectedExecutionException e) {
-          context.getLogger().err(e, "ignoring exception");
+          agent.getLogger().err(e, "ignoring exception");
         }
       }
 
     } finally {
       ENVELOPS.get().removeFirst();
-      CONTEXTS.get().removeFirst();
+      AGENTS.get().removeFirst();
     }
   }
 

@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
 
-import dm.shakespeare.actor.Behavior.Context;
+import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.BehaviorBuilder;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.template.annotation.OnNoMatch;
@@ -39,7 +39,7 @@ class OnNoMatchHandler implements AnnotationHandler<OnNoMatch> {
     if (length > 1) {
       for (int i = 1; i < length; ++i) {
         final Class<?> parameterType = parameterTypes[i];
-        if ((parameterType != Envelop.class) && (parameterType != Context.class)) {
+        if ((parameterType != Envelop.class) && (parameterType != Agent.class)) {
           throw new IllegalArgumentException("invalid method parameters: " + name);
         }
       }

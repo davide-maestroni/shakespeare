@@ -18,7 +18,7 @@ package dm.shakespeare.template.annotation;
 
 import org.jetbrains.annotations.NotNull;
 
-import dm.shakespeare.actor.Behavior.Context;
+import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.BehaviorBuilder.Matcher;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.util.ConstantConditions;
@@ -33,7 +33,7 @@ public class VoidMatcher implements Matcher<Object> {
   }
 
   public boolean match(final Object message, @NotNull final Envelop envelop,
-      @NotNull final Context context) {
+      @NotNull final Agent agent) {
     return false;
   }
 }

@@ -18,7 +18,7 @@ package dm.shakespeare.actor;
 
 import org.jetbrains.annotations.NotNull;
 
-import dm.shakespeare.actor.Behavior.Context;
+import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.BehaviorBuilder.Handler;
 import dm.shakespeare.function.Mapper;
 import dm.shakespeare.util.ConstantConditions;
@@ -45,8 +45,8 @@ class ApplyHandler<T> implements Handler<T> {
    * {@inheritDoc}
    */
   public void handle(final T message, @NotNull final Envelop envelop,
-      @NotNull final Context context) throws Exception {
+      @NotNull final Agent agent) throws Exception {
     envelop.getSender()
-        .tell(mMapper.apply(message), envelop.getOptions().threadOnly(), context.getSelf());
+        .tell(mMapper.apply(message), envelop.getOptions().threadOnly(), agent.getSelf());
   }
 }

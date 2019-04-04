@@ -50,7 +50,7 @@ public class ProxyBehavior extends AbstractBehavior {
   }
 
   public void onMessage(final Object message, @NotNull final Envelop envelop,
-      @NotNull final Context context) throws Exception {
+      @NotNull final Agent agent) throws Exception {
     final Actor actor = mActor.get();
     final WeakHashMap<Actor, Actor> senderToProxyMap = mSenderToProxyMap;
     final HashMap<Actor, WeakReference<Actor>> proxyToSenderMap = mProxyToSenderMap;
@@ -58,51 +58,51 @@ public class ProxyBehavior extends AbstractBehavior {
     final Options options = envelop.getOptions();
     if (actor == null) {
       if (options.getReceiptId() != null) {
-        sender.tell(new Bounce(message, options), options.threadOnly(), context.getSelf());
+        sender.tell(new Bounce(message, options), options.threadOnly(), agent.getSelf());
       }
 
       for (final Actor proxy : senderToProxyMap.values()) {
         proxy.dismiss(false);
       }
-      context.dismissSelf();
+      agent.dismissSelf();
 
     } else if (actor.equals(sender)) {
       if (options.getReceiptId() != null) {
         sender.tell(new Failure(message, options,
                 new IllegalRecipientException("an actor can't proxy itself")), options.threadOnly(),
-            context.getSelf());
+            agent.getSelf());
       }
 
     } else if (proxyToSenderMap.containsKey(sender)) {
       final Actor recipient = proxyToSenderMap.get(sender).get();
       if (recipient == null) {
         if (options.getReceiptId() != null) {
-          sender.tell(new Bounce(message, options), options.threadOnly(), context.getSelf());
+          sender.tell(new Bounce(message, options), options.threadOnly(), agent.getSelf());
 
         } else {
           sender.dismiss(false);
         }
 
       } else {
-        onOutgoing(actor, recipient, message, envelop.getSentAt(), options, context);
+        onOutgoing(actor, recipient, message, envelop.getSentAt(), options, agent);
       }
 
     } else {
-      final Actor self = context.getSelf();
+      final Actor self = agent.getSelf();
       if (!senderToProxyMap.containsKey(sender)) {
         proxyToSenderMap.keySet().retainAll(senderToProxyMap.values());
         final Actor proxy = BackStage.newActor(sender.getId(), new SenderRole(self, actor));
         senderToProxyMap.put(sender, proxy);
         proxyToSenderMap.put(proxy, new WeakReference<Actor>(sender));
       }
-      onIncoming(actor, sender, message, envelop.getSentAt(), envelop.getOptions(), context);
+      onIncoming(actor, sender, message, envelop.getSentAt(), envelop.getOptions(), agent);
     }
     envelop.preventReceipt();
   }
 
   protected void onIncoming(@NotNull final Actor proxied, @NotNull final Actor sender,
       final Object message, final long sentAt, @NotNull final Options options,
-      @NotNull final Context context) throws Exception {
+      @NotNull final Agent agent) throws Exception {
     final Actor proxy = mSenderToProxyMap.get(sender);
     if (proxy != null) {
       proxied.tell(message, options.asSentAt(sentAt), proxy);
@@ -111,8 +111,8 @@ public class ProxyBehavior extends AbstractBehavior {
 
   protected void onOutgoing(@NotNull final Actor proxied, @NotNull final Actor recipient,
       final Object message, final long sentAt, @NotNull final Options options,
-      @NotNull final Context context) throws Exception {
-    recipient.tell(message, options.asSentAt(sentAt), context.getSelf());
+      @NotNull final Agent agent) throws Exception {
+    recipient.tell(message, options.asSentAt(sentAt), agent.getSelf());
   }
 
   private static class SenderRole extends Role {
@@ -130,16 +130,16 @@ public class ProxyBehavior extends AbstractBehavior {
       return new AbstractBehavior() {
 
         public void onMessage(final Object message, @NotNull final Envelop envelop,
-            @NotNull final Context context) {
+            @NotNull final Agent agent) {
           final Actor proxy = mProxy;
           if (proxy.equals(envelop.getSender())) {
             mProxied.tell(message, envelop.getOptions().asSentAt(envelop.getSentAt()),
-                context.getSelf());
-            context.dismissSelf();
+                agent.getSelf());
+            agent.dismissSelf();
 
           } else {
             proxy.tell(message, envelop.getOptions().asSentAt(envelop.getSentAt()),
-                context.getSelf());
+                agent.getSelf());
             envelop.preventReceipt();
           }
         }

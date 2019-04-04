@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
-import dm.shakespeare.actor.Behavior.Context;
+import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.function.Observer;
 import dm.shakespeare.function.Tester;
 
@@ -148,7 +148,7 @@ public interface BehaviorBuilder {
    * @return this builder.
    */
   @NotNull
-  BehaviorBuilder onStart(@NotNull Observer<? super Context> observer);
+  BehaviorBuilder onStart(@NotNull Observer<? super Agent> observer);
 
   /**
    * Registers the specified handler so that it will be called when the actor is stopped.
@@ -157,7 +157,7 @@ public interface BehaviorBuilder {
    * @return this builder.
    */
   @NotNull
-  BehaviorBuilder onStop(@NotNull Observer<? super Context> observer);
+  BehaviorBuilder onStop(@NotNull Observer<? super Agent> observer);
 
   /**
    * Interface defining an handler of messages.
@@ -171,10 +171,10 @@ public interface BehaviorBuilder {
      *
      * @param message the message object.
      * @param envelop the message envelop.
-     * @param context the behavior context.
+     * @param agent   the behavior agent.
      * @throws Exception when an unexpected error occurs.
      */
-    void handle(T message, @NotNull Envelop envelop, @NotNull Context context) throws Exception;
+    void handle(T message, @NotNull Envelop envelop, @NotNull Agent agent) throws Exception;
   }
 
   /**
@@ -189,10 +189,10 @@ public interface BehaviorBuilder {
      *
      * @param message the message object.
      * @param envelop the message envelop.
-     * @param context the behavior context.
+     * @param agent   the behavior agent.
      * @return {@code true} if the specified parameters match the implemented conditions.
      * @throws Exception when an unexpected error occurs.
      */
-    boolean match(T message, @NotNull Envelop envelop, @NotNull Context context) throws Exception;
+    boolean match(T message, @NotNull Envelop envelop, @NotNull Agent agent) throws Exception;
   }
 }

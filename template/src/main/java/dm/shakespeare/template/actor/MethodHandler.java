@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
-import dm.shakespeare.actor.Behavior.Context;
+import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.BehaviorBuilder.Handler;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.template.util.Reflections;
@@ -41,16 +41,16 @@ class MethodHandler implements Handler<Object> {
   }
 
   static void handleReturnValue(@NotNull final Method method, final Object value,
-      @NotNull final Envelop envelop, @NotNull final Context context) {
+      @NotNull final Envelop envelop, @NotNull final Agent agent) {
     final Class<?> returnType = method.getReturnType();
     if ((returnType != void.class) && (returnType != Void.class)) {
       // TODO: 31/08/2018 specific message?
-      envelop.getSender().tell(value, envelop.getOptions().threadOnly(), context.getSelf());
+      envelop.getSender().tell(value, envelop.getOptions().threadOnly(), agent.getSelf());
     }
   }
 
   public void handle(final Object message, @NotNull final Envelop envelop,
-      @NotNull final Context context) throws Exception {
+      @NotNull final Agent agent) throws Exception {
     final Method method = mMethod;
     final Class<?>[] parameterTypes = method.getParameterTypes();
     final int length = parameterTypes.length;
@@ -62,8 +62,8 @@ class MethodHandler implements Handler<Object> {
         if (parameterTypes[i] == Envelop.class) {
           parameters.add(envelop);
 
-        } else if (parameterTypes[i] == Context.class) {
-          parameters.add(context);
+        } else if (parameterTypes[i] == Agent.class) {
+          parameters.add(agent);
         }
       }
       args = parameters.toArray();
@@ -72,6 +72,6 @@ class MethodHandler implements Handler<Object> {
       args = new Object[]{message};
     }
     final Object result = method.invoke(mObject, args);
-    handleReturnValue(method, result, envelop, context);
+    handleReturnValue(method, result, envelop, agent);
   }
 }

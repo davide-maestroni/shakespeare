@@ -29,13 +29,13 @@ public class PoisonableBehavior implements Behavior {
 
   public static final Object POISON_PILL = new Object();
 
-  private final ContextWrapper mContext;
+  private final AgentWrapper mAgent;
 
   private Behavior mBehavior;
 
   PoisonableBehavior(@NotNull final Behavior behavior) {
     mBehavior = ConstantConditions.notNull("behavior", behavior);
-    mContext = new ContextWrapper() {
+    mAgent = new AgentWrapper() {
 
       @Override
       public void setBehavior(@NotNull final Behavior behavior) {
@@ -45,19 +45,19 @@ public class PoisonableBehavior implements Behavior {
   }
 
   public void onMessage(final Object message, @NotNull final Envelop envelop,
-      @NotNull final Context context) throws Exception {
+      @NotNull final Agent agent) throws Exception {
     if (message == POISON_PILL) {
-      context.dismissSelf();
+      agent.dismissSelf();
       return;
     }
-    mBehavior.onMessage(message, envelop, mContext.withContext(context));
+    mBehavior.onMessage(message, envelop, mAgent.withAgent(agent));
   }
 
-  public void onStart(@NotNull final Context context) throws Exception {
-    mBehavior.onStart(mContext.withContext(context));
+  public void onStart(@NotNull final Agent agent) throws Exception {
+    mBehavior.onStart(mAgent.withAgent(agent));
   }
 
-  public void onStop(@NotNull final Context context) throws Exception {
-    mBehavior.onStop(mContext.withContext(context));
+  public void onStop(@NotNull final Agent agent) throws Exception {
+    mBehavior.onStop(mAgent.withAgent(agent));
   }
 }

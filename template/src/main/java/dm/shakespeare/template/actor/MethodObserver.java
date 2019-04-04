@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.reflect.Method;
 import java.util.Collections;
 
-import dm.shakespeare.actor.Behavior.Context;
+import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.function.Observer;
 import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;
@@ -29,7 +29,7 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 09/12/2018.
  */
-class MethodObserver implements Observer<Context> {
+class MethodObserver implements Observer<Agent> {
 
   private static final Object[] EMPTY_ARGS = new Object[0];
 
@@ -41,17 +41,17 @@ class MethodObserver implements Observer<Context> {
     mMethod = Reflections.makeAccessible(method);
   }
 
-  public void accept(final Context context) throws Exception {
+  public void accept(final Agent agent) throws Exception {
     final Method method = mMethod;
     final Class<?>[] parameterTypes = method.getParameterTypes();
     final int length = parameterTypes.length;
     final Object[] args;
     if (length > 0) {
       if (length == 1) {
-        args = new Object[]{context};
+        args = new Object[]{agent};
 
       } else {
-        args = Collections.nCopies(length, context).toArray();
+        args = Collections.nCopies(length, agent).toArray();
       }
 
     } else {

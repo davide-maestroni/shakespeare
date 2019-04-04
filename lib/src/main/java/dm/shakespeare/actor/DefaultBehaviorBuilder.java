@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import dm.shakespeare.actor.Behavior.Context;
+import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.function.Observer;
 import dm.shakespeare.function.Tester;
 import dm.shakespeare.util.ConstantConditions;
@@ -32,24 +32,24 @@ import dm.shakespeare.util.ConstantConditions;
  */
 class DefaultBehaviorBuilder implements BehaviorBuilder {
 
-  private static final Observer<Context> DEFAULT_CONTEXT_OBSERVER = new Observer<Context>() {
+  private static final Observer<Agent> DEFAULT_AGENT_OBSERVER = new Observer<Agent>() {
 
-    public void accept(@NotNull final Context context) {
+    public void accept(@NotNull final Agent agent) {
     }
   };
   private static final Handler<?> DEFAULT_MESSAGE_HANDLER = new Handler<Object>() {
 
     public void handle(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) {
+        @NotNull final Agent agent) {
     }
   };
 
   private final ArrayList<MatchingHandler> mMessageHandlers = new ArrayList<MatchingHandler>();
   private final ArrayList<Handler<?>> mNoMatchHandlers = new ArrayList<Handler<?>>();
-  private final ArrayList<Observer<? super Context>> mStartObservers =
-      new ArrayList<Observer<? super Context>>();
-  private final ArrayList<Observer<? super Context>> mStopObservers =
-      new ArrayList<Observer<? super Context>>();
+  private final ArrayList<Observer<? super Agent>> mStartObservers =
+      new ArrayList<Observer<? super Agent>>();
+  private final ArrayList<Observer<? super Agent>> mStopObservers =
+      new ArrayList<Observer<? super Agent>>();
 
   @NotNull
   @SuppressWarnings("unchecked")
@@ -74,27 +74,27 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
     } else {
       messageHandler = new MultipleMessageHandler(messageHandlers, noMatchHandlers);
     }
-    final ArrayList<Observer<? super Context>> startObservers = mStartObservers;
-    final Observer<? super Context> startObserver;
+    final ArrayList<Observer<? super Agent>> startObservers = mStartObservers;
+    final Observer<? super Agent> startObserver;
     if (startObservers.isEmpty()) {
-      startObserver = DEFAULT_CONTEXT_OBSERVER;
+      startObserver = DEFAULT_AGENT_OBSERVER;
 
     } else if (startObservers.size() == 1) {
       startObserver = startObservers.get(0);
 
     } else {
-      startObserver = new MultipleContextObserver(startObservers);
+      startObserver = new MultipleAgentObserver(startObservers);
     }
-    final ArrayList<Observer<? super Context>> stopObservers = mStopObservers;
-    final Observer<? super Context> stopObserver;
+    final ArrayList<Observer<? super Agent>> stopObservers = mStopObservers;
+    final Observer<? super Agent> stopObserver;
     if (stopObservers.isEmpty()) {
-      stopObserver = DEFAULT_CONTEXT_OBSERVER;
+      stopObserver = DEFAULT_AGENT_OBSERVER;
 
     } else if (stopObservers.size() == 1) {
       stopObserver = stopObservers.get(0);
 
     } else {
-      stopObserver = new MultipleContextObserver(stopObservers);
+      stopObserver = new MultipleAgentObserver(stopObservers);
     }
     return new DefaultBehavior(messageHandler, startObserver, stopObserver);
   }
@@ -164,13 +164,13 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
   }
 
   @NotNull
-  public BehaviorBuilder onStart(@NotNull final Observer<? super Context> observer) {
+  public BehaviorBuilder onStart(@NotNull final Observer<? super Agent> observer) {
     mStartObservers.add(ConstantConditions.notNull("observer", observer));
     return this;
   }
 
   @NotNull
-  public BehaviorBuilder onStop(@NotNull final Observer<? super Context> observer) {
+  public BehaviorBuilder onStop(@NotNull final Observer<? super Agent> observer) {
     mStopObservers.add(ConstantConditions.notNull("observer", observer));
     return this;
   }
@@ -182,7 +182,7 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
     }
 
     boolean matches(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) {
+        @NotNull final Agent agent) {
       return true;
     }
   }
@@ -198,7 +198,7 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
     }
 
     boolean matches(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) {
+        @NotNull final Agent agent) {
       return mClass.isInstance(message);
     }
   }
@@ -214,7 +214,7 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
     }
 
     boolean matches(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) {
+        @NotNull final Agent agent) {
       for (final Class<?> messageClass : mClasses) {
         if (messageClass.isInstance(message)) {
           return true;
@@ -227,29 +227,29 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
   private static class DefaultBehavior implements Behavior {
 
     private final Handler<Object> mMessageHandler;
-    private final Observer<? super Context> mStartObserver;
-    private final Observer<? super Context> mStopObserver;
+    private final Observer<? super Agent> mStartObserver;
+    private final Observer<? super Agent> mStopObserver;
 
     @SuppressWarnings("unchecked")
     private DefaultBehavior(@NotNull final Handler<?> messageHandler,
-        @NotNull final Observer<? super Context> startObserver,
-        @NotNull final Observer<? super Context> stopObserver) {
+        @NotNull final Observer<? super Agent> startObserver,
+        @NotNull final Observer<? super Agent> stopObserver) {
       mMessageHandler = (Handler<Object>) messageHandler;
       mStartObserver = startObserver;
       mStopObserver = stopObserver;
     }
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) throws Exception {
-      mMessageHandler.handle(message, envelop, context);
+        @NotNull final Agent agent) throws Exception {
+      mMessageHandler.handle(message, envelop, agent);
     }
 
-    public void onStart(@NotNull final Context context) throws Exception {
-      mStartObserver.accept(context);
+    public void onStart(@NotNull final Agent agent) throws Exception {
+      mStartObserver.accept(agent);
     }
 
-    public void onStop(@NotNull final Context context) throws Exception {
-      mStopObserver.accept(context);
+    public void onStop(@NotNull final Agent agent) throws Exception {
+      mStopObserver.accept(agent);
     }
   }
 
@@ -263,7 +263,7 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
     }
 
     boolean matches(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) {
+        @NotNull final Agent agent) {
       final Object other = mMessage;
       return (other == message) || (other != null) && other.equals(message);
     }
@@ -281,8 +281,8 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
     }
 
     boolean matches(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) throws Exception {
-      return mMatcher.match(message, envelop, context);
+        @NotNull final Agent agent) throws Exception {
+      return mMatcher.match(message, envelop, agent);
     }
   }
 
@@ -295,28 +295,28 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
       mHandler = (Handler<Object>) handler;
     }
 
-    abstract boolean matches(Object message, @NotNull Envelop envelop,
-        @NotNull Context context) throws Exception;
+    abstract boolean matches(Object message, @NotNull Envelop envelop, @NotNull Agent agent) throws
+        Exception;
 
     public void handle(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) throws Exception {
-      if (matches(message, envelop, context)) {
-        mHandler.handle(message, envelop, context);
+        @NotNull final Agent agent) throws Exception {
+      if (matches(message, envelop, agent)) {
+        mHandler.handle(message, envelop, agent);
       }
     }
   }
 
-  private static class MultipleContextObserver implements Observer<Context> {
+  private static class MultipleAgentObserver implements Observer<Agent> {
 
-    private final List<Observer<? super Context>> mObservers;
+    private final List<Observer<? super Agent>> mObservers;
 
-    private MultipleContextObserver(@NotNull final List<Observer<? super Context>> observers) {
+    private MultipleAgentObserver(@NotNull final List<Observer<? super Agent>> observers) {
       mObservers = observers;
     }
 
-    public void accept(@NotNull final Context context) throws Exception {
-      for (final Observer<? super Context> handler : mObservers) {
-        handler.accept(context);
+    public void accept(@NotNull final Agent agent) throws Exception {
+      for (final Observer<? super Agent> handler : mObservers) {
+        handler.accept(agent);
       }
     }
   }
@@ -334,18 +334,18 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
 
     @SuppressWarnings("unchecked")
     public void handle(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) throws Exception {
+        @NotNull final Agent agent) throws Exception {
       boolean hasMatch = false;
       for (final MatchingHandler handler : mHandlers) {
-        if (handler.matches(message, envelop, context)) {
-          handler.handle(message, envelop, context);
+        if (handler.matches(message, envelop, agent)) {
+          handler.handle(message, envelop, agent);
           hasMatch = true;
         }
       }
 
       if (!hasMatch) {
         for (final Handler<?> handler : mFallbacks) {
-          ((Handler<Object>) handler).handle(message, envelop, context);
+          ((Handler<Object>) handler).handle(message, envelop, agent);
         }
       }
     }
@@ -363,7 +363,7 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
     }
 
     boolean matches(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) throws Exception {
+        @NotNull final Agent agent) throws Exception {
       return mTester.test(envelop);
     }
   }
@@ -380,7 +380,7 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
     }
 
     boolean matches(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) throws Exception {
+        @NotNull final Agent agent) throws Exception {
       return mTester.test(message);
     }
   }

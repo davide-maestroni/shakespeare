@@ -23,55 +23,55 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
-import dm.shakespeare.actor.Behavior.Context;
+import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.log.Logger;
 
 /**
  * Created by davide-maestroni on 01/14/2019.
  */
-public class ContextWrapper implements Context {
+public class AgentWrapper implements Agent {
 
-  private Context mContext;
+  private Agent mAgent;
 
   public void dismissSelf() {
-    mContext.dismissSelf();
+    mAgent.dismissSelf();
   }
 
   @NotNull
   public ExecutorService getExecutorService() {
-    return mContext.getExecutorService();
+    return mAgent.getExecutorService();
   }
 
   @NotNull
   public Logger getLogger() {
-    return mContext.getLogger();
+    return mAgent.getLogger();
   }
 
   @NotNull
   public ScheduledExecutorService getScheduledExecutorService() {
-    return mContext.getScheduledExecutorService();
+    return mAgent.getScheduledExecutorService();
   }
 
   @NotNull
   public Actor getSelf() {
-    return mContext.getSelf();
+    return mAgent.getSelf();
   }
 
   public boolean isDismissed() {
-    return mContext.isDismissed();
+    return mAgent.isDismissed();
   }
 
   public void restartSelf() {
-    mContext.restartSelf();
+    mAgent.restartSelf();
   }
 
   public void setBehavior(@NotNull final Behavior behavior) {
-    mContext.setBehavior(behavior);
+    mAgent.setBehavior(behavior);
   }
 
   @NotNull
-  public ContextWrapper withContext(final Context context) {
-    mContext = context;
+  public AgentWrapper withAgent(final Agent agent) {
+    mAgent = agent;
     return this;
   }
 }

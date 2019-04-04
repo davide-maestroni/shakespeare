@@ -47,7 +47,7 @@ public class SupervisedBehavior extends AbstractBehavior {
 
   private static final Object DUMMY_MESSAGE = new Object();
 
-  private final ContextWrapper mContext;
+  private final AgentWrapper mAgent;
   private final String mReceiptId = toString();
 
   private Behavior mBehavior;
@@ -61,7 +61,7 @@ public class SupervisedBehavior extends AbstractBehavior {
 
   SupervisedBehavior(@NotNull final Behavior behavior) {
     mBehavior = ConstantConditions.notNull("behavior", behavior);
-    mContext = new ContextWrapper() {
+    mAgent = new AgentWrapper() {
 
       @Override
       public void setBehavior(@NotNull final Behavior behavior) {
@@ -71,15 +71,15 @@ public class SupervisedBehavior extends AbstractBehavior {
   }
 
   public void onMessage(final Object message, @NotNull final Envelop envelop,
-      @NotNull final Context context) throws Exception {
-    mHandler.handle(message, envelop, context);
+      @NotNull final Agent agent) throws Exception {
+    mHandler.handle(message, envelop, agent);
   }
 
-  public void onStart(@NotNull final Context context) throws Exception {
-    mBehavior.onStart(mContext.withContext(context));
+  public void onStart(@NotNull final Agent agent) throws Exception {
+    mBehavior.onStart(mAgent.withAgent(agent));
   }
 
-  public void onStop(@NotNull final Context context) throws Exception {
+  public void onStop(@NotNull final Agent agent) throws Exception {
     final Throwable failure = mFailure;
     final DelayedMessage failureMessage = mFailureMessage;
     if ((failure != null) && (failureMessage != null)) {
@@ -88,15 +88,15 @@ public class SupervisedBehavior extends AbstractBehavior {
       if (options.getReceiptId() != null) {
         envelop.getSender()
             .tell(new Bounce(failureMessage.getMessage(), options), options.threadOnly(),
-                context.getSelf());
+                agent.getSelf());
       }
     }
-    resetFailure(context);
-    bounceDelayed(context);
-    mBehavior.onStop(mContext.withContext(context));
+    resetFailure(agent);
+    bounceDelayed(agent);
+    mBehavior.onStop(mAgent.withAgent(agent));
   }
 
-  private void bounceDelayed(@NotNull final Context context) {
+  private void bounceDelayed(@NotNull final Agent agent) {
     final CQueue<DelayedMessage> delayedMessages = mDelayedMessages;
     for (final DelayedMessage delayedMessage : delayedMessages) {
       final Envelop envelop = delayedMessage.getEnvelop();
@@ -104,18 +104,18 @@ public class SupervisedBehavior extends AbstractBehavior {
       if (options.getReceiptId() != null) {
         envelop.getSender()
             .tell(new Bounce(delayedMessage.getMessage(), options), options.threadOnly(),
-                context.getSelf());
+                agent.getSelf());
       }
     }
     mDelayedMessages = new CQueue<DelayedMessage>();
   }
 
-  private void resetFailure(@NotNull final Context context) {
+  private void resetFailure(@NotNull final Agent agent) {
     try {
-      mSupervisor.removeObserver(context.getSelf());
+      mSupervisor.removeObserver(agent.getSelf());
 
     } catch (final RejectedExecutionException e) {
-      context.getLogger().err(e, "ignoring exception");
+      agent.getLogger().err(e, "ignoring exception");
     }
     mSupervisor = null;
     mSupervisorThread = null;
@@ -124,8 +124,8 @@ public class SupervisedBehavior extends AbstractBehavior {
     mFailureMessage = null;
   }
 
-  private void resumeDelayed(@NotNull final Context context) {
-    final Actor self = context.getSelf();
+  private void resumeDelayed(@NotNull final Agent agent) {
+    final Actor self = agent.getSelf();
     final int size = mDelayedMessages.size();
     for (int i = 0; i < size; ++i) {
       self.tell(DUMMY_MESSAGE, null, self);
@@ -227,18 +227,18 @@ public class SupervisedBehavior extends AbstractBehavior {
   private class DefaultHandler implements Handler<Object> {
 
     public void handle(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) throws Exception {
+        @NotNull final Agent agent) throws Exception {
       if (message == DUMMY_MESSAGE) {
         return;
       }
       final Options options = envelop.getOptions();
       if (message instanceof Supervise) {
-        final Actor self = context.getSelf();
+        final Actor self = agent.getSelf();
         final Actor sender = envelop.getSender();
         if (!sender.equals(self)) {
           mSupervisor = sender;
           mSupervisorThread = options.getThreadId();
-          sender.addObserver(context.getSelf());
+          sender.addObserver(agent.getSelf());
 
         } else if (options.getReceiptId() != null) {
           sender.tell(new Failure(message, options,
@@ -251,10 +251,10 @@ public class SupervisedBehavior extends AbstractBehavior {
         final Actor sender = envelop.getSender();
         if (sender.equals(mSupervisor)) {
           try {
-            mSupervisor.removeObserver(context.getSelf());
+            mSupervisor.removeObserver(agent.getSelf());
 
           } catch (final RejectedExecutionException e) {
-            context.getLogger().err(e, "ignoring exception");
+            agent.getLogger().err(e, "ignoring exception");
           }
           mSupervisor = null;
           mSupervisorThread = null;
@@ -262,24 +262,24 @@ public class SupervisedBehavior extends AbstractBehavior {
         } else if (options.getReceiptId() != null) {
           sender.tell(new Failure(message, options,
                   new IllegalStateException("sender is not the current supervisor")),
-              options.threadOnly(), context.getSelf());
+              options.threadOnly(), agent.getSelf());
           envelop.preventReceipt();
         }
 
       } else if (message instanceof SupervisedRecovery) {
         final Actor sender = envelop.getSender();
         if (sender.equals(mSupervisor)) {
-          context.getLogger().wrn("ignoring recovery message: " + message);
+          agent.getLogger().wrn("ignoring recovery message: " + message);
 
         } else if (options.getReceiptId() != null) {
           sender.tell(new Failure(message, options,
                   new IllegalStateException("sender is not the current supervisor")),
-              options.threadOnly(), context.getSelf());
+              options.threadOnly(), agent.getSelf());
           envelop.preventReceipt();
         }
 
       } else if (Receipt.isReceipt(message, mReceiptId)) {
-        context.getLogger().wrn("ignoring receipt message: " + message);
+        agent.getLogger().wrn("ignoring receipt message: " + message);
 
       } else if (message instanceof DeadLetter) {
         final Actor sender = envelop.getSender();
@@ -290,7 +290,7 @@ public class SupervisedBehavior extends AbstractBehavior {
 
       } else {
         try {
-          mBehavior.onMessage(message, envelop, mContext.withContext(context));
+          mBehavior.onMessage(message, envelop, mAgent.withAgent(agent));
 
         } catch (final Throwable t) {
           if (!(t instanceof InterruptedException)) {
@@ -299,7 +299,7 @@ public class SupervisedBehavior extends AbstractBehavior {
               final String failureId = UUID.randomUUID().toString();
               supervisor.tell(new SupervisedFailure(failureId, t),
                   new Options().withThreadId(mSupervisorThread).withReceiptId(mReceiptId),
-                  context.getSelf());
+                  agent.getSelf());
               mFailure = t;
               mFailureId = failureId;
               mFailureMessage = new DelayedMessage(message, envelop);
@@ -323,32 +323,32 @@ public class SupervisedBehavior extends AbstractBehavior {
   private class ResumeHandler extends DefaultHandler {
 
     public void handle(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) throws Exception {
+        @NotNull final Agent agent) throws Exception {
       final CQueue<DelayedMessage> delayedMessages = mDelayedMessages;
       if (!delayedMessages.isEmpty()) {
         final DelayedMessage delayedMessage = delayedMessages.removeFirst();
         if (message != DUMMY_MESSAGE) {
           delayedMessages.add(new DelayedMessage(message, envelop));
         }
-        super.handle(delayedMessage.getMessage(), delayedMessage.getEnvelop(), context);
+        super.handle(delayedMessage.getMessage(), delayedMessage.getEnvelop(), agent);
         return;
       }
       mDelayedMessages = new CQueue<DelayedMessage>();
       mHandler = new DefaultHandler();
-      super.handle(message, envelop, context);
+      super.handle(message, envelop, agent);
     }
   }
 
   private class SuperviseHandler implements Handler<Object> {
 
     public void handle(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) {
+        @NotNull final Agent agent) {
       if (message == DUMMY_MESSAGE) {
         return;
       }
       final Options options = envelop.getOptions();
       if (message instanceof Supervise) {
-        final Actor self = context.getSelf();
+        final Actor self = agent.getSelf();
         final Actor sender = envelop.getSender();
         if (!sender.equals(self)) {
           if (!sender.equals(mSupervisor)) {
@@ -370,12 +370,12 @@ public class SupervisedBehavior extends AbstractBehavior {
       } else if (message instanceof Unsupervise) {
         final Actor sender = envelop.getSender();
         if (sender.equals(mSupervisor)) {
-          context.dismissSelf();
+          agent.dismissSelf();
 
         } else if (options.getReceiptId() != null) {
           sender.tell(new Failure(message, options,
                   new IllegalStateException("sender is not the current supervisor")),
-              options.threadOnly(), context.getSelf());
+              options.threadOnly(), agent.getSelf());
           envelop.preventReceipt();
         }
 
@@ -388,9 +388,9 @@ public class SupervisedBehavior extends AbstractBehavior {
             final DelayedMessage failureMessage = mFailureMessage;
             if (recoveryType == RecoveryType.RETRY) {
               mDelayedMessages.addFirst(failureMessage);
-              resetFailure(context);
+              resetFailure(agent);
               mHandler = new ResumeHandler();
-              resumeDelayed(context);
+              resumeDelayed(agent);
 
             } else if (recoveryType == RecoveryType.RESUME) {
               final Envelop failureEnvelop = failureMessage.getEnvelop();
@@ -398,18 +398,18 @@ public class SupervisedBehavior extends AbstractBehavior {
               if (failureOptions.getReceiptId() != null) {
                 failureEnvelop.getSender()
                     .tell(new Failure(failureMessage.getMessage(), failureOptions, mFailure),
-                        failureOptions.threadOnly(), context.getSelf());
+                        failureOptions.threadOnly(), agent.getSelf());
               }
-              resetFailure(context);
+              resetFailure(agent);
               mHandler = new ResumeHandler();
-              resumeDelayed(context);
+              resumeDelayed(agent);
 
             } else if (recoveryType == RecoveryType.RESTART_AND_RETRY) {
               mDelayedMessages.addFirst(failureMessage);
-              resetFailure(context);
+              resetFailure(agent);
               mHandler = new ResumeHandler();
-              resumeDelayed(context);
-              context.restartSelf();
+              resumeDelayed(agent);
+              agent.restartSelf();
 
             } else if (recoveryType == RecoveryType.RESTART_AND_RESUME) {
               final Envelop failureEnvelop = failureMessage.getEnvelop();
@@ -417,31 +417,31 @@ public class SupervisedBehavior extends AbstractBehavior {
               if (failureOptions.getReceiptId() != null) {
                 failureEnvelop.getSender()
                     .tell(new Failure(failureMessage.getMessage(), failureOptions, mFailure),
-                        failureOptions.threadOnly(), context.getSelf());
+                        failureOptions.threadOnly(), agent.getSelf());
               }
-              resetFailure(context);
+              resetFailure(agent);
               mHandler = new ResumeHandler();
-              resumeDelayed(context);
-              context.restartSelf();
+              resumeDelayed(agent);
+              agent.restartSelf();
 
             } else if (recoveryType == RecoveryType.RESTART) {
-              context.restartSelf();
+              agent.restartSelf();
 
             } else {
-              context.dismissSelf();
+              agent.dismissSelf();
             }
 
           } else if (options.getReceiptId() != null) {
             sender.tell(
                 new Failure(message, options, new IllegalArgumentException("invalid failure ID")),
-                options.threadOnly(), context.getSelf());
+                options.threadOnly(), agent.getSelf());
             envelop.preventReceipt();
           }
 
         } else if (options.getReceiptId() != null) {
           sender.tell(new Failure(message, options,
                   new IllegalStateException("sender is not the current supervisor")),
-              options.threadOnly(), context.getSelf());
+              options.threadOnly(), agent.getSelf());
           envelop.preventReceipt();
         }
 
@@ -452,7 +452,7 @@ public class SupervisedBehavior extends AbstractBehavior {
             final Actor sender = envelop.getSender();
             if (sender.equals(mSupervisor) && mFailureId.equals(
                 ((SupervisedFailure) bouncedMessage).getFailureId())) {
-              context.dismissSelf();
+              agent.dismissSelf();
             }
           }
         }
@@ -460,7 +460,7 @@ public class SupervisedBehavior extends AbstractBehavior {
       } else if (message instanceof DeadLetter) {
         final Actor sender = envelop.getSender();
         if (sender.equals(mSupervisor)) {
-          context.dismissSelf();
+          agent.dismissSelf();
         }
 
       } else {

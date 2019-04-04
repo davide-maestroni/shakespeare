@@ -26,7 +26,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import dm.shakespeare.actor.Behavior.Context;
+import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -35,7 +35,7 @@ import dm.shakespeare.util.ConstantConditions;
  * This class instances do not support any blocking method (like
  * {@link ExecutorService#invokeAll(Collection)} or {@link ExecutorService#invokeAny(Collection)}).
  */
-class ContextScheduledExecutorService extends ContextExecutorService
+class AgentScheduledExecutorService extends AgentExecutorService
     implements ScheduledExecutorService {
 
   private final ScheduledExecutorService mExecutorService;
@@ -44,11 +44,11 @@ class ContextScheduledExecutorService extends ContextExecutorService
    * Creates a new scheduled executor service wrapping the specified one.
    *
    * @param executorService the executor service to wrap.
-   * @param context         the behavior context.
+   * @param agent           the behavior agent.
    */
-  ContextScheduledExecutorService(@NotNull final ScheduledExecutorService executorService,
-      @NotNull final Context context) {
-    super(executorService, context);
+  AgentScheduledExecutorService(@NotNull final ScheduledExecutorService executorService,
+      @NotNull final Agent agent) {
+    super(executorService, agent);
     mExecutorService = executorService;
   }
 
@@ -80,14 +80,14 @@ class ContextScheduledExecutorService extends ContextExecutorService
 
   @NotNull
   private <V> ScheduledFuture<V> wrap(@NotNull final ScheduledFuture<V> future) {
-    return new ContextScheduledFuture<V>(future);
+    return new AgentScheduledFuture<V>(future);
   }
 
-  private static class ContextScheduledFuture<V> implements ScheduledFuture<V> {
+  private static class AgentScheduledFuture<V> implements ScheduledFuture<V> {
 
     private final ScheduledFuture<V> mFuture;
 
-    private ContextScheduledFuture(@NotNull final ScheduledFuture<V> future) {
+    private AgentScheduledFuture(@NotNull final ScheduledFuture<V> future) {
       mFuture = ConstantConditions.notNull("future", future);
     }
 
@@ -130,10 +130,10 @@ class ContextScheduledExecutorService extends ContextExecutorService
         return true;
       }
 
-      if (!(o instanceof ContextScheduledFuture)) {
+      if (!(o instanceof AgentScheduledFuture)) {
         return false;
       }
-      final ContextScheduledFuture<?> that = (ContextScheduledFuture<?>) o;
+      final AgentScheduledFuture<?> that = (AgentScheduledFuture<?>) o;
       return mFuture.equals(that.mFuture);
     }
   }

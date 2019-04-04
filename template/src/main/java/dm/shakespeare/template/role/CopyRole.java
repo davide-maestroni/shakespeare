@@ -57,21 +57,21 @@ public class CopyRole extends FolderRole {
     }
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) throws Exception {
-      mBehavior.onMessage(message, envelop, context);
+        @NotNull final Agent agent) throws Exception {
+      mBehavior.onMessage(message, envelop, agent);
     }
 
-    public void onStart(@NotNull final Context context) throws Exception {
+    public void onStart(@NotNull final Agent agent) throws Exception {
       if (mIsStopped) {
         mIsStopped = false;
-        mBehavior = newRoleInstance().getBehavior(context.getSelf().getId());
+        mBehavior = newRoleInstance().getBehavior(agent.getSelf().getId());
       }
-      mBehavior.onStart(context);
+      mBehavior.onStart(agent);
     }
 
-    public void onStop(@NotNull final Context context) throws Exception {
+    public void onStop(@NotNull final Agent agent) throws Exception {
       mIsStopped = true;
-      mBehavior.onStop(context);
+      mBehavior.onStop(agent);
     }
   }
 }

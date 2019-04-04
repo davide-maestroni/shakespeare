@@ -26,7 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import dm.shakespeare.actor.Behavior.Context;
+import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -35,9 +35,9 @@ import dm.shakespeare.util.ConstantConditions;
  * This class instances do not support any blocking method (like
  * {@link ExecutorService#invokeAll(Collection)} or {@link ExecutorService#invokeAny(Collection)}).
  */
-class ContextExecutorService implements ExecutorService {
+class AgentExecutorService implements ExecutorService {
 
-  private final Context mContext;
+  private final Agent mAgent;
   private final ExecutorService mExecutor;
   private final WeakHashMap<Future<?>, Void> mTasks = new WeakHashMap<Future<?>, Void>();
 
@@ -45,12 +45,11 @@ class ContextExecutorService implements ExecutorService {
    * Creates a new executor service wrapping the specified one.
    *
    * @param executorService the executor service to wrap.
-   * @param context         the behavior context.
+   * @param agent           the behavior agent.
    */
-  ContextExecutorService(@NotNull final ExecutorService executorService,
-      @NotNull final Context context) {
+  AgentExecutorService(@NotNull final ExecutorService executorService, @NotNull final Agent agent) {
     mExecutor = ConstantConditions.notNull("executorService", executorService);
-    mContext = ConstantConditions.notNull("context", context);
+    mAgent = ConstantConditions.notNull("agent", agent);
   }
 
   public void execute(@NotNull final Runnable command) {
@@ -134,43 +133,43 @@ class ContextExecutorService implements ExecutorService {
 
   @NotNull
   <V> Callable<V> wrap(@NotNull final Callable<V> task) {
-    return new ContextCallable<V>(task, mContext);
+    return new AgentCallable<V>(task, mAgent);
   }
 
   @NotNull
   Runnable wrap(@NotNull final Runnable task) {
-    return new ContextRunnable(task, mContext);
+    return new AgentRunnable(task, mAgent);
   }
 
   @NotNull
   private <V> Future<V> wrap(@NotNull final Future<V> future) {
-    return new ContextFuture<V>(future);
+    return new AgentFuture<V>(future);
   }
 
-  private static class ContextCallable<V> implements Callable<V> {
+  private static class AgentCallable<V> implements Callable<V> {
 
-    private final Context mContext;
+    private final Agent mAgent;
 
     private final Callable<V> mTask;
 
-    private ContextCallable(@NotNull final Callable<V> task, @NotNull final Context context) {
+    private AgentCallable(@NotNull final Callable<V> task, @NotNull final Agent agent) {
       mTask = ConstantConditions.notNull("task", task);
-      mContext = context;
+      mAgent = agent;
     }
 
     public V call() throws Exception {
-      if (mContext.isDismissed()) {
+      if (mAgent.isDismissed()) {
         throw new IllegalStateException();
       }
       return mTask.call();
     }
   }
 
-  private static class ContextFuture<V> implements Future<V> {
+  private static class AgentFuture<V> implements Future<V> {
 
     private final Future<V> mFuture;
 
-    private ContextFuture(@NotNull final Future<V> future) {
+    private AgentFuture(@NotNull final Future<V> future) {
       mFuture = ConstantConditions.notNull("future", future);
     }
 
@@ -205,27 +204,27 @@ class ContextExecutorService implements ExecutorService {
         return true;
       }
 
-      if (!(o instanceof ContextFuture)) {
+      if (!(o instanceof AgentFuture)) {
         return false;
       }
-      final ContextFuture<?> that = (ContextFuture<?>) o;
+      final AgentFuture<?> that = (AgentFuture<?>) o;
       return mFuture.equals(that.mFuture);
     }
   }
 
-  private static class ContextRunnable implements Runnable {
+  private static class AgentRunnable implements Runnable {
 
-    private final Context mContext;
+    private final Agent mAgent;
 
     private final Runnable mTask;
 
-    private ContextRunnable(@NotNull final Runnable task, @NotNull final Context context) {
+    private AgentRunnable(@NotNull final Runnable task, @NotNull final Agent agent) {
       mTask = ConstantConditions.notNull("task", task);
-      mContext = context;
+      mAgent = agent;
     }
 
     public void run() {
-      if (!mContext.isDismissed()) {
+      if (!mAgent.isDismissed()) {
         mTask.run();
       }
     }

@@ -45,7 +45,7 @@ class LocalActor implements Actor {
     }
   };
 
-  private final LocalContext mContext;
+  private final LocalAgent mAgent;
   private final String mId;
   private final Logger mLogger;
   private final QuotaHandler mQuotaHandler;
@@ -53,25 +53,25 @@ class LocalActor implements Actor {
   /**
    * Creates a new actor instance.
    *
-   * @param id      the actor ID.
-   * @param quota   the actor inbox quota.
-   * @param context the context instance.
+   * @param id    the actor ID.
+   * @param quota the actor inbox quota.
+   * @param agent the agent instance.
    */
-  LocalActor(@NotNull final String id, final int quota, @NotNull final LocalContext context) {
+  LocalActor(@NotNull final String id, final int quota, @NotNull final LocalAgent agent) {
     mId = ConstantConditions.notNull("id", id);
-    mContext = ConstantConditions.notNull("context", context);
+    mAgent = ConstantConditions.notNull("agent", agent);
     mQuotaHandler = (quota < Integer.MAX_VALUE) ? new DefaultQuotaHandler(
         ConstantConditions.positive("quota", quota)) : DUMMY_HANDLER;
-    mLogger = mContext.getLogger();
+    mLogger = mAgent.getLogger();
   }
 
   @NotNull
   public Actor addObserver(@NotNull final Actor observer) {
     mLogger.dbg("[%s] adding observer: observer=%s", this, observer);
-    mContext.getActorExecutorService().executeNext(new Runnable() {
+    mAgent.getActorExecutorService().executeNext(new Runnable() {
 
       public void run() {
-        mContext.addObserver(observer);
+        mAgent.addObserver(observer);
       }
     });
     return this;
@@ -79,7 +79,7 @@ class LocalActor implements Actor {
 
   public void dismiss(final boolean mayInterruptIfRunning) {
     mLogger.dbg("[%s] dismissing: mayInterruptIfRunning=%s", this, mayInterruptIfRunning);
-    mContext.dismiss(mayInterruptIfRunning);
+    mAgent.dismiss(mayInterruptIfRunning);
   }
 
   @NotNull
@@ -90,10 +90,10 @@ class LocalActor implements Actor {
   @NotNull
   public Actor removeObserver(@NotNull final Actor observer) {
     mLogger.dbg("[%s] removing observer: observer=%s", this, observer);
-    mContext.getActorExecutorService().executeNext(new Runnable() {
+    mAgent.getActorExecutorService().executeNext(new Runnable() {
 
       public void run() {
-        mContext.removeObserver(observer);
+        mAgent.removeObserver(observer);
       }
     });
     return this;
@@ -106,11 +106,11 @@ class LocalActor implements Actor {
         message);
     if (mQuotaHandler.consumeQuota()) {
       try {
-        mContext.getActorExecutorService().execute(new DefaultEnvelop(sender, options) {
+        mAgent.getActorExecutorService().execute(new DefaultEnvelop(sender, options) {
 
           void open() {
             mQuotaHandler.releaseQuota();
-            mContext.message(message, this);
+            mAgent.message(message, this);
           }
         });
         mLogger.dbg("[%s] sent: options=%s - sender=%s - message=%s", this, options, sender,
@@ -137,11 +137,11 @@ class LocalActor implements Actor {
         messages);
     if (mQuotaHandler.consumeQuota()) {
       try {
-        mContext.getActorExecutorService().execute(new DefaultEnvelop(sender, options) {
+        mAgent.getActorExecutorService().execute(new DefaultEnvelop(sender, options) {
 
           void open() {
             mQuotaHandler.releaseQuota();
-            mContext.messages(messages, this);
+            mAgent.messages(messages, this);
           }
         });
         mLogger.dbg("[%s] sent all: options=%s - sender=%s - message=%s", this, options, sender,
@@ -173,15 +173,14 @@ class LocalActor implements Actor {
       for (final Object message : messages) {
         bounces.add(new QuotaExceeded(message, options));
       }
-      mContext.replyAll(envelop.getSender(), bounces, options.threadOnly());
+      mAgent.replyAll(envelop.getSender(), bounces, options.threadOnly());
     }
   }
 
   private void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
     final Options options = envelop.getOptions();
     if (options.getReceiptId() != null) {
-      mContext.reply(envelop.getSender(), new QuotaExceeded(message, options),
-          options.threadOnly());
+      mAgent.reply(envelop.getSender(), new QuotaExceeded(message, options), options.threadOnly());
     }
   }
 

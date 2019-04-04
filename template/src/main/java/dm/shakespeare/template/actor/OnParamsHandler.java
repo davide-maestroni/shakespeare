@@ -22,7 +22,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
-import dm.shakespeare.actor.Behavior.Context;
+import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.BehaviorBuilder;
 import dm.shakespeare.actor.BehaviorBuilder.Handler;
 import dm.shakespeare.actor.Envelop;
@@ -52,7 +52,7 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
     }
 
     public void handle(final Iterable<?> params, @NotNull final Envelop envelop,
-        @NotNull final Context context) throws Exception {
+        @NotNull final Agent agent) throws Exception {
       final Method method = mMethod;
       final Class<?>[] parameterTypes = method.getParameterTypes();
       final int length = parameterTypes.length;
@@ -65,8 +65,8 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
           if (parameterType == Envelop.class) {
             parameters.add(envelop);
 
-          } else if (parameterType == Context.class) {
-            parameters.add(context);
+          } else if (parameterType == Agent.class) {
+            parameters.add(agent);
 
           } else {
             throw new IllegalArgumentException("invalid method parameter: " + parameterType);
@@ -75,7 +75,7 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
         args = parameters;
       }
       final Object result = method.invoke(mObject, args.toArray());
-      MethodHandler.handleReturnValue(method, result, envelop, context);
+      MethodHandler.handleReturnValue(method, result, envelop, agent);
     }
   }
 

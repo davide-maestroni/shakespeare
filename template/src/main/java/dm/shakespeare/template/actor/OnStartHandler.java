@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
 
-import dm.shakespeare.actor.Behavior.Context;
+import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.BehaviorBuilder;
 import dm.shakespeare.template.annotation.OnStart;
 
@@ -36,7 +36,7 @@ class OnStartHandler implements AnnotationHandler<OnStart> {
     final Class<?>[] parameterTypes = method.getParameterTypes();
     if (parameterTypes.length > 0) {
       for (final Class<?> parameterType : parameterTypes) {
-        if (parameterType != Context.class) {
+        if (parameterType != Agent.class) {
           throw new IllegalArgumentException("invalid method parameters: " + name);
         }
       }

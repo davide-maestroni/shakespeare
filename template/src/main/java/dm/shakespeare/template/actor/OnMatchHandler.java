@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
 
-import dm.shakespeare.actor.Behavior.Context;
+import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.BehaviorBuilder;
 import dm.shakespeare.actor.BehaviorBuilder.Matcher;
 import dm.shakespeare.actor.Envelop;
@@ -58,7 +58,7 @@ class OnMatchHandler implements AnnotationHandler<OnMatch> {
         if (name.equals(matcherMethod.getName()) && ((returnType == Boolean.class) || (returnType
             == boolean.class)) && (parameterTypes.length == 3)
             && parameterTypes[1].isAssignableFrom(Envelop.class)
-            && parameterTypes[2].isAssignableFrom(Context.class)) {
+            && parameterTypes[2].isAssignableFrom(Agent.class)) {
           matcher = new MessageMatcher(object, matcherMethod);
           break;
         }
@@ -73,7 +73,7 @@ class OnMatchHandler implements AnnotationHandler<OnMatch> {
     if (length > 1) {
       for (int i = 1; i < length; ++i) {
         final Class<?> parameterType = parameterTypes[i];
-        if ((parameterType != Envelop.class) && (parameterType != Context.class)) {
+        if ((parameterType != Envelop.class) && (parameterType != Agent.class)) {
           throw new IllegalArgumentException("invalid method parameters: " + name);
         }
       }
@@ -92,8 +92,8 @@ class OnMatchHandler implements AnnotationHandler<OnMatch> {
     }
 
     public boolean match(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) throws Exception {
-      return (Boolean) mMethod.invoke(mObject, message, envelop, context);
+        @NotNull final Agent agent) throws Exception {
+      return (Boolean) mMethod.invoke(mObject, message, envelop, agent);
     }
   }
 }

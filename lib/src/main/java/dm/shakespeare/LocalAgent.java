@@ -27,7 +27,7 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
-import dm.shakespeare.actor.Behavior.Context;
+import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
 import dm.shakespeare.concurrent.ActorExecutorService;
@@ -41,9 +41,9 @@ import dm.shakespeare.message.Failure;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Class implementing a local behavior context.
+ * Class implementing a local behavior agent.
  */
-class LocalContext implements Context {
+class LocalAgent implements Agent {
 
   private static final DeadLetter DEAD_LETTER = new DeadLetter();
 
@@ -53,10 +53,10 @@ class LocalContext implements Context {
   private final Observer<Actor> mRemover;
 
   private Actor mActor;
+  private AgentExecutorService mAgentExecutorService;
+  private AgentScheduledExecutorService mAgentScheduledExecutorService;
   private Behavior mBehavior;
   private BehaviorWrapper mBehaviorWrapper = new BehaviorStarter();
-  private ContextExecutorService mContextExecutorService;
-  private ContextScheduledExecutorService mContextScheduledExecutorService;
   private Runnable mDismissRunnable;
   private volatile boolean mDismissed;
   private Runnable mRestartRunnable;
@@ -64,14 +64,14 @@ class LocalContext implements Context {
   private boolean mStopped;
 
   /**
-   * Creates a new context instance.
+   * Creates a new agent instance.
    *
    * @param remover         the observer to be called when the actor is dismissed.
    * @param behavior        the initial behavior instance
    * @param executorService the backing executor service.
    * @param logger          the logger instance.
    */
-  LocalContext(@NotNull final Observer<Actor> remover, @NotNull final Behavior behavior,
+  LocalAgent(@NotNull final Observer<Actor> remover, @NotNull final Behavior behavior,
       @NotNull final ExecutorService executorService, @NotNull final Logger logger) {
     mRemover = ConstantConditions.notNull("remover", remover);
     mBehavior = ConstantConditions.notNull("behavior", behavior);
@@ -89,7 +89,7 @@ class LocalContext implements Context {
       mDismissRunnable = new Runnable() {
 
         public void run() {
-          mBehaviorWrapper.onStop(LocalContext.this);
+          mBehaviorWrapper.onStop(LocalAgent.this);
         }
       };
     }
@@ -98,18 +98,18 @@ class LocalContext implements Context {
 
   @NotNull
   public ExecutorService getExecutorService() {
-    if (mContextExecutorService == null) {
+    if (mAgentExecutorService == null) {
       final ActorExecutorService actorExecutorService = mActorExecutorService;
       if (actorExecutorService instanceof ScheduledExecutorService) {
-        mContextExecutorService = (mContextScheduledExecutorService =
-            new ContextScheduledExecutorService((ScheduledExecutorService) actorExecutorService,
+        mAgentExecutorService = (mAgentScheduledExecutorService =
+            new AgentScheduledExecutorService((ScheduledExecutorService) actorExecutorService,
                 this));
 
       } else {
-        mContextExecutorService = new ContextExecutorService(actorExecutorService, this);
+        mAgentExecutorService = new AgentExecutorService(actorExecutorService, this);
       }
     }
-    return mContextExecutorService;
+    return mAgentExecutorService;
   }
 
   @NotNull
@@ -119,20 +119,20 @@ class LocalContext implements Context {
 
   @NotNull
   public ScheduledExecutorService getScheduledExecutorService() {
-    if (mContextScheduledExecutorService == null) {
+    if (mAgentScheduledExecutorService == null) {
       final ActorExecutorService actorExecutorService = mActorExecutorService;
       if (actorExecutorService instanceof ScheduledExecutorService) {
-        mContextExecutorService = (mContextScheduledExecutorService =
-            new ContextScheduledExecutorService((ScheduledExecutorService) actorExecutorService,
+        mAgentExecutorService = (mAgentScheduledExecutorService =
+            new AgentScheduledExecutorService((ScheduledExecutorService) actorExecutorService,
                 this));
 
       } else {
-        mContextScheduledExecutorService =
-            new ContextScheduledExecutorService(ExecutorServices.asScheduled(mActorExecutorService),
+        mAgentScheduledExecutorService =
+            new AgentScheduledExecutorService(ExecutorServices.asScheduled(mActorExecutorService),
                 this);
       }
     }
-    return mContextScheduledExecutorService;
+    return mAgentScheduledExecutorService;
   }
 
   @NotNull
@@ -152,7 +152,7 @@ class LocalContext implements Context {
         public void run() {
           final Thread runner = (mRunner = Thread.currentThread());
           try {
-            mBehaviorWrapper.onRestart(LocalContext.this);
+            mBehaviorWrapper.onRestart(LocalAgent.this);
 
           } finally {
             mRunner = null;
@@ -160,7 +160,7 @@ class LocalContext implements Context {
 
           if (runner.isInterrupted()) {
             mLogger.wrn("[%s] thread has been interrupted!", mActor);
-            mBehaviorWrapper.onStop(LocalContext.this);
+            mBehaviorWrapper.onStop(LocalAgent.this);
           }
         }
       };
@@ -271,12 +271,11 @@ class LocalContext implements Context {
   }
 
   private void cancelTasks() {
-    final ContextExecutorService executorService = mContextExecutorService;
+    final AgentExecutorService executorService = mAgentExecutorService;
     if (executorService != null) {
       executorService.cancelAll(true);
     }
-    final ContextScheduledExecutorService scheduledExecutorService =
-        mContextScheduledExecutorService;
+    final AgentScheduledExecutorService scheduledExecutorService = mAgentScheduledExecutorService;
     if (scheduledExecutorService != null) {
       scheduledExecutorService.cancelAll(true);
     }
@@ -305,21 +304,21 @@ class LocalContext implements Context {
 
     @Override
     public void onMessage(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) {
+        @NotNull final Agent agent) {
       mBehaviorWrapper = new BehaviorWrapper();
-      super.onStart(context);
-      super.onMessage(message, envelop, context);
+      super.onStart(agent);
+      super.onMessage(message, envelop, agent);
     }
 
     @Override
-    public void onStop(@NotNull final Context context) {
+    public void onStop(@NotNull final Agent agent) {
     }
   }
 
   private class BehaviorWrapper implements Behavior {
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Context context) {
+        @NotNull final Agent agent) {
       mLogger.dbg("[%s] handling new message: envelop=%s - message=%s", mActor, envelop, message);
       if (isDismissed()) {
         final Options options = envelop.getOptions();
@@ -331,7 +330,7 @@ class LocalContext implements Context {
       final Options options = envelop.getOptions();
       if (options.getReceiptId() != null) {
         try {
-          mBehavior.onMessage(message, envelop, context);
+          mBehavior.onMessage(message, envelop, agent);
           if (!envelop.isPreventReceipt()) {
             reply(envelop.getSender(), new Delivery(message, options), options.threadOnly());
           }
@@ -340,7 +339,7 @@ class LocalContext implements Context {
           if (!envelop.isPreventReceipt()) {
             reply(envelop.getSender(), new Failure(message, options, t), options.threadOnly());
           }
-          onStop(context);
+          onStop(agent);
           if (t instanceof InterruptedException) {
             Thread.currentThread().interrupt();
           }
@@ -348,10 +347,10 @@ class LocalContext implements Context {
 
       } else {
         try {
-          mBehavior.onMessage(message, envelop, context);
+          mBehavior.onMessage(message, envelop, agent);
 
         } catch (final Throwable t) {
-          onStop(context);
+          onStop(agent);
           if (t instanceof InterruptedException) {
             Thread.currentThread().interrupt();
           }
@@ -359,10 +358,10 @@ class LocalContext implements Context {
       }
     }
 
-    public void onStart(@NotNull final Context context) {
+    public void onStart(@NotNull final Agent agent) {
       mLogger.dbg("[%s] staring actor", mActor);
       try {
-        mBehavior.onStart(context);
+        mBehavior.onStart(agent);
 
       } catch (final Throwable t) {
         setStopped();
@@ -374,14 +373,14 @@ class LocalContext implements Context {
       }
     }
 
-    public void onStop(@NotNull final Context context) {
+    public void onStop(@NotNull final Agent agent) {
       if (mStopped) {
         return;
       }
       mLogger.dbg("[%s] stopping actor", mActor);
       setStopped();
       try {
-        mBehavior.onStop(context);
+        mBehavior.onStop(agent);
 
       } catch (final Throwable t) {
         mLogger.wrn(t, "[%s] ignoring exception", mActor);
@@ -394,14 +393,14 @@ class LocalContext implements Context {
       }
     }
 
-    void onRestart(@NotNull final Context context) {
+    void onRestart(@NotNull final Agent agent) {
       if (isDismissed()) {
         return;
       }
       final Behavior behavior = mBehavior;
       try {
-        behavior.onStop(context);
-        behavior.onStart(context);
+        behavior.onStop(agent);
+        behavior.onStart(agent);
 
       } catch (final Throwable t) {
         setStopped();

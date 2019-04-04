@@ -191,16 +191,16 @@ public class Reflections {
 
     int confidence = 0;
     for (int i = 0; i < argsLength; ++i) {
-      final Object contextArg = args[i];
+      final Object arg = args[i];
       final Class<?> param = params[i];
-      if (contextArg != null) {
+      if (arg != null) {
         final Class<?> boxingClass = boxingClass(param);
-        if (!boxingClass.isInstance(contextArg)) {
+        if (!boxingClass.isInstance(arg)) {
           confidence = -1;
           break;
         }
 
-        if (contextArg.getClass().equals(boxingClass)) {
+        if (arg.getClass().equals(boxingClass)) {
           ++confidence;
         }
 
