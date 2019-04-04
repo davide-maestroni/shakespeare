@@ -310,6 +310,11 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
       return mHashCode;
     }
 
+    @Override
+    public boolean equals(final Object obj) {
+      return super.equals(obj);
+    }
+
     @NotNull
     ProbeReference withReferent(final Object referent) {
       mIsNull = (referent == null);

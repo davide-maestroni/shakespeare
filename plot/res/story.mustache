@@ -2279,9 +2279,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else if (isSame(mInputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
           fail(Conflict.ofCancel(), agent);
-
-        } else {
-          fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
       }
