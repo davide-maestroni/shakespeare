@@ -864,6 +864,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public static class StoryNarrator<T> extends Story<T> implements Narrator<T> {
 
     private final Actor mActor;
+    private final HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private final AtomicBoolean mIsClosed = new AtomicBoolean();
     private final Memory mMemory;
     private final HashMap<String, SenderIterator> mNextSenders =
@@ -871,7 +872,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final BlockingQueue<Object> mQueue;
 
     private volatile Throwable mException;
-    private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
 
     private StoryNarrator(@NotNull final BlockingQueue<Object> queue,
         @NotNull final Memory memory) {
@@ -918,7 +918,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private void done(@NotNull final Agent agent) {
       done(mMemory, mGetSenders, mNextSenders, agent);
-      mGetSenders = null;
     }
 
     private boolean enqueue(@NotNull final Object resolution, final long timeout,
@@ -1096,6 +1095,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final Actor mActor;
     private final NullaryFunction<? extends Event<? extends Boolean>> mConditionHandler;
     private final String mContinueThread;
+    private final HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private final HashMap<Actor, Options> mInputActors = new HashMap<Actor, Options>();
     private final String mInputThread;
     private final Object[] mInputs;
@@ -1110,7 +1110,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private int mContinueCount;
     private Options mContinueOptions;
     private Conflict mGetConflict;
-    private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private int mInputCount;
     private Memory mMemory;
     private Actor mOutputActor;
@@ -1231,7 +1230,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         }
       }
       done(memory, mGetSenders, mNextSenders, agent);
-      mGetSenders = null;
     }
 
     private void fail(@NotNull Conflict conflict, @NotNull final Agent agent) {
@@ -1743,6 +1741,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private final Actor mActor;
     private final UnaryFunction<? super T, ? extends Story<? extends R>> mEffectHandler;
+    private final HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private final Actor mInputActor;
     private final Options mInputOptions;
     private final Memory mMemory;
@@ -1753,7 +1752,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final Setting mSetting;
 
     private Conflict mGetConflict;
-    private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private Iterator<?> mInputIterator;
     private Actor mOutputActor;
     private int mOutputCount;
@@ -1798,7 +1796,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private void done(@NotNull final Agent agent) {
       done(mMemory, mGetSenders, mNextSenders, agent);
-      mGetSenders = null;
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Agent agent) {
@@ -1807,7 +1804,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         outputActor.tell(BREAK, mOutputOptions, agent.getSelf());
       }
       fail(conflict, mMemory, mGetSenders, mNextSenders, agent);
-      mGetSenders = null;
     }
 
     @Nullable
@@ -2159,6 +2155,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private final Actor mActor;
     private final UnaryFunction<? super T, ? extends R> mEffectHandler;
+    private final HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private final Actor mInputActor;
     private final Options mInputOptions;
     private final Memory mMemory;
@@ -2167,7 +2164,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final Setting mSetting;
 
     private Conflict mGetConflict;
-    private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private Iterator<?> mInputIterator;
 
     private AllTransformStory(@NotNull final Story<? extends T> story,
@@ -2207,12 +2203,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private void done(@NotNull final Agent agent) {
       done(mMemory, mGetSenders, mNextSenders, agent);
-      mGetSenders = null;
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Agent agent) {
       fail(conflict, mMemory, mGetSenders, mNextSenders, agent);
-      mGetSenders = null;
     }
 
     @SuppressWarnings({"unchecked", "LoopConditionNotUpdatedInsideLoop"})
@@ -2424,6 +2418,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private final Actor mActor;
     private final UnaryFunction<? super T, ? extends Story<? extends R>> mEffectHandler;
+    private final HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private final Actor mInputActor;
     private final Options mInputOptions;
     private final int mMaxConcurrency;
@@ -2436,7 +2431,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final String mOutputThread;
     private final Setting mSetting;
 
-    private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private Conflict mInputConflict;
     private boolean mInputsEnded;
     private boolean mInputsPending;
@@ -2465,12 +2459,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private void done(@NotNull final Agent agent) {
       done(mMemory, mGetSenders, mNextSenders, agent);
-      mGetSenders = null;
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Agent agent) {
       fail(conflict, mMemory, mGetSenders, mNextSenders, agent);
-      mGetSenders = null;
     }
 
     @Nullable
@@ -2972,12 +2964,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   private static class EventStory<T> extends Story<T> {
 
     private final Actor mActor;
+    private final HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private final Actor mInputActor;
     private final HashMap<String, SenderIterator> mNextSenders =
         new HashMap<String, SenderIterator>();
     private final Options mOptions;
-
-    private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
 
     private EventStory(@NotNull final Event<? extends T> event) {
       final Setting setting = Setting.get();
@@ -2999,7 +2990,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         sender.setIterator(memory.iterator());
       }
       fail(conflict, memory, mGetSenders, mNextSenders, agent);
-      mGetSenders = null;
     }
 
     private class CancelBehavior extends AbstractBehavior {
@@ -3100,7 +3090,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               for (final Sender sender : mGetSenders.values()) {
                 sender.getSender().tell(message, sender.getOptions(), self);
               }
-              mGetSenders = null;
               final Set<Object> effects = Collections.singleton(message);
               for (final SenderIterator sender : mNextSenders.values()) {
                 sender.setIterator(effects.iterator());
@@ -3418,6 +3407,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private final Actor mActor;
     private final UnaryFunction<? super T, ? extends Event<? extends R>> mEffectHandler;
+    private final HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private final Actor mInputActor;
     private final Options mInputOptions;
     private final int mMaxConcurrency;
@@ -3432,7 +3422,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final Setting mSetting;
 
     private int mActorCount;
-    private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private Conflict mInputConflict;
     private boolean mInputsEnded;
     private boolean mInputsPending;
@@ -3463,12 +3452,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private void done(@NotNull final Agent agent) {
       done(mMemory, mGetSenders, mNextSenders, agent);
-      mGetSenders = null;
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Agent agent) {
       fail(conflict, mMemory, mGetSenders, mNextSenders, agent);
-      mGetSenders = null;
     }
 
     @NotNull
@@ -3919,6 +3906,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   private static class ScheduleAtFixedRateStory<T> extends Story<T> implements Runnable {
 
     private final Actor mActor;
+    private final HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private final long mInitialDelay;
     private final Actor mInputActor;
     private final Options mInputOptions;
@@ -3928,7 +3916,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final long mPeriod;
     private final TimeUnit mUnit;
 
-    private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private boolean mInputsPending;
     private ScheduledFuture<?> mScheduledFuture;
 
@@ -3963,7 +3950,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         scheduledFuture.cancel(false);
       }
       done(mMemory, mGetSenders, mNextSenders, agent);
-      mGetSenders = null;
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Agent agent) {
@@ -3972,7 +3958,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         scheduledFuture.cancel(false);
       }
       fail(conflict, mMemory, mGetSenders, mNextSenders, agent);
-      mGetSenders = null;
     }
 
     private class CancelBehavior extends AbstractBehavior {
@@ -4112,6 +4097,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private final Actor mActor;
     private final long mDelay;
+    private final HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private final long mInitialDelay;
     private final Actor mInputActor;
     private final Options mInputOptions;
@@ -4120,7 +4106,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         new HashMap<String, SenderIterator>();
     private final TimeUnit mUnit;
 
-    private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private boolean mInputsPending;
     private ScheduledFuture<?> mScheduledFuture;
 
@@ -4150,7 +4135,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         scheduledFuture.cancel(false);
       }
       done(mMemory, mGetSenders, mNextSenders, agent);
-      mGetSenders = null;
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Agent agent) {
@@ -4159,7 +4143,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         scheduledFuture.cancel(false);
       }
       fail(conflict, mMemory, mGetSenders, mNextSenders, agent);
-      mGetSenders = null;
     }
 
     private class CancelBehavior extends AbstractBehavior {
@@ -4521,13 +4504,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   private static class UnfoldStory<T> extends Story<T> {
 
     private final Actor mActor;
+    private final HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
     private final Actor mInputActor;
     private final Options mInputOptions;
     private final String mInputThreadId;
     private final HashMap<String, SenderIterator> mNextSenders =
         new HashMap<String, SenderIterator>();
-
-    private HashMap<String, Sender> mGetSenders = new HashMap<String, Sender>();
 
     private UnfoldStory(@NotNull final Event<? extends Iterable<? extends T>> event) {
       final Setting setting = Setting.get();
@@ -4550,7 +4532,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         sender.setIterator(memory.iterator());
       }
       fail(conflict, memory, mGetSenders, mNextSenders, agent);
-      mGetSenders = null;
     }
 
     private class CancelBehavior extends AbstractBehavior {
@@ -4648,7 +4629,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             for (final Sender sender : mGetSenders.values()) {
               sender.getSender().tell(effects, sender.getOptions(), self);
             }
-            mGetSenders = null;
+
             for (final SenderIterator sender : mNextSenders.values()) {
               sender.setIterator(effects.iterator());
               sender.tellNext(self);

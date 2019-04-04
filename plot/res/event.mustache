@@ -331,9 +331,9 @@ public abstract class Event<T> {
     private final Actor mActor;
     private final AtomicBoolean mIsClosed = new AtomicBoolean();
     private final BlockingQueue<Object> mQueue;
+    private final HashMap<String, Sender> mSenders = new HashMap<String, Sender>();
 
     private volatile Throwable mException;
-    private HashMap<String, Sender> mSenders = new HashMap<String, Sender>();
 
     private EventNarrator(@NotNull final BlockingQueue<Object> queue) {
       final Setting setting = Setting.get();
@@ -466,7 +466,6 @@ public abstract class Event<T> {
           for (final Sender sender : mSenders.values()) {
             sender.getSender().tell(effect, sender.getOptions(), self);
           }
-          mSenders = null;
           agent.setBehavior(new DoneBehavior(effect));
         }
         envelop.preventReceipt();
@@ -504,11 +503,11 @@ public abstract class Event<T> {
     private final Object[] mInputs;
     private final Options mOptions;
     private final Options mOutputOptions;
+    private final HashMap<String, Sender> mSenders = new HashMap<String, Sender>();
     private final Setting mSetting;
 
     private Conflict mConflict;
     private int mInputCount;
-    private HashMap<String, Sender> mSenders = new HashMap<String, Sender>();
 
     private AbstractEvent(final int numInputs) {
       mInputs = new Object[numInputs];
@@ -593,7 +592,6 @@ public abstract class Event<T> {
         }
       }
       done(message, mSenders, agent);
-      mSenders = null;
     }
 
     private void fail(@NotNull Conflict conflict, @NotNull final Agent agent) {
@@ -607,7 +605,6 @@ public abstract class Event<T> {
         }
       }
       done(conflict, mSenders, agent);
-      mSenders = null;
     }
 
     private void getInputActors(@NotNull final Agent agent) {
@@ -1127,11 +1124,11 @@ public abstract class Event<T> {
     private final long mDelay;
     private final Actor mInputActor;
     private final Options mInputOptions;
+    private final HashMap<String, Sender> mSenders = new HashMap<String, Sender>();
     private final TimeUnit mUnit;
 
     private boolean mInputPending;
     private ScheduledFuture<?> mScheduledFuture;
-    private HashMap<String, Sender> mSenders = new HashMap<String, Sender>();
 
     private ScheduleWithDelayEvent(@NotNull final Event<? extends T> event, final long delay,
         @NotNull final TimeUnit unit) {
@@ -1161,7 +1158,6 @@ public abstract class Event<T> {
         scheduledFuture.cancel(false);
       }
       done(message, mSenders, agent);
-      mSenders = null;
     }
 
     private void fail(@NotNull final Conflict conflict, @NotNull final Agent agent) {
@@ -1170,7 +1166,6 @@ public abstract class Event<T> {
         scheduledFuture.cancel(false);
       }
       done(conflict, mSenders, agent);
-      mSenders = null;
     }
 
     private class CancelBehavior extends AbstractBehavior {
