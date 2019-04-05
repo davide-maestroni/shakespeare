@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright 2018 Davide Maestroni
+  ~ Copyright 2019 Davide Maestroni
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -15,12 +15,49 @@
   -->
 <html>
 <head>
-    <title></title>
+    <title>shakespeare-lib</title>
 </head>
 <body>
-<a href="https://github.com/davide-maestroni/" target="_blank"></a>
+<a href="https://github.com/davide-maestroni/shakespeare" target="_blank"></a>
+<h1>Overview</h1>
 <p>
-    Implementation of ...
+    The core module of the shakespeare library provides a lightweight implementation of an <a
+        href="https://en.wikipedia.org/wiki/Actor_model">actor model</a>.<br>
+    The main concepts present in this module are:
+    <ul>
+        <li>
+            <a href="http://davide-maestroni.github.io/shakespeare/javadoc/1.0/lib/com/github/dm/shakespeare/actor/Behavior.html">Behavior</a>
+<p>
+    Interface defining an Actor behavior, that is, how the Actor reacts to start/stop events and
+    newly received messages.<br>
+    The library is designed so that, every piece of code in a Behavior implementation is executed
+    sequentially in such a way that no other synchronization mechanism is needed.<br>
+    A Behavior instance may represent a single state in a more complex state machine. In fact, it
+    can be safely replaced at any moment during an Actor lifecycle.<br>
+    Inside a Behavior it is also possible to create new Actor instances, and dismiss them when
+    needed.
+</p>
+</li>
+<li>
+    <a href="http://davide-maestroni.github.io/shakespeare/javadoc/1.0/lib/com/github/dm/shakespeare/actor/Behavior.Agent.html">Agent</a>
+    <p>
+        Interface defining an Actor execution environment.<br>
+        An Agent provides to the Behavior instances information about the Actor state and several
+        ways to control it.<br>
+        Moreover, an Agent makes available references to utility classes such as a logger instance
+        and executor services, employed to submit asynchronous tasks which are safely executed
+        through the same actor synchronization mechanism.
+    </p>
+</li>
+<li>
+    <a href="http://davide-maestroni.github.io/shakespeare/javadoc/1.0/lib/com/github/dm/shakespeare/actor/Role.html">Role</a>
+    <p>
+        Base class defining an Actor role.<br>
+        A Role provides the needed configuration to set up the newly created Actor instance and its
+        initial Behavior.
+    </p>
+</li>
+</ul>
 </p>
 </body>
 </html>
