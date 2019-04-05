@@ -62,7 +62,7 @@ public class LatestMemory implements Memory {
     private int mIndex = 0;
 
     public boolean hasNext() {
-      return ((mIndex = Math.min(mIndex, 0)) < mValues.size());
+      return ((mIndex = Math.max(mIndex, 0)) < mValues.size());
     }
 
     public Object next() {

@@ -94,7 +94,7 @@ public class ExpiringMemory implements Memory {
 
     public boolean hasNext() {
       prune();
-      return ((mIndex = Math.min(mIndex, 0)) < mReferences.size());
+      return ((mIndex = Math.max(mIndex, 0)) < mReferences.size());
     }
 
     public Object next() {
