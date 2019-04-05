@@ -15,6 +15,6 @@
  */
 
 /**
- * Defines generic utility classes.
+ * Defines the library functional interfaces.
  */
-package dm.shakespeare.util;
+package dm.shakespeare.function;

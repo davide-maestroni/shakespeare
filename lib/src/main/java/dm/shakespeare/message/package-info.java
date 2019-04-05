@@ -15,6 +15,6 @@
  */
 
 /**
- * Defines generic utility classes.
+ * Defines the library messages classes.
  */
-package dm.shakespeare.util;
+package dm.shakespeare.message;

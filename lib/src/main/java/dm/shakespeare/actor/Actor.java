@@ -37,8 +37,8 @@ import org.jetbrains.annotations.Nullable;
 public interface Actor {
 
   /**
-   * Adds an observer that will be notified with a {@link dm.shakespeare.message.DeadLetter}
-   * message when this actor is dismissed.<br>
+   * Adds an observer that will be notified with a {@link dm.shakespeare.message.DeadLetter
+   * DeadLetter} message when this actor is dismissed.<br>
    * Adding an observer to an already dismissed actor will always generate a notification message.
    *
    * @param observer the observer actor.
@@ -84,9 +84,9 @@ public interface Actor {
    * the replies to the sender should contain in the delivery options the same thread ID as the
    * originating message.<br>
    * If the number of unprocessed messages still in the inbox exceeds the configured quota, the
-   * message will be bounced (see {@link dm.shakespeare.message.Bounce}).<br>
+   * message will be bounced (see {@link dm.shakespeare.message.Bounce Bounce}).<br>
    * In case no reply is expected or no actor is interested in receiving it, it is possible to
-   * use a {@link dm.shakespeare.BackStage#STAND_IN} as sender.
+   * use a {@link dm.shakespeare.BackStage#STAND_IN BackStage.STAND_IN} as sender.
    *
    * @param message the message instance (may be {@code null}).
    * @param options the delivery options.
@@ -108,10 +108,10 @@ public interface Actor {
    * the replies to the sender should contain in the delivery options the same thread ID as the
    * originating message.<br>
    * If the number of unprocessed messages still in the inbox exceeds the configured quota, the
-   * message will be bounced (see {@link dm.shakespeare.message.Bounce}).<br>
+   * message will be bounced (see {@link dm.shakespeare.message.Bounce Bounce}).<br>
    * The batch object will count as one message in the inbox quota.<br>
    * In case no reply is expected or no actor is interested in receiving it, it is possible to
-   * use a {@link dm.shakespeare.BackStage#STAND_IN} as sender.
+   * use a {@link dm.shakespeare.BackStage#STAND_IN BackStage.STAND_IN} as sender.
    *
    * @param messages the messages (may contains {@code null} objects).
    * @param options  the delivery options.

@@ -27,8 +27,8 @@ import java.util.Set;
 public interface ActorSet extends Set<Actor> {
 
   /**
-   * Adds an observer that will be notified with a {@link dm.shakespeare.message.DeadLetter}
-   * message when an actor in this set is dismissed.
+   * Adds an observer that will be notified with a {@link dm.shakespeare.message.DeadLetter
+   * DeadLetter} message when an actor in this set is dismissed.
    *
    * @param observer the observer actor.
    * @return this actor set.
