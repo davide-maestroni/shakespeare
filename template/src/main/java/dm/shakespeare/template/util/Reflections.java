@@ -211,7 +211,7 @@ public class Reflections {
    */
   private static class SetAccessibleConstructorAction implements PrivilegedAction<Void> {
 
-    private final Constructor<?> mmConstructor;
+    private final Constructor<?> mConstructor;
 
     /**
      * Constructor.
@@ -219,11 +219,11 @@ public class Reflections {
      * @param constructor the constructor instance.
      */
     private SetAccessibleConstructorAction(@NotNull final Constructor<?> constructor) {
-      mmConstructor = constructor;
+      mConstructor = constructor;
     }
 
     public Void run() {
-      mmConstructor.setAccessible(true);
+      mConstructor.setAccessible(true);
       return null;
     }
   }
