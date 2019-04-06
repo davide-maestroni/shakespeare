@@ -78,7 +78,6 @@ public class Reflections {
             "no suitable constructor found for type: " + type.getName());
       }
     }
-
     return (Constructor<TYPE>) makeAccessible(constructor);
   }
 
@@ -94,7 +93,6 @@ public class Reflections {
     if (!type.isPrimitive()) {
       return type;
     }
-
     return sBoxingClasses.get(type);
   }
 
@@ -109,7 +107,6 @@ public class Reflections {
     if (!constructor.isAccessible()) {
       AccessController.doPrivileged(new SetAccessibleConstructorAction(constructor));
     }
-
     return constructor;
   }
 
@@ -124,7 +121,6 @@ public class Reflections {
     if (!method.isAccessible()) {
       AccessController.doPrivileged(new SetAccessibleMethodAction(method));
     }
-
     return method;
   }
 
@@ -177,7 +173,6 @@ public class Reflections {
       throw new IllegalArgumentException(
           "more than one constructor found for arguments: " + Arrays.toString(args));
     }
-
     return bestMatch;
   }
 
@@ -188,7 +183,6 @@ public class Reflections {
     if (length != argsLength) {
       return -1;
     }
-
     int confidence = 0;
     for (int i = 0; i < argsLength; ++i) {
       final Object arg = args[i];
@@ -209,7 +203,6 @@ public class Reflections {
         break;
       }
     }
-
     return confidence;
   }
 
