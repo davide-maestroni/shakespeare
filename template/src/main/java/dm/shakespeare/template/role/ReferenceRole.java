@@ -32,7 +32,7 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 03/21/2019.
  */
-public class FolderRole extends SerializableRole {
+public class ReferenceRole extends SerializableRole {
 
   private static final Object[] NO_ARGS = new Object[0];
   private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
@@ -42,12 +42,12 @@ public class FolderRole extends SerializableRole {
 
   private transient Role mRole;
 
-  public FolderRole(@NotNull final Class<? extends Role> roleClass) {
+  public ReferenceRole(@NotNull final Class<? extends Role> roleClass) {
     mRoleClass = ConstantConditions.notNull("roleClass", roleClass);
     mRoleArgs = null;
   }
 
-  public FolderRole(@NotNull final Class<? extends Role> roleClass,
+  public ReferenceRole(@NotNull final Class<? extends Role> roleClass,
       @NotNull final Serializable... roleArgs) {
     mRoleClass = ConstantConditions.notNull("roleClass", roleClass);
     mRoleArgs = ConstantConditions.notNull("roleArgs", roleArgs).clone();
@@ -76,17 +76,17 @@ public class FolderRole extends SerializableRole {
   }
 
   @NotNull
-  protected Role newRoleInstance() {
-    final Serializable[] roleArgs = mRoleArgs;
-    return Reflections.newInstance(mRoleClass,
-        ((roleArgs != null) && (roleArgs.length > 0)) ? roleArgs : NO_ARGS);
-  }
-
-  @NotNull
-  private Role getRoleInstance() {
+  protected Role getRoleInstance() {
     if (mRole == null) {
       mRole = newRoleInstance();
     }
     return mRole;
+  }
+
+  @NotNull
+  protected Role newRoleInstance() {
+    final Serializable[] roleArgs = mRoleArgs;
+    return Reflections.newInstance(mRoleClass,
+        ((roleArgs != null) && (roleArgs.length > 0)) ? roleArgs : NO_ARGS);
   }
 }

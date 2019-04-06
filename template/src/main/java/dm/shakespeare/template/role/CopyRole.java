@@ -29,7 +29,7 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 03/21/2019.
  */
-public class CopyRole extends FolderRole {
+public class CopyRole extends ReferenceRole {
 
   private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
 
