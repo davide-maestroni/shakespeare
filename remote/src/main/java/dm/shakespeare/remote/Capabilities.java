@@ -14,33 +14,19 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.remote.protocol;
+package dm.shakespeare.remote;
 
-import org.jetbrains.annotations.NotNull;
-
-import java.io.Serializable;
-import java.net.URI;
+import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
-public class Remote implements Serializable {
+public class Capabilities {
 
-  public static final int VERSION = 1;
+  public static final String CREATE_FROM = "create.from";
+  public static final String CREATE_TO = "create.to";
 
-  private URI mSenderUri;
-
-  public URI getSenderUri() {
-    return mSenderUri;
-  }
-
-  public void setSenderUri(final URI senderUri) {
-    mSenderUri = senderUri;
-  }
-
-  @NotNull
-  public Remote withSenderUri(final URI senderUri) {
-    mSenderUri = senderUri;
-    return this;
+  private Capabilities() {
+    ConstantConditions.avoid();
   }
 }

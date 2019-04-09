@@ -14,33 +14,14 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.remote.protocol;
-
-import org.jetbrains.annotations.NotNull;
-
-import java.io.Serializable;
-import java.net.URI;
+package dm.shakespeare.remote;
 
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
-public class Remote implements Serializable {
+class RemoteClassNotFoundException extends ClassNotFoundException {
 
-  public static final int VERSION = 1;
-
-  private URI mSenderUri;
-
-  public URI getSenderUri() {
-    return mSenderUri;
-  }
-
-  public void setSenderUri(final URI senderUri) {
-    mSenderUri = senderUri;
-  }
-
-  @NotNull
-  public Remote withSenderUri(final URI senderUri) {
-    mSenderUri = senderUri;
-    return this;
+  public RemoteClassNotFoundException(final String name, final Throwable throwable) {
+    super(name, throwable);
   }
 }
