@@ -186,15 +186,18 @@ public abstract class Event<T> {
     return new EventualEvent<T>(this, eventualAction);
   }
 
-  public void play(@NotNull final EventObserver<? super T> eventObserver) {
-    final Actor actor = BackStage.newActor(new EventObserverRole<T>(eventObserver));
-    final String threadId = actor.getId();
-    getActor().tell(GET, new Options().withReceiptId(threadId).withThreadId(threadId), actor);
+  @NotNull
+  public Spectator play(@NotNull final EventObserver<? super T> eventObserver) {
+    final Actor actor = BackStage.newActor(new EventObserverRole<T>(getActor(), eventObserver));
+    final String actorId = actor.getId();
+    getActor().tell(GET, new Options().withReceiptId(actorId).withThreadId(actorId), actor);
+    return new Spectator(actor);
   }
 
-  public void play(@Nullable final Observer<? super T> effectObserver,
+  @NotNull
+  public Spectator play(@Nullable final Observer<? super T> effectObserver,
       @Nullable final Observer<? super Throwable> incidentObserver) {
-    play(new DefaultEventObserver<T>(effectObserver, incidentObserver));
+    return play(new DefaultEventObserver<T>(effectObserver, incidentObserver));
   }
 
   @NotNull
@@ -318,13 +321,6 @@ public abstract class Event<T> {
 
   @NotNull
   abstract Actor getActor();
-
-  public interface EventObserver<T> {
-
-    void onEffect(T effect) throws Exception;
-
-    void onIncident(@NotNull Throwable incident) throws Exception;
-  }
 
   public static class EventNarrator<T> extends Event<T> implements Narrator<T> {
 
@@ -827,9 +823,12 @@ public abstract class Event<T> {
 
   private static class EventObserverRole<T> extends Role {
 
+    private final Actor mEventActor;
     private final EventObserver<? super T> mEventObserver;
 
-    private EventObserverRole(@NotNull final EventObserver<? super T> eventObserver) {
+    private EventObserverRole(@NotNull final Actor eventActor,
+        @NotNull final EventObserver<? super T> eventObserver) {
+      mEventActor = ConstantConditions.notNull("eventActor", eventActor);
       mEventObserver = ConstantConditions.notNull("eventObserver", eventObserver);
     }
 
@@ -837,20 +836,58 @@ public abstract class Event<T> {
     public Behavior getBehavior(@NotNull final String id) {
       return new AbstractBehavior() {
 
+        private Object mEffect;
+        private boolean mIsPaused;
+
         @SuppressWarnings("unchecked")
         public void onMessage(final Object message, @NotNull final Envelop envelop,
             @NotNull final Agent agent) throws Exception {
           if (message instanceof Conflict) {
-            mEventObserver.onIncident(((Conflict) message).getCause());
-            agent.dismissSelf();
+            if (mIsPaused) {
+              mEffect = message;
+
+            } else {
+              mEventObserver.onIncident(((Conflict) message).getCause());
+              agent.dismissSelf();
+            }
 
           } else if (message instanceof Bounce) {
-            mEventObserver.onIncident(PlotFailureException.getOrNew((Bounce) message));
+            if (mIsPaused) {
+              mEffect = new Conflict(PlotFailureException.getOrNew((Bounce) message));
+
+            } else {
+              mEventObserver.onIncident(PlotFailureException.getOrNew((Bounce) message));
+              agent.dismissSelf();
+            }
+
+          } else if (message == Spectator.PAUSE) {
+            mIsPaused = true;
+
+          } else if ((message == Spectator.RESUME) && mIsPaused) {
+            final Object effect = mEffect;
+            if (effect instanceof Conflict) {
+              mEventObserver.onIncident(((Conflict) effect).getCause());
+
+            } else {
+              mEventObserver.onEffect((T) message);
+            }
+            agent.dismissSelf();
+
+          } else if (message == Spectator.CANCEL) {
+            mEventActor.tell(Event.CANCEL, null, agent.getSelf());
+
+          } else if (message == Spectator.CANCEL_AND_DISMISS) {
+            mEventActor.tell(Event.CANCEL, null, agent.getSelf());
             agent.dismissSelf();
 
           } else if (!(message instanceof Receipt)) {
-            mEventObserver.onEffect((T) message);
-            agent.dismissSelf();
+            if (mIsPaused) {
+              mEffect = message;
+
+            } else {
+              mEventObserver.onEffect((T) message);
+              agent.dismissSelf();
+            }
           }
         }
       };

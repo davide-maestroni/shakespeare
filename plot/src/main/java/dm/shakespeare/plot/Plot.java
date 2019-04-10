@@ -32,7 +32,7 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class Plot {
 
-  // TODO: 15/02/2019 serialization
+  // TODO: 15/02/2019 serialization?
   // TODO: 28/02/2019 swagger converter
 
   private final Setting mSetting;

@@ -487,20 +487,24 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     return new JoinStory<T, R>(this, maxConcurrency, maxEventWindow, effectHandler, memory);
   }
 
-  public void playEach(@NotNull final EventObserver<? super T> eventObserver) {
-    playEach(new EventStoryObserver<T>(eventObserver));
+  @NotNull
+  public Spectator playEach(@NotNull final EventObserver<? super T> eventObserver) {
+    return playEach(new EventStoryObserver<T>(eventObserver));
   }
 
-  public void playEach(@Nullable final Observer<? super T> effectObserver,
+  @NotNull
+  public Spectator playEach(@Nullable final Observer<? super T> effectObserver,
       @Nullable final Observer<? super Throwable> incidentObserver,
       @Nullable final Action endAction) {
-    playEach(new DefaultStoryObserver<T>(effectObserver, incidentObserver, endAction));
+    return playEach(new DefaultStoryObserver<T>(effectObserver, incidentObserver, endAction));
   }
 
-  public void playEach(@NotNull final StoryObserver<? super T> storyObserver) {
-    final Actor actor = BackStage.newActor(new StoryObserverRole<T>(storyObserver));
+  @NotNull
+  public Spectator playEach(@NotNull final StoryObserver<? super T> storyObserver) {
+    final Actor actor = BackStage.newActor(new StoryObserverRole<T>(getActor(), storyObserver));
     final String actorId = actor.getId();
     getActor().tell(NEXT, new Options().withReceiptId(actorId).withThreadId(actorId), actor);
+    return new Spectator(actor);
   }
 
   @NotNull
@@ -846,11 +850,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     @Nullable
     Story<R> evolve(T effect) throws Exception;
-  }
-
-  public interface StoryObserver<T> extends EventObserver<T> {
-
-    void onEnd() throws Exception;
   }
 
   public interface StoryTransformer<T, R> {
@@ -4337,9 +4336,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   private static class StoryObserverRole<T> extends Role {
 
+    private final Actor mStoryActor;
     private final StoryObserver<? super T> mStoryObserver;
 
-    private StoryObserverRole(@NotNull final StoryObserver<? super T> storyObserver) {
+    private StoryObserverRole(@NotNull final Actor storyActor,
+        @NotNull final StoryObserver<? super T> storyObserver) {
+      mStoryActor = ConstantConditions.notNull("storyActor", storyActor);
       mStoryObserver = ConstantConditions.notNull("storyObserver", storyObserver);
     }
 
@@ -4348,39 +4350,94 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       final Options options = new Options().withReceiptId(id).withThreadId(id);
       return new AbstractBehavior() {
 
-        private Actor mSender;
+        private final ArrayList<Object> mEffects = new ArrayList<Object>();
 
-        @Override
-        public void onStop(@NotNull final Agent agent) {
-          final Actor sender = mSender;
-          if (sender != null) {
-            sender.tell(Story.BREAK, options, agent.getSelf());
-          }
-        }
+        private boolean mIsPaused;
 
         @SuppressWarnings("unchecked")
         public void onMessage(final Object message, @NotNull final Envelop envelop,
             @NotNull final Agent agent) throws Exception {
-          mSender = envelop.getSender();
           final Actor self = agent.getSelf();
           if (message instanceof Conflict) {
-            mStoryObserver.onIncident(((Conflict) message).getCause());
-            envelop.getSender().tell(Story.NEXT, options, self);
+            if (mIsPaused) {
+              mEffects.add(message);
+
+            } else {
+              mStoryObserver.onIncident(((Conflict) message).getCause());
+              envelop.getSender().tell(Story.NEXT, options, self);
+            }
 
           } else if (message instanceof Bounce) {
-            mStoryObserver.onIncident(PlotFailureException.getOrNew((Bounce) message));
-            agent.dismissSelf();
+            if (mIsPaused) {
+              final ArrayList<Object> effects = mEffects;
+              effects.add(new Conflict(PlotFailureException.getOrNew((Bounce) message)));
+              effects.add(Story.END);
+
+            } else {
+              mStoryObserver.onIncident(PlotFailureException.getOrNew((Bounce) message));
+              agent.dismissSelf();
+            }
 
           } else if (message == Story.END) {
-            mStoryObserver.onEnd();
+            if (mIsPaused) {
+              mEffects.add(Story.END);
+
+            } else {
+              mStoryObserver.onEnd();
+              agent.dismissSelf();
+            }
+
+          } else if (message == Spectator.PAUSE) {
+            mIsPaused = true;
+
+          } else if ((message == Spectator.RESUME) && mIsPaused) {
+            final StoryObserver<? super T> storyObserver = mStoryObserver;
+            final ArrayList<Object> effects = mEffects;
+            boolean isEnded = false;
+            for (final Object effect : effects) {
+              if (effect instanceof Conflict) {
+                storyObserver.onIncident(((Conflict) effect).getCause());
+
+              } else if (effect == Story.END) {
+                storyObserver.onEnd();
+                isEnded = true;
+
+              } else {
+                storyObserver.onEffect((T) message);
+              }
+            }
+
+            if (isEnded) {
+              agent.dismissSelf();
+
+            } else {
+              mIsPaused = false;
+              effects.clear();
+              envelop.getSender().tell(Story.NEXT, options, self);
+            }
+
+          } else if (message == Spectator.CANCEL) {
+            mStoryActor.tell(Story.CANCEL, options, self);
+
+          } else if (message == Spectator.CANCEL_AND_DISMISS) {
+            mStoryActor.tell(Story.CANCEL, options, self);
             agent.dismissSelf();
 
           } else if (!(message instanceof Receipt)) {
-            mStoryObserver.onEffect((T) message);
-            envelop.getSender().tell(Story.NEXT, options, self);
+            if (mIsPaused) {
+              mEffects.add(message);
+
+            } else {
+              mStoryObserver.onEffect((T) message);
+              envelop.getSender().tell(Story.NEXT, options, self);
+            }
           }
         }
 
+        @Override
+        public void onStop(@NotNull final Agent agent) {
+          mStoryActor.tell(Story.BREAK, options, agent.getSelf());
+        }
       };
     }
 
