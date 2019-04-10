@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -32,7 +32,6 @@ import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
 import dm.shakespeare.concurrent.ActorExecutorService;
 import dm.shakespeare.concurrent.ExecutorServices;
-import dm.shakespeare.function.Observer;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.DeadLetter;
@@ -49,8 +48,7 @@ class LocalAgent implements Agent {
 
   private final ActorExecutorService mActorExecutorService;
   private final Logger mLogger;
-  private final HashSet<Actor> mObservers = new HashSet<Actor>();
-  private final Observer<Actor> mRemover;
+  private final LinkedHashSet<Actor> mObservers = new LinkedHashSet<Actor>();
 
   private Actor mActor;
   private AgentExecutorService mAgentExecutorService;
@@ -66,14 +64,12 @@ class LocalAgent implements Agent {
   /**
    * Creates a new agent instance.
    *
-   * @param remover         the observer to be called when the actor is dismissed.
    * @param behavior        the initial behavior instance
    * @param executorService the backing executor service.
    * @param logger          the logger instance.
    */
-  LocalAgent(@NotNull final Observer<Actor> remover, @NotNull final Behavior behavior,
-      @NotNull final ExecutorService executorService, @NotNull final Logger logger) {
-    mRemover = ConstantConditions.notNull("remover", remover);
+  LocalAgent(@NotNull final Behavior behavior, @NotNull final ExecutorService executorService,
+      @NotNull final Logger logger) {
     mBehavior = ConstantConditions.notNull("behavior", behavior);
     mActorExecutorService =
         (executorService instanceof ScheduledExecutorService) ? ExecutorServices.asActorExecutor(
@@ -283,18 +279,6 @@ class LocalAgent implements Agent {
 
   private void setStopped() {
     mStopped = true;
-    try {
-      mRemover.accept(mActor);
-
-    } catch (final Exception e) {
-      // it should never happen
-      if (e instanceof InterruptedException) {
-        Thread.currentThread().interrupt();
-      }
-
-      throw new RuntimeException(e);
-    }
-
     for (final Actor observer : mObservers) {
       reply(observer, DEAD_LETTER, null);
     }

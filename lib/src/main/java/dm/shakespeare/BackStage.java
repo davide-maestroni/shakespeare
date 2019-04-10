@@ -24,7 +24,6 @@ import java.util.concurrent.ExecutorService;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Role;
-import dm.shakespeare.function.Observer;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -40,12 +39,6 @@ public class BackStage {
    * This actor methods will have no effect when invoked.
    */
   public static final Actor STAND_IN = new StandInActor();
-
-  private static final Observer<Actor> EMPTY_REMOVER = new Observer<Actor>() {
-
-    public void accept(final Actor actor) {
-    }
-  };
 
   /**
    * Avoid explicit instantiation.
@@ -75,7 +68,7 @@ public class BackStage {
   @NotNull
   public static Actor newActor(@NotNull final String id, @NotNull final Role role) {
     try {
-      return newActor(id, role, EMPTY_REMOVER);
+      return createActor(id, role);
 
     } catch (final RuntimeException e) {
       throw e;
@@ -88,20 +81,18 @@ public class BackStage {
   /**
    * Creates a new actor with the specified ID.
    *
-   * @param id      the actor ID.
-   * @param role    the actor role.
-   * @param remover the observer to be called when the actor is dismissed.
+   * @param id   the actor ID.
+   * @param role the actor role.
    * @return the new actor instance.
    * @throws Exception when an unexpected error occurs.
    */
   @NotNull
-  static Actor newActor(@NotNull final String id, @NotNull final Role role,
-      @NotNull final Observer<Actor> remover) throws Exception {
+  static Actor createActor(@NotNull final String id, @NotNull final Role role) throws Exception {
     final int quota = role.getQuota(id);
     final Logger logger = role.getLogger(id);
     final ExecutorService executorService = role.getExecutorService(id);
     final Behavior behavior = role.getBehavior(id);
-    final LocalAgent agent = new LocalAgent(remover, behavior, executorService, logger);
+    final LocalAgent agent = new LocalAgent(behavior, executorService, logger);
     final LocalActor actor = new LocalActor(id, quota, agent);
     agent.setActor(actor);
     return actor;

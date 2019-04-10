@@ -23,13 +23,19 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.regex.Pattern;
 
+import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.ActorSet;
+import dm.shakespeare.actor.Behavior;
+import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.actor.Stage;
+import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.function.Tester;
+import dm.shakespeare.message.DeadLetter;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -39,8 +45,34 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public abstract class AbstractStage implements Stage {
 
+  private final Actor mActor;
   private final HashMap<String, Actor> mActors = new HashMap<String, Actor>();
   private final Object mMutex = new Object();
+
+  protected AbstractStage() {
+    mActor = BackStage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            if (message instanceof DeadLetter) {
+              removeActor(id);
+            }
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+    });
+  }
 
   /**
    * {@inheritDoc}
@@ -189,23 +221,18 @@ public abstract class AbstractStage implements Stage {
   @NotNull
   protected abstract Actor createActor(@NotNull String id, @NotNull Role role) throws Exception;
 
-  void addActor(@NotNull final String id, @NotNull final Actor actor) {
+  private void addActor(@NotNull final Actor actor) {
     synchronized (mMutex) {
-      mActors.put(id, actor);
+      mActors.put(actor.getId(), actor);
     }
-  }
-
-  void removeActor(@NotNull final String id) {
-    synchronized (mMutex) {
-      mActors.remove(id);
-    }
+    actor.addObserver(mActor);
   }
 
   @NotNull
   private Actor registerActor(@NotNull final String id, @NotNull final Role role) {
     try {
       final Actor actor = createActor(id, role);
-      addActor(id, actor);
+      addActor(actor);
       return actor;
 
     } catch (final RuntimeException e) {
@@ -215,6 +242,17 @@ public abstract class AbstractStage implements Stage {
     } catch (final Exception e) {
       removeActor(id);
       throw new RuntimeException(e);
+    }
+  }
+
+  private void removeActor(@NotNull final String id) {
+    final Actor actor;
+    synchronized (mMutex) {
+      actor = mActors.remove(id);
+    }
+
+    if (actor != null) {
+      actor.removeObserver(mActor);
     }
   }
 

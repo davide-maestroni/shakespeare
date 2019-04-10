@@ -20,25 +20,15 @@ import org.jetbrains.annotations.NotNull;
 
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Role;
-import dm.shakespeare.function.Observer;
 
 /**
  * {@link dm.shakespeare.actor.Stage Stage} implementation managing local actor instances.
  */
 public class LocalStage extends AbstractStage {
 
-  private final Observer<Actor> mRemover = new Observer<Actor>() {
-
-    public void accept(final Actor actor) {
-      removeActor(actor.getId());
-    }
-  };
-
   @NotNull
   @Override
   protected Actor createActor(@NotNull final String id, @NotNull final Role role) throws Exception {
-    final Actor actor = BackStage.newActor(id, role, mRemover);
-    addActor(id, actor);
-    return actor;
+    return BackStage.createActor(id, role);
   }
 }
