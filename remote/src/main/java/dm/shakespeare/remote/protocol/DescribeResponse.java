@@ -18,63 +18,98 @@ package dm.shakespeare.remote.protocol;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
-public class DescribeResponse extends DescribeRequest {
+public class DescribeResponse extends Remote {
+
+  private List<ActorRef> mActors = new ArrayList<ActorRef>();
+  private Map<String, String> mCapabilities = new HashMap<String, String>();
+  private int mProtocolVersion = Remote.VERSION;
 
   @NotNull
-  @Override
   public DescribeResponse addActors(final ActorRef actor) {
-    super.addActors(actor);
+    if (mActors == null) {
+      mActors = new ArrayList<ActorRef>();
+    }
+    mActors.add(actor);
     return this;
   }
 
   @NotNull
-  @Override
   public DescribeResponse addAllActors(@NotNull final Collection<? extends ActorRef> actors) {
-    super.addAllActors(actors);
+    if (mActors == null) {
+      mActors = new ArrayList<ActorRef>();
+    }
+    mActors.addAll(actors);
     return this;
   }
 
+  public List<ActorRef> getActors() {
+    return mActors;
+  }
+
+  public void setActors(final List<ActorRef> actors) {
+    mActors = actors;
+  }
+
+  public Map<String, String> getCapabilities() {
+    return mCapabilities;
+  }
+
+  public void setCapabilities(final Map<String, String> capabilities) {
+    mCapabilities = capabilities;
+  }
+
+  public int getProtocolVersion() {
+    return mProtocolVersion;
+  }
+
+  public void setProtocolVersion(final int protocolVersion) {
+    mProtocolVersion = protocolVersion;
+  }
+
   @NotNull
-  @Override
   public DescribeResponse putAllCapabilities(
       @NotNull final Map<? extends String, ? extends String> capabilities) {
-    super.putAllCapabilities(capabilities);
+    if (mCapabilities == null) {
+      mCapabilities = new HashMap<String, String>();
+    }
+    mCapabilities.putAll(capabilities);
     return this;
   }
 
   @NotNull
-  @Override
   public DescribeResponse putCapabilities(final String capabilityKey,
       final String capabilityValue) {
-    super.putCapabilities(capabilityKey, capabilityValue);
+    if (mCapabilities == null) {
+      mCapabilities = new HashMap<String, String>();
+    }
+    mCapabilities.put(capabilityKey, capabilityValue);
     return this;
   }
 
   @NotNull
-  @Override
   public DescribeResponse withActors(final List<ActorRef> actors) {
-    super.withActors(actors);
+    mActors = actors;
     return this;
   }
 
   @NotNull
-  @Override
   public DescribeResponse withCapabilities(final Map<String, String> capabilities) {
-    super.withCapabilities(capabilities);
+    mCapabilities = capabilities;
     return this;
   }
 
   @NotNull
-  @Override
   public DescribeResponse withProtocolVersion(final int protocolVersion) {
-    super.withProtocolVersion(protocolVersion);
+    mProtocolVersion = protocolVersion;
     return this;
   }
 }

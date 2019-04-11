@@ -25,9 +25,8 @@ import java.util.List;
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
-public class CreateActorContinue extends Remote {
+public class CreateActorContinue extends CreateActorRequest {
 
-  private ActorRef mActor;
   private List<String> mClassPaths;
 
   @NotNull
@@ -49,21 +48,21 @@ public class CreateActorContinue extends Remote {
     return this;
   }
 
-  public ActorRef getActor() {
-    return mActor;
-  }
-
-  public void setActor(final ActorRef actor) {
-    mActor = actor;
-  }
-
   public List<String> getClassPaths() {
     return mClassPaths;
   }
 
   @NotNull
-  public CreateActorContinue withActor(final ActorRef actor) {
-    mActor = actor;
+  @Override
+  public CreateActorContinue withActorRef(final ActorRef actorRef) {
+    super.withActorRef(actorRef);
+    return this;
+  }
+
+  @NotNull
+  @Override
+  public CreateActorContinue withRoleData(final byte[] roleData) {
+    super.withRoleData(roleData);
     return this;
   }
 

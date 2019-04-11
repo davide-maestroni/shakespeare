@@ -21,18 +21,9 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
-public class CreateActorRequest extends Remote {
+public class CreateActorRequest extends RemoteActor {
 
-  private ActorRef mActor;
   private byte[] mRoleData;
-
-  public ActorRef getActor() {
-    return mActor;
-  }
-
-  public void setActor(final ActorRef actor) {
-    mActor = actor;
-  }
 
   public byte[] getRoleData() {
     return mRoleData;
@@ -43,8 +34,9 @@ public class CreateActorRequest extends Remote {
   }
 
   @NotNull
-  public CreateActorRequest withActor(final ActorRef actor) {
-    mActor = actor;
+  @Override
+  public CreateActorRequest withActorRef(final ActorRef actorRef) {
+    super.withActorRef(actorRef);
     return this;
   }
 

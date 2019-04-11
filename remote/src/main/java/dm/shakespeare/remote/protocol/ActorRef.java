@@ -44,6 +44,27 @@ public class ActorRef implements Serializable {
     mId = id;
   }
 
+  @Override
+  public int hashCode() {
+    int result = mHash != null ? mHash.hashCode() : 0;
+    result = 31 * result + (mId != null ? mId.hashCode() : 0);
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (!(o instanceof ActorRef)) {
+      return false;
+    }
+    final ActorRef actorRef = (ActorRef) o;
+    return (mHash != null ? mHash.equals(actorRef.mHash) : actorRef.mHash == null) && (mId != null
+        ? mId.equals(actorRef.mId) : actorRef.mId == null);
+  }
+
   @NotNull
   public ActorRef withHash(final String hash) {
     mHash = hash;

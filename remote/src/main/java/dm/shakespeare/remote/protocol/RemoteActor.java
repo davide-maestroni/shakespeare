@@ -16,9 +16,33 @@
 
 package dm.shakespeare.remote.protocol;
 
-/**
- * Created by davide-maestroni on 04/09/2019.
- */
-public class DescribeRequest extends Remote {
+import org.jetbrains.annotations.NotNull;
 
+/**
+ * Created by davide-maestroni on 04/11/2019.
+ */
+public class RemoteActor extends Remote {
+
+  private ActorRef mActorRef;
+
+  public ActorRef getActorRef() {
+    return mActorRef;
+  }
+
+  public void setActorRef(final ActorRef actorRef) {
+    mActorRef = actorRef;
+  }
+
+  @NotNull
+  public RemoteActor withActorRef(final ActorRef actorRef) {
+    mActorRef = actorRef;
+    return this;
+  }
+
+  @NotNull
+  @Override
+  public RemoteActor withSenderId(final String senderId) {
+    super.withSenderId(senderId);
+    return this;
+  }
 }

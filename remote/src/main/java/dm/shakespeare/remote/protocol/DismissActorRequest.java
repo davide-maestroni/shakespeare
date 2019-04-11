@@ -21,21 +21,12 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
-public class DismissActorRequest extends Remote {
-
-  private ActorRef mActor;
-
-  public ActorRef getActor() {
-    return mActor;
-  }
-
-  public void setActor(final ActorRef actor) {
-    mActor = actor;
-  }
+public class DismissActorRequest extends RemoteActor {
 
   @NotNull
-  public DismissActorRequest withActor(final ActorRef actor) {
-    mActor = actor;
+  @Override
+  public DismissActorRequest withActorRef(final ActorRef actorRef) {
+    super.withActorRef(actorRef);
     return this;
   }
 }

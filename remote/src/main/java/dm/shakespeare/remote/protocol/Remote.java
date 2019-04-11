@@ -19,7 +19,6 @@ package dm.shakespeare.remote.protocol;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
-import java.net.URI;
 
 /**
  * Created by davide-maestroni on 04/09/2019.
@@ -28,19 +27,19 @@ public class Remote implements Serializable {
 
   public static final int VERSION = 1;
 
-  private URI mSenderUri;
+  private String mSenderUri;
 
-  public URI getSenderUri() {
+  public String getSenderId() {
     return mSenderUri;
   }
 
-  public void setSenderUri(final URI senderUri) {
-    mSenderUri = senderUri;
+  public void setSenderId(final String senderId) {
+    mSenderUri = senderId;
   }
 
   @NotNull
-  public Remote withSenderUri(final URI senderUri) {
-    mSenderUri = senderUri;
+  public Remote withSenderId(final String senderId) {
+    mSenderUri = senderId;
     return this;
   }
 }

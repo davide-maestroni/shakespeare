@@ -23,21 +23,12 @@ import dm.shakespeare.actor.Options;
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
-public class RemoteMessage extends Remote {
+public class RemoteMessage extends RemoteActor {
 
-  private ActorRef mActor;
   private Object mMessage;
   private Options mOptions;
-  private String mSenderId;
+  private ActorRef mSenderRef;
   private long mSentTimestamp = System.currentTimeMillis();
-
-  public ActorRef getActor() {
-    return mActor;
-  }
-
-  public void setActor(final ActorRef actor) {
-    mActor = actor;
-  }
 
   public Object getMessage() {
     return mMessage;
@@ -55,12 +46,12 @@ public class RemoteMessage extends Remote {
     mOptions = options;
   }
 
-  public String getSenderId() {
-    return mSenderId;
+  public ActorRef getSenderRef() {
+    return mSenderRef;
   }
 
-  public void setSenderId(final String senderId) {
-    mSenderId = senderId;
+  public void setSenderRef(final ActorRef senderRef) {
+    mSenderRef = senderRef;
   }
 
   public long getSentTimestamp() {
@@ -72,8 +63,16 @@ public class RemoteMessage extends Remote {
   }
 
   @NotNull
-  public RemoteMessage withActor(final ActorRef actor) {
-    mActor = actor;
+  @Override
+  public RemoteMessage withActorRef(final ActorRef actorRef) {
+    super.withActorRef(actorRef);
+    return this;
+  }
+
+  @NotNull
+  @Override
+  public RemoteMessage withSenderId(final String senderId) {
+    super.withSenderId(senderId);
     return this;
   }
 
@@ -90,8 +89,8 @@ public class RemoteMessage extends Remote {
   }
 
   @NotNull
-  public RemoteMessage withSenderId(final String senderId) {
-    mSenderId = senderId;
+  public RemoteMessage withSenderRef(final ActorRef senderRef) {
+    mSenderRef = senderRef;
     return this;
   }
 
