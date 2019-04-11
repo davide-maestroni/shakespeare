@@ -14,20 +14,11 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.remote;
-
-import dm.shakespeare.util.ConstantConditions;
+package dm.shakespeare.remote.protocol;
 
 /**
- * Created by davide-maestroni on 04/09/2019.
+ * Created by davide-maestroni on 04/11/2019.
  */
-public class Capabilities {
+public class AddObserverRequest extends RemoteActor {
 
-  public static final String CREATE_REMOTE = "create.remote";
-  public static final String DISMISS_REMOTE = "dismiss.remote";
-  public static final String LOAD_REMOTE = "load.remote";
-
-  private Capabilities() {
-    ConstantConditions.avoid();
-  }
 }

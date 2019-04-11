@@ -25,6 +25,8 @@ import java.io.Serializable;
  */
 public class Remote implements Serializable {
 
+  // TODO: 11/04/2019 serialID
+
   public static final int VERSION = 1;
 
   private String mSenderUri;

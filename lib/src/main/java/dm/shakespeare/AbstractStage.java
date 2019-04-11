@@ -48,8 +48,15 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public abstract class AbstractStage implements Stage {
 
-  private static final Create CREATE = new Create();
-  private static final Dismiss DISMISS = new Dismiss();
+  /**
+   * Default instance of a {@code Create} message.
+   */
+  protected static final Create CREATE = new Create();
+
+  /**
+   * Default instance of a {@code Dismiss} message.
+   */
+  protected static final Dismiss DISMISS = new Dismiss();
 
   private final Actor mActor;
   private final HashMap<String, Actor> mActors = new HashMap<String, Actor>();

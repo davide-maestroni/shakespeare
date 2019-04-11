@@ -24,11 +24,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import dm.shakespeare.AbstractStage;
 import dm.shakespeare.BackStage;
@@ -40,9 +42,13 @@ import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Options;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.concurrent.ExecutorServices;
+import dm.shakespeare.log.LogMessage;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.message.Bounce;
+import dm.shakespeare.message.Create;
+import dm.shakespeare.message.Dismiss;
 import dm.shakespeare.remote.protocol.ActorRef;
+import dm.shakespeare.remote.protocol.AddObserverRequest;
 import dm.shakespeare.remote.protocol.CreateActorContinue;
 import dm.shakespeare.remote.protocol.CreateActorRequest;
 import dm.shakespeare.remote.protocol.CreateActorResponse;
@@ -51,6 +57,7 @@ import dm.shakespeare.remote.protocol.DescribeResponse;
 import dm.shakespeare.remote.protocol.DismissActorRequest;
 import dm.shakespeare.remote.protocol.Remote;
 import dm.shakespeare.remote.protocol.RemoteMessage;
+import dm.shakespeare.remote.protocol.RemoveObserverRequest;
 import dm.shakespeare.remote.util.ClassLoaderObjectInputStream;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -65,9 +72,11 @@ public abstract class RemoteMasterStage extends AbstractStage {
   private final RemoteClassLoader mClassLoader;
   private final Logger mLogger;
   private final Object mMutex = new Object();
+  private final HashMap<ActorRef, String> mObservers = new HashMap<ActorRef, String>();
   private final WeakHashMap<Actor, ActorRef> mSenders = new WeakHashMap<Actor, ActorRef>();
 
   private Actor mActor;
+  private Options mOptions;
 
   public RemoteMasterStage(@NotNull final Logger logger) {
     this(logger, null);
@@ -84,7 +93,9 @@ public abstract class RemoteMasterStage extends AbstractStage {
       if (mActor != null) {
         return;
       }
-      mActor = BackStage.newActor(new Role() {
+      final String actorId = UUID.randomUUID().toString();
+      mOptions = new Options().withReceiptId(actorId);
+      mActor = BackStage.newActor(actorId, new Role() {
 
         @NotNull
         @Override
@@ -92,7 +103,7 @@ public abstract class RemoteMasterStage extends AbstractStage {
           return new Behavior() {
 
             public void onMessage(final Object message, @NotNull final Envelop envelop,
-                @NotNull final Agent agent) throws Exception {
+                @NotNull final Agent agent) {
               if (message instanceof DescribeRequest) {
                 final WeakHashMap<Actor, String> actorHashes = mActorHashes;
                 final ArrayList<ActorRef> actorRefs = new ArrayList<ActorRef>();
@@ -101,46 +112,71 @@ public abstract class RemoteMasterStage extends AbstractStage {
                   actorRefs.add(
                       new ActorRef().withId(actor.getId()).withHash(actorHashes.get(actor)));
                 }
-                sendRemote(new DescribeResponse().withCapabilities(getCapabilities())
+                safeSend(new DescribeResponse().withCapabilities(getCapabilities())
                     .withActors(actorRefs), ((DescribeRequest) message).getSenderId());
 
+              } else if (message instanceof AddObserverRequest) {
+                final AddObserverRequest observerRequest = (AddObserverRequest) message;
+                mObservers.put(observerRequest.getActorRef(), observerRequest.getSenderId());
+
+              } else if (message instanceof RemoveObserverRequest) {
+                final RemoveObserverRequest observerRequest = (RemoveObserverRequest) message;
+                mObservers.remove(observerRequest.getActorRef());
+
               } else if (message instanceof CreateActorRequest) {
-                // TODO: 09/04/2019 check capabilities
                 final CreateActorRequest createRequest = (CreateActorRequest) message;
                 final ActorRef actorRef = createRequest.getActorRef();
-                final byte[] roleData = createRequest.getRoleData();
-                try {
-                  final Object role = deserialize(roleData);
-                  if ((actorRef == null) || !(role instanceof Role)) {
-                    sendRemote(new CreateActorResponse().withActorRef(actorRef)
-                        .withError(new IllegalStateException()), createRequest.getSenderId());
+                final Map<String, String> capabilities = getCapabilities();
+                if ((capabilities != null) && Boolean.TRUE.toString()
+                    .equalsIgnoreCase(capabilities.get(Capabilities.CREATE_REMOTE))) {
+                  final byte[] roleData = createRequest.getRoleData();
+                  try {
+                    final Object role = deserialize(roleData);
+                    if ((actorRef == null) || !(role instanceof Role)) {
+                      safeSend(new CreateActorResponse().withActorRef(actorRef)
+                          .withError(new IllegalStateException()), createRequest.getSenderId());
 
-                  } else {
-                    newActor(actorRef.getId(), (Role) role);
-                    sendRemote(new CreateActorResponse().withActorRef(actorRef),
+                    } else {
+                      newActor(actorRef.getId(), (Role) role);
+                      safeSend(new CreateActorResponse().withActorRef(actorRef),
+                          createRequest.getSenderId());
+                    }
+
+                  } catch (final RemoteClassNotFoundException e) {
+                    if (Boolean.TRUE.toString()
+                        .equalsIgnoreCase(capabilities.get(Capabilities.LOAD_REMOTE))) {
+                      safeSend(new CreateActorContinue().withActorRef(actorRef)
+                          .withRoleData(roleData)
+                          .addClassPaths(e.getMessage()), createRequest.getSenderId());
+
+                    } else {
+                      safeSend(new CreateActorResponse().withActorRef(actorRef).withError(e),
+                          createRequest.getSenderId());
+                    }
+
+                  } catch (final Exception e) {
+                    safeSend(new CreateActorResponse().withActorRef(actorRef).withError(e),
                         createRequest.getSenderId());
                   }
 
-                } catch (final RemoteClassNotFoundException e) {
-                  // TODO: 09/04/2019 check capabilities
-                  sendRemote(new CreateActorContinue().withActorRef(actorRef)
-                      .withRoleData(roleData)
-                      .addClassPaths(e.getMessage()), createRequest.getSenderId());
-
-                } catch (final Exception e) {
-                  sendRemote(new CreateActorResponse().withActorRef(actorRef).withError(e),
+                } else {
+                  safeSend(new CreateActorResponse().withActorRef(actorRef)
+                          .withError(new UnsupportedOperationException(Capabilities.CREATE_REMOTE)),
                       createRequest.getSenderId());
                 }
 
               } else if (message instanceof DismissActorRequest) {
-                // TODO: 09/04/2019 check capabilities
-                final DismissActorRequest dismissRequest = (DismissActorRequest) message;
-                final ActorRef actorRef = dismissRequest.getActorRef();
-                if (actorRef != null) {
-                  final Actor actor = get(actorRef.getId());
-                  final String hash = mActorHashes.get(actor);
-                  if ((hash != null) && hash.equals(actorRef.getHash())) {
-                    actor.dismiss(false);
+                final Map<String, String> capabilities = getCapabilities();
+                if ((capabilities != null) && Boolean.TRUE.toString()
+                    .equalsIgnoreCase(capabilities.get(Capabilities.DISMISS_REMOTE))) {
+                  final DismissActorRequest dismissRequest = (DismissActorRequest) message;
+                  final ActorRef actorRef = dismissRequest.getActorRef();
+                  if (actorRef != null) {
+                    final Actor actor = get(actorRef.getId());
+                    final String hash = mActorHashes.get(actor);
+                    if ((hash != null) && hash.equals(actorRef.getHash())) {
+                      actor.dismiss(false);
+                    }
                   }
                 }
 
@@ -152,19 +188,8 @@ public abstract class RemoteMasterStage extends AbstractStage {
                     final Actor actor = get(actorRef.getId());
                     final String hash = mActorHashes.get(actor);
                     if ((hash != null) && hash.equals(actorRef.getHash())) {
-                      Actor sender = null;
-                      final ActorRef senderRef = remoteMessage.getSenderRef();
-                      for (final Entry<Actor, ActorRef> entry : mSenders.entrySet()) {
-                        if (entry.getValue().equals(senderRef)) {
-                          sender = entry.getKey();
-                          break;
-                        }
-                      }
-
-                      if (sender == null) {
-                        sender = BackStage.newActor(senderRef.getId(),
-                            new RemoteSenderRole(remoteMessage.getSenderId()));
-                      }
+                      final Actor sender = getOrCreateSender(remoteMessage.getSenderRef(),
+                          remoteMessage.getSenderId());
                       final long offset =
                           remoteMessage.getSentTimestamp() - System.currentTimeMillis();
                       Options options = remoteMessage.getOptions();
@@ -188,13 +213,32 @@ public abstract class RemoteMasterStage extends AbstractStage {
                   // TODO: 09/04/2019 send Bounce
                 }
 
+              } else if (message instanceof Create) {
+                final String hash = UUID.randomUUID().toString();
+                mActorHashes.put(envelop.getSender(), hash);
+                final RemoteMessage remoteMessage = new RemoteMessage().withMessage(CREATE)
+                    .withSenderRef(
+                        new ActorRef().withId(envelop.getSender().getId()).withHash(hash));
+                for (final Entry<ActorRef, String> entry : mObservers.entrySet()) {
+                  safeSend(remoteMessage.withActorRef(entry.getKey()), entry.getValue());
+                }
+
+              } else if (message instanceof Dismiss) {
+                final String hash = mActorHashes.remove(envelop.getSender());
+                final RemoteMessage remoteMessage = new RemoteMessage().withMessage(DISMISS)
+                    .withSenderRef(
+                        new ActorRef().withId(envelop.getSender().getId()).withHash(hash));
+                for (final Entry<ActorRef, String> entry : mObservers.entrySet()) {
+                  safeSend(remoteMessage.withActorRef(entry.getKey()), entry.getValue());
+                }
+
               } else if (message instanceof RemoteResponse) {
                 final RemoteResponse response = (RemoteResponse) message;
                 final Envelop env = response.getEnvelop();
                 final Actor sender = env.getSender();
                 final ActorRef actorRef = mSenders.get(envelop.getSender());
                 final String hash = mActorHashes.get(sender);
-                sendRemote(new RemoteMessage().withActorRef(actorRef)
+                safeSend(new RemoteMessage().withActorRef(actorRef)
                     .withMessage(response.getMessage())
                     .withOptions(env.getOptions())
                     .withSenderRef(new ActorRef().withId(sender.getId()).withHash(hash))
@@ -212,7 +256,14 @@ public abstract class RemoteMasterStage extends AbstractStage {
             }
           };
         }
+
+        @NotNull
+        @Override
+        public ExecutorService getExecutorService(@NotNull final String id) {
+          return Executors.newSingleThreadExecutor();
+        }
       });
+      addObserver(mActor);
     }
   }
 
@@ -227,11 +278,12 @@ public abstract class RemoteMasterStage extends AbstractStage {
 
   @NotNull
   protected Actor createActor(@NotNull final String id, @NotNull final Role role) throws Exception {
-    final Actor actor = BackStage.newActor(id, role);
     synchronized (mMutex) {
-      mActorHashes.put(actor, UUID.randomUUID().toString());
+      if (mActor == null) {
+        throw new IllegalStateException("not started");
+      }
     }
-    return actor;
+    return BackStage.newActor(id, role);
   }
 
   protected Object deserialize(@NotNull final byte[] data) throws Exception {
@@ -270,6 +322,16 @@ public abstract class RemoteMasterStage extends AbstractStage {
     // do nothing
   }
 
+  protected void receiveData(@NotNull final byte[] data) throws Exception {
+    synchronized (mMutex) {
+      if (mActor == null) {
+        throw new IllegalStateException("not started");
+      }
+    }
+    // TODO: 11/04/2019 actor managing bounces
+    mActor.tell(deserialize(data), mOptions, BackStage.STAND_IN);
+  }
+
   protected abstract void sendData(@NotNull byte[] data, @NotNull final String recipientId) throws
       Exception;
 
@@ -289,6 +351,34 @@ public abstract class RemoteMasterStage extends AbstractStage {
       objectOutputStream.close();
     }
     return outputStream.toByteArray();
+  }
+
+  @NotNull
+  private Actor getOrCreateSender(final ActorRef senderRef, final String senderId) {
+    Actor sender = null;
+    final WeakHashMap<Actor, ActorRef> senders = mSenders;
+    for (final Entry<Actor, ActorRef> entry : senders.entrySet()) {
+      if (entry.getValue().equals(senderRef)) {
+        sender = entry.getKey();
+        break;
+      }
+    }
+
+    if (sender == null) {
+      sender = BackStage.newActor(senderRef.getId(), new RemoteSenderRole(senderId));
+      senders.put(sender, senderRef);
+    }
+    return sender;
+  }
+
+  private void safeSend(@NotNull final Remote remote, @NotNull final String recipientId) {
+    try {
+      sendRemote(remote, recipientId);
+
+    } catch (final Throwable t) {
+      mLogger.err(t, "failed to send remote message: %s to %s",
+          LogMessage.abbreviate(remote.toString(), 2048), recipientId);
+    }
   }
 
   private static class RemoteResponse {
