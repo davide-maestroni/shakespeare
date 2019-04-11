@@ -20,7 +20,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -48,7 +48,7 @@ class LocalAgent implements Agent {
 
   private final ActorExecutorService mActorExecutorService;
   private final Logger mLogger;
-  private final LinkedHashSet<Actor> mObservers = new LinkedHashSet<Actor>();
+  private final HashSet<Actor> mObservers = new HashSet<Actor>();
 
   private Actor mActor;
   private AgentExecutorService mAgentExecutorService;

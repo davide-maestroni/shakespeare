@@ -25,9 +25,20 @@ import dm.shakespeare.function.Tester;
 /**
  * Interface defining a stage object.<br>
  * A stage acts as a roster of actors. Through a stage instance it is possible to create new actors
- * and then query for them trough their IDs.
+ * and then query for them trough their IDs.<br>
+ * A stage allows for registering of actors observing addition and dismissal of actor instances
+ * within itself.
  */
 public interface Stage {
+
+  /**
+   * Adds an observer that will be notified with a {@link dm.shakespeare.message.Create Create}
+   * message when a new actor instance is added to this stage, and a
+   * {@link dm.shakespeare.message.Dismiss Dismiss} message when an actor is removed.
+   *
+   * @param observer the observer actor.
+   */
+  void addObserver(@NotNull Actor observer);
 
   /**
    * Finds all the actors in this stage whose ID matches the specified pattern.
@@ -105,4 +116,11 @@ public interface Stage {
    */
   @NotNull
   Actor newActor(@NotNull String id, @NotNull Role role);
+
+  /**
+   * Removes an observer which should be notified of the actor creation and dismissal.
+   *
+   * @param observer the observer actor.
+   */
+  void removeObserver(@NotNull Actor observer);
 }

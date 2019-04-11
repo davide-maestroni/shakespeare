@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Pattern;
 
@@ -35,7 +36,9 @@ import dm.shakespeare.actor.Role;
 import dm.shakespeare.actor.Stage;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.function.Tester;
+import dm.shakespeare.message.Create;
 import dm.shakespeare.message.DeadLetter;
+import dm.shakespeare.message.Dismiss;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -45,9 +48,13 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public abstract class AbstractStage implements Stage {
 
+  private static final Create CREATE = new Create();
+  private static final Dismiss DISMISS = new Dismiss();
+
   private final Actor mActor;
   private final HashMap<String, Actor> mActors = new HashMap<String, Actor>();
   private final Object mMutex = new Object();
+  private final CopyOnWriteArraySet<Actor> mObservers = new CopyOnWriteArraySet<Actor>();
 
   protected AbstractStage() {
     mActor = BackStage.newActor(new Role() {
@@ -72,6 +79,10 @@ public abstract class AbstractStage implements Stage {
         return ExecutorServices.localExecutor();
       }
     });
+  }
+
+  public void addObserver(@NotNull final Actor observer) {
+    mObservers.add(observer);
   }
 
   /**
@@ -210,6 +221,10 @@ public abstract class AbstractStage implements Stage {
     return registerActor(id, role);
   }
 
+  public void removeObserver(@NotNull final Actor observer) {
+    mObservers.remove(observer);
+  }
+
   /**
    * Creates a new actor with the specified ID.
    *
@@ -222,10 +237,14 @@ public abstract class AbstractStage implements Stage {
   protected abstract Actor createActor(@NotNull String id, @NotNull Role role) throws Exception;
 
   private void addActor(@NotNull final Actor actor) {
+    final String id = actor.getId();
     synchronized (mMutex) {
-      mActors.put(actor.getId(), actor);
+      mActors.put(id, actor);
     }
     actor.addObserver(mActor);
+    for (final Actor observer : mObservers) {
+      observer.tell(CREATE, null, actor);
+    }
   }
 
   @NotNull
@@ -253,6 +272,9 @@ public abstract class AbstractStage implements Stage {
 
     if (actor != null) {
       actor.removeObserver(mActor);
+      for (final Actor observer : mObservers) {
+        observer.tell(DISMISS, null, actor);
+      }
     }
   }
 
