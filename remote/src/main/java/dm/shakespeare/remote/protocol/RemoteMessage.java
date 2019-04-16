@@ -25,17 +25,17 @@ import dm.shakespeare.actor.Options;
  */
 public class RemoteMessage extends RemoteActor {
 
-  private Object mMessage;
+  private byte[] mMessageData;
   private Options mOptions;
   private ActorRef mSenderRef;
   private long mSentTimestamp = System.currentTimeMillis();
 
-  public Object getMessage() {
-    return mMessage;
+  public byte[] getMessageData() {
+    return mMessageData;
   }
 
-  public void setMessage(final Object message) {
-    mMessage = message;
+  public void setMessageData(final byte[] messageData) {
+    mMessageData = messageData;
   }
 
   public Options getOptions() {
@@ -77,8 +77,8 @@ public class RemoteMessage extends RemoteActor {
   }
 
   @NotNull
-  public RemoteMessage withMessage(final Object message) {
-    mMessage = message;
+  public RemoteMessage withMessageData(final byte[] message) {
+    mMessageData = message;
     return this;
   }
 

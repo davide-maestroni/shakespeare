@@ -22,11 +22,19 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.security.ProtectionDomain;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Map.Entry;
+
+import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Created by davide-maestroni on 04/09/2019.
@@ -78,5 +86,55 @@ class RemoteClassLoader extends ClassLoader {
     } catch (final ClassNotFoundException e) {
       throw new RemoteClassNotFoundException(name, e);
     }
+  }
+
+  @Override
+  protected URL findResource(final String path) {
+    final File file = mClassMap.get(path);
+    if (file != null) {
+      try {
+        return file.toURI().toURL();
+
+      } catch (final MalformedURLException e) {
+        throw new IllegalArgumentException(e);
+      }
+    }
+    return super.findResource(path);
+  }
+
+  @Override
+  protected Enumeration<URL> findResources(final String path) throws IOException {
+    final ArrayList<URL> urls = new ArrayList<URL>();
+    if (path.isEmpty()) {
+      for (final File file : mClassMap.values()) {
+        try {
+          urls.add(file.toURI().toURL());
+
+        } catch (final MalformedURLException e) {
+          throw new IOException(e);
+        }
+      }
+
+    } else {
+      for (final Entry<String, File> entry : mClassMap.entrySet()) {
+        if (entry.getKey().startsWith(path)) {
+          try {
+            urls.add(entry.getValue().toURI().toURL());
+
+          } catch (final MalformedURLException e) {
+            throw new IOException(e);
+          }
+        }
+      }
+    }
+    urls.addAll(Collections.list(super.findResources(path)));
+    return Collections.enumeration(urls);
+  }
+
+  void register(@NotNull final String path, @NotNull final File file) {
+    if (!file.isFile()) {
+      throw new IllegalArgumentException();
+    }
+    mClassMap.put(ConstantConditions.notNull("path", path), file);
   }
 }

@@ -32,6 +32,7 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class Plot {
 
+  // TODO: 16/04/2019 memoryFactory(NullaryFunction<Memory>)
   // TODO: 15/02/2019 serialization?
   // TODO: 28/02/2019 swagger converter
 

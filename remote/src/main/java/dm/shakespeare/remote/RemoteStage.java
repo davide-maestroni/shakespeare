@@ -225,7 +225,7 @@ public abstract class RemoteStage extends AbstractStage {
                       }
 
                       if (sender != null) {
-                        actor.tell(new RemoteResponse(sender, remoteMessage.getMessage(),
+                        actor.tell(new RemoteResponse(sender, remoteMessage.getMessageData(),
                                 remoteMessage.getOptions(), remoteMessage.getSentTimestamp()), null,
                             agent.getSelf());
 
