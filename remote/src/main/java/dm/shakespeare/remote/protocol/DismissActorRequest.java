@@ -21,12 +21,21 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
-public class DismissActorRequest extends RemoteActor {
+public class DismissActorRequest extends RemoteRecipient {
+
+  private static final long serialVersionUID = VERSION;
 
   @NotNull
   @Override
-  public DismissActorRequest withActorRef(final ActorRef actorRef) {
-    super.withActorRef(actorRef);
+  public DismissActorRequest withRecipientRef(final ActorRef recipientRef) {
+    super.withRecipientRef(recipientRef);
+    return this;
+  }
+
+  @NotNull
+  @Override
+  public DismissActorRequest withSenderId(final String senderId) {
+    super.withSenderId(senderId);
     return this;
   }
 }

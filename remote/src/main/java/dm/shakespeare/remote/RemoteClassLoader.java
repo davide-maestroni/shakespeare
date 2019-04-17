@@ -34,6 +34,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import dm.shakespeare.remote.util.SerializableData;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -41,7 +42,8 @@ import dm.shakespeare.util.ConstantConditions;
  */
 class RemoteClassLoader extends ClassLoader {
 
-  private final HashMap<String, File> mClassMap = new HashMap<String, File>();
+  private final HashMap<String, SerializableData> mClassMap =
+      new HashMap<String, SerializableData>();
   private final ProtectionDomain mProtectionDomain;
 
   RemoteClassLoader(@NotNull final ClassLoader classLoader,
@@ -58,11 +60,11 @@ class RemoteClassLoader extends ClassLoader {
   protected Class<?> loadClass(final String name, final boolean resolve) throws
       ClassNotFoundException {
     final String path = name.replace(".", "/") + ".class";
-    final File file = mClassMap.get(path);
-    if (file != null) {
+    final SerializableData data = mClassMap.get(path);
+    if (data != null) {
       FileChannel channel = null;
       try {
-        channel = new FileInputStream(file).getChannel();
+        channel = new FileInputStream(data).getChannel();
         final ByteBuffer buffer = channel.map(MapMode.READ_ONLY, 0, channel.size());
         final Class<?> definedClass = super.defineClass(name, buffer, mProtectionDomain);
         if (resolve) {
@@ -131,10 +133,8 @@ class RemoteClassLoader extends ClassLoader {
     return Collections.enumeration(urls);
   }
 
-  void register(@NotNull final String path, @NotNull final File file) {
-    if (!file.isFile()) {
-      throw new IllegalArgumentException();
-    }
-    mClassMap.put(ConstantConditions.notNull("path", path), file);
+  void register(@NotNull final String path, @NotNull final SerializableData data) {
+    mClassMap.put(ConstantConditions.notNull("path", path),
+        ConstantConditions.notNull("data", data));
   }
 }

@@ -18,30 +18,47 @@ package dm.shakespeare.remote.protocol;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.Serializable;
-
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
-public class Remote implements Serializable {
-
-  public static final int VERSION = 1;
+public class RemoteBounce extends Remote {
 
   private static final long serialVersionUID = VERSION;
+  private Throwable mError;
+  private Remote mMessage;
 
-  private String mSenderUri;
-
-  public String getSenderId() {
-    return mSenderUri;
+  public Throwable getError() {
+    return mError;
   }
 
-  public void setSenderId(final String senderId) {
-    mSenderUri = senderId;
+  public void setError(final Throwable error) {
+    mError = error;
+  }
+
+  public Remote getMessage() {
+    return mMessage;
+  }
+
+  public void setMessage(final Remote message) {
+    mMessage = message;
   }
 
   @NotNull
-  public Remote withSenderId(final String senderId) {
-    mSenderUri = senderId;
+  public RemoteBounce withError(final Throwable error) {
+    mError = error;
+    return this;
+  }
+
+  @NotNull
+  public RemoteBounce withMessage(final Remote message) {
+    mMessage = message;
+    return this;
+  }
+
+  @NotNull
+  @Override
+  public RemoteBounce withSenderId(final String senderId) {
+    super.withSenderId(senderId);
     return this;
   }
 }

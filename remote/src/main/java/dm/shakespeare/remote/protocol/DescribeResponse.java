@@ -29,9 +29,11 @@ import java.util.Map;
  */
 public class DescribeResponse extends Remote {
 
+  private static final long serialVersionUID = VERSION;
+
   private List<ActorRef> mActors = new ArrayList<ActorRef>();
   private Map<String, String> mCapabilities = new HashMap<String, String>();
-  private int mProtocolVersion = Remote.VERSION;
+  private int mProtocolVersion = VERSION;
 
   @NotNull
   public DescribeResponse addActors(final ActorRef actor) {
@@ -110,6 +112,13 @@ public class DescribeResponse extends Remote {
   @NotNull
   public DescribeResponse withProtocolVersion(final int protocolVersion) {
     mProtocolVersion = protocolVersion;
+    return this;
+  }
+
+  @NotNull
+  @Override
+  public DescribeResponse withSenderId(final String senderId) {
+    super.withSenderId(senderId);
     return this;
   }
 }

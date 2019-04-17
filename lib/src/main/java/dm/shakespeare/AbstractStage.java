@@ -48,6 +48,8 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public abstract class AbstractStage implements Stage {
 
+  // TODO: 17/04/2019 private static final long serialVersionUID = MAJOR.MINOR
+
   /**
    * Default instance of a {@code Create} message.
    */

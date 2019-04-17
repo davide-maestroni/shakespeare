@@ -21,4 +21,7 @@ package dm.shakespeare.remote.protocol;
  */
 public class Disconnect extends Remote {
 
+  // TODO: 17/04/2019 remove??
+
+  private static final long serialVersionUID = VERSION;
 }

@@ -21,27 +21,29 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Created by davide-maestroni on 04/11/2019.
  */
-public class RemoteActor extends Remote {
+public class RemoteRecipient extends Remote {
 
-  private ActorRef mActorRef;
+  private static final long serialVersionUID = VERSION;
 
-  public ActorRef getActorRef() {
-    return mActorRef;
+  private ActorRef mRecipientRef;
+
+  public ActorRef getRecipientRef() {
+    return mRecipientRef;
   }
 
-  public void setActorRef(final ActorRef actorRef) {
-    mActorRef = actorRef;
+  public void setRecipientRef(final ActorRef recipientRef) {
+    mRecipientRef = recipientRef;
   }
 
   @NotNull
-  public RemoteActor withActorRef(final ActorRef actorRef) {
-    mActorRef = actorRef;
+  public RemoteRecipient withRecipientRef(final ActorRef recipientRef) {
+    mRecipientRef = recipientRef;
     return this;
   }
 
   @NotNull
   @Override
-  public RemoteActor withSenderId(final String senderId) {
+  public RemoteRecipient withSenderId(final String senderId) {
     super.withSenderId(senderId);
     return this;
   }

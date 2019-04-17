@@ -21,4 +21,5 @@ package dm.shakespeare.remote.protocol;
  */
 public class DescribeRequest extends Remote {
 
+  private static final long serialVersionUID = VERSION;
 }

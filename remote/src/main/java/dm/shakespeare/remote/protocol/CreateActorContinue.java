@@ -25,50 +25,64 @@ import java.util.List;
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
-public class CreateActorContinue extends CreateActorRequest {
+public class CreateActorContinue extends Remote {
 
-  private List<String> mClassPaths;
+  private static final long serialVersionUID = VERSION;
+
+  private CreateActorRequest mOriginalRequest;
+  private List<String> mResourcePaths;
 
   @NotNull
-  public CreateActorContinue addAllClassPaths(
-      @NotNull final Collection<? extends String> classPaths) {
-    if (mClassPaths == null) {
-      mClassPaths = new ArrayList<String>();
+  public CreateActorContinue addAllResourcePaths(
+      @NotNull final Collection<? extends String> resourcePaths) {
+    if (mResourcePaths == null) {
+      mResourcePaths = new ArrayList<String>();
     }
-    mClassPaths.addAll(classPaths);
+    mResourcePaths.addAll(resourcePaths);
     return this;
   }
 
   @NotNull
-  public CreateActorContinue addClassPaths(final String classPath) {
-    if (mClassPaths == null) {
-      mClassPaths = new ArrayList<String>();
+  public CreateActorContinue addResourcePath(final String resourcePath) {
+    if (mResourcePaths == null) {
+      mResourcePaths = new ArrayList<String>();
     }
-    mClassPaths.add(classPath);
+    mResourcePaths.add(resourcePath);
     return this;
   }
 
-  public List<String> getClassPaths() {
-    return mClassPaths;
+  public CreateActorRequest getOriginalRequest() {
+    return mOriginalRequest;
+  }
+
+  public void setOriginalRequest(final CreateActorRequest originalRequest) {
+    mOriginalRequest = originalRequest;
+  }
+
+  public List<String> getResourcePaths() {
+    return mResourcePaths;
+  }
+
+  public void setResourcePaths(final List<String> resourcePaths) {
+    mResourcePaths = resourcePaths;
+  }
+
+  @NotNull
+  public CreateActorContinue withClassPaths(final List<String> resourcePaths) {
+    mResourcePaths = resourcePaths;
+    return this;
+  }
+
+  @NotNull
+  public CreateActorContinue withOriginalRequest(final CreateActorRequest originalRequest) {
+    mOriginalRequest = originalRequest;
+    return this;
   }
 
   @NotNull
   @Override
-  public CreateActorContinue withActorRef(final ActorRef actorRef) {
-    super.withActorRef(actorRef);
-    return this;
-  }
-
-  @NotNull
-  @Override
-  public CreateActorContinue withRoleData(final byte[] roleData) {
-    super.withRoleData(roleData);
-    return this;
-  }
-
-  @NotNull
-  public CreateActorContinue withClassPaths(final List<String> classPaths) {
-    mClassPaths = classPaths;
+  public CreateActorContinue withSenderId(final String senderId) {
+    super.withSenderId(senderId);
     return this;
   }
 }

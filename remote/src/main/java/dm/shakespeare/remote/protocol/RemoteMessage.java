@@ -18,23 +18,30 @@ package dm.shakespeare.remote.protocol;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import dm.shakespeare.actor.Options;
+import dm.shakespeare.remote.util.SerializableData;
 
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
-public class RemoteMessage extends RemoteActor {
+public class RemoteMessage extends RemoteRecipient {
 
-  private byte[] mMessageData;
+  private static final long serialVersionUID = VERSION;
+
+  private SerializableData mMessageData;
   private Options mOptions;
+  private Map<String, SerializableData> mResources;
   private ActorRef mSenderRef;
   private long mSentTimestamp = System.currentTimeMillis();
 
-  public byte[] getMessageData() {
+  public SerializableData getMessageData() {
     return mMessageData;
   }
 
-  public void setMessageData(final byte[] messageData) {
+  public void setMessageData(final SerializableData messageData) {
     mMessageData = messageData;
   }
 
@@ -44,6 +51,14 @@ public class RemoteMessage extends RemoteActor {
 
   public void setOptions(final Options options) {
     mOptions = options;
+  }
+
+  public Map<String, SerializableData> getResources() {
+    return mResources;
+  }
+
+  public void setResources(final Map<String, SerializableData> resources) {
+    mResources = resources;
   }
 
   public ActorRef getSenderRef() {
@@ -63,9 +78,40 @@ public class RemoteMessage extends RemoteActor {
   }
 
   @NotNull
+  public RemoteMessage putAllResources(
+      @NotNull final Map<? extends String, ? extends SerializableData> resources) {
+    if (mResources == null) {
+      mResources = new HashMap<String, SerializableData>();
+    }
+    mResources.putAll(resources);
+    return this;
+  }
+
+  @NotNull
+  public RemoteMessage putResource(final String path, final SerializableData data) {
+    if (mResources == null) {
+      mResources = new HashMap<String, SerializableData>();
+    }
+    mResources.put(path, data);
+    return this;
+  }
+
+  @NotNull
+  public RemoteMessage withMessageData(final SerializableData message) {
+    mMessageData = message;
+    return this;
+  }
+
+  @NotNull
+  public RemoteMessage withOptions(final Options options) {
+    mOptions = options;
+    return this;
+  }
+
+  @NotNull
   @Override
-  public RemoteMessage withActorRef(final ActorRef actorRef) {
-    super.withActorRef(actorRef);
+  public RemoteMessage withRecipientRef(final ActorRef recipientRef) {
+    super.withRecipientRef(recipientRef);
     return this;
   }
 
@@ -77,14 +123,8 @@ public class RemoteMessage extends RemoteActor {
   }
 
   @NotNull
-  public RemoteMessage withMessageData(final byte[] message) {
-    mMessageData = message;
-    return this;
-  }
-
-  @NotNull
-  public RemoteMessage withOptions(final Options options) {
-    mOptions = options;
+  public RemoteMessage withResources(final Map<String, SerializableData> resources) {
+    mResources = resources;
     return this;
   }
 

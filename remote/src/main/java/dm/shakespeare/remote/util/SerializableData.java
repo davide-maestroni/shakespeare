@@ -32,6 +32,7 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 
 import dm.shakespeare.util.ConstantConditions;
@@ -74,6 +75,9 @@ public abstract class SerializableData implements Serializable {
   public abstract byte[] toByteArray() throws IOException;
 
   @NotNull
+  public abstract ByteBuffer toByteBuffer() throws IOException;
+
+  @NotNull
   public abstract InputStream toInputStream() throws IOException;
 
   abstract void serialize(@NotNull ObjectOutputStream out) throws IOException;
@@ -97,6 +101,11 @@ public abstract class SerializableData implements Serializable {
     @NotNull
     public byte[] toByteArray() {
       return mData;
+    }
+
+    @NotNull
+    public ByteBuffer toByteBuffer() {
+      return ByteBuffer.wrap(mData).asReadOnlyBuffer();
     }
 
     @NotNull
@@ -136,6 +145,11 @@ public abstract class SerializableData implements Serializable {
       buffer.get(data);
       buffer.reset();
       return data;
+    }
+
+    @NotNull
+    public ByteBuffer toByteBuffer() {
+      return mBuffer.asReadOnlyBuffer();
     }
 
     @NotNull
@@ -203,6 +217,16 @@ public abstract class SerializableData implements Serializable {
         }
       }
       return mData;
+    }
+
+    @NotNull
+    public ByteBuffer toByteBuffer() throws IOException {
+      if (mData == null) {
+        // TODO: 17/04/2019 close??
+        final FileChannel channel = new FileInputStream(mFile).getChannel();
+        return channel.map(MapMode.READ_ONLY, 0, channel.size());
+      }
+      return ByteBuffer.wrap(mData).asReadOnlyBuffer();
     }
 
     @NotNull
@@ -277,6 +301,11 @@ public abstract class SerializableData implements Serializable {
         }
       }
       return mData;
+    }
+
+    @NotNull
+    public ByteBuffer toByteBuffer() throws IOException {
+      return ByteBuffer.wrap(toByteArray()).asReadOnlyBuffer();
     }
 
     @NotNull
@@ -372,6 +401,11 @@ public abstract class SerializableData implements Serializable {
     }
 
     @NotNull
+    public ByteBuffer toByteBuffer() throws IOException {
+      return mData.toByteBuffer();
+    }
+
+    @NotNull
     public InputStream toInputStream() throws IOException {
       return mData.toInputStream();
     }
@@ -413,6 +447,11 @@ public abstract class SerializableData implements Serializable {
       } finally {
         inputStream.close();
       }
+    }
+
+    @NotNull
+    public ByteBuffer toByteBuffer() throws IOException {
+      return ByteBuffer.wrap(toByteArray()).asReadOnlyBuffer();
     }
 
     @NotNull

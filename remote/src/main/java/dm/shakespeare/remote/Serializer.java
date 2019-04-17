@@ -18,13 +18,16 @@ package dm.shakespeare.remote;
 
 import org.jetbrains.annotations.NotNull;
 
+import dm.shakespeare.remote.util.SerializableData;
+
 /**
  * Created by davide-maestroni on 04/16/2019.
  */
 public interface Serializer {
 
   @NotNull
-  Object deserialize(@NotNull byte[] data, @NotNull ClassLoader classLoader) throws Exception;
+  Object deserialize(@NotNull SerializableData data, @NotNull ClassLoader classLoader) throws
+      Exception;
 
   @NotNull
   byte[] serialize(@NotNull Object o) throws Exception;

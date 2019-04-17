@@ -21,7 +21,9 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
-public class CreateActorResponse extends RemoteActor {
+public class CreateActorResponse extends RemoteRecipient {
+
+  private static final long serialVersionUID = VERSION;
 
   private Throwable mError;
 
@@ -34,15 +36,22 @@ public class CreateActorResponse extends RemoteActor {
   }
 
   @NotNull
-  @Override
-  public CreateActorResponse withActorRef(final ActorRef actorRef) {
-    super.withActorRef(actorRef);
+  public CreateActorResponse withError(final Throwable error) {
+    mError = error;
     return this;
   }
 
   @NotNull
-  public CreateActorResponse withError(final Throwable error) {
-    mError = error;
+  @Override
+  public CreateActorResponse withRecipientRef(final ActorRef recipientRef) {
+    super.withRecipientRef(recipientRef);
+    return this;
+  }
+
+  @NotNull
+  @Override
+  public CreateActorResponse withSenderId(final String senderId) {
+    super.withSenderId(senderId);
     return this;
   }
 }
