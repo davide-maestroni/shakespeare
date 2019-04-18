@@ -18,6 +18,7 @@ package dm.shakespeare.remote.protocol;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import dm.shakespeare.remote.util.SerializableData;
@@ -25,56 +26,56 @@ import dm.shakespeare.remote.util.SerializableData;
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
-public class CreateActorRequest extends RemoteResource {
+public class RemoteResource extends RemoteRecipient {
 
   private static final long serialVersionUID = VERSION;
 
-  private SerializableData mRoleData;
+  private Map<String, SerializableData> mResources;
 
-  public SerializableData getRoleData() {
-    return mRoleData;
+  public Map<String, SerializableData> getResources() {
+    return mResources;
   }
 
-  public void setRoleData(final SerializableData roleData) {
-    mRoleData = roleData;
+  public void setResources(final Map<String, SerializableData> resources) {
+    mResources = resources;
   }
 
   @NotNull
-  public CreateActorRequest putAllResources(
+  public RemoteResource putAllResources(
       @NotNull final Map<? extends String, ? extends SerializableData> resources) {
-    super.putAllResources(resources);
+    if (mResources == null) {
+      mResources = new HashMap<String, SerializableData>();
+    }
+    mResources.putAll(resources);
     return this;
   }
 
   @NotNull
-  public CreateActorRequest putResource(final String path, final SerializableData data) {
-    super.putResource(path, data);
+  public RemoteResource putResource(final String path, final SerializableData data) {
+    if (mResources == null) {
+      mResources = new HashMap<String, SerializableData>();
+    }
+    mResources.put(path, data);
     return this;
   }
 
   @NotNull
   @Override
-  public CreateActorRequest withRecipientRef(final ActorRef recipientRef) {
+  public RemoteResource withRecipientRef(final ActorRef recipientRef) {
     super.withRecipientRef(recipientRef);
     return this;
   }
 
   @NotNull
   @Override
-  public CreateActorRequest withSenderId(final String senderId) {
+  public RemoteResource withSenderId(final String senderId) {
     super.withSenderId(senderId);
     return this;
   }
 
   @NotNull
-  public CreateActorRequest withResources(final Map<String, SerializableData> resources) {
-    super.withResources(resources);
-    return this;
-  }
-
-  @NotNull
-  public CreateActorRequest withRoleData(final SerializableData roleData) {
-    mRoleData = roleData;
+  public RemoteResource withResources(final Map<String, SerializableData> resources) {
+    mResources = resources;
     return this;
   }
 }

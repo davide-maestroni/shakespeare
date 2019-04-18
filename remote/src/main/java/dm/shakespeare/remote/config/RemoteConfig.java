@@ -19,6 +19,7 @@ package dm.shakespeare.remote.config;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.security.ProtectionDomain;
 
 import dm.shakespeare.log.Logger;
@@ -34,6 +35,7 @@ public class RemoteConfig {
   private Connector mConnector;
   private Logger mLogger;
   private ProtectionDomain mProtectionDomain;
+  private File mResourceContainer;
   private Serializer mSerializer;
 
   public RemoteConfig(@NotNull final Connector connector) {
@@ -56,6 +58,11 @@ public class RemoteConfig {
   }
 
   @Nullable
+  public File getResourceContainer() {
+    return mResourceContainer;
+  }
+
+  @Nullable
   public Serializer getSerializer() {
     return mSerializer;
   }
@@ -69,6 +76,12 @@ public class RemoteConfig {
   @NotNull
   public RemoteConfig withProtectionDomain(@Nullable final ProtectionDomain protectionDomain) {
     mProtectionDomain = protectionDomain;
+    return this;
+  }
+
+  @NotNull
+  public RemoteConfig withResourceContainer(final File resourceContainer) {
+    mResourceContainer = resourceContainer;
     return this;
   }
 
