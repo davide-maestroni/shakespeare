@@ -18,14 +18,39 @@ package dm.shakespeare.remote.protocol;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
 public class RemoteBounce extends Remote {
 
   private static final long serialVersionUID = VERSION;
+
   private Throwable mError;
   private Remote mMessage;
+  private List<String> mResourcePaths;
+
+  @NotNull
+  public RemoteBounce addAllResourcePaths(
+      @NotNull final Collection<? extends String> resourcePaths) {
+    if (mResourcePaths == null) {
+      mResourcePaths = new ArrayList<String>();
+    }
+    mResourcePaths.addAll(resourcePaths);
+    return this;
+  }
+
+  @NotNull
+  public RemoteBounce addResourcePath(final String resourcePath) {
+    if (mResourcePaths == null) {
+      mResourcePaths = new ArrayList<String>();
+    }
+    mResourcePaths.add(resourcePath);
+    return this;
+  }
 
   public Throwable getError() {
     return mError;
@@ -43,6 +68,14 @@ public class RemoteBounce extends Remote {
     mMessage = message;
   }
 
+  public List<String> getResourcePaths() {
+    return mResourcePaths;
+  }
+
+  public void setResourcePaths(final List<String> resourcePaths) {
+    mResourcePaths = resourcePaths;
+  }
+
   @NotNull
   public RemoteBounce withError(final Throwable error) {
     mError = error;
@@ -52,6 +85,12 @@ public class RemoteBounce extends Remote {
   @NotNull
   public RemoteBounce withMessage(final Remote message) {
     mMessage = message;
+    return this;
+  }
+
+  @NotNull
+  public RemoteBounce withResourcePaths(final List<String> resourcePaths) {
+    mResourcePaths = resourcePaths;
     return this;
   }
 

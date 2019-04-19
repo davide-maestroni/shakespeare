@@ -19,34 +19,19 @@ package dm.shakespeare.remote.config;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import dm.shakespeare.log.Logger;
 import dm.shakespeare.remote.Connector;
-import dm.shakespeare.remote.Serializer;
-import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 04/16/2019.
+ * Created by davide-maestroni on 04/19/2019.
  */
-public class RemoteConfig {
+public class RemoteClientConfig extends RemoteConfig {
 
-  private Connector mConnector;
-
-  public RemoteConfig(@NotNull final Connector connector) {
-    mConnector = ConstantConditions.notNull("connector", connector);
-  }
-
-  @NotNull
-  public final Connector getConnector() {
-    return mConnector;
+  public RemoteClientConfig(@NotNull final Connector connector) {
+    super(connector);
   }
 
   @Nullable
-  public Logger getLogger() {
-    return null;
-  }
-
-  @Nullable
-  public Serializer getSerializer() {
+  public Capabilities getCapabilities() {
     return null;
   }
 }

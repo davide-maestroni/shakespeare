@@ -68,14 +68,14 @@ public class CreateActorContinue extends Remote {
   }
 
   @NotNull
-  public CreateActorContinue withClassPaths(final List<String> resourcePaths) {
-    mResourcePaths = resourcePaths;
+  public CreateActorContinue withOriginalRequest(final CreateActorRequest originalRequest) {
+    mOriginalRequest = originalRequest;
     return this;
   }
 
   @NotNull
-  public CreateActorContinue withOriginalRequest(final CreateActorRequest originalRequest) {
-    mOriginalRequest = originalRequest;
+  public CreateActorContinue withResourcePaths(final List<String> resourcePaths) {
+    mResourcePaths = resourcePaths;
     return this;
   }
 

@@ -29,6 +29,9 @@ import java.util.Map;
 import dm.shakespeare.AbstractStage;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Role;
+import dm.shakespeare.log.LogPrinters;
+import dm.shakespeare.log.Logger;
+import dm.shakespeare.remote.config.RemoteClientConfig;
 
 /**
  * Created by davide-maestroni on 04/18/2019.
@@ -39,8 +42,19 @@ public class RemoteClient extends AbstractStage {
 
   private static Map<String, File> sResources = Collections.emptyMap();
 
-  public RemoteClient() {
+  private final RemoteClientConfig mConfig;
+  private final Connector mConnector;
+  private final Logger mLogger;
+  private final Serializer mSerializer;
 
+  public RemoteClient(@NotNull final RemoteClientConfig config) {
+    mConfig = config;
+    mConnector = config.getConnector();
+    final Serializer serializer = config.getSerializer();
+    mSerializer = (serializer != null) ? serializer : new JavaSerializer();
+    final Logger logger = config.getLogger();
+    mLogger = (logger != null) ? logger
+        : Logger.newLogger(LogPrinters.javaLoggingPrinter(getClass().getName()));
   }
 
   private static void registerFile(@NotNull final File root, @NotNull final File file,

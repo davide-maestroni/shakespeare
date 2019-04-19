@@ -76,6 +76,7 @@ public abstract class SerializableData implements Serializable {
     } finally {
       try {
         outputStream.close();
+
       } catch (final IOException e) {
         // TODO: 18/04/2019 ???
       }
@@ -155,6 +156,7 @@ public abstract class SerializableData implements Serializable {
       } finally {
         try {
           outputStream.close();
+
         } catch (final IOException e) {
           // TODO: 18/04/2019 ???
         }
@@ -186,9 +188,7 @@ public abstract class SerializableData implements Serializable {
     public byte[] toByteArray() {
       final ByteBuffer buffer = mBuffer;
       final byte[] data = new byte[buffer.remaining()];
-      buffer.mark();
-      buffer.get(data);
-      buffer.reset();
+      buffer.slice().get(data);
       return data;
     }
 
@@ -244,6 +244,7 @@ public abstract class SerializableData implements Serializable {
         if (inputStream != null) {
           try {
             inputStream.close();
+
           } catch (final IOException e) {
             // TODO: 18/04/2019 ???
           }
@@ -251,6 +252,7 @@ public abstract class SerializableData implements Serializable {
 
         try {
           outputStream.close();
+
         } catch (final IOException e) {
           // TODO: 18/04/2019 ???
         }
@@ -290,6 +292,7 @@ public abstract class SerializableData implements Serializable {
           } finally {
             try {
               inputStream.close();
+
             } catch (final IOException e) {
               // TODO: 18/04/2019 ???
             }
@@ -312,6 +315,7 @@ public abstract class SerializableData implements Serializable {
         } finally {
           try {
             inputStream.close();
+
           } catch (final IOException e) {
             // TODO: 18/04/2019 ???
           }
@@ -342,6 +346,7 @@ public abstract class SerializableData implements Serializable {
         } finally {
           try {
             inputStream.close();
+
           } catch (final IOException e) {
             // TODO: 18/04/2019 ???
           }
@@ -380,6 +385,7 @@ public abstract class SerializableData implements Serializable {
         } finally {
           try {
             inputStream.close();
+
           } catch (final IOException e) {
             // TODO: 18/04/2019 ???
           }
@@ -423,6 +429,7 @@ public abstract class SerializableData implements Serializable {
         } finally {
           try {
             inputStream.close();
+
           } catch (final IOException e) {
             // TODO: 18/04/2019 ???
           }
@@ -451,6 +458,7 @@ public abstract class SerializableData implements Serializable {
         } finally {
           try {
             inputStream.close();
+
           } catch (final IOException e) {
             // TODO: 18/04/2019 ???
           }
@@ -480,6 +488,7 @@ public abstract class SerializableData implements Serializable {
         } finally {
           try {
             inputStream.close();
+
           } catch (final IOException e) {
             // TODO: 18/04/2019 ???
           }
@@ -519,6 +528,7 @@ public abstract class SerializableData implements Serializable {
         } finally {
           try {
             inputStream.close();
+
           } catch (final IOException e) {
             // TODO: 18/04/2019 ???
           }
@@ -562,6 +572,7 @@ public abstract class SerializableData implements Serializable {
       } finally {
         try {
           outputStream.close();
+
         } catch (final IOException e) {
           // TODO: 18/04/2019 ???
         }
@@ -636,6 +647,7 @@ public abstract class SerializableData implements Serializable {
       } finally {
         try {
           inputStream.close();
+
         } catch (final IOException e) {
           // TODO: 18/04/2019 ???
         }
@@ -654,6 +666,7 @@ public abstract class SerializableData implements Serializable {
       } finally {
         try {
           inputStream.close();
+
         } catch (final IOException e) {
           // TODO: 18/04/2019 ???
         }
@@ -680,6 +693,7 @@ public abstract class SerializableData implements Serializable {
       } finally {
         try {
           inputStream.close();
+
         } catch (final IOException e) {
           // TODO: 18/04/2019 ???
         }
@@ -706,6 +720,7 @@ public abstract class SerializableData implements Serializable {
       } finally {
         try {
           inputStream.close();
+
         } catch (final IOException e) {
           // TODO: 18/04/2019 ???
         }

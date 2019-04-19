@@ -17,15 +17,18 @@
 package dm.shakespeare.remote;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.FilePermission;
+import java.nio.ByteBuffer;
 import java.security.CodeSource;
 import java.security.Permission;
 import java.security.Permissions;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
+import java.util.Set;
 
 import dm.shakespeare.remote.config.Capabilities;
 import dm.shakespeare.remote.config.RemoteConfig;
@@ -33,6 +36,7 @@ import dm.shakespeare.remote.protocol.ActorRef;
 import dm.shakespeare.remote.protocol.CreateActorRequest;
 import dm.shakespeare.remote.protocol.Remote;
 import dm.shakespeare.remote.protocol.RemoteMessage;
+import dm.shakespeare.remote.util.Classes;
 import dm.shakespeare.remote.util.SerializableData;
 
 /**
@@ -41,12 +45,33 @@ import dm.shakespeare.remote.util.SerializableData;
 public class RemoteServerTest {
 
   @Test
+  public void tes() throws Exception {
+    {
+      final byte[] bytes = SerializableData.wrapNoCache(
+          RemoteServerTest.class.getResourceAsStream("/TestRole.class")).toByteArray();
+      final Set<String> dependencies = Classes.getDependencies(ByteBuffer.wrap(bytes));
+      System.out.println(dependencies);
+    }
+    {
+      final byte[] bytes = SerializableData.wrapNoCache(
+          RemoteServerTest.class.getResourceAsStream("/TestRole$1.class")).toByteArray();
+      final Set<String> dependencies = Classes.getDependencies(ByteBuffer.wrap(bytes));
+      System.out.println(dependencies);
+    }
+  }
+
+  @Test
   public void test() throws Exception {
+    final File container = new File(new File(System.getProperty("java.io.tmpdir")), "shakespeare");
     System.setSecurityManager(new SecurityManager() {
 
       @Override
       public void checkPermission(final Permission permission) {
         permission.getActions();
+        //        if (permission.getName().equals(container.getPath()) && permission.getActions()
+        //            .equals("read")) {
+        //          super.checkPermission(permission);
+        //        }
       }
 
       @Override
@@ -55,21 +80,30 @@ public class RemoteServerTest {
       }
     });
     final TestConnector connector = new TestConnector();
-    final File container = new File(new File(System.getProperty("java.io.tmpdir")), "shakespeare");
-    container.mkdir();
     final CodeSource codeSource =
         new CodeSource(new File(container, "-").toURI().toURL(), (Certificate[]) null);
     final Permissions permissions = new Permissions();
-//    permissions.add(
-//        new FilePermission(new File(container, "-").getPath(), "read,write,execute,delete"));
-    final RemoteConfig config = new RemoteConfig(connector).withResourceContainer(container)
-        .withProtectionDomain(new ProtectionDomain(codeSource, permissions));
-    final Capabilities capabilities = new Capabilities();
-    capabilities.put(Capabilities.CREATE_REMOTE, "true");
-    capabilities.put(Capabilities.LOAD_REMOTE, "true");
-    final RemoteServer remoteServer = new RemoteServer(config);
+    permissions.add(new FilePermission(container.getPath(), "read,write,execute,delete"));
+    permissions.add(
+        new FilePermission(new File(container, "-").getPath(), "read,write,execute,delete"));
+    final ProtectionDomain protectionDomain = new ProtectionDomain(codeSource, permissions);
+    final Capabilities capabilities = new Capabilities().putValue(Capabilities.CREATE_REMOTE, true)
+        .putValue(Capabilities.LOAD_REMOTE, true);
+    final RemoteServer remoteServer = new RemoteServer(new RemoteConfig(connector) {
+
+      @Nullable
+      @Override
+      public Capabilities getCapabilities(@Nullable final String senderId) {
+        return capabilities;
+      }
+
+      @Nullable
+      @Override
+      public ProtectionDomain getProtectionDomain(@Nullable final String senderId) {
+        return protectionDomain;
+      }
+    });
     remoteServer.start();
-    remoteServer.setCapabilities(capabilities, null, null);
     Thread.sleep(2000);
     final JavaSerializer javaSerializer = new JavaSerializer();
     final ActorRef actorRef = new ActorRef().withId("123").withHash("123");

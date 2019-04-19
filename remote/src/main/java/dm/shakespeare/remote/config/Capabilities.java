@@ -16,6 +16,7 @@
 
 package dm.shakespeare.remote.config;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
@@ -97,5 +98,11 @@ public class Capabilities extends HashMap<String, String> {
 
   public boolean checkTrue(final String key) {
     return Boolean.TRUE.toString().equalsIgnoreCase(get(key));
+  }
+
+  @NotNull
+  public Capabilities putValue(final String key, final Object value) {
+    put(key, (value != null) ? value.toString() : null);
+    return this;
   }
 }

@@ -35,8 +35,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
+import dm.shakespeare.remote.util.Classes;
 import dm.shakespeare.remote.util.SerializableData;
 
 /**
@@ -70,15 +74,24 @@ class RemoteClassLoader extends ClassLoader {
     loadResources(container);
   }
 
+  private static String normalize(final String path) {
+    return ((path != null) && !path.startsWith("/")) ? "/" + path : null;
+  }
+
+  @NotNull
+  private static String toPath(@NotNull final String name) {
+    return "/" + name.replace(".", "/") + ".class";
+  }
+
   @Override
   protected Class<?> loadClass(final String name, final boolean resolve) throws
       ClassNotFoundException {
-    final String path = "/" + name.replace(".", "/") + ".class";
-    final File file = mResources.get(mPaths.get(path));
+    final File file = mResources.get(mPaths.get(toPath(name)));
     if (file != null) {
-      FileChannel channel = null;
+      FileInputStream inputStream = null;
       try {
-        channel = new FileInputStream(file).getChannel();
+        inputStream = new FileInputStream(file);
+        FileChannel channel = inputStream.getChannel();
         final ByteBuffer buffer = channel.map(MapMode.READ_ONLY, 0, channel.size());
         final Class<?> definedClass = super.defineClass(name, buffer, mProtectionDomain);
         if (resolve) {
@@ -87,9 +100,9 @@ class RemoteClassLoader extends ClassLoader {
         return definedClass;
 
       } catch (final IOException e) {
-        if (channel != null) {
+        if (inputStream != null) {
           try {
-            channel.close();
+            inputStream.close();
 
           } catch (IOException ignored) {
           }
@@ -106,58 +119,47 @@ class RemoteClassLoader extends ClassLoader {
 
   @Override
   protected URL findResource(final String path) {
-    final String name = mPaths.get(path);
-    if (name != null) {
-      final File file = mResources.get(name);
-      if (file != null) {
-        try {
-          return file.toURI().toURL();
-
-        } catch (final MalformedURLException e) {
-          throw new IllegalArgumentException(e);
-        }
-      }
-    }
-    return super.findResource(path);
-  }
-
-  @Override
-  protected Enumeration<URL> findResources(final String path) throws IOException {
-    final ArrayList<URL> urls = new ArrayList<URL>();
-    if (path.isEmpty()) {
-      for (final String name : mPaths.values()) {
+    final URL resource = super.findResource(path);
+    if (resource == null) {
+      final String name = mPaths.get(normalize(path));
+      if (name != null) {
         final File file = mResources.get(name);
         if (file != null) {
           try {
-            urls.add(file.toURI().toURL());
+            return file.toURI().toURL();
 
           } catch (final MalformedURLException e) {
             throw new IllegalArgumentException(e);
           }
         }
       }
+    }
+    return resource;
+  }
 
-    } else {
-      for (final Entry<String, String> entry : mPaths.entrySet()) {
-        // TODO: 18/04/2019 match??
-        if (entry.getKey().startsWith(path)) {
-          final File file = mResources.get(entry.getValue());
-          if (file != null) {
-            try {
-              urls.add(file.toURI().toURL());
+  @Override
+  protected Enumeration<URL> findResources(final String path) throws IOException {
+    if (path == null) {
+      return super.findResources(null);
+    }
+    final ArrayList<URL> urls = new ArrayList<URL>(Collections.list(super.findResources(path)));
+    final String name = mPaths.get(normalize(path));
+    if (name != null) {
+      final File file = mResources.get(name);
+      if (file != null) {
+        try {
+          urls.add(file.toURI().toURL());
 
-            } catch (final MalformedURLException e) {
-              throw new IllegalArgumentException(e);
-            }
-          }
+        } catch (final MalformedURLException e) {
+          throw new IllegalArgumentException(e);
         }
       }
     }
-    urls.addAll(Collections.list(super.findResources(path)));
     return Collections.enumeration(urls);
   }
 
-  void register(@NotNull final String path, @NotNull final SerializableData data) throws
+  @NotNull
+  File register(@NotNull final String path, @NotNull final SerializableData data) throws
       IOException {
     final String name = Integer.toHexString(path.hashCode());
     final FileOutputStream outputStream =
@@ -169,14 +171,47 @@ class RemoteClassLoader extends ClassLoader {
       file.deleteOnExit();
       mPaths.put(path, name);
       mResources.put(name, file);
+      return file;
 
     } finally {
       try {
         outputStream.close();
+
       } catch (final IOException e) {
         // TODO: 18/04/2019 ??
       }
     }
+  }
+
+  @NotNull
+  Set<String> register(@NotNull final Map<String, SerializableData> resources) throws IOException {
+    final HashSet<String> paths = new HashSet<String>();
+    for (final Entry<String, SerializableData> entry : resources.entrySet()) {
+      final File file = register(entry.getKey(), entry.getValue());
+      FileInputStream inputStream = null;
+      try {
+        inputStream = new FileInputStream(file);
+        FileChannel channel = inputStream.getChannel();
+        final ByteBuffer buffer = channel.map(MapMode.READ_ONLY, 0, channel.size());
+        final Set<String> dependencies = Classes.getDependencies(buffer);
+        for (final String name : dependencies) {
+          paths.add(toPath(name));
+        }
+
+      } catch (final IOException e) {
+        if (inputStream != null) {
+          try {
+            inputStream.close();
+
+          } catch (IOException ignored) {
+          }
+        }
+
+        throw e;
+      }
+    }
+    paths.removeAll(mPaths.keySet());
+    return paths;
   }
 
   private void loadResources(@NotNull final File container) {
@@ -199,6 +234,7 @@ class RemoteClassLoader extends ClassLoader {
             if (reader != null) {
               try {
                 reader.close();
+
               } catch (final IOException e) {
                 // TODO: 18/04/2019 ??
               }
