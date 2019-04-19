@@ -25,6 +25,8 @@ import java.io.Serializable;
  */
 public class ActorRef implements Serializable {
 
+  // TODO: 19/04/2019 remove: hash == senderId
+
   private String mHash;
   private String mId;
 

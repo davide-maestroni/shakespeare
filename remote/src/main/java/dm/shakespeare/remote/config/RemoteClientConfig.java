@@ -34,4 +34,9 @@ public class RemoteClientConfig extends RemoteConfig {
   public Capabilities getCapabilities() {
     return null;
   }
+
+  @Nullable
+  public String getServerId() {
+    return null;
+  }
 }

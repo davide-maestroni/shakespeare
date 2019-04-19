@@ -34,7 +34,6 @@ import dm.shakespeare.BackStage;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
-import dm.shakespeare.actor.Options;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.log.LogMessage;
 import dm.shakespeare.log.LogPrinters;
@@ -50,6 +49,7 @@ import dm.shakespeare.remote.protocol.DescribeResponse;
 import dm.shakespeare.remote.protocol.Remote;
 import dm.shakespeare.remote.protocol.RemoteBounce;
 import dm.shakespeare.remote.protocol.RemoteMessage;
+import dm.shakespeare.remote.util.SerializableData;
 
 /**
  * Created by davide-maestroni on 04/18/2019.
@@ -65,13 +65,14 @@ public class RemoteClient extends AbstractStage {
   private final Logger mLogger;
   private final Object mMutex = new Object();
   private final Serializer mSerializer;
+  private final String mServerId;
 
   private Actor mActor;
-  private Options mOptions;
   private Sender mSender;
 
   public RemoteClient(@NotNull final RemoteClientConfig config) {
     mConfig = config;
+    mServerId = config.getServerId();
     mConnector = config.getConnector();
     final Serializer serializer = config.getSerializer();
     mSerializer = (serializer != null) ? serializer : new JavaSerializer();
@@ -129,15 +130,40 @@ public class RemoteClient extends AbstractStage {
                 // TODO: 19/04/2019 create actors
                 // TODO: 19/04/2019 sync...
 
-              } else if (message instanceof CreateActorRequest) {
-                safeSend((CreateActorRequest) message, "TODO");
-
               } else if (message instanceof CreateActorResponse) {
 
               } else if (message instanceof RemoteMessage) {
 
               } else if (message instanceof RemoteBounce) {
 
+              } else if (message instanceof CreateActor) {
+                final CreateActor createActor = (CreateActor) message;
+                try {
+                  safeSend(new CreateActorRequest().withRoleData(
+                      SerializableData.wrap(mSerializer.serialize(createActor.getRole()))));
+
+                } catch (final Exception e) {
+                  mLogger.err(e, "failed to send message");
+                  // TODO: 19/04/2019 bounce?
+                }
+
+              } else if (message instanceof ForwardMessage) {
+                final ForwardMessage forwardMessage = (ForwardMessage) message;
+                final Envelop env = forwardMessage.getEnvelop();
+                final Actor sender = env.getSender();
+                try {
+                  safeSend(
+                      new RemoteMessage().withRecipientRef(new ActorRef().withId(sender.getId()))
+                          .withMessageData(SerializableData.wrap(
+                              mSerializer.serialize(forwardMessage.getMessage())))
+                          .withOptions(env.getOptions())
+                          .withSenderRef(new ActorRef().withId(forwardMessage.getSenderId()))
+                          .withSentTimestamp(env.getSentAt()));
+
+                } catch (final Exception e) {
+                  mLogger.err(e, "failed to send message");
+                  // TODO: 19/04/2019 bounce?
+                }
               }
             }
 
@@ -154,7 +180,7 @@ public class RemoteClient extends AbstractStage {
                   mActor.tell(remote, null, BackStage.STAND_IN);
                 }
               });
-              safeSend(new DescribeRequest(), "TODO");
+              safeSend(new DescribeRequest());
             }
 
             public void onStop(@NotNull final Agent agent) {
@@ -187,13 +213,54 @@ public class RemoteClient extends AbstractStage {
     return null;
   }
 
-  private void safeSend(@NotNull final Remote remote, @NotNull final String recipientId) {
+  private void safeSend(@NotNull final Remote remote) {
     try {
-      mSender.send(remote, recipientId);
+      mSender.send(remote, mServerId);
 
     } catch (final Throwable t) {
       mLogger.err(t, "failed to send remote message: %s to %s",
-          LogMessage.abbreviate(remote.toString(), 2048), recipientId);
+          LogMessage.abbreviate(remote.toString(), 2048), mServerId);
+    }
+  }
+
+  private static class CreateActor {
+
+    private final Role mRole;
+
+    private CreateActor(@NotNull final Role role) {
+      mRole = role;
+    }
+
+    @NotNull
+    Role getRole() {
+      return mRole;
+    }
+  }
+
+  private static class ForwardMessage {
+
+    private final Envelop mEnvelop;
+    private final Object mMessage;
+    private final String mSenderId;
+
+    private ForwardMessage(final String senderId, final Object message,
+        @NotNull final Envelop envelop) {
+      mSenderId = senderId;
+      mMessage = message;
+      mEnvelop = envelop;
+    }
+
+    @NotNull
+    Envelop getEnvelop() {
+      return mEnvelop;
+    }
+
+    Object getMessage() {
+      return mMessage;
+    }
+
+    String getSenderId() {
+      return mSenderId;
     }
   }
 }
