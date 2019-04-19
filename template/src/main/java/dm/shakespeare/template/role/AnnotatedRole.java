@@ -29,7 +29,7 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class AnnotatedRole extends SerializableRole {
 
-  private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   private final Object mObject;
 

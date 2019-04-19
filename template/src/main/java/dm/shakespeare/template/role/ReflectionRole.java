@@ -50,7 +50,7 @@ public class ReflectionRole extends SerializableRole {
         put(double.class, (double) 0);
       }};
 
-  private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   private final Object mObject;
 

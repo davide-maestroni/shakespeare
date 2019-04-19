@@ -25,5 +25,5 @@ import dm.shakespeare.config.BuildConfig;
  */
 public class DeadLetter implements Serializable {
 
-  private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 }

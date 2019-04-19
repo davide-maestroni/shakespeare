@@ -35,7 +35,7 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class SerializableRoleWrapper extends SerializableRole {
 
-  private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   private transient Role mRole;
 

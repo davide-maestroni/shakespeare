@@ -35,7 +35,8 @@ import dm.shakespeare.util.ConstantConditions;
 public class ReferenceRole extends SerializableRole {
 
   private static final Object[] NO_ARGS = new Object[0];
-  private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
+
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   private final Serializable[] mRoleArgs;
   private final Class<? extends Role> mRoleClass;

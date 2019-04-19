@@ -114,7 +114,7 @@ public class ReflectionBehavior extends AbstractBehavior {
 
   public static class Invoke implements Serializable {
 
-    private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private final Object[] mArgumentArray;
     private final String mMethodName;

@@ -134,7 +134,7 @@ public class SupervisedBehavior extends AbstractBehavior {
 
   public static class Supervise implements Serializable {
 
-    private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private Supervise() {
     }
@@ -142,7 +142,7 @@ public class SupervisedBehavior extends AbstractBehavior {
 
   public static class SupervisedFailure implements Serializable {
 
-    private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private final Throwable mCause;
     private final String mFailureId;
@@ -170,7 +170,7 @@ public class SupervisedBehavior extends AbstractBehavior {
 
   public static class SupervisedRecovery implements Serializable {
 
-    private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private final String mFailureId;
     private final RecoveryType mRecoveryType;
@@ -198,7 +198,7 @@ public class SupervisedBehavior extends AbstractBehavior {
 
   public static class Unsupervise implements Serializable {
 
-    private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private Unsupervise() {
     }

@@ -27,7 +27,7 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class Failure extends Bounce {
 
-  private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   private final Throwable mCause;
 

@@ -28,7 +28,7 @@ import dm.shakespeare.template.config.BuildConfig;
  */
 public class SupervisedRole extends SerializableRoleWrapper {
 
-  private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   public SupervisedRole(@NotNull final Role role) {
     super(role);

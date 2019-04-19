@@ -49,11 +49,6 @@ dependencies {
   testCompile 'org.assertj:assertj-core:2.4.1'
 }
 
-buildConfig {
-  packageName "dm.shakespeare.${project.name}.config"
-  buildConfigField 'long', 'VERSION_HASH_CODE', project.version.hashCode() + 'L'
-}
-
 jacoco {
   toolVersion project.getProperty('jacocoVersion')
 }

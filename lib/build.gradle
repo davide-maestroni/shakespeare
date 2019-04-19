@@ -51,7 +51,7 @@ dependencies {
 
 buildConfig {
   packageName 'dm.shakespeare.config'
-  buildConfigField 'long', 'VERSION_HASH_CODE', project.version.hashCode() + 'L'
+  buildConfigField 'long', 'SERIAL_VERSION_UID', '0L'
 }
 
 javadoc {

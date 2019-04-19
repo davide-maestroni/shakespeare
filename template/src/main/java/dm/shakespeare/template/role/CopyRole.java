@@ -31,7 +31,7 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class CopyRole extends ReferenceRole {
 
-  private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   public CopyRole(@NotNull final Class<? extends Role> roleClass) {
     super(roleClass);

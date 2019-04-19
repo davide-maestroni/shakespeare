@@ -37,7 +37,7 @@ public class Options implements Serializable {
    */
   public static final Options EMPTY = new Options();
 
-  private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   private final String mReceiptId;
   private final String mThreadId;

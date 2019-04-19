@@ -51,7 +51,8 @@ dependencies {
 
 buildConfig {
   packageName "dm.shakespeare.${project.name}.config"
-  buildConfigField 'long', 'VERSION_HASH_CODE', project.version.hashCode() + 'L'
+  buildConfigField 'long', 'VERSION_HASH_CODE', "${project.version.split('\\.')[0]}.${project.version.split('\\.')[1]}".hashCode() + 'L'
+  buildConfigField 'long', 'SERIAL_VERSION_UID', '0L'
 }
 
 jacoco {

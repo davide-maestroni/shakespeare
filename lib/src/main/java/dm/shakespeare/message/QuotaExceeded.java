@@ -27,7 +27,7 @@ import dm.shakespeare.config.BuildConfig;
  */
 public class QuotaExceeded extends Bounce {
 
-  private static final long serialVersionUID = BuildConfig.VERSION_HASH_CODE;
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   /**
    * Creates a new quota exceeded message.
