@@ -142,7 +142,7 @@ public class RemoteServer extends AbstractStage {
                         dependencies = classLoader.register(resources);
                       }
 
-                      if (dependencies != null) {
+                      if ((dependencies != null) && !dependencies.isEmpty()) {
                         safeSend(new CreateActorContinue().withOriginalRequest(createRequest)
                             .addAllResourcePaths(dependencies), senderId);
 
@@ -215,7 +215,7 @@ public class RemoteServer extends AbstractStage {
                         dependencies = classLoader.register(resources);
                       }
 
-                      if (dependencies != null) {
+                      if ((dependencies != null) && !dependencies.isEmpty()) {
                         safeSend(new RemoteBounce().withError(new ClassNotFoundException())
                             .addAllResourcePaths(dependencies)
                             .withMessage(remoteMessage), senderId);
@@ -284,9 +284,9 @@ public class RemoteServer extends AbstractStage {
                       new UnsupportedOperationException(Capabilities.CREATE_REMOTE)), senderId);
                 }
 
-              } else if (message instanceof RemoteResponse) {
+              } else if (message instanceof ForwardMessage) {
                 try {
-                  final RemoteResponse response = (RemoteResponse) message;
+                  final ForwardMessage response = (ForwardMessage) message;
                   final Envelop env = response.getEnvelop();
                   final Actor sender = env.getSender();
                   final ActorRef actorRef = mSenders.get(envelop.getSender());
@@ -442,13 +442,13 @@ public class RemoteServer extends AbstractStage {
     }
   }
 
-  private static class RemoteResponse {
+  private static class ForwardMessage {
 
     private final Envelop mEnvelop;
     private final Object mMessage;
     private final String mRecipientId;
 
-    private RemoteResponse(final String recipientId, final Object message,
+    private ForwardMessage(final String recipientId, final Object message,
         @NotNull final Envelop envelop) {
       mRecipientId = recipientId;
       mMessage = message;
@@ -543,7 +543,7 @@ public class RemoteServer extends AbstractStage {
             }
 
           } else {
-            actor.tell(new RemoteResponse(mRecipientId, message, envelop), options,
+            actor.tell(new ForwardMessage(mRecipientId, message, envelop), options,
                 agent.getSelf());
           }
         }

@@ -31,7 +31,7 @@ import java.security.cert.Certificate;
 import java.util.Set;
 
 import dm.shakespeare.remote.config.Capabilities;
-import dm.shakespeare.remote.config.RemoteConfig;
+import dm.shakespeare.remote.config.RemoteServerConfig;
 import dm.shakespeare.remote.protocol.ActorRef;
 import dm.shakespeare.remote.protocol.CreateActorRequest;
 import dm.shakespeare.remote.protocol.Remote;
@@ -89,7 +89,7 @@ public class RemoteServerTest {
     final ProtectionDomain protectionDomain = new ProtectionDomain(codeSource, permissions);
     final Capabilities capabilities = new Capabilities().putValue(Capabilities.CREATE_REMOTE, true)
         .putValue(Capabilities.LOAD_REMOTE, true);
-    final RemoteServer remoteServer = new RemoteServer(new RemoteConfig(connector) {
+    final RemoteServer remoteServer = new RemoteServer(new RemoteServerConfig(connector) {
 
       @Nullable
       @Override

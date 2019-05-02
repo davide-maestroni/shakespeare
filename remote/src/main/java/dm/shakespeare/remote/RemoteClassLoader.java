@@ -185,7 +185,7 @@ class RemoteClassLoader extends ClassLoader {
 
   @NotNull
   Set<String> register(@NotNull final Map<String, SerializableData> resources) throws IOException {
-    final HashSet<String> paths = new HashSet<String>();
+    final HashSet<String> missingPaths = new HashSet<String>();
     for (final Entry<String, SerializableData> entry : resources.entrySet()) {
       final File file = register(entry.getKey(), entry.getValue());
       FileInputStream inputStream = null;
@@ -194,8 +194,20 @@ class RemoteClassLoader extends ClassLoader {
         FileChannel channel = inputStream.getChannel();
         final ByteBuffer buffer = channel.map(MapMode.READ_ONLY, 0, channel.size());
         final Set<String> dependencies = Classes.getDependencies(buffer);
+        final HashMap<String, String> paths = mPaths;
         for (final String name : dependencies) {
-          paths.add(toPath(name));
+          final String path = toPath(name);
+          if (!paths.containsKey(path) && !(name.startsWith("java.") || name.startsWith("javax.")
+              || name.startsWith("sun.") || name.startsWith("com.sun.") || name.startsWith(
+              "com.oracle."))) {
+            try {
+              Class.forName(name, false, getParent());
+
+            } catch (ClassNotFoundException ignored) {
+              // add only if not already in the path
+              missingPaths.add(path);
+            }
+          }
         }
 
       } catch (final IOException e) {
@@ -210,8 +222,7 @@ class RemoteClassLoader extends ClassLoader {
         throw e;
       }
     }
-    paths.removeAll(mPaths.keySet());
-    return paths;
+    return missingPaths;
   }
 
   private void loadResources(@NotNull final File container) {

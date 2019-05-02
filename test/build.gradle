@@ -43,9 +43,9 @@ compileTestJava {
 }
 
 dependencies {
-  compile 'com.intellij:annotations:12.0'
-  testCompile 'junit:junit:4.12'
-  testCompile 'org.assertj:assertj-core:2.4.1'
+  implementation 'com.intellij:annotations:12.0'
+  testImplementation 'junit:junit:4.12'
+  testImplementation 'org.assertj:assertj-core:2.4.1'
 }
 
 buildConfig {

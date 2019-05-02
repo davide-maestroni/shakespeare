@@ -42,6 +42,7 @@ import dm.shakespeare.remote.Connector.Receiver;
 import dm.shakespeare.remote.Connector.Sender;
 import dm.shakespeare.remote.config.RemoteClientConfig;
 import dm.shakespeare.remote.protocol.ActorRef;
+import dm.shakespeare.remote.protocol.CreateActorContinue;
 import dm.shakespeare.remote.protocol.CreateActorRequest;
 import dm.shakespeare.remote.protocol.CreateActorResponse;
 import dm.shakespeare.remote.protocol.DescribeRequest;
@@ -129,6 +130,8 @@ public class RemoteClient extends AbstractStage {
                 final List<ActorRef> actors = response.getActors();
                 // TODO: 19/04/2019 create actors
                 // TODO: 19/04/2019 sync...
+
+              } else if (message instanceof CreateActorContinue) {
 
               } else if (message instanceof CreateActorResponse) {
 

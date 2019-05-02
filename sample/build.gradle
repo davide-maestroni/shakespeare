@@ -28,14 +28,17 @@ version = project.getProperty('releaseVersion')
 archivesBaseName = "${project.parent.name}-${project.name}"
 
 dependencies {
-  compile project.hasProperty('deploy') ? "${group}:${project.parent.name}-lib:0.1" : project(':lib')
-  compile project.hasProperty('deploy') ? "${group}:${project.parent.name}-plot:0.1" : project(':plot')
-  compile 'com.intellij:annotations:12.0'
-  compile 'com.squareup.retrofit2:retrofit:2.5.0'
-  compile 'io.reactivex:rxjava:1.3.8'
-  compile 'io.reactivex:rxjava-math:1.0.0'
-  testCompile 'junit:junit:4.12'
-  testCompile 'org.assertj:assertj-core:2.4.1'
+  api project.hasProperty('deploy') ? "${group}:${project.parent.name}-lib:0.1" : project(':lib')
+  api project.hasProperty('deploy') ? "${group}:${project.parent.name}-plot:0.1" : project(':plot')
+  implementation 'com.intellij:annotations:12.0'
+  implementation 'com.fasterxml.jackson.core:jackson-databind:2.9.8'
+  implementation 'com.fasterxml.jackson.core:jackson-core:2.9.8'
+  implementation 'com.google.code.gson:gson:2.8.5'
+  implementation 'com.squareup.retrofit2:retrofit:2.5.0'
+  implementation 'io.reactivex:rxjava:1.3.8'
+  implementation 'io.reactivex:rxjava-math:1.0.0'
+  testImplementation 'junit:junit:4.12'
+  testImplementation 'org.assertj:assertj-core:2.4.1'
 }
 
 jacoco {
