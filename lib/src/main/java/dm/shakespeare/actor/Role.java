@@ -135,7 +135,7 @@ public abstract class Role {
    */
   @NotNull
   public Logger getLogger(@NotNull final String id) throws Exception {
-    return Logger.newLogger(LogPrinters.javaLoggingPrinter(getClass().getName() + "." + id));
+    return Logger.newLogger(LogPrinters.javaLoggingPrinter(getClass().getName()));
   }
 
   /**

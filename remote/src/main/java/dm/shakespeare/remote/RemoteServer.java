@@ -401,17 +401,13 @@ public class RemoteServer extends AbstractStage {
   private Logger getLogger(@Nullable final String senderId) {
     Logger logger = null;
     try {
-      logger = mConfig.getLogger();
+      logger = mConfig.getLogger(senderId);
 
     } catch (final Exception e) {
       mLogger.err(e, "failed to get logger");
     }
 
-    if (logger == null) {
-      return (senderId != null) ? Logger.newLogger(
-          LogPrinters.javaLoggingPrinter(getClass().getName() + "." + senderId)) : mLogger;
-    }
-    return logger;
+    return (logger != null) ? logger : mLogger;
   }
 
   @NotNull
