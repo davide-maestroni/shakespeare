@@ -46,20 +46,20 @@ class LocalAgent implements Agent {
 
   private static final DeadLetter DEAD_LETTER = new DeadLetter();
 
-  private final ActorExecutorService mActorExecutorService;
-  private final Logger mLogger;
-  private final HashSet<Actor> mObservers = new HashSet<Actor>();
+  private final ActorExecutorService actorExecutorService;
+  private final Logger logger;
+  private final HashSet<Actor> observers = new HashSet<Actor>();
 
-  private Actor mActor;
-  private AgentExecutorService mAgentExecutorService;
-  private AgentScheduledExecutorService mAgentScheduledExecutorService;
-  private Behavior mBehavior;
-  private BehaviorWrapper mBehaviorWrapper = new BehaviorStarter();
-  private Runnable mDismissRunnable;
-  private volatile boolean mDismissed;
-  private Runnable mRestartRunnable;
-  private volatile Thread mRunner;
-  private boolean mStopped;
+  private Actor actor;
+  private AgentExecutorService agentExecutorService;
+  private AgentScheduledExecutorService agentScheduledExecutorService;
+  private Behavior behavior;
+  private BehaviorWrapper behaviorWrapper = new BehaviorStarter();
+  private Runnable dismissRunnable;
+  private volatile boolean dismissed;
+  private Runnable restartRunnable;
+  private volatile Thread runner;
+  private boolean stopped;
 
   /**
    * Creates a new agent instance.
@@ -70,117 +70,116 @@ class LocalAgent implements Agent {
    */
   LocalAgent(@NotNull final Behavior behavior, @NotNull final ExecutorService executorService,
       @NotNull final Logger logger) {
-    mBehavior = ConstantConditions.notNull("behavior", behavior);
-    mActorExecutorService =
+    this.behavior = ConstantConditions.notNull("behavior", behavior);
+    actorExecutorService =
         (executorService instanceof ScheduledExecutorService) ? ExecutorServices.asActorExecutor(
             (ScheduledExecutorService) executorService)
             : ExecutorServices.asActorExecutor(executorService);
-    mLogger = ConstantConditions.notNull("logger", logger);
+    this.logger = ConstantConditions.notNull("logger", logger);
   }
 
   public void dismissSelf() {
-    mLogger.dbg("[%s] dismissing self", mActor);
-    mDismissed = true;
-    if (mDismissRunnable == null) {
-      mDismissRunnable = new Runnable() {
+    logger.dbg("[%s] dismissing self", actor);
+    dismissed = true;
+    if (dismissRunnable == null) {
+      dismissRunnable = new Runnable() {
 
         public void run() {
-          mBehaviorWrapper.onStop(LocalAgent.this);
+          behaviorWrapper.onStop(LocalAgent.this);
         }
       };
     }
-    mActorExecutorService.executeNext(mDismissRunnable);
+    actorExecutorService.executeNext(dismissRunnable);
   }
 
   @NotNull
   public ExecutorService getExecutorService() {
-    if (mAgentExecutorService == null) {
-      final ActorExecutorService actorExecutorService = mActorExecutorService;
+    if (agentExecutorService == null) {
+      final ActorExecutorService actorExecutorService = this.actorExecutorService;
       if (actorExecutorService instanceof ScheduledExecutorService) {
-        mAgentExecutorService = (mAgentScheduledExecutorService =
+        agentExecutorService = (agentScheduledExecutorService =
             new AgentScheduledExecutorService((ScheduledExecutorService) actorExecutorService,
                 this));
 
       } else {
-        mAgentExecutorService = new AgentExecutorService(actorExecutorService, this);
+        agentExecutorService = new AgentExecutorService(actorExecutorService, this);
       }
     }
-    return mAgentExecutorService;
+    return agentExecutorService;
   }
 
   @NotNull
   public Logger getLogger() {
-    return mLogger;
+    return logger;
   }
 
   @NotNull
   public ScheduledExecutorService getScheduledExecutorService() {
-    if (mAgentScheduledExecutorService == null) {
-      final ActorExecutorService actorExecutorService = mActorExecutorService;
+    if (agentScheduledExecutorService == null) {
+      final ActorExecutorService actorExecutorService = this.actorExecutorService;
       if (actorExecutorService instanceof ScheduledExecutorService) {
-        mAgentExecutorService = (mAgentScheduledExecutorService =
+        agentExecutorService = (agentScheduledExecutorService =
             new AgentScheduledExecutorService((ScheduledExecutorService) actorExecutorService,
                 this));
 
       } else {
-        mAgentScheduledExecutorService =
-            new AgentScheduledExecutorService(ExecutorServices.asScheduled(mActorExecutorService),
-                this);
+        agentScheduledExecutorService = new AgentScheduledExecutorService(
+            ExecutorServices.asScheduled(this.actorExecutorService), this);
       }
     }
-    return mAgentScheduledExecutorService;
+    return agentScheduledExecutorService;
   }
 
   @NotNull
   public Actor getSelf() {
-    return mActor;
+    return actor;
   }
 
   public boolean isDismissed() {
-    return mStopped || mDismissed;
+    return stopped || dismissed;
   }
 
   public void restartSelf() {
-    mLogger.dbg("[%s] restarting self", mActor);
-    if (mRestartRunnable == null) {
-      mRestartRunnable = new Runnable() {
+    logger.dbg("[%s] restarting self", actor);
+    if (restartRunnable == null) {
+      restartRunnable = new Runnable() {
 
         public void run() {
-          final Thread runner = (mRunner = Thread.currentThread());
+          final Thread runner = (LocalAgent.this.runner = Thread.currentThread());
           try {
-            mBehaviorWrapper.onRestart(LocalAgent.this);
+            behaviorWrapper.onRestart(LocalAgent.this);
 
           } finally {
-            mRunner = null;
+            LocalAgent.this.runner = null;
           }
 
           if (runner.isInterrupted()) {
-            mLogger.wrn("[%s] thread has been interrupted!", mActor);
-            mBehaviorWrapper.onStop(LocalAgent.this);
+            logger.wrn("[%s] thread has been interrupted!", actor);
+            behaviorWrapper.onStop(LocalAgent.this);
           }
         }
       };
     }
-    mActorExecutorService.executeNext(mRestartRunnable);
+    actorExecutorService.executeNext(restartRunnable);
   }
 
   public void setBehavior(@NotNull final Behavior behavior) {
-    mLogger.dbg("[%s] setting new behavior: behavior=%s", mActor, behavior);
-    mBehavior = ConstantConditions.notNull("behavior", behavior);
+    logger.dbg("[%s] setting new behavior: behavior=%s", actor, behavior);
+    this.behavior = ConstantConditions.notNull("behavior", behavior);
   }
 
   void addObserver(@NotNull final Actor observer) {
-    if (mStopped) {
+    if (stopped) {
       reply(observer, DEAD_LETTER, null);
 
     } else {
-      mObservers.add(observer);
+      observers.add(observer);
     }
   }
 
   void dismiss(final boolean mayInterruptIfRunning) {
     if (mayInterruptIfRunning) {
-      final Thread runner = mRunner;
+      final Thread runner = this.runner;
       if (runner != null) {
         runner.interrupt();
       }
@@ -190,21 +189,21 @@ class LocalAgent implements Agent {
 
   @NotNull
   ActorExecutorService getActorExecutorService() {
-    return mActorExecutorService;
+    return actorExecutorService;
   }
 
   void message(final Object message, @NotNull final Envelop envelop) {
-    final Thread runner = (mRunner = Thread.currentThread());
+    final Thread runner = (this.runner = Thread.currentThread());
     try {
-      mBehaviorWrapper.onMessage(message, envelop, this);
+      behaviorWrapper.onMessage(message, envelop, this);
 
     } finally {
-      mRunner = null;
+      this.runner = null;
     }
 
     if (runner.isInterrupted()) {
-      mLogger.wrn("[%s] thread has been interrupted!", mActor);
-      mBehaviorWrapper.onStop(this);
+      logger.wrn("[%s] thread has been interrupted!", actor);
+      behaviorWrapper.onStop(this);
     }
   }
 
@@ -218,68 +217,68 @@ class LocalAgent implements Agent {
       replyAll(envelop.getSender(), bounces, options.threadOnly());
       return;
     }
-    final Thread runner = (mRunner = Thread.currentThread());
+    final Thread runner = (this.runner = Thread.currentThread());
     try {
       for (final Object message : messages) {
-        mBehaviorWrapper.onMessage(message, envelop, this);
+        behaviorWrapper.onMessage(message, envelop, this);
       }
 
     } finally {
-      mRunner = null;
+      this.runner = null;
     }
 
     if (runner.isInterrupted()) {
-      mLogger.wrn("[%s] thread has been interrupted!", mActor);
-      mBehaviorWrapper.onStop(this);
+      logger.wrn("[%s] thread has been interrupted!", actor);
+      behaviorWrapper.onStop(this);
     }
   }
 
   void removeObserver(@NotNull final Actor observer) {
-    mObservers.remove(observer);
+    observers.remove(observer);
   }
 
   void reply(@NotNull final Actor actor, final Object message, @Nullable final Options options) {
-    final Actor self = mActor;
-    mLogger.dbg("[%s] replying: actor=%s - options=%s - message=%s", self, actor, options, message);
+    final Actor self = this.actor;
+    logger.dbg("[%s] replying: actor=%s - options=%s - message=%s", self, actor, options, message);
     try {
       actor.tell(message, options, self);
 
     } catch (final RejectedExecutionException e) {
-      mLogger.err(e, "[%s] ignoring exception", self);
+      logger.err(e, "[%s] ignoring exception", self);
     }
   }
 
   void replyAll(@NotNull final Actor actor, @NotNull final Iterable<?> messages,
       @Nullable final Options options) {
-    final Actor self = mActor;
-    mLogger.dbg("[%s] replying all: actor=%s - options=%s - message=%s", self, actor, options,
+    final Actor self = this.actor;
+    logger.dbg("[%s] replying all: actor=%s - options=%s - message=%s", self, actor, options,
         messages);
     try {
       actor.tellAll(messages, options, self);
 
     } catch (final RejectedExecutionException e) {
-      mLogger.err(e, "[%s] ignoring exception", self);
+      logger.err(e, "[%s] ignoring exception", self);
     }
   }
 
   void setActor(@NotNull final Actor actor) {
-    mActor = ConstantConditions.notNull("actor", actor);
+    this.actor = ConstantConditions.notNull("actor", actor);
   }
 
   private void cancelTasks() {
-    final AgentExecutorService executorService = mAgentExecutorService;
+    final AgentExecutorService executorService = agentExecutorService;
     if (executorService != null) {
       executorService.cancelAll(true);
     }
-    final AgentScheduledExecutorService scheduledExecutorService = mAgentScheduledExecutorService;
+    final AgentScheduledExecutorService scheduledExecutorService = agentScheduledExecutorService;
     if (scheduledExecutorService != null) {
       scheduledExecutorService.cancelAll(true);
     }
   }
 
   private void setStopped() {
-    mStopped = true;
-    for (final Actor observer : mObservers) {
+    stopped = true;
+    for (final Actor observer : observers) {
       reply(observer, DEAD_LETTER, null);
     }
   }
@@ -289,7 +288,7 @@ class LocalAgent implements Agent {
     @Override
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) {
-      mBehaviorWrapper = new BehaviorWrapper();
+      behaviorWrapper = new BehaviorWrapper();
       super.onStart(agent);
       super.onMessage(message, envelop, agent);
     }
@@ -303,7 +302,7 @@ class LocalAgent implements Agent {
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) {
-      mLogger.dbg("[%s] handling new message: envelop=%s - message=%s", mActor, envelop, message);
+      logger.dbg("[%s] handling new message: envelop=%s - message=%s", actor, envelop, message);
       if (isDismissed()) {
         final Options options = envelop.getOptions();
         if (options.getReceiptId() != null) {
@@ -314,7 +313,7 @@ class LocalAgent implements Agent {
       final Options options = envelop.getOptions();
       if (options.getReceiptId() != null) {
         try {
-          mBehavior.onMessage(message, envelop, agent);
+          behavior.onMessage(message, envelop, agent);
           if (!envelop.isPreventReceipt()) {
             reply(envelop.getSender(), new Delivery(message, options), options.threadOnly());
           }
@@ -331,7 +330,7 @@ class LocalAgent implements Agent {
 
       } else {
         try {
-          mBehavior.onMessage(message, envelop, agent);
+          behavior.onMessage(message, envelop, agent);
 
         } catch (final Throwable t) {
           onStop(agent);
@@ -343,14 +342,14 @@ class LocalAgent implements Agent {
     }
 
     public void onStart(@NotNull final Agent agent) {
-      mLogger.dbg("[%s] staring actor", mActor);
+      logger.dbg("[%s] staring actor", actor);
       try {
-        mBehavior.onStart(agent);
+        behavior.onStart(agent);
 
       } catch (final Throwable t) {
         setStopped();
         cancelTasks();
-        mLogger.wrn(t, "[%s] ignoring exception", mActor);
+        logger.wrn(t, "[%s] ignoring exception", actor);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }
@@ -358,16 +357,16 @@ class LocalAgent implements Agent {
     }
 
     public void onStop(@NotNull final Agent agent) {
-      if (mStopped) {
+      if (stopped) {
         return;
       }
-      mLogger.dbg("[%s] stopping actor", mActor);
+      logger.dbg("[%s] stopping actor", actor);
       setStopped();
       try {
-        mBehavior.onStop(agent);
+        behavior.onStop(agent);
 
       } catch (final Throwable t) {
-        mLogger.wrn(t, "[%s] ignoring exception", mActor);
+        logger.wrn(t, "[%s] ignoring exception", actor);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }
@@ -381,7 +380,7 @@ class LocalAgent implements Agent {
       if (isDismissed()) {
         return;
       }
-      final Behavior behavior = mBehavior;
+      final Behavior behavior = LocalAgent.this.behavior;
       try {
         behavior.onStop(agent);
         behavior.onStart(agent);
@@ -389,7 +388,7 @@ class LocalAgent implements Agent {
       } catch (final Throwable t) {
         setStopped();
         cancelTasks();
-        mLogger.wrn(t, "[%s] ignoring exception", mActor);
+        logger.wrn(t, "[%s] ignoring exception", actor);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }

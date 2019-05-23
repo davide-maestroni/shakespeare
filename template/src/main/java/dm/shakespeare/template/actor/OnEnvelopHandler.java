@@ -81,16 +81,16 @@ class OnEnvelopHandler implements AnnotationHandler<OnEnvelop> {
 
   private static class MessageTester implements Tester<Envelop> {
 
-    private final Method mMethod;
-    private final Object mObject;
+    private final Method method;
+    private final Object object;
 
     private MessageTester(@NotNull final Object object, @NotNull final Method method) {
-      mObject = object;
-      mMethod = Reflections.makeAccessible(method);
+      this.object = object;
+      this.method = Reflections.makeAccessible(method);
     }
 
     public boolean test(final Envelop envelop) throws Exception {
-      return (Boolean) mMethod.invoke(mObject, envelop);
+      return (Boolean) method.invoke(object, envelop);
     }
   }
 }

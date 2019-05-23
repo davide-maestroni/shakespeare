@@ -29,17 +29,17 @@ public class PoisonableBehavior implements Behavior {
 
   public static final Object POISON_PILL = new Object();
 
-  private final AgentWrapper mAgent;
+  private final AgentWrapper agent;
 
-  private Behavior mBehavior;
+  private Behavior behavior;
 
   PoisonableBehavior(@NotNull final Behavior behavior) {
-    mBehavior = ConstantConditions.notNull("behavior", behavior);
-    mAgent = new AgentWrapper() {
+    this.behavior = ConstantConditions.notNull("behavior", behavior);
+    agent = new AgentWrapper() {
 
       @Override
       public void setBehavior(@NotNull final Behavior behavior) {
-        mBehavior = ConstantConditions.notNull("behavior", behavior);
+        PoisonableBehavior.this.behavior = ConstantConditions.notNull("behavior", behavior);
       }
     };
   }
@@ -50,14 +50,14 @@ public class PoisonableBehavior implements Behavior {
       agent.dismissSelf();
       return;
     }
-    mBehavior.onMessage(message, envelop, mAgent.withAgent(agent));
+    behavior.onMessage(message, envelop, this.agent.withAgent(agent));
   }
 
   public void onStart(@NotNull final Agent agent) throws Exception {
-    mBehavior.onStart(mAgent.withAgent(agent));
+    behavior.onStart(this.agent.withAgent(agent));
   }
 
   public void onStop(@NotNull final Agent agent) throws Exception {
-    mBehavior.onStop(mAgent.withAgent(agent));
+    behavior.onStop(this.agent.withAgent(agent));
   }
 }

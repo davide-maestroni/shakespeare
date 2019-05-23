@@ -30,14 +30,14 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class ListMemory implements Memory {
 
-  private final List<Object> mData;
+  private final List<Object> data;
 
   public ListMemory() {
     this(new ArrayList<Object>());
   }
 
   public ListMemory(@NotNull final List<Object> list) {
-    mData = ConstantConditions.notNull("list", list);
+    data = ConstantConditions.notNull("list", list);
   }
 
   @NotNull
@@ -46,21 +46,21 @@ public class ListMemory implements Memory {
   }
 
   public void put(final Object value) {
-    mData.add(value);
+    data.add(value);
   }
 
   private class MemoryIterator implements Iterator<Object> {
 
-    private int mIndex;
+    private int index;
 
     public boolean hasNext() {
-      return mIndex < mData.size();
+      return index < data.size();
     }
 
     public Object next() {
       try {
-        final Object next = mData.get(mIndex);
-        ++mIndex;
+        final Object next = data.get(index);
+        ++index;
         return next;
 
       } catch (final IndexOutOfBoundsException e) {

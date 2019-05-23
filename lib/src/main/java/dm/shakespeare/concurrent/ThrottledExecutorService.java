@@ -33,13 +33,13 @@ import dm.shakespeare.util.ConstantConditions;
  */
 class ThrottledExecutorService extends AbstractExecutorService {
 
-  private final ExecutorService mExecutorService;
-  private final int mMaxConcurrency;
-  private final Object mMutex = new Object();
-  private final CQueue<Runnable> mQueue = new CQueue<Runnable>();
-  private final ThrottledRunnable mRunnable = new ThrottledRunnable();
+  private final ExecutorService executorService;
+  private final int maxConcurrency;
+  private final Object mutex = new Object();
+  private final CQueue<Runnable> queue = new CQueue<Runnable>();
+  private final ThrottledRunnable runnable = new ThrottledRunnable();
 
-  private int mPendingCount;
+  private int pendingCount;
 
   /**
    * Creates a new executor service wrapping the specified instance.
@@ -49,31 +49,31 @@ class ThrottledExecutorService extends AbstractExecutorService {
    */
   ThrottledExecutorService(@NotNull final ExecutorService executorService,
       final int maxConcurrency) {
-    mExecutorService = ConstantConditions.notNull("executorService", executorService);
-    mMaxConcurrency = ConstantConditions.positive("maxConcurrency", maxConcurrency);
+    this.executorService = ConstantConditions.notNull("executorService", executorService);
+    this.maxConcurrency = ConstantConditions.positive("maxConcurrency", maxConcurrency);
   }
 
   public void execute(@NotNull final Runnable command) {
-    synchronized (mMutex) {
-      mQueue.add(ConstantConditions.notNull("command", command));
-      if (mPendingCount >= mMaxConcurrency) {
+    synchronized (mutex) {
+      queue.add(ConstantConditions.notNull("command", command));
+      if (pendingCount >= maxConcurrency) {
         return;
       }
-      ++mPendingCount;
+      ++pendingCount;
     }
-    mExecutorService.execute(mRunnable);
+    executorService.execute(runnable);
   }
 
   public void shutdown() {
-    mExecutorService.shutdown();
+    executorService.shutdown();
   }
 
   @NotNull
   public List<Runnable> shutdownNow() {
-    mExecutorService.shutdownNow();
+    executorService.shutdownNow();
     final ArrayList<Runnable> commands;
-    synchronized (mMutex) {
-      final CQueue<Runnable> queue = mQueue;
+    synchronized (mutex) {
+      final CQueue<Runnable> queue = this.queue;
       commands = new ArrayList<Runnable>(queue);
       queue.clear();
     }
@@ -81,37 +81,37 @@ class ThrottledExecutorService extends AbstractExecutorService {
   }
 
   public boolean isShutdown() {
-    return mExecutorService.isShutdown();
+    return executorService.isShutdown();
   }
 
   public boolean isTerminated() {
-    return mExecutorService.isTerminated();
+    return executorService.isTerminated();
   }
 
   public boolean awaitTermination(final long timeout, @NotNull final TimeUnit unit) throws
       InterruptedException {
-    return mExecutorService.awaitTermination(timeout, unit);
+    return executorService.awaitTermination(timeout, unit);
   }
 
   void executeNext(@NotNull final Runnable command) {
-    synchronized (mMutex) {
-      mQueue.addFirst(ConstantConditions.notNull("command", command));
-      if (mPendingCount >= mMaxConcurrency) {
+    synchronized (mutex) {
+      queue.addFirst(ConstantConditions.notNull("command", command));
+      if (pendingCount >= maxConcurrency) {
         return;
       }
-      ++mPendingCount;
+      ++pendingCount;
     }
-    mExecutorService.execute(mRunnable);
+    executorService.execute(runnable);
   }
 
   private class ThrottledRunnable implements Runnable {
 
     public void run() {
       final Runnable command;
-      synchronized (mMutex) {
-        command = mQueue.poll();
+      synchronized (mutex) {
+        command = queue.poll();
         if (command == null) {
-          --mPendingCount;
+          --pendingCount;
           return;
         }
       }
@@ -120,7 +120,7 @@ class ThrottledExecutorService extends AbstractExecutorService {
         command.run();
 
       } finally {
-        mExecutorService.execute(this);
+        executorService.execute(this);
       }
     }
   }

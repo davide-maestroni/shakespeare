@@ -26,10 +26,10 @@ import dm.shakespeare.util.ConstantConditions;
  */
 class Conflict {
 
-  private final Throwable mIncident;
+  private final Throwable incident;
 
   Conflict(@NotNull final Throwable incident) {
-    mIncident = ConstantConditions.notNull("incident", incident);
+    this.incident = ConstantConditions.notNull("incident", incident);
   }
 
   @NotNull
@@ -44,6 +44,6 @@ class Conflict {
 
   @NotNull
   Throwable getCause() {
-    return mIncident;
+    return incident;
   }
 }

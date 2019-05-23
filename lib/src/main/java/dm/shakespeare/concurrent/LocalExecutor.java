@@ -30,23 +30,23 @@ import dm.shakespeare.util.CQueue;
 class LocalExecutor implements Executor {
 
   private static final int INITIAL_CAPACITY = 1 << 3;
-  private static final Logger sLogger =
+  private static final Logger logger =
       Logger.newLogger(LogPrinters.javaLoggingPrinter(LocalExecutor.class.getName()));
 
-  private final CQueue<Runnable> mCommands = new CQueue<Runnable>(INITIAL_CAPACITY);
+  private final CQueue<Runnable> commands = new CQueue<Runnable>(INITIAL_CAPACITY);
 
-  private boolean mIsRunning;
+  private boolean isRunning;
 
   public void execute(@NotNull final Runnable command) {
-    mCommands.add(command);
-    if (!mIsRunning) {
+    commands.add(command);
+    if (!isRunning) {
       execute();
     }
   }
 
   private void execute() {
-    mIsRunning = true;
-    @SuppressWarnings("UnnecessaryLocalVariable") final CQueue<Runnable> commands = mCommands;
+    isRunning = true;
+    @SuppressWarnings("UnnecessaryLocalVariable") final CQueue<Runnable> commands = this.commands;
     try {
       Runnable command;
       while ((command = commands.poll()) != null) {
@@ -54,7 +54,7 @@ class LocalExecutor implements Executor {
           command.run();
 
         } catch (final Throwable t) {
-          sLogger.wrn(t, "suppressed exception");
+          logger.wrn(t, "suppressed exception");
           if (Thread.currentThread().isInterrupted()) {
             return;
           }
@@ -62,7 +62,7 @@ class LocalExecutor implements Executor {
       }
 
     } finally {
-      mIsRunning = false;
+      isRunning = false;
     }
   }
 }

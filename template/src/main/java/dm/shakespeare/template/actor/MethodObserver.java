@@ -33,16 +33,16 @@ class MethodObserver implements Observer<Agent> {
 
   private static final Object[] EMPTY_ARGS = new Object[0];
 
-  private final Method mMethod;
-  private final Object mObject;
+  private final Method method;
+  private final Object object;
 
   MethodObserver(@NotNull final Object object, @NotNull final Method method) {
-    mObject = ConstantConditions.notNull("object", object);
-    mMethod = Reflections.makeAccessible(method);
+    this.object = ConstantConditions.notNull("object", object);
+    this.method = Reflections.makeAccessible(method);
   }
 
   public void accept(final Agent agent) throws Exception {
-    final Method method = mMethod;
+    final Method method = this.method;
     final Class<?>[] parameterTypes = method.getParameterTypes();
     final int length = parameterTypes.length;
     final Object[] args;
@@ -57,6 +57,6 @@ class MethodObserver implements Observer<Agent> {
     } else {
       args = EMPTY_ARGS;
     }
-    method.invoke(mObject, args);
+    method.invoke(object, args);
   }
 }

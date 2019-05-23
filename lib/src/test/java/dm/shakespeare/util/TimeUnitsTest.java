@@ -433,14 +433,14 @@ public class TimeUnitsTest {
 
   private abstract static class WaitSinceThread extends Thread {
 
-    private boolean mIsCalled;
+    private boolean isCalled;
 
     @Override
     public void run() {
       synchronized (this) {
         try {
           assertThat(await()).isTrue();
-          mIsCalled = true;
+          isCalled = true;
 
         } catch (InterruptedException ignored) {
         }
@@ -451,14 +451,14 @@ public class TimeUnitsTest {
 
     boolean isCalled() {
       synchronized (this) {
-        return mIsCalled;
+        return isCalled;
       }
     }
 
     boolean unlock() {
       final boolean isCalled;
       synchronized (this) {
-        isCalled = mIsCalled;
+        isCalled = this.isCalled;
         notifyAll();
       }
       return isCalled;

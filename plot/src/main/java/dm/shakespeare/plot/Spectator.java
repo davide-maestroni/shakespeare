@@ -18,7 +18,7 @@ package dm.shakespeare.plot;
 
 import org.jetbrains.annotations.NotNull;
 
-import dm.shakespeare.BackStage;
+import dm.shakespeare.Stage;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -32,25 +32,25 @@ public class Spectator {
   static final Object PAUSE = new Object();
   static final Object RESUME = new Object();
 
-  private final Actor mActor;
+  private final Actor actor;
 
   Spectator(@NotNull final Actor actor) {
-    mActor = ConstantConditions.notNull("actor", actor);
+    this.actor = ConstantConditions.notNull("actor", actor);
   }
 
   void cancel(final boolean thenDismiss) {
-    mActor.tell(thenDismiss ? CANCEL_AND_DISMISS : CANCEL, null, BackStage.STAND_IN);
+    actor.tell(thenDismiss ? CANCEL_AND_DISMISS : CANCEL, null, Stage.STAND_IN);
   }
 
   void dismiss() {
-    mActor.dismiss(false);
+    actor.dismiss(false);
   }
 
   void pause() {
-    mActor.tell(PAUSE, null, BackStage.STAND_IN);
+    actor.tell(PAUSE, null, Stage.STAND_IN);
   }
 
   void resume() {
-    mActor.tell(RESUME, null, BackStage.STAND_IN);
+    actor.tell(RESUME, null, Stage.STAND_IN);
   }
 }

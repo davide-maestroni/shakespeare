@@ -34,7 +34,7 @@ import dm.shakespeare.util.ConstantConditions;
  */
 class LocalActorSet extends AbstractSet<Actor> implements ActorSet {
 
-  private final Set<Actor> mActors;
+  private final Set<Actor> actors;
 
   /**
    * Creates a new actor set.
@@ -42,26 +42,26 @@ class LocalActorSet extends AbstractSet<Actor> implements ActorSet {
    * @param actors the set of actors.
    */
   LocalActorSet(@NotNull final Set<? extends Actor> actors) {
-    mActors = Collections.unmodifiableSet(ConstantConditions.notNullElements("actors", actors));
+    this.actors = Collections.unmodifiableSet(ConstantConditions.notNullElements("actors", actors));
   }
 
   @NotNull
   public ActorSet addObserver(@NotNull final Actor observer) {
-    for (final Actor actor : mActors) {
+    for (final Actor actor : actors) {
       actor.addObserver(observer);
     }
     return this;
   }
 
   public void dismiss(final boolean mayInterruptIfRunning) {
-    for (final Actor actor : mActors) {
+    for (final Actor actor : actors) {
       actor.dismiss(mayInterruptIfRunning);
     }
   }
 
   @NotNull
   public ActorSet removeObserver(@NotNull final Actor observer) {
-    for (final Actor actor : mActors) {
+    for (final Actor actor : actors) {
       actor.removeObserver(observer);
     }
     return this;
@@ -70,7 +70,7 @@ class LocalActorSet extends AbstractSet<Actor> implements ActorSet {
   @NotNull
   public ActorSet tell(final Object message, @Nullable final Options options,
       @NotNull final Actor sender) {
-    for (final Actor actor : mActors) {
+    for (final Actor actor : actors) {
       actor.tell(message, options, sender);
     }
     return this;
@@ -79,7 +79,7 @@ class LocalActorSet extends AbstractSet<Actor> implements ActorSet {
   @NotNull
   public ActorSet tellAll(@NotNull final Iterable<?> messages, @Nullable final Options options,
       @NotNull final Actor sender) {
-    for (final Actor actor : mActors) {
+    for (final Actor actor : actors) {
       actor.tellAll(messages, options, sender);
     }
     return this;
@@ -87,20 +87,20 @@ class LocalActorSet extends AbstractSet<Actor> implements ActorSet {
 
   @NotNull
   public Iterator<Actor> iterator() {
-    return mActors.iterator();
+    return actors.iterator();
   }
 
   public int size() {
-    return mActors.size();
+    return actors.size();
   }
 
   @Override
   public boolean isEmpty() {
-    return mActors.isEmpty();
+    return actors.isEmpty();
   }
 
   @Override
   public boolean contains(final Object o) {
-    return mActors.contains(o);
+    return actors.contains(o);
   }
 }

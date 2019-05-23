@@ -37,15 +37,15 @@ import dm.shakespeare.util.ConstantConditions;
  */
 class TrampolineExecutorService extends AbstractExecutorService {
 
-  private final Queue<Runnable> mCommands;
-  private final AtomicBoolean mIsRunning = new AtomicBoolean();
-  private final AtomicBoolean mIsShutdown = new AtomicBoolean();
+  private final Queue<Runnable> commands;
+  private final AtomicBoolean isRunning = new AtomicBoolean();
+  private final AtomicBoolean isShutdown = new AtomicBoolean();
 
   /**
    * Creates a new trampoline executor service.
    */
   TrampolineExecutorService() {
-    mCommands = new ConcurrentLinkedQueue<Runnable>();
+    commands = new ConcurrentLinkedQueue<Runnable>();
   }
 
   /**
@@ -54,25 +54,25 @@ class TrampolineExecutorService extends AbstractExecutorService {
    * @param commandQueue the internal command queue.
    */
   TrampolineExecutorService(@NotNull final BlockingQueue<Runnable> commandQueue) {
-    mCommands = ConstantConditions.notNull("commandQueue", commandQueue);
+    commands = ConstantConditions.notNull("commandQueue", commandQueue);
   }
 
   public void execute(@NotNull final Runnable command) {
-    if (mIsShutdown.get()) {
+    if (isShutdown.get()) {
       throw new RejectedExecutionException();
     }
     run(command);
   }
 
   public void shutdown() {
-    mIsShutdown.set(true);
+    isShutdown.set(true);
   }
 
   @NotNull
   public List<Runnable> shutdownNow() {
-    mIsShutdown.set(true);
+    isShutdown.set(true);
     final ArrayList<Runnable> pending = new ArrayList<Runnable>();
-    final Queue<Runnable> commands = mCommands;
+    final Queue<Runnable> commands = this.commands;
     Runnable nextCommand;
     while ((nextCommand = commands.poll()) != null) {
       pending.add(nextCommand);
@@ -82,11 +82,11 @@ class TrampolineExecutorService extends AbstractExecutorService {
   }
 
   public boolean isShutdown() {
-    return mIsShutdown.get();
+    return isShutdown.get();
   }
 
   public boolean isTerminated() {
-    return mIsShutdown.get() && mCommands.isEmpty();
+    return isShutdown.get() && commands.isEmpty();
   }
 
   public boolean awaitTermination(final long timeout, @NotNull final TimeUnit unit) throws
@@ -97,9 +97,9 @@ class TrampolineExecutorService extends AbstractExecutorService {
   }
 
   private void run(@NotNull final Runnable command) {
-    final Queue<Runnable> commands = mCommands;
+    final Queue<Runnable> commands = this.commands;
     commands.add(command);
-    final AtomicBoolean isRunning = mIsRunning;
+    final AtomicBoolean isRunning = this.isRunning;
     if (!isRunning.getAndSet(true)) {
       try {
         Runnable nextCommand;
@@ -115,14 +115,14 @@ class TrampolineExecutorService extends AbstractExecutorService {
 
   private static class RunnableLatch implements Runnable {
 
-    private final CountDownLatch mLatch = new CountDownLatch(1);
+    private final CountDownLatch latch = new CountDownLatch(1);
 
     public void run() {
-      mLatch.countDown();
+      latch.countDown();
     }
 
     boolean await(final long timeout, @NotNull final TimeUnit unit) throws InterruptedException {
-      return mLatch.await(timeout, unit);
+      return latch.await(timeout, unit);
     }
   }
 }

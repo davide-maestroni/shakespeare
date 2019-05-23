@@ -29,8 +29,7 @@ import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import dm.shakespeare.AbstractStage;
-import dm.shakespeare.BackStage;
+import dm.shakespeare.Stage;
 import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.ActorSet;
@@ -65,7 +64,7 @@ import dm.shakespeare.remote.util.SerializableData;
 /**
  * Created by davide-maestroni on 04/11/2019.
  */
-public class RemoteServer extends AbstractStage {
+public class RemoteServer extends Stage {
 
   private static final Capabilities EMPTY = new Capabilities();
 
@@ -100,7 +99,7 @@ public class RemoteServer extends AbstractStage {
       }
       final String actorId = UUID.randomUUID().toString();
       mOptions = new Options().withReceiptId(actorId);
-      addObserver(mActor = BackStage.newActor(actorId, new Role() {
+      addObserver(mActor = Stage.newActor(actorId, new Role() {
 
         @NotNull
         @Override
@@ -153,7 +152,8 @@ public class RemoteServer extends AbstractStage {
                               .withError(new IllegalStateException()), senderId);
 
                         } else {
-                          final Actor actor = newActor(actorRef.getId(), (Role) role);
+                          final Actor actor =
+                              RemoteServer.this.buildActor(actorRef.getId(), (Role) role);
                           mActorHashes.put(actor, actorRef.getHash());
                           safeSend(new CreateActorResponse().withRecipientRef(actorRef), senderId);
                         }
@@ -255,9 +255,8 @@ public class RemoteServer extends AbstractStage {
                     }
 
                   } else {
-                    safeSend(new CreateActorResponse().withRecipientRef(actorRef)
-                            .withError(new UnsupportedOperationException(Capabilities.CREATE_REMOTE)),
-                        senderId);
+                    safeSend(new RemoteBounce().withError(
+                        new UnsupportedOperationException(Capabilities.CREATE_REMOTE)), senderId);
                   }
                 }
 
@@ -280,7 +279,7 @@ public class RemoteServer extends AbstractStage {
                   }
 
                 } else {
-                  safeSend(new CreateActorResponse().withError(
+                  safeSend(new RemoteBounce().withError(
                       new UnsupportedOperationException(Capabilities.CREATE_REMOTE)), senderId);
                 }
 
@@ -317,7 +316,7 @@ public class RemoteServer extends AbstractStage {
               mSender = mConnector.connect(new Receiver() {
 
                 public void receive(@NotNull final Remote remote) {
-                  mActor.tell(remote, mOptions, BackStage.newActor(new BounceRole()));
+                  mActor.tell(remote, mOptions, Stage.newActor(new BounceRole()));
                 }
               });
             }
@@ -334,7 +333,7 @@ public class RemoteServer extends AbstractStage {
         public ExecutorService getExecutorService(@NotNull final String id) {
           return Executors.newSingleThreadExecutor();
         }
-      }).tell(null, null, BackStage.STAND_IN));
+      }).tell(null, null, Stage.STAND_IN));
     }
   }
 
@@ -348,13 +347,13 @@ public class RemoteServer extends AbstractStage {
   }
 
   @NotNull
-  protected Actor createActor(@NotNull final String id, @NotNull final Role role) {
+  protected Actor buildActor(@NotNull final String id, @NotNull final Role role) {
     synchronized (mMutex) {
       if (mActor == null) {
         throw new IllegalStateException("not started");
       }
     }
-    return BackStage.newActor(id, role);
+    return Stage.newActor(id, role);
   }
 
   @NotNull
@@ -422,7 +421,7 @@ public class RemoteServer extends AbstractStage {
     }
 
     if (sender == null) {
-      sender = BackStage.newActor(senderRef.getId(), new RemoteSenderRole(senderId));
+      sender = Stage.newActor(senderRef.getId(), new RemoteSenderRole(senderId));
       senders.put(sender, senderRef);
     }
     return sender;

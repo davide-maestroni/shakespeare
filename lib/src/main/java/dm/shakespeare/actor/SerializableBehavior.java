@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-package dm.shakespeare;
+package dm.shakespeare.actor;
+
+import java.io.Serializable;
 
 /**
- * Created by davide-maestroni on 03/05/2019.
+ * Created by davide-maestroni on 05/22/2019.
  */
-public class LocalStageTest {}
+public interface SerializableBehavior extends Behavior, Serializable {
+
+}

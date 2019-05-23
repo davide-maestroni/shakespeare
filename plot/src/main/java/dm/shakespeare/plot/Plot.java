@@ -36,30 +36,30 @@ public class Plot {
   // TODO: 15/02/2019 serialization?
   // TODO: 28/02/2019 swagger converter
 
-  private final Setting mSetting;
+  private final Setting setting;
 
   public Plot() {
-    mSetting = new Setting(null, null);
+    setting = new Setting(null, null);
   }
 
   public Plot(@NotNull final ExecutorService executor) {
-    mSetting = new Setting(ConstantConditions.notNull("executor", executor), null);
+    setting = new Setting(ConstantConditions.notNull("executor", executor), null);
   }
 
   public Plot(@NotNull final ExecutorService executor, @NotNull final Logger logger) {
-    mSetting = new Setting(ConstantConditions.notNull("executor", executor),
+    setting = new Setting(ConstantConditions.notNull("executor", executor),
         ConstantConditions.notNull("logger", logger));
   }
 
   public Plot(@NotNull final Logger logger) {
-    mSetting = new Setting(null, ConstantConditions.notNull("logger", logger));
+    setting = new Setting(null, ConstantConditions.notNull("logger", logger));
   }
 
   @NotNull
   @SuppressWarnings("unchecked")
   public <T> Event<T> includeEvent(
       @NotNull final NullaryFunction<? extends Event<? extends T>> eventCreator) {
-    Setting.set(mSetting);
+    Setting.set(setting);
     try {
       return (Event<T>) eventCreator.call();
 
@@ -78,7 +78,7 @@ public class Plot {
   @SuppressWarnings("unchecked")
   public <T> Story<T> includeStory(
       @NotNull final NullaryFunction<? extends Story<? extends T>> storyCreator) {
-    Setting.set(mSetting);
+    Setting.set(setting);
     try {
       return (Story<T>) storyCreator.call();
 
@@ -97,7 +97,7 @@ public class Plot {
   @SuppressWarnings("unchecked")
   public <T> EventNarrator<T> narrateEvent(
       @NotNull final NullaryFunction<? extends EventNarrator<? extends T>> eventCreator) {
-    Setting.set(mSetting);
+    Setting.set(setting);
     try {
       return (EventNarrator<T>) eventCreator.call();
 
@@ -126,7 +126,7 @@ public class Plot {
   @SuppressWarnings("unchecked")
   public <T> StoryNarrator<T> narrateStory(
       @NotNull final NullaryFunction<? extends StoryNarrator<? extends T>> storyCreator) {
-    Setting.set(mSetting);
+    Setting.set(setting);
     try {
       return (StoryNarrator<T>) storyCreator.call();
 

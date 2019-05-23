@@ -37,9 +37,9 @@ import dm.shakespeare.util.ConstantConditions;
  */
 class AgentExecutorService implements ExecutorService {
 
-  private final Agent mAgent;
-  private final ExecutorService mExecutor;
-  private final WeakHashMap<Future<?>, Void> mTasks = new WeakHashMap<Future<?>, Void>();
+  private final Agent agent;
+  private final ExecutorService executorService;
+  private final WeakHashMap<Future<?>, Void> tasks = new WeakHashMap<Future<?>, Void>();
 
   /**
    * Creates a new executor service wrapping the specified one.
@@ -48,52 +48,52 @@ class AgentExecutorService implements ExecutorService {
    * @param agent           the behavior agent.
    */
   AgentExecutorService(@NotNull final ExecutorService executorService, @NotNull final Agent agent) {
-    mExecutor = ConstantConditions.notNull("executorService", executorService);
-    mAgent = ConstantConditions.notNull("agent", agent);
+    this.executorService = ConstantConditions.notNull("executorService", executorService);
+    this.agent = ConstantConditions.notNull("agent", agent);
   }
 
   public void execute(@NotNull final Runnable command) {
-    mTasks.put(mExecutor.submit(command), null);
+    tasks.put(executorService.submit(command), null);
   }
 
   public void shutdown() {
-    mExecutor.shutdown();
-    mTasks.clear();
+    executorService.shutdown();
+    tasks.clear();
   }
 
   @NotNull
   public List<Runnable> shutdownNow() {
-    final List<Runnable> commands = mExecutor.shutdownNow();
-    mTasks.clear();
+    final List<Runnable> commands = executorService.shutdownNow();
+    tasks.clear();
     return commands;
   }
 
   public boolean isShutdown() {
-    return mExecutor.isShutdown();
+    return executorService.isShutdown();
   }
 
   public boolean isTerminated() {
-    return mExecutor.isTerminated();
+    return executorService.isTerminated();
   }
 
   public boolean awaitTermination(final long timeout, @NotNull final TimeUnit unit) throws
       InterruptedException {
-    return mExecutor.awaitTermination(timeout, unit);
+    return executorService.awaitTermination(timeout, unit);
   }
 
   @NotNull
   public <T> Future<T> submit(@NotNull final Callable<T> task) {
-    return wrap(addFuture(mExecutor.submit(wrap(task))));
+    return wrap(addFuture(executorService.submit(wrap(task))));
   }
 
   @NotNull
   public <T> Future<T> submit(@NotNull final Runnable task, final T result) {
-    return wrap(addFuture(mExecutor.submit(wrap(task), result)));
+    return wrap(addFuture(executorService.submit(wrap(task), result)));
   }
 
   @NotNull
   public Future<?> submit(@NotNull final Runnable task) {
-    return wrap(addFuture(mExecutor.submit(wrap(task))));
+    return wrap(addFuture(executorService.submit(wrap(task))));
   }
 
   @NotNull
@@ -119,26 +119,26 @@ class AgentExecutorService implements ExecutorService {
 
   <V, F extends Future<V>> F addFuture(final F future) {
     if (future != null) {
-      mTasks.put(future, null);
+      tasks.put(future, null);
     }
     return future;
   }
 
   void cancelAll(final boolean mayInterruptIfRunning) {
-    for (final Future<?> future : mTasks.keySet()) {
+    for (final Future<?> future : tasks.keySet()) {
       future.cancel(mayInterruptIfRunning);
     }
-    mTasks.clear();
+    tasks.clear();
   }
 
   @NotNull
   <V> Callable<V> wrap(@NotNull final Callable<V> task) {
-    return new AgentCallable<V>(task, mAgent);
+    return new AgentCallable<V>(task, agent);
   }
 
   @NotNull
   Runnable wrap(@NotNull final Runnable task) {
-    return new AgentRunnable(task, mAgent);
+    return new AgentRunnable(task, agent);
   }
 
   @NotNull
@@ -148,41 +148,40 @@ class AgentExecutorService implements ExecutorService {
 
   private static class AgentCallable<V> implements Callable<V> {
 
-    private final Agent mAgent;
-
-    private final Callable<V> mTask;
+    private final Agent agent;
+    private final Callable<V> task;
 
     private AgentCallable(@NotNull final Callable<V> task, @NotNull final Agent agent) {
-      mTask = ConstantConditions.notNull("task", task);
-      mAgent = agent;
+      this.task = ConstantConditions.notNull("task", task);
+      this.agent = agent;
     }
 
     public V call() throws Exception {
-      if (mAgent.isDismissed()) {
+      if (agent.isDismissed()) {
         throw new IllegalStateException();
       }
-      return mTask.call();
+      return task.call();
     }
   }
 
   private static class AgentFuture<V> implements Future<V> {
 
-    private final Future<V> mFuture;
+    private final Future<V> future;
 
     private AgentFuture(@NotNull final Future<V> future) {
-      mFuture = ConstantConditions.notNull("future", future);
+      this.future = ConstantConditions.notNull("future", future);
     }
 
     public boolean cancel(final boolean mayInterruptIfRunning) {
-      return mFuture.cancel(mayInterruptIfRunning);
+      return future.cancel(mayInterruptIfRunning);
     }
 
     public boolean isCancelled() {
-      return mFuture.isCancelled();
+      return future.isCancelled();
     }
 
     public boolean isDone() {
-      return mFuture.isDone();
+      return future.isDone();
     }
 
     public V get() {
@@ -195,7 +194,7 @@ class AgentExecutorService implements ExecutorService {
 
     @Override
     public int hashCode() {
-      return mFuture.hashCode();
+      return future.hashCode();
     }
 
     @Override
@@ -208,24 +207,23 @@ class AgentExecutorService implements ExecutorService {
         return false;
       }
       final AgentFuture<?> that = (AgentFuture<?>) o;
-      return mFuture.equals(that.mFuture);
+      return future.equals(that.future);
     }
   }
 
   private static class AgentRunnable implements Runnable {
 
-    private final Agent mAgent;
-
-    private final Runnable mTask;
+    private final Agent agent;
+    private final Runnable task;
 
     private AgentRunnable(@NotNull final Runnable task, @NotNull final Agent agent) {
-      mTask = ConstantConditions.notNull("task", task);
-      mAgent = agent;
+      this.task = ConstantConditions.notNull("task", task);
+      this.agent = agent;
     }
 
     public void run() {
-      if (!mAgent.isDismissed()) {
-        mTask.run();
+      if (!agent.isDismissed()) {
+        task.run();
       }
     }
   }

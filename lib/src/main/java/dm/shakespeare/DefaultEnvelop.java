@@ -29,11 +29,11 @@ import dm.shakespeare.util.ConstantConditions;
  */
 abstract class DefaultEnvelop implements Envelop, Runnable {
 
-  private final Options mOptions;
-  private final Actor mSender;
-  private final long mSentAt;
-  private boolean mPreventReceipt;
-  private long mReceivedAt = -1;
+  private final Options options;
+  private final Actor sender;
+  private final long sentAt;
+  private boolean preventReceipt;
+  private long receivedAt = -1;
 
   /**
    * Creates a new envelop.
@@ -42,46 +42,46 @@ abstract class DefaultEnvelop implements Envelop, Runnable {
    * @param options the delivery options.
    */
   DefaultEnvelop(@NotNull final Actor sender, @Nullable final Options options) {
-    mSender = ConstantConditions.notNull("sender", sender);
-    mOptions = (options != null) ? options : Options.EMPTY;
-    mSentAt = System.currentTimeMillis() - mOptions.getTimeOffset();
+    this.sender = ConstantConditions.notNull("sender", sender);
+    this.options = (options != null) ? options : Options.EMPTY;
+    sentAt = System.currentTimeMillis() - this.options.getTimeOffset();
   }
 
   @NotNull
   public Options getOptions() {
-    return mOptions;
+    return options;
   }
 
   public long getReceivedAt() {
-    return mReceivedAt;
+    return receivedAt;
   }
 
   @NotNull
   public Actor getSender() {
-    return mSender;
+    return sender;
   }
 
   public long getSentAt() {
-    return mSentAt;
+    return sentAt;
   }
 
   public boolean isPreventReceipt() {
-    return mPreventReceipt;
+    return preventReceipt;
   }
 
   public void preventReceipt() {
-    mPreventReceipt = true;
+    preventReceipt = true;
   }
 
   public void run() {
-    mReceivedAt = System.currentTimeMillis();
+    receivedAt = System.currentTimeMillis();
     open();
   }
 
   @Override
   public String toString() {
-    return "DefaultEnvelop{" + "options=" + mOptions + ", sender=" + mSender + ", sentAt=" + mSentAt
-        + ", preventReceipt=" + mPreventReceipt + ", receivedAt=" + mReceivedAt + '}';
+    return "DefaultEnvelop{" + "options=" + options + ", sender=" + sender + ", sentAt=" + sentAt
+        + ", preventReceipt=" + preventReceipt + ", receivedAt=" + receivedAt + '}';
   }
 
   abstract void open();

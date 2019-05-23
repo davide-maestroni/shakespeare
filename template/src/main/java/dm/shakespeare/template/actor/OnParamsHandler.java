@@ -43,17 +43,17 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
 
   private static class MessageHandler implements Handler<Iterable<?>> {
 
-    private final Method mMethod;
-    private final Object mObject;
+    private final Method method;
+    private final Object object;
 
     private MessageHandler(@NotNull final Object object, @NotNull final Method method) {
-      mObject = object;
-      mMethod = Reflections.makeAccessible(method);
+      this.object = object;
+      this.method = Reflections.makeAccessible(method);
     }
 
     public void handle(final Iterable<?> params, @NotNull final Envelop envelop,
         @NotNull final Agent agent) throws Exception {
-      final Method method = mMethod;
+      final Method method = this.method;
       final Class<?>[] parameterTypes = method.getParameterTypes();
       final int length = parameterTypes.length;
       List<?> args = Iterables.asList(params);
@@ -74,22 +74,22 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
         }
         args = parameters;
       }
-      final Object result = method.invoke(mObject, args.toArray());
+      final Object result = method.invoke(object, args.toArray());
       MethodHandler.handleReturnValue(method, result, envelop, agent);
     }
   }
 
   private static class MessageTester implements Tester<Object> {
 
-    private final Class<?>[] mParameterTypes;
+    private final Class<?>[] parameterTypes;
 
     private MessageTester(@NotNull final Method method) {
-      mParameterTypes = method.getParameterTypes();
+      parameterTypes = method.getParameterTypes();
     }
 
     public boolean test(final Object message) {
       if (message instanceof Iterable) {
-        final Class<?>[] parameterTypes = mParameterTypes;
+        final Class<?>[] parameterTypes = this.parameterTypes;
         final Iterable<?> iterable = (Iterable<?>) message;
         int i = 0;
         for (final Object o : iterable) {

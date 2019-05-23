@@ -32,9 +32,9 @@ class JavaLogPrinter implements LogPrinter {
   private static final int DEFAULT_MAX_MESSAGE_SIZE = 1024;
   private static final String FORMAT = "[%s] %s";
 
-  private final Logger mLogger;
-  private final int mMaxMessageSize;
-  private final int mMaxTextSize;
+  private final Logger logger;
+  private final int maxMessageSize;
+  private final int maxTextSize;
 
   /**
    * Creates a new printer with a default configuration.
@@ -53,36 +53,36 @@ class JavaLogPrinter implements LogPrinter {
    * @param maxMessageSize the maximum size of a log message.
    */
   JavaLogPrinter(@NotNull final Logger logger, final int maxTextSize, final int maxMessageSize) {
-    mLogger = ConstantConditions.notNull("logger", logger);
-    mMaxTextSize = maxTextSize;
-    mMaxMessageSize = maxMessageSize;
+    this.logger = ConstantConditions.notNull("logger", logger);
+    this.maxTextSize = maxTextSize;
+    this.maxMessageSize = maxMessageSize;
   }
 
   public boolean canLogDbg() {
-    return mLogger.isLoggable(Level.FINE);
+    return logger.isLoggable(Level.FINE);
   }
 
   public boolean canLogErr() {
-    return mLogger.isLoggable(Level.SEVERE);
+    return logger.isLoggable(Level.SEVERE);
   }
 
   public boolean canLogWrn() {
-    return mLogger.isLoggable(Level.WARNING);
+    return logger.isLoggable(Level.WARNING);
   }
 
   public void dbg(@NotNull final LogMessage message) {
-    mLogger.log(Level.FINE, printMessage(message), message.getThrowable());
+    logger.log(Level.FINE, printMessage(message), message.getThrowable());
   }
 
   public void err(@NotNull final LogMessage message) {
-    mLogger.log(Level.SEVERE, printMessage(message), message.getThrowable());
+    logger.log(Level.SEVERE, printMessage(message), message.getThrowable());
   }
 
   public void wrn(@NotNull final LogMessage message) {
-    mLogger.log(Level.WARNING, printMessage(message), message.getThrowable());
+    logger.log(Level.WARNING, printMessage(message), message.getThrowable());
   }
 
   private String printMessage(@NotNull final LogMessage message) {
-    return LogMessage.abbreviate(message.formatLogMessage(FORMAT, mMaxTextSize), mMaxMessageSize);
+    return LogMessage.abbreviate(message.formatLogMessage(FORMAT, maxTextSize), maxMessageSize);
   }
 }

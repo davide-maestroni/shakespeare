@@ -38,19 +38,19 @@ import java.util.Set;
  */
 public class IdentityWeakHashMap<K, V> implements Map<K, V> {
 
-  private final HashMap<IdentityWeakReference, V> mMap;
-  private final ProbeReference mProbe = new ProbeReference();
-  private final ReferenceQueue<Object> mQueue = new ReferenceQueue<Object>();
+  private final HashMap<IdentityWeakReference, V> map;
+  private final ProbeReference probe = new ProbeReference();
+  private final ReferenceQueue<Object> queue = new ReferenceQueue<Object>();
 
-  private volatile AbstractSet<Entry<K, V>> mEntrySet;
-  private volatile AbstractSet<K> mKeySet;
+  private volatile AbstractSet<Entry<K, V>> entrySet;
+  private volatile AbstractSet<K> keySet;
 
   /**
    * Creates a new empty map with the default initial capacity (16) and the default load factor
    * (0.75).
    */
   public IdentityWeakHashMap() {
-    mMap = new HashMap<IdentityWeakReference, V>();
+    map = new HashMap<IdentityWeakReference, V>();
   }
 
   /**
@@ -60,7 +60,7 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
    * @throws IllegalArgumentException if the initial capacity is negative.
    */
   public IdentityWeakHashMap(final int initialCapacity) {
-    mMap = new HashMap<IdentityWeakReference, V>(initialCapacity);
+    map = new HashMap<IdentityWeakReference, V>(initialCapacity);
   }
 
   /**
@@ -72,7 +72,7 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
    *                                  not positive.
    */
   public IdentityWeakHashMap(final int initialCapacity, final float loadFactor) {
-    mMap = new HashMap<IdentityWeakReference, V>(initialCapacity, loadFactor);
+    map = new HashMap<IdentityWeakReference, V>(initialCapacity, loadFactor);
   }
 
   /**
@@ -83,13 +83,26 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
    * @param map the initial mapping.
    */
   public IdentityWeakHashMap(@NotNull final Map<? extends K, ? extends V> map) {
-    mMap = new HashMap<IdentityWeakReference, V>(map.size());
+    this.map = new HashMap<IdentityWeakReference, V>(map.size());
     putAll(map);
   }
 
   @Override
   public int hashCode() {
-    return mMap.hashCode();
+    return map.hashCode();
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (!(o instanceof IdentityWeakHashMap)) {
+      return (o instanceof Map) && o.equals(this);
+    }
+    final IdentityWeakHashMap<?, ?> that = (IdentityWeakHashMap<?, ?>) o;
+    return map.equals(that.map);
   }
 
   /**
@@ -99,9 +112,8 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
    */
   @NotNull
   public IdentityWeakHashMap<K, V> prune() {
-    @SuppressWarnings("UnnecessaryLocalVariable") final HashMap<IdentityWeakReference, V> map =
-        mMap;
-    final ReferenceQueue<Object> queue = mQueue;
+    final HashMap<IdentityWeakReference, V> map = this.map;
+    final ReferenceQueue<Object> queue = this.queue;
     IdentityWeakReference reference = (IdentityWeakReference) queue.poll();
     while (reference != null) {
       map.remove(reference);
@@ -114,35 +126,35 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
    * {@inheritDoc}
    */
   public int size() {
-    return mMap.size();
+    return map.size();
   }
 
   /**
    * {@inheritDoc}
    */
   public boolean isEmpty() {
-    return mMap.isEmpty();
+    return map.isEmpty();
   }
 
   /**
    * {@inheritDoc}
    */
   public boolean containsKey(final Object o) {
-    return mMap.containsKey(mProbe.withReferent(o));
+    return map.containsKey(probe.withReferent(o));
   }
 
   /**
    * {@inheritDoc}
    */
   public boolean containsValue(final Object o) {
-    return mMap.containsValue(o);
+    return map.containsValue(o);
   }
 
   /**
    * {@inheritDoc}
    */
   public V get(final Object o) {
-    return mMap.get(mProbe.withReferent(o));
+    return map.get(probe.withReferent(o));
   }
 
   /**
@@ -150,7 +162,7 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
    */
   public V put(final K k, final V v) {
     prune();
-    return mMap.put(new IdentityWeakReference(k, mQueue), v);
+    return map.put(new IdentityWeakReference(k, queue), v);
   }
 
   /**
@@ -158,7 +170,7 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
    */
   public V remove(final Object o) {
     prune();
-    return mMap.remove(mProbe.withReferent(o));
+    return map.remove(probe.withReferent(o));
   }
 
   /**
@@ -166,9 +178,8 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
    */
   public void putAll(@NotNull final Map<? extends K, ? extends V> map) {
     prune();
-    @SuppressWarnings("UnnecessaryLocalVariable") final ReferenceQueue<Object> queue = mQueue;
-    @SuppressWarnings("UnnecessaryLocalVariable") final HashMap<IdentityWeakReference, V>
-        referenceMap = mMap;
+    final ReferenceQueue<Object> queue = this.queue;
+    final HashMap<IdentityWeakReference, V> referenceMap = this.map;
     for (final Entry<? extends K, ? extends V> entry : map.entrySet()) {
       referenceMap.put(new IdentityWeakReference(entry.getKey(), queue), entry.getValue());
     }
@@ -178,7 +189,7 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
    * {@inheritDoc}
    */
   public void clear() {
-    mMap.clear();
+    map.clear();
   }
 
   /**
@@ -186,8 +197,8 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
    */
   @NotNull
   public Set<K> keySet() {
-    if (mKeySet == null) {
-      mKeySet = new AbstractSet<K>() {
+    if (keySet == null) {
+      keySet = new AbstractSet<K>() {
 
         @NotNull
         @Override
@@ -197,11 +208,11 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
 
         @Override
         public int size() {
-          return mMap.size();
+          return map.size();
         }
       };
     }
-    return mKeySet;
+    return keySet;
   }
 
   /**
@@ -209,7 +220,7 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
    */
   @NotNull
   public Collection<V> values() {
-    return mMap.values();
+    return map.values();
   }
 
   /**
@@ -217,8 +228,8 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
    */
   @NotNull
   public Set<Entry<K, V>> entrySet() {
-    if (mEntrySet == null) {
-      mEntrySet = new AbstractSet<Entry<K, V>>() {
+    if (entrySet == null) {
+      entrySet = new AbstractSet<Entry<K, V>>() {
 
         @NotNull
         @Override
@@ -228,38 +239,34 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
 
         @Override
         public int size() {
-          return mMap.size();
+          return map.size();
         }
       };
     }
-    return mEntrySet;
+    return entrySet;
   }
 
   private static class IdentityWeakReference extends WeakReference<Object> {
 
-    private final int mHashCode;
-    private final boolean mIsNull;
+    private final int hashCode;
+    private final boolean isNull;
 
     private IdentityWeakReference(final Object referent,
         final ReferenceQueue<? super Object> queue) {
       super(referent, queue);
-      mIsNull = (referent == null);
-      mHashCode = System.identityHashCode(referent);
+      isNull = (referent == null);
+      hashCode = System.identityHashCode(referent);
     }
 
     private IdentityWeakReference(final Object referent) {
       super(referent);
-      mIsNull = (referent == null);
-      mHashCode = System.identityHashCode(referent);
-    }
-
-    boolean isNull() {
-      return mIsNull;
+      isNull = (referent == null);
+      hashCode = System.identityHashCode(referent);
     }
 
     @Override
     public int hashCode() {
-      return mHashCode;
+      return hashCode;
     }
 
     @Override
@@ -282,13 +289,17 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
       final Object referent = get();
       return (referent != null) && (referent == that.get());
     }
+
+    boolean isNull() {
+      return isNull;
+    }
   }
 
   private static class ProbeReference extends IdentityWeakReference {
 
-    private int mHashCode;
-    private boolean mIsNull;
-    private Object mReferent;
+    private int hashCode;
+    private boolean isNull;
+    private Object referent;
 
     private ProbeReference() {
       super(null);
@@ -297,17 +308,12 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
     @Nullable
     @Override
     public Object get() {
-      return mReferent;
-    }
-
-    @Override
-    boolean isNull() {
-      return mIsNull;
+      return referent;
     }
 
     @Override
     public int hashCode() {
-      return mHashCode;
+      return hashCode;
     }
 
     @Override
@@ -315,83 +321,74 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
       return super.equals(obj);
     }
 
+    @Override
+    boolean isNull() {
+      return isNull;
+    }
+
     @NotNull
     ProbeReference withReferent(final Object referent) {
-      mIsNull = (referent == null);
-      mReferent = referent;
-      mHashCode = System.identityHashCode(referent);
+      isNull = (referent == null);
+      this.referent = referent;
+      hashCode = System.identityHashCode(referent);
       return this;
     }
   }
 
   private class EntryIterator implements Iterator<Entry<K, V>> {
 
-    private final Iterator<IdentityWeakReference> mIterator = mMap.keySet().iterator();
+    private final Iterator<IdentityWeakReference> iterator = map.keySet().iterator();
 
     public boolean hasNext() {
-      return mIterator.hasNext();
+      return iterator.hasNext();
     }
 
     public Entry<K, V> next() {
-      return new WeakEntry(mIterator.next());
+      return new WeakEntry(iterator.next());
     }
 
     public void remove() {
-      mIterator.remove();
+      iterator.remove();
     }
   }
 
   private class KeyIterator implements Iterator<K> {
 
-    private final Iterator<IdentityWeakReference> mIterator = mMap.keySet().iterator();
+    private final Iterator<IdentityWeakReference> iterator = map.keySet().iterator();
 
     public boolean hasNext() {
-      return mIterator.hasNext();
+      return iterator.hasNext();
     }
 
     @SuppressWarnings("unchecked")
     public K next() {
-      return (K) mIterator.next().get();
+      return (K) iterator.next().get();
     }
 
     public void remove() {
-      mIterator.remove();
+      iterator.remove();
     }
   }
 
   private class WeakEntry implements Entry<K, V> {
 
-    private final IdentityWeakReference mReference;
+    private final IdentityWeakReference reference;
 
     private WeakEntry(@NotNull final IdentityWeakReference key) {
-      mReference = key;
+      reference = key;
     }
 
     @SuppressWarnings("unchecked")
     public K getKey() {
-      return (K) mReference.get();
+      return (K) reference.get();
     }
 
     public V getValue() {
-      return mMap.get(mReference);
+      return map.get(reference);
     }
 
     public V setValue(final V v) {
-      return mMap.put(mReference, v);
+      return map.put(reference, v);
     }
-  }
-
-  @Override
-  @SuppressWarnings("EqualsBetweenInconvertibleTypes")
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-
-    if (!(o instanceof IdentityWeakHashMap)) {
-      return (o instanceof Map) && o.equals(this);
-    }
-    final IdentityWeakHashMap<?, ?> that = (IdentityWeakHashMap<?, ?>) o;
-    return mMap.equals(that.mMap);
   }
 }

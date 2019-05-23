@@ -30,28 +30,28 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class LatestMemory implements Memory {
 
-  private final WeakHashMap<MemoryIterator, Void> mIterators =
+  private final WeakHashMap<MemoryIterator, Void> iterators =
       new WeakHashMap<MemoryIterator, Void>();
-  private final int mMaxValues;
-  private final CQueue<Object> mValues = new CQueue<Object>();
+  private final int maxValues;
+  private final CQueue<Object> values = new CQueue<Object>();
 
   public LatestMemory(final int maxValues) {
-    mMaxValues = ConstantConditions.positive(maxValues);
+    this.maxValues = ConstantConditions.positive(maxValues);
   }
 
   @NotNull
   public Iterator<Object> iterator() {
     final MemoryIterator iterator = new MemoryIterator();
-    mIterators.put(iterator, null);
+    iterators.put(iterator, null);
     return iterator;
   }
 
   public void put(final Object value) {
-    final CQueue<Object> values = mValues;
+    final CQueue<Object> values = this.values;
     values.add(value);
-    if (values.size() > mMaxValues) {
+    if (values.size() > maxValues) {
       values.removeFirst();
-      for (final MemoryIterator iterator : mIterators.keySet()) {
+      for (final MemoryIterator iterator : iterators.keySet()) {
         iterator.decrementIndex();
       }
     }
@@ -59,17 +59,17 @@ public class LatestMemory implements Memory {
 
   private class MemoryIterator implements Iterator<Object> {
 
-    private int mIndex = 0;
+    private int index = 0;
 
     public boolean hasNext() {
-      return ((mIndex = Math.max(mIndex, 0)) < mValues.size());
+      return ((index = Math.max(index, 0)) < values.size());
     }
 
     public Object next() {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      return mValues.get(mIndex++);
+      return values.get(index++);
     }
 
     public void remove() {
@@ -77,7 +77,7 @@ public class LatestMemory implements Memory {
     }
 
     void decrementIndex() {
-      --mIndex;
+      --index;
     }
   }
 }

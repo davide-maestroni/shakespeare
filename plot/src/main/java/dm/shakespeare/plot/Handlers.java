@@ -29,7 +29,7 @@ public class Handlers {
 
   // TODO: 05/04/2019 skip(?)
 
-  private static final UnaryFunction<?, ?> sIdentity = new UnaryFunction<Object, Object>() {
+  private static final UnaryFunction<?, ?> identity = new UnaryFunction<Object, Object>() {
 
     public Object call(final Object first) {
       return first;
@@ -43,7 +43,7 @@ public class Handlers {
   @NotNull
   @SuppressWarnings("unchecked")
   public static <T> UnaryFunction<T, T> identity() {
-    return (UnaryFunction<T, T>) sIdentity;
+    return (UnaryFunction<T, T>) identity;
   }
 
   @NotNull
@@ -53,16 +53,16 @@ public class Handlers {
 
   private static class TakeFunction implements NullaryFunction<Event<Boolean>> {
 
-    private final int mMaxEffects;
+    private final int maxEffects;
 
-    private int mCount = 0;
+    private int count = 0;
 
     private TakeFunction(final int maxEffects) {
-      mMaxEffects = ConstantConditions.notNegative(maxEffects);
+      this.maxEffects = ConstantConditions.notNegative(maxEffects);
     }
 
     public Event<Boolean> call() {
-      return Event.ofEffect(++mCount <= mMaxEffects);
+      return Event.ofEffect(++count <= maxEffects);
     }
   }
 }

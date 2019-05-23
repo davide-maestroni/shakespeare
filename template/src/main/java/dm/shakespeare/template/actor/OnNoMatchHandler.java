@@ -30,7 +30,6 @@ import dm.shakespeare.template.annotation.OnNoMatch;
  */
 class OnNoMatchHandler implements AnnotationHandler<OnNoMatch> {
 
-  @SuppressWarnings("unchecked")
   public void handle(@NotNull final BehaviorBuilder builder, @NotNull final Object object,
       @NotNull final Method method, @NotNull final OnNoMatch annotation) {
     final String name = method.getName();

@@ -47,41 +47,41 @@ public class SupervisedBehavior extends AbstractBehavior {
 
   private static final Object DUMMY_MESSAGE = new Object();
 
-  private final AgentWrapper mAgent;
-  private final String mReceiptId = toString();
+  private final AgentWrapper agent;
+  private final String receiptId = toString();
 
-  private Behavior mBehavior;
-  private CQueue<DelayedMessage> mDelayedMessages = new CQueue<DelayedMessage>();
-  private Throwable mFailure;
-  private String mFailureId;
-  private DelayedMessage mFailureMessage;
-  private Handler<Object> mHandler = new DefaultHandler();
-  private Actor mSupervisor;
-  private String mSupervisorThread;
+  private Behavior behavior;
+  private CQueue<DelayedMessage> delayedMessages = new CQueue<DelayedMessage>();
+  private Throwable failure;
+  private String failureId;
+  private DelayedMessage failureMessage;
+  private Handler<Object> handler = new DefaultHandler();
+  private Actor supervisor;
+  private String supervisorThread;
 
   SupervisedBehavior(@NotNull final Behavior behavior) {
-    mBehavior = ConstantConditions.notNull("behavior", behavior);
-    mAgent = new AgentWrapper() {
+    this.behavior = ConstantConditions.notNull("behavior", behavior);
+    agent = new AgentWrapper() {
 
       @Override
       public void setBehavior(@NotNull final Behavior behavior) {
-        mBehavior = ConstantConditions.notNull("behavior", behavior);
+        SupervisedBehavior.this.behavior = ConstantConditions.notNull("behavior", behavior);
       }
     };
   }
 
   public void onMessage(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
-    mHandler.handle(message, envelop, agent);
+    handler.handle(message, envelop, agent);
   }
 
   public void onStart(@NotNull final Agent agent) throws Exception {
-    mBehavior.onStart(mAgent.withAgent(agent));
+    behavior.onStart(this.agent.withAgent(agent));
   }
 
   public void onStop(@NotNull final Agent agent) throws Exception {
-    final Throwable failure = mFailure;
-    final DelayedMessage failureMessage = mFailureMessage;
+    final Throwable failure = this.failure;
+    final DelayedMessage failureMessage = this.failureMessage;
     if ((failure != null) && (failureMessage != null)) {
       final Envelop envelop = failureMessage.getEnvelop();
       final Options options = envelop.getOptions();
@@ -93,11 +93,11 @@ public class SupervisedBehavior extends AbstractBehavior {
     }
     resetFailure(agent);
     bounceDelayed(agent);
-    mBehavior.onStop(mAgent.withAgent(agent));
+    behavior.onStop(this.agent.withAgent(agent));
   }
 
   private void bounceDelayed(@NotNull final Agent agent) {
-    final CQueue<DelayedMessage> delayedMessages = mDelayedMessages;
+    final CQueue<DelayedMessage> delayedMessages = this.delayedMessages;
     for (final DelayedMessage delayedMessage : delayedMessages) {
       final Envelop envelop = delayedMessage.getEnvelop();
       final Options options = envelop.getOptions();
@@ -107,26 +107,26 @@ public class SupervisedBehavior extends AbstractBehavior {
                 agent.getSelf());
       }
     }
-    mDelayedMessages = new CQueue<DelayedMessage>();
+    this.delayedMessages = new CQueue<DelayedMessage>();
   }
 
   private void resetFailure(@NotNull final Agent agent) {
     try {
-      mSupervisor.removeObserver(agent.getSelf());
+      supervisor.removeObserver(agent.getSelf());
 
     } catch (final RejectedExecutionException e) {
       agent.getLogger().err(e, "ignoring exception");
     }
-    mSupervisor = null;
-    mSupervisorThread = null;
-    mFailure = null;
-    mFailureId = null;
-    mFailureMessage = null;
+    supervisor = null;
+    supervisorThread = null;
+    failure = null;
+    failureId = null;
+    failureMessage = null;
   }
 
   private void resumeDelayed(@NotNull final Agent agent) {
     final Actor self = agent.getSelf();
-    final int size = mDelayedMessages.size();
+    final int size = delayedMessages.size();
     for (int i = 0; i < size; ++i) {
       self.tell(DUMMY_MESSAGE, null, self);
     }
@@ -144,27 +144,27 @@ public class SupervisedBehavior extends AbstractBehavior {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-    private final Throwable mCause;
-    private final String mFailureId;
+    private final Throwable cause;
+    private final String failureId;
 
     private SupervisedFailure(@NotNull final String failureId, @NotNull final Throwable cause) {
-      mFailureId = failureId;
-      mCause = cause;
+      this.failureId = failureId;
+      this.cause = cause;
     }
 
     @NotNull
     public Throwable getCause() {
-      return mCause;
+      return cause;
     }
 
     @NotNull
     public final String getFailureId() {
-      return mFailureId;
+      return failureId;
     }
 
     @NotNull
     public SupervisedRecovery recover(@NotNull final RecoveryType recoveryType) {
-      return new SupervisedRecovery(mFailureId, recoveryType);
+      return new SupervisedRecovery(failureId, recoveryType);
     }
   }
 
@@ -172,23 +172,23 @@ public class SupervisedBehavior extends AbstractBehavior {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-    private final String mFailureId;
-    private final RecoveryType mRecoveryType;
+    private final String failureId;
+    private final RecoveryType recoveryType;
 
     private SupervisedRecovery(@NotNull final String failureId,
         @NotNull final RecoveryType recoveryType) {
-      mFailureId = ConstantConditions.notNull("failureId", failureId);
-      mRecoveryType = ConstantConditions.notNull("recoveryType", recoveryType);
+      this.failureId = ConstantConditions.notNull("failureId", failureId);
+      this.recoveryType = ConstantConditions.notNull("recoveryType", recoveryType);
     }
 
     @NotNull
     public final String getFailureId() {
-      return mFailureId;
+      return failureId;
     }
 
     @NotNull
     public final RecoveryType getRecoveryType() {
-      return mRecoveryType;
+      return recoveryType;
     }
 
     public enum RecoveryType {
@@ -206,21 +206,21 @@ public class SupervisedBehavior extends AbstractBehavior {
 
   private static class DelayedMessage {
 
-    private final Envelop mEnvelop;
-    private final Object mMessage;
+    private final Envelop envelop;
+    private final Object message;
 
     private DelayedMessage(final Object message, @NotNull final Envelop envelop) {
-      mMessage = message;
-      mEnvelop = envelop;
+      this.message = message;
+      this.envelop = envelop;
     }
 
     @NotNull
     Envelop getEnvelop() {
-      return mEnvelop;
+      return envelop;
     }
 
     Object getMessage() {
-      return mMessage;
+      return message;
     }
   }
 
@@ -236,8 +236,8 @@ public class SupervisedBehavior extends AbstractBehavior {
         final Actor self = agent.getSelf();
         final Actor sender = envelop.getSender();
         if (!sender.equals(self)) {
-          mSupervisor = sender;
-          mSupervisorThread = options.getThreadId();
+          supervisor = sender;
+          supervisorThread = options.getThreadId();
           sender.addObserver(agent.getSelf());
 
         } else if (options.getReceiptId() != null) {
@@ -249,15 +249,15 @@ public class SupervisedBehavior extends AbstractBehavior {
 
       } else if (message instanceof Unsupervise) {
         final Actor sender = envelop.getSender();
-        if (sender.equals(mSupervisor)) {
+        if (sender.equals(supervisor)) {
           try {
-            mSupervisor.removeObserver(agent.getSelf());
+            supervisor.removeObserver(agent.getSelf());
 
           } catch (final RejectedExecutionException e) {
             agent.getLogger().err(e, "ignoring exception");
           }
-          mSupervisor = null;
-          mSupervisorThread = null;
+          supervisor = null;
+          supervisorThread = null;
 
         } else if (options.getReceiptId() != null) {
           sender.tell(new Failure(message, options,
@@ -268,7 +268,7 @@ public class SupervisedBehavior extends AbstractBehavior {
 
       } else if (message instanceof SupervisedRecovery) {
         final Actor sender = envelop.getSender();
-        if (sender.equals(mSupervisor)) {
+        if (sender.equals(supervisor)) {
           agent.getLogger().wrn("ignoring recovery message: " + message);
 
         } else if (options.getReceiptId() != null) {
@@ -278,32 +278,32 @@ public class SupervisedBehavior extends AbstractBehavior {
           envelop.preventReceipt();
         }
 
-      } else if (Receipt.isReceipt(message, mReceiptId)) {
+      } else if (Receipt.isReceipt(message, receiptId)) {
         agent.getLogger().wrn("ignoring receipt message: " + message);
 
       } else if (message instanceof DeadLetter) {
         final Actor sender = envelop.getSender();
-        if (sender.equals(mSupervisor)) {
-          mSupervisor = null;
-          mSupervisorThread = null;
+        if (sender.equals(supervisor)) {
+          supervisor = null;
+          supervisorThread = null;
         }
 
       } else {
         try {
-          mBehavior.onMessage(message, envelop, mAgent.withAgent(agent));
+          behavior.onMessage(message, envelop, SupervisedBehavior.this.agent.withAgent(agent));
 
         } catch (final Throwable t) {
           if (!(t instanceof InterruptedException)) {
-            final Actor supervisor = mSupervisor;
+            final Actor supervisor = SupervisedBehavior.this.supervisor;
             if (supervisor != null) {
               final String failureId = UUID.randomUUID().toString();
               supervisor.tell(new SupervisedFailure(failureId, t),
-                  new Options().withThreadId(mSupervisorThread).withReceiptId(mReceiptId),
+                  new Options().withThreadId(supervisorThread).withReceiptId(receiptId),
                   agent.getSelf());
-              mFailure = t;
-              mFailureId = failureId;
-              mFailureMessage = new DelayedMessage(message, envelop);
-              mHandler = new SuperviseHandler();
+              failure = t;
+              SupervisedBehavior.this.failureId = failureId;
+              failureMessage = new DelayedMessage(message, envelop);
+              handler = new SuperviseHandler();
               envelop.preventReceipt();
               return;
             }
@@ -324,7 +324,7 @@ public class SupervisedBehavior extends AbstractBehavior {
 
     public void handle(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) throws Exception {
-      final CQueue<DelayedMessage> delayedMessages = mDelayedMessages;
+      final CQueue<DelayedMessage> delayedMessages = SupervisedBehavior.this.delayedMessages;
       if (!delayedMessages.isEmpty()) {
         final DelayedMessage delayedMessage = delayedMessages.removeFirst();
         if (message != DUMMY_MESSAGE) {
@@ -333,8 +333,8 @@ public class SupervisedBehavior extends AbstractBehavior {
         super.handle(delayedMessage.getMessage(), delayedMessage.getEnvelop(), agent);
         return;
       }
-      mDelayedMessages = new CQueue<DelayedMessage>();
-      mHandler = new DefaultHandler();
+      SupervisedBehavior.this.delayedMessages = new CQueue<DelayedMessage>();
+      handler = new DefaultHandler();
       super.handle(message, envelop, agent);
     }
   }
@@ -351,13 +351,13 @@ public class SupervisedBehavior extends AbstractBehavior {
         final Actor self = agent.getSelf();
         final Actor sender = envelop.getSender();
         if (!sender.equals(self)) {
-          if (!sender.equals(mSupervisor)) {
+          if (!sender.equals(supervisor)) {
             // TODO: 14/01/2019 notify old supervisor???
-            mSupervisor = sender;
-            mSupervisorThread = options.getThreadId();
+            supervisor = sender;
+            supervisorThread = options.getThreadId();
             sender.addObserver(self);
-            sender.tell(new SupervisedFailure(mFailureId, mFailure),
-                new Options().withThreadId(mSupervisorThread).withReceiptId(mReceiptId), self);
+            sender.tell(new SupervisedFailure(failureId, failure),
+                new Options().withThreadId(supervisorThread).withReceiptId(receiptId), self);
           }
 
         } else if (options.getReceiptId() != null) {
@@ -369,7 +369,7 @@ public class SupervisedBehavior extends AbstractBehavior {
 
       } else if (message instanceof Unsupervise) {
         final Actor sender = envelop.getSender();
-        if (sender.equals(mSupervisor)) {
+        if (sender.equals(supervisor)) {
           agent.dismissSelf();
 
         } else if (options.getReceiptId() != null) {
@@ -382,14 +382,14 @@ public class SupervisedBehavior extends AbstractBehavior {
       } else if (message instanceof SupervisedRecovery) {
         final Actor sender = envelop.getSender();
         final SupervisedRecovery recovery = (SupervisedRecovery) message;
-        if (sender.equals(mSupervisor)) {
-          if (mFailureId.equals((recovery).getFailureId())) {
+        if (sender.equals(supervisor)) {
+          if (failureId.equals((recovery).getFailureId())) {
             final RecoveryType recoveryType = recovery.getRecoveryType();
-            final DelayedMessage failureMessage = mFailureMessage;
+            final DelayedMessage failureMessage = SupervisedBehavior.this.failureMessage;
             if (recoveryType == RecoveryType.RETRY) {
-              mDelayedMessages.addFirst(failureMessage);
+              delayedMessages.addFirst(failureMessage);
               resetFailure(agent);
-              mHandler = new ResumeHandler();
+              handler = new ResumeHandler();
               resumeDelayed(agent);
 
             } else if (recoveryType == RecoveryType.RESUME) {
@@ -397,17 +397,17 @@ public class SupervisedBehavior extends AbstractBehavior {
               final Options failureOptions = failureEnvelop.getOptions();
               if (failureOptions.getReceiptId() != null) {
                 failureEnvelop.getSender()
-                    .tell(new Failure(failureMessage.getMessage(), failureOptions, mFailure),
+                    .tell(new Failure(failureMessage.getMessage(), failureOptions, failure),
                         failureOptions.threadOnly(), agent.getSelf());
               }
               resetFailure(agent);
-              mHandler = new ResumeHandler();
+              handler = new ResumeHandler();
               resumeDelayed(agent);
 
             } else if (recoveryType == RecoveryType.RESTART_AND_RETRY) {
-              mDelayedMessages.addFirst(failureMessage);
+              delayedMessages.addFirst(failureMessage);
               resetFailure(agent);
-              mHandler = new ResumeHandler();
+              handler = new ResumeHandler();
               resumeDelayed(agent);
               agent.restartSelf();
 
@@ -416,11 +416,11 @@ public class SupervisedBehavior extends AbstractBehavior {
               final Options failureOptions = failureEnvelop.getOptions();
               if (failureOptions.getReceiptId() != null) {
                 failureEnvelop.getSender()
-                    .tell(new Failure(failureMessage.getMessage(), failureOptions, mFailure),
+                    .tell(new Failure(failureMessage.getMessage(), failureOptions, failure),
                         failureOptions.threadOnly(), agent.getSelf());
               }
               resetFailure(agent);
-              mHandler = new ResumeHandler();
+              handler = new ResumeHandler();
               resumeDelayed(agent);
               agent.restartSelf();
 
@@ -445,12 +445,12 @@ public class SupervisedBehavior extends AbstractBehavior {
           envelop.preventReceipt();
         }
 
-      } else if (Receipt.isReceipt(message, mReceiptId)) {
+      } else if (Receipt.isReceipt(message, receiptId)) {
         if (message instanceof Bounce) {
           final Object bouncedMessage = ((Bounce) message).getMessage();
           if (bouncedMessage instanceof SupervisedFailure) {
             final Actor sender = envelop.getSender();
-            if (sender.equals(mSupervisor) && mFailureId.equals(
+            if (sender.equals(supervisor) && failureId.equals(
                 ((SupervisedFailure) bouncedMessage).getFailureId())) {
               agent.dismissSelf();
             }
@@ -459,12 +459,12 @@ public class SupervisedBehavior extends AbstractBehavior {
 
       } else if (message instanceof DeadLetter) {
         final Actor sender = envelop.getSender();
-        if (sender.equals(mSupervisor)) {
+        if (sender.equals(supervisor)) {
           agent.dismissSelf();
         }
 
       } else {
-        mDelayedMessages.add(new DelayedMessage(message, envelop));
+        delayedMessages.add(new DelayedMessage(message, envelop));
         envelop.preventReceipt();
       }
     }

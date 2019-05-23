@@ -157,7 +157,7 @@ public interface Behavior {
     /**
      * Modifies the current behavior.<br>
      * The previous behavior {@link #onStop(Agent)} method will not be automatically called as
-     * a result of this method invocation. It it responsibility of the caller to perform the
+     * a result of this method invocation. It is responsibility of the caller to perform the
      * proper clean-up operations when needed.
      *
      * @param behavior the new behavior instance.

@@ -35,7 +35,7 @@ public class SupervisedRole extends SerializableRoleWrapper {
   }
 
   @NotNull
-  public Behavior getBehavior(@NotNull final String id) throws Exception {
+  protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
     return Behaviors.supervised(super.getBehavior(id));
   }
 }

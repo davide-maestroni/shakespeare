@@ -28,12 +28,12 @@ import java.util.Locale;
  */
 public class LogMessage {
 
-  private final Object[] mArgs;
-  private final Thread mCallingThread;
-  private final String mFormat;
-  private final Locale mLocale;
-  private final String mMessage;
-  private final Throwable mThrowable;
+  private final Object[] args;
+  private final Thread callingThread;
+  private final String format;
+  private final Locale locale;
+  private final String message;
+  private final Throwable throwable;
 
   /**
    * Creates a new log message with the specified formatted message.
@@ -63,12 +63,12 @@ public class LogMessage {
   private LogMessage(@Nullable final Locale locale, @Nullable final Throwable throwable,
       @Nullable final String message, @Nullable final String format,
       @Nullable final Object... args) {
-    mLocale = locale;
-    mThrowable = throwable;
-    mMessage = message;
-    mFormat = format;
-    mArgs = args;
-    mCallingThread = Thread.currentThread();
+    this.locale = locale;
+    this.throwable = throwable;
+    this.message = message;
+    this.format = format;
+    this.args = args;
+    callingThread = Thread.currentThread();
   }
 
   /**
@@ -119,7 +119,7 @@ public class LogMessage {
   @Nullable
   public String formatLogMessage(@Nullable final Locale locale, @NotNull final String format,
       final int maxTextSize) {
-    return String.format(locale, format, mCallingThread,
+    return String.format(locale, format, callingThread,
         abbreviate(formatTextMessage(locale), maxTextSize), printStackTrace());
   }
 
@@ -143,7 +143,7 @@ public class LogMessage {
     }
     final int length = additionalArgs.length;
     final Object[] args = new Object[3 + length];
-    args[0] = mCallingThread;
+    args[0] = callingThread;
     args[1] = abbreviate(formatTextMessage(locale), maxTextSize);
     args[2] = printStackTrace();
     System.arraycopy(additionalArgs, 0, args, 3, length);
@@ -161,7 +161,7 @@ public class LogMessage {
    */
   @Nullable
   public String formatLogMessage(@NotNull final String format, final int maxTextSize) {
-    return formatLogMessage(mLocale, format, maxTextSize);
+    return formatLogMessage(locale, format, maxTextSize);
   }
 
   /**
@@ -178,7 +178,7 @@ public class LogMessage {
   @Nullable
   public String formatLogMessage(@NotNull final String format, final int maxTextSize,
       @Nullable final Object... additionalArgs) {
-    return formatLogMessage(mLocale, format, maxTextSize, additionalArgs);
+    return formatLogMessage(locale, format, maxTextSize, additionalArgs);
   }
 
   /**
@@ -188,7 +188,7 @@ public class LogMessage {
    */
   @Nullable
   public String formatTextMessage() {
-    return formatTextMessage(mLocale);
+    return formatTextMessage(locale);
   }
 
   /**
@@ -199,8 +199,8 @@ public class LogMessage {
    */
   @Nullable
   public String formatTextMessage(@Nullable final Locale locale) {
-    final String format = mFormat;
-    return (format != null) ? String.format(locale, format, mArgs) : mMessage;
+    final String format = this.format;
+    return (format != null) ? String.format(locale, format, args) : message;
   }
 
   /**
@@ -210,7 +210,7 @@ public class LogMessage {
    */
   @Nullable
   public Object[] getArgs() {
-    final Object[] args = mArgs;
+    final Object[] args = this.args;
     return (args != null) ? args.clone() : null;
   }
 
@@ -221,7 +221,7 @@ public class LogMessage {
    */
   @NotNull
   public Thread getCallingThread() {
-    return mCallingThread;
+    return callingThread;
   }
 
   /**
@@ -231,7 +231,7 @@ public class LogMessage {
    */
   @Nullable
   public String getFormat() {
-    return mFormat;
+    return format;
   }
 
   /**
@@ -241,7 +241,7 @@ public class LogMessage {
    */
   @Nullable
   public Locale getLocale() {
-    return mLocale;
+    return locale;
   }
 
   /**
@@ -251,7 +251,7 @@ public class LogMessage {
    */
   @Nullable
   public String getMessage() {
-    return mMessage;
+    return message;
   }
 
   /**
@@ -261,7 +261,7 @@ public class LogMessage {
    */
   @Nullable
   public Throwable getThrowable() {
-    return mThrowable;
+    return throwable;
   }
 
   /**
@@ -272,7 +272,7 @@ public class LogMessage {
    */
   @Nullable
   public String printStackTrace() {
-    final Throwable throwable = mThrowable;
+    final Throwable throwable = this.throwable;
     return (throwable != null) ? printStackTrace(throwable) : null;
   }
 

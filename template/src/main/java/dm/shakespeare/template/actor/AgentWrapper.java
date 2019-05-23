@@ -31,47 +31,47 @@ import dm.shakespeare.log.Logger;
  */
 public class AgentWrapper implements Agent {
 
-  private Agent mAgent;
+  private Agent agent;
 
   public void dismissSelf() {
-    mAgent.dismissSelf();
+    agent.dismissSelf();
   }
 
   @NotNull
   public ExecutorService getExecutorService() {
-    return mAgent.getExecutorService();
+    return agent.getExecutorService();
   }
 
   @NotNull
   public Logger getLogger() {
-    return mAgent.getLogger();
+    return agent.getLogger();
   }
 
   @NotNull
   public ScheduledExecutorService getScheduledExecutorService() {
-    return mAgent.getScheduledExecutorService();
+    return agent.getScheduledExecutorService();
   }
 
   @NotNull
   public Actor getSelf() {
-    return mAgent.getSelf();
+    return agent.getSelf();
   }
 
   public boolean isDismissed() {
-    return mAgent.isDismissed();
+    return agent.isDismissed();
   }
 
   public void restartSelf() {
-    mAgent.restartSelf();
+    agent.restartSelf();
   }
 
   public void setBehavior(@NotNull final Behavior behavior) {
-    mAgent.setBehavior(behavior);
+    agent.setBehavior(behavior);
   }
 
   @NotNull
   public AgentWrapper withAgent(final Agent agent) {
-    mAgent = agent;
+    this.agent = agent;
     return this;
   }
 }

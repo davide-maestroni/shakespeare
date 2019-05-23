@@ -96,27 +96,27 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
 
   private static class ClassTester implements Tester<Object> {
 
-    private final Class<?> mClass;
+    private final Class<?> messageClass;
 
     private ClassTester(@NotNull final Class<?> messageClass) {
-      mClass = messageClass;
+      this.messageClass = messageClass;
     }
 
     public boolean test(final Object message) {
-      return mClass.isInstance(message);
+      return messageClass.isInstance(message);
     }
   }
 
   private static class ClassesTester implements Tester<Object> {
 
-    private final Class<?>[] mClasses;
+    private final Class<?>[] messageClasses;
 
     private ClassesTester(@NotNull final Class<?>[] messageClasses) {
-      mClasses = messageClasses;
+      this.messageClasses = messageClasses;
     }
 
     public boolean test(final Object message) {
-      for (final Class<?> messageClass : mClasses) {
+      for (final Class<?> messageClass : messageClasses) {
         if (messageClass.isInstance(message)) {
           return true;
         }
@@ -127,16 +127,16 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
 
   private static class MessageTester implements Tester<Object> {
 
-    private final Method mMethod;
-    private final Object mObject;
+    private final Method method;
+    private final Object object;
 
     private MessageTester(@NotNull final Object object, @NotNull final Method method) {
-      mObject = object;
-      mMethod = Reflections.makeAccessible(method);
+      this.object = object;
+      this.method = Reflections.makeAccessible(method);
     }
 
     public boolean test(final Object message) throws Exception {
-      return (Boolean) mMethod.invoke(mObject, message);
+      return (Boolean) method.invoke(object, message);
     }
   }
 }

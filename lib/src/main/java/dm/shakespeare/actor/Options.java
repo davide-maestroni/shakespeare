@@ -39,23 +39,23 @@ public class Options implements Serializable {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private final String mReceiptId;
-  private final String mThreadId;
-  private final long mTimeOffset;
+  private final String receiptId;
+  private final String threadId;
+  private final long timeOffset;
 
   /**
    * Creates a new options instance with an empty configuration.
    */
   public Options() {
-    mThreadId = null;
-    mReceiptId = null;
-    mTimeOffset = 0;
+    threadId = null;
+    receiptId = null;
+    timeOffset = 0;
   }
 
   private Options(@Nullable final String threadId, final String receiptId, final long timeOffset) {
-    mThreadId = threadId;
-    mReceiptId = receiptId;
-    mTimeOffset = timeOffset;
+    this.threadId = threadId;
+    this.receiptId = receiptId;
+    this.timeOffset = timeOffset;
   }
 
   /**
@@ -68,7 +68,7 @@ public class Options implements Serializable {
    */
   @NotNull
   public Options asSentAt(final long timeMillis) {
-    return withTimeOffset(System.currentTimeMillis() - timeMillis + mTimeOffset);
+    return withTimeOffset(System.currentTimeMillis() - timeMillis + timeOffset);
   }
 
   /**
@@ -78,7 +78,7 @@ public class Options implements Serializable {
    */
   @Nullable
   public String getReceiptId() {
-    return mReceiptId;
+    return receiptId;
   }
 
   /**
@@ -88,7 +88,7 @@ public class Options implements Serializable {
    */
   @Nullable
   public String getThreadId() {
-    return mThreadId;
+    return threadId;
   }
 
   /**
@@ -97,7 +97,7 @@ public class Options implements Serializable {
    * @return the time offset in number of milliseconds.
    */
   public long getTimeOffset() {
-    return mTimeOffset;
+    return timeOffset;
   }
 
   /**
@@ -107,7 +107,7 @@ public class Options implements Serializable {
    */
   @NotNull
   public Options threadOnly() {
-    return new Options(mThreadId, null, 0);
+    return new Options(threadId, null, 0);
   }
 
   /**
@@ -115,8 +115,8 @@ public class Options implements Serializable {
    */
   @Override
   public String toString() {
-    return "Options{" + "receiptId='" + mReceiptId + '\'' + ", threadId='" + mThreadId + '\''
-        + ", timeOffset=" + mTimeOffset + '}';
+    return "Options{" + "receiptId='" + receiptId + '\'' + ", threadId='" + threadId + '\''
+        + ", timeOffset=" + timeOffset + '}';
   }
 
   /**
@@ -128,7 +128,7 @@ public class Options implements Serializable {
    */
   @NotNull
   public Options withReceiptId(@Nullable final String receiptId) {
-    return new Options(mThreadId, receiptId, mTimeOffset);
+    return new Options(threadId, receiptId, timeOffset);
   }
 
   /**
@@ -140,7 +140,7 @@ public class Options implements Serializable {
    */
   @NotNull
   public Options withThreadId(@Nullable final String threadId) {
-    return new Options(threadId, mReceiptId, mTimeOffset);
+    return new Options(threadId, receiptId, timeOffset);
   }
 
   /**
@@ -152,6 +152,6 @@ public class Options implements Serializable {
    */
   @NotNull
   public Options withTimeOffset(final long offsetMillis) {
-    return new Options(mThreadId, mReceiptId, offsetMillis);
+    return new Options(threadId, receiptId, offsetMillis);
   }
 }

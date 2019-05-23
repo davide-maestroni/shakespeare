@@ -658,41 +658,40 @@ public class LoggerTest {
 
   private static class TestLogPrinter implements LogPrinter {
 
-    private final Level mLevel;
-
-    private String mMessage;
+    private final Level level;
+    private String message;
 
     private TestLogPrinter(@NotNull final Level level) {
-      mLevel = level;
+      this.level = level;
     }
 
     public boolean canLogDbg() {
-      return mLevel.compareTo(Level.DEBUG) <= 0;
+      return level.compareTo(Level.DEBUG) <= 0;
     }
 
     public boolean canLogErr() {
-      return mLevel.compareTo(Level.ERROR) <= 0;
+      return level.compareTo(Level.ERROR) <= 0;
     }
 
     public boolean canLogWrn() {
-      return mLevel.compareTo(Level.WARNING) <= 0;
+      return level.compareTo(Level.WARNING) <= 0;
     }
 
     public void dbg(@NotNull final LogMessage message) {
-      mMessage = message.formatLogMessage("%2$s - %3$s", 1000);
+      this.message = message.formatLogMessage("%2$s - %3$s", 1000);
     }
 
     public void err(@NotNull final LogMessage message) {
-      mMessage = message.formatLogMessage("%2$s - %3$s", 1000);
+      this.message = message.formatLogMessage("%2$s - %3$s", 1000);
     }
 
     public void wrn(@NotNull final LogMessage message) {
-      mMessage = message.formatLogMessage("%2$s - %3$s", 1000);
+      this.message = message.formatLogMessage("%2$s - %3$s", 1000);
     }
 
     String getMessage() {
-      final String message = mMessage;
-      mMessage = null;
+      final String message = this.message;
+      this.message = null;
       return message;
     }
   }

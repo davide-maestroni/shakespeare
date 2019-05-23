@@ -32,12 +32,12 @@ import dm.shakespeare.util.ConstantConditions;
  */
 class MethodHandler implements Handler<Object> {
 
-  private final Method mMethod;
-  private final Object mObject;
+  private final Method method;
+  private final Object object;
 
   MethodHandler(@NotNull final Object object, @NotNull final Method method) {
-    mObject = ConstantConditions.notNull("object", object);
-    mMethod = Reflections.makeAccessible(method);
+    this.object = ConstantConditions.notNull("object", object);
+    this.method = Reflections.makeAccessible(method);
   }
 
   static void handleReturnValue(@NotNull final Method method, final Object value,
@@ -51,7 +51,7 @@ class MethodHandler implements Handler<Object> {
 
   public void handle(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
-    final Method method = mMethod;
+    final Method method = this.method;
     final Class<?>[] parameterTypes = method.getParameterTypes();
     final int length = parameterTypes.length;
     final Object[] args;
@@ -71,7 +71,7 @@ class MethodHandler implements Handler<Object> {
     } else {
       args = new Object[]{message};
     }
-    final Object result = method.invoke(mObject, args);
+    final Object result = method.invoke(object, args);
     handleReturnValue(method, result, envelop, agent);
   }
 }

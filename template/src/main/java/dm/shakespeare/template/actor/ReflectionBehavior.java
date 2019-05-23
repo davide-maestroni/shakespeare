@@ -37,14 +37,14 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class ReflectionBehavior extends AbstractBehavior {
 
-  private static final ThreadLocal<CQueue<Agent>> AGENTS = new ThreadLocal<CQueue<Agent>>() {
+  private static final ThreadLocal<CQueue<Agent>> agents = new ThreadLocal<CQueue<Agent>>() {
 
     @Override
     protected CQueue<Agent> initialValue() {
       return new CQueue<Agent>();
     }
   };
-  private static final ThreadLocal<CQueue<Envelop>> ENVELOPS = new ThreadLocal<CQueue<Envelop>>() {
+  private static final ThreadLocal<CQueue<Envelop>> envelops = new ThreadLocal<CQueue<Envelop>>() {
 
     @Override
     protected CQueue<Envelop> initialValue() {
@@ -52,22 +52,22 @@ public class ReflectionBehavior extends AbstractBehavior {
     }
   };
 
-  private final Object mObject;
+  private final Object object;
 
   ReflectionBehavior(@NotNull final Object object) {
-    mObject = ConstantConditions.notNull("object", object);
+    this.object = ConstantConditions.notNull("object", object);
   }
 
   public static Agent getAgent() {
-    return AGENTS.get().peekFirst();
+    return agents.get().peekFirst();
   }
 
   public static Envelop getEnvelop() {
-    return ENVELOPS.get().peekFirst();
+    return envelops.get().peekFirst();
   }
 
   @NotNull
-  public static Object invoke(@NotNull final String methodName,
+  public static Invoke invoke(@NotNull final String methodName,
       @NotNull final Class<?>[] parameterTypes, @NotNull final Object... arguments) {
     return new Invoke(methodName, parameterTypes, arguments);
   }
@@ -79,7 +79,7 @@ public class ReflectionBehavior extends AbstractBehavior {
       return;
     }
 
-    final Object object = mObject;
+    final Object object = this.object;
     final Invoke invoke = (Invoke) message;
     final Method method;
     try {
@@ -91,8 +91,8 @@ public class ReflectionBehavior extends AbstractBehavior {
       return;
     }
 
-    AGENTS.get().addFirst(agent);
-    ENVELOPS.get().addFirst(envelop);
+    agents.get().addFirst(agent);
+    envelops.get().addFirst(envelop);
     try {
       final Object result = method.invoke(object, invoke.getArgumentArray());
       final Class<?> returnType = method.getReturnType();
@@ -107,8 +107,8 @@ public class ReflectionBehavior extends AbstractBehavior {
       }
 
     } finally {
-      ENVELOPS.get().removeFirst();
-      AGENTS.get().removeFirst();
+      envelops.get().removeFirst();
+      agents.get().removeFirst();
     }
   }
 
@@ -116,41 +116,41 @@ public class ReflectionBehavior extends AbstractBehavior {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-    private final Object[] mArgumentArray;
-    private final String mMethodName;
-    private final Class<?>[] mParameterTypeArray;
+    private final Object[] argumentArray;
+    private final String methodName;
+    private final Class<?>[] parameterTypeArray;
 
     private Invoke(@NotNull final String methodName, @NotNull final Class<?>[] parameterTypes,
         @NotNull final Object... arguments) {
-      mMethodName = ConstantConditions.notNull("methodName", methodName);
-      mParameterTypeArray =
+      this.methodName = ConstantConditions.notNull("methodName", methodName);
+      parameterTypeArray =
           ConstantConditions.notNullElements("parameterTypes", parameterTypes).clone();
-      mArgumentArray = ConstantConditions.notNull("arguments", arguments).clone();
+      argumentArray = ConstantConditions.notNull("arguments", arguments).clone();
     }
 
     @NotNull
     public List<Object> getArguments() {
-      return Collections.unmodifiableList(Arrays.asList(mArgumentArray));
+      return Collections.unmodifiableList(Arrays.asList(argumentArray));
     }
 
     @NotNull
     public String getMethodName() {
-      return mMethodName;
+      return methodName;
     }
 
     @NotNull
     public List<Class<?>> getParameterTypes() {
-      return Collections.unmodifiableList(Arrays.asList(mParameterTypeArray));
+      return Collections.unmodifiableList(Arrays.asList(parameterTypeArray));
     }
 
     @NotNull
     private Object[] getArgumentArray() {
-      return mArgumentArray;
+      return argumentArray;
     }
 
     @NotNull
     private Class<?>[] getParameterTypeArray() {
-      return mParameterTypeArray;
+      return parameterTypeArray;
     }
   }
 }

@@ -38,25 +38,20 @@ public class ReferenceRole extends SerializableRole {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private final Serializable[] mRoleArgs;
-  private final Class<? extends Role> mRoleClass;
+  private final Serializable[] roleArgs;
+  private final Class<? extends Role> roleClass;
 
-  private transient Role mRole;
+  private transient Role role;
 
   public ReferenceRole(@NotNull final Class<? extends Role> roleClass) {
-    mRoleClass = ConstantConditions.notNull("roleClass", roleClass);
-    mRoleArgs = null;
+    this.roleClass = ConstantConditions.notNull("roleClass", roleClass);
+    roleArgs = null;
   }
 
   public ReferenceRole(@NotNull final Class<? extends Role> roleClass,
       @NotNull final Serializable... roleArgs) {
-    mRoleClass = ConstantConditions.notNull("roleClass", roleClass);
-    mRoleArgs = ConstantConditions.notNull("roleArgs", roleArgs).clone();
-  }
-
-  @NotNull
-  public Behavior getBehavior(@NotNull final String id) throws Exception {
-    return getRoleInstance().getBehavior(id);
+    this.roleClass = ConstantConditions.notNull("roleClass", roleClass);
+    this.roleArgs = ConstantConditions.notNull("roleArgs", roleArgs).clone();
   }
 
   @NotNull
@@ -78,16 +73,21 @@ public class ReferenceRole extends SerializableRole {
 
   @NotNull
   protected Role getRoleInstance() {
-    if (mRole == null) {
-      mRole = newRoleInstance();
+    if (role == null) {
+      role = newRoleInstance();
     }
-    return mRole;
+    return role;
+  }
+
+  @NotNull
+  protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
+    return getRoleInstance().getBehavior(id);
   }
 
   @NotNull
   protected Role newRoleInstance() {
-    final Serializable[] roleArgs = mRoleArgs;
-    return Reflections.newInstance(mRoleClass,
+    final Serializable[] roleArgs = this.roleArgs;
+    return Reflections.newInstance(roleClass,
         ((roleArgs != null) && (roleArgs.length > 0)) ? roleArgs : NO_ARGS);
   }
 }

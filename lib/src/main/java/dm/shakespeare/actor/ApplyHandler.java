@@ -18,8 +18,11 @@ package dm.shakespeare.actor;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serializable;
+
 import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.BehaviorBuilder.Handler;
+import dm.shakespeare.config.BuildConfig;
 import dm.shakespeare.function.Mapper;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -28,17 +31,20 @@ import dm.shakespeare.util.ConstantConditions;
  *
  * @param <T> the observed type.
  */
-class ApplyHandler<T> implements Handler<T> {
+class ApplyHandler<T> implements Handler<T>, Serializable {
 
-  private final Mapper<T, ?> mMapper;
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+  private final Mapper<T, ?> mapper;
 
   /**
-   * Creates a new handler wrapping the specified mapper instance.
+   * Creates a new handler wrapping the specified mapper instance.<br>
+   * The returned instance will be serializable only if the mapper instance effectively is.
    *
    * @param mapper the mapper to wrap.
    */
   ApplyHandler(@NotNull final Mapper<T, ?> mapper) {
-    mMapper = ConstantConditions.notNull("mapper", mapper);
+    this.mapper = ConstantConditions.notNull("mapper", mapper);
   }
 
   /**
@@ -47,6 +53,6 @@ class ApplyHandler<T> implements Handler<T> {
   public void handle(final T message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
     envelop.getSender()
-        .tell(mMapper.apply(message), envelop.getOptions().threadOnly(), agent.getSelf());
+        .tell(mapper.apply(message), envelop.getOptions().threadOnly(), agent.getSelf());
   }
 }

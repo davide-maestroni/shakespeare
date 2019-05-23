@@ -83,17 +83,17 @@ class OnMatchHandler implements AnnotationHandler<OnMatch> {
 
   private static class MessageMatcher implements Matcher<Object> {
 
-    private final Method mMethod;
-    private final Object mObject;
+    private final Method method;
+    private final Object object;
 
     private MessageMatcher(@NotNull final Object object, @NotNull final Method method) {
-      mObject = object;
-      mMethod = Reflections.makeAccessible(method);
+      this.object = object;
+      this.method = Reflections.makeAccessible(method);
     }
 
     public boolean match(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) throws Exception {
-      return (Boolean) mMethod.invoke(mObject, message, envelop, agent);
+      return (Boolean) method.invoke(object, message, envelop, agent);
     }
   }
 }

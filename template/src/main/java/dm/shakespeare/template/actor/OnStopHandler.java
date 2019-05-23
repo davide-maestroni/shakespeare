@@ -29,7 +29,6 @@ import dm.shakespeare.template.annotation.OnStop;
  */
 class OnStopHandler implements AnnotationHandler<OnStop> {
 
-  @SuppressWarnings("unchecked")
   public void handle(@NotNull final BehaviorBuilder builder, @NotNull final Object object,
       @NotNull final Method method, @NotNull final OnStop annotation) {
     final String name = method.getName();

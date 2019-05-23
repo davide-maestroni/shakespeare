@@ -40,18 +40,18 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
 
   private static final int DEFAULT_SIZE = 1 << 3;
 
-  private Object[] mData;
-  private int mFirst;
-  private int mLast;
-  private int mMask;
-  private int mSize;
+  private Object[] data;
+  private int first;
+  private int last;
+  private int mask;
+  private int size;
 
   /**
    * Creates a new empty queue with a pre-defined initial capacity.
    */
   public CQueue() {
-    mData = new Object[DEFAULT_SIZE];
-    mMask = DEFAULT_SIZE - 1;
+    data = new Object[DEFAULT_SIZE];
+    mask = DEFAULT_SIZE - 1;
   }
 
   /**
@@ -63,8 +63,8 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
   public CQueue(final int minCapacity) {
     final int msb = Integer.highestOneBit(ConstantConditions.positive("minCapacity", minCapacity));
     final int initialCapacity = (minCapacity == msb) ? msb : msb << 1;
-    mData = new Object[initialCapacity];
-    mMask = initialCapacity - 1;
+    data = new Object[initialCapacity];
+    mask = initialCapacity - 1;
   }
 
   /**
@@ -74,13 +74,13 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
    * @param element the element to add.
    */
   public void addFirst(@Nullable final E element) {
-    int mask = mMask;
-    int newFirst = (mFirst = (mFirst - 1) & mask);
-    mData[newFirst] = element;
-    if (newFirst == mLast) {
+    int mask = this.mask;
+    int newFirst = (first = (first - 1) & mask);
+    data[newFirst] = element;
+    if (newFirst == last) {
       doubleCapacity();
     }
-    ++mSize;
+    ++size;
   }
 
   /**
@@ -90,12 +90,12 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
    * @param element the element to add.
    */
   public void addLast(@Nullable final E element) {
-    final int last = mLast;
-    mData[last] = element;
-    if (mFirst == (mLast = (last + 1) & mMask)) {
+    final int last = this.last;
+    data[last] = element;
+    if (first == (this.last = (last + 1) & mask)) {
       doubleCapacity();
     }
-    ++mSize;
+    ++size;
   }
 
   /**
@@ -116,24 +116,24 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
    */
   @SuppressWarnings("unchecked")
   public <T> int drainTo(@NotNull final T[] dst, final int destPos) {
-    final Object[] data = mData;
-    final int mask = mMask;
-    final int last = mLast;
+    final Object[] data = this.data;
+    final int mask = this.mask;
+    final int last = this.last;
     final int length = dst.length;
-    int i = mFirst;
+    int i = first;
     int n = destPos;
     while (i != last) {
       if (n == length) {
-        mFirst = i;
-        return -(mSize -= (n - destPos));
+        first = i;
+        return -(size -= (n - destPos));
       }
       dst[n++] = (T) data[i];
       data[i] = null;
       i = (i + 1) & mask;
     }
-    mFirst = 0;
-    mLast = 0;
-    mSize = 0;
+    first = 0;
+    this.last = 0;
+    size = 0;
     return (n - destPos);
   }
 
@@ -156,25 +156,25 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
    */
   @SuppressWarnings("unchecked")
   public <T> int drainTo(@NotNull final T[] dst, final int destPos, final int maxElements) {
-    final Object[] data = mData;
-    final int mask = mMask;
-    final int last = mLast;
+    final Object[] data = this.data;
+    final int mask = this.mask;
+    final int last = this.last;
     final int length = dst.length;
-    int i = mFirst;
+    int i = first;
     int n = destPos;
     int c = 0;
     while (i != last) {
       if ((n == length) || (++c > maxElements)) {
-        mFirst = i;
-        return -(mSize -= (n - destPos));
+        first = i;
+        return -(size -= (n - destPos));
       }
       dst[n++] = (T) data[i];
       data[i] = null;
       i = (i + 1) & mask;
     }
-    mFirst = 0;
-    mLast = 0;
-    mSize = 0;
+    first = 0;
+    this.last = 0;
+    size = 0;
     return (n - destPos);
   }
 
@@ -185,18 +185,18 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
    */
   @SuppressWarnings("unchecked")
   public void drainTo(@NotNull final Collection<? super E> collection) {
-    final Object[] data = mData;
-    final int mask = mMask;
-    final int last = mLast;
-    int i = mFirst;
+    final Object[] data = this.data;
+    final int mask = this.mask;
+    final int last = this.last;
+    int i = first;
     while (i != last) {
       collection.add((E) data[i]);
       data[i] = null;
       i = (i + 1) & mask;
     }
-    mFirst = 0;
-    mLast = 0;
-    mSize = 0;
+    first = 0;
+    this.last = 0;
+    size = 0;
   }
 
   /**
@@ -208,15 +208,15 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
    */
   @SuppressWarnings("unchecked")
   public void drainTo(@NotNull final Collection<? super E> collection, final int maxElements) {
-    final Object[] data = mData;
-    final int mask = mMask;
-    final int last = mLast;
-    int i = mFirst;
+    final Object[] data = this.data;
+    final int mask = this.mask;
+    final int last = this.last;
+    int i = first;
     int c = 0;
     while (i != last) {
       if (c >= maxElements) {
-        mFirst = i;
-        mSize -= c;
+        first = i;
+        size -= c;
         return;
       }
       ++c;
@@ -224,9 +224,9 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
       data[i] = null;
       i = (i + 1) & mask;
     }
-    mFirst = 0;
-    mLast = 0;
-    mSize = 0;
+    first = 0;
+    this.last = 0;
+    size = 0;
   }
 
   /**
@@ -241,7 +241,7 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     if ((index < 0) || (index >= size())) {
       throw new IndexOutOfBoundsException();
     }
-    return (E) mData[(mFirst + index) & mMask];
+    return (E) data[(first + index) & mask];
   }
 
   /**
@@ -258,7 +258,7 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
    */
   @Override
   public int size() {
-    return mSize;
+    return size;
   }
 
   /**
@@ -266,7 +266,7 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
    */
   @Override
   public boolean isEmpty() {
-    return mSize == 0;
+    return size == 0;
   }
 
   /**
@@ -313,17 +313,17 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
    */
   @Override
   public void clear() {
-    final int mask = mMask;
-    final int last = mLast;
-    final Object[] data = mData;
-    int index = mFirst;
+    final int mask = this.mask;
+    final int last = this.last;
+    final Object[] data = this.data;
+    int index = first;
     while (index != last) {
       data[index] = null;
       index = (index + 1) & mask;
     }
-    mFirst = 0;
-    mLast = 0;
-    mSize = 0;
+    first = 0;
+    this.last = 0;
+    size = 0;
   }
 
   /**
@@ -366,7 +366,7 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     if (isEmpty()) {
       return null;
     }
-    return (E) mData[mFirst];
+    return (E) data[first];
   }
 
   /**
@@ -380,7 +380,7 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     if (isEmpty()) {
       throw new NoSuchElementException();
     }
-    return (E) mData[mFirst];
+    return (E) data[first];
   }
 
   /**
@@ -394,8 +394,8 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     if (isEmpty()) {
       throw new NoSuchElementException();
     }
-    final int mask = mMask;
-    return (E) mData[(mLast - 1) & mask];
+    final int mask = this.mask;
+    return (E) data[(last - 1) & mask];
   }
 
   /**
@@ -408,7 +408,7 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
    */
   public E remove(final int index) {
     final E element = get(index);
-    removeElement((mFirst + index) & mMask);
+    removeElement((first + index) & mask);
     return element;
   }
 
@@ -451,8 +451,8 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
     if ((index < 0) || (index >= size())) {
       throw new IndexOutOfBoundsException();
     }
-    final Object[] data = mData;
-    final int pos = (mFirst + index) & mMask;
+    final Object[] data = this.data;
+    final int pos = (first + index) & mask;
     final E old = (E) data[pos];
     data[pos] = element;
     return old;
@@ -461,11 +461,11 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
   @NotNull
   @SuppressWarnings("SuspiciousSystemArraycopy")
   private <T> T[] copyElements(@NotNull final T[] dst) {
-    final Object[] data = mData;
-    final int first = mFirst;
-    final int last = mLast;
+    final Object[] data = this.data;
+    final int first = this.first;
+    final int last = this.last;
     if (first <= last) {
-      System.arraycopy(data, first, dst, 0, mSize);
+      System.arraycopy(data, first, dst, 0, size);
 
     } else {
       final int length = data.length - first;
@@ -476,28 +476,28 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
   }
 
   private void doubleCapacity() {
-    final Object[] data = mData;
+    final Object[] data = this.data;
     final int size = data.length;
     final int newSize = size << 1;
     if (newSize < size) {
       throw new OutOfMemoryError();
     }
-    final int first = mFirst;
+    final int first = this.first;
     final int remainder = size - first;
     final Object[] newData = new Object[newSize];
     System.arraycopy(data, first, newData, 0, remainder);
     System.arraycopy(data, 0, newData, remainder, first);
-    mData = newData;
-    mFirst = 0;
-    mLast = size;
-    mMask = newSize - 1;
+    this.data = newData;
+    this.first = 0;
+    last = size;
+    mask = newSize - 1;
   }
 
   private boolean removeElement(final int index) {
-    final int first = mFirst;
-    final int last = mLast;
-    final Object[] data = mData;
-    final int mask = mMask;
+    final int first = this.first;
+    final int last = this.last;
+    final Object[] data = this.data;
+    final int mask = this.mask;
     final int front = (index - first) & mask;
     final int back = (last - index) & mask;
     final boolean isForward;
@@ -510,8 +510,8 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
         data[0] = data[mask];
         System.arraycopy(data, first, data, first + 1, mask - first);
       }
-      mData[first] = null;
-      mFirst = (first + 1) & mask;
+      this.data[first] = null;
+      this.first = (first + 1) & mask;
       isForward = true;
 
     } else {
@@ -523,89 +523,89 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
         data[mask] = data[0];
         System.arraycopy(data, 1, data, 0, last);
       }
-      mLast = (last - 1) & mask;
+      this.last = (last - 1) & mask;
       isForward = false;
     }
-    --mSize;
+    --size;
     return isForward;
   }
 
   @SuppressWarnings("unchecked")
   private E unsafeRemoveFirst() {
-    final Object[] data = mData;
-    final int first = mFirst;
-    mFirst = (first + 1) & mMask;
+    final Object[] data = this.data;
+    final int first = this.first;
+    this.first = (first + 1) & mask;
     final Object output = data[first];
     data[first] = null;
-    --mSize;
+    --size;
     return (E) output;
   }
 
   @SuppressWarnings("unchecked")
   private E unsafeRemoveLast() {
-    final Object[] data = mData;
-    final int mask = mMask;
-    final int newLast = (mLast - 1) & mask;
-    mLast = newLast;
+    final Object[] data = this.data;
+    final int mask = this.mask;
+    final int newLast = (last - 1) & mask;
+    last = newLast;
     final Object output = data[newLast];
     data[newLast] = null;
-    --mSize;
+    --size;
     return (E) output;
   }
 
   private class CQueueIterator implements Iterator<E> {
 
-    private boolean mIsRemoved;
-    private int mOriginalFirst;
-    private int mOriginalLast;
-    private int mPointer;
+    private boolean isRemoved;
+    private int originalFirst;
+    private int originalLast;
+    private int pointer;
 
     private CQueueIterator() {
-      mPointer = (mOriginalFirst = mFirst);
-      mOriginalLast = mLast;
+      pointer = (originalFirst = first);
+      originalLast = last;
     }
 
     public boolean hasNext() {
-      return (mPointer != mOriginalLast);
+      return (pointer != originalLast);
     }
 
     @SuppressWarnings("unchecked")
     public E next() {
-      final int pointer = mPointer;
-      final int originalLast = mOriginalLast;
+      final int pointer = this.pointer;
+      final int originalLast = this.originalLast;
       if (pointer == originalLast) {
         throw new NoSuchElementException();
       }
-      if ((mFirst != mOriginalFirst) || (mLast != originalLast)) {
+      if ((first != originalFirst) || (last != originalLast)) {
         throw new ConcurrentModificationException();
       }
-      mIsRemoved = false;
-      mPointer = (pointer + 1) & mMask;
-      return (E) mData[pointer];
+      isRemoved = false;
+      this.pointer = (pointer + 1) & mask;
+      return (E) data[pointer];
     }
 
     public void remove() {
-      if (mIsRemoved) {
+      if (isRemoved) {
         throw new IllegalStateException("element already removed");
       }
-      final int pointer = mPointer;
-      final int originalFirst = mOriginalFirst;
+      final int pointer = this.pointer;
+      final int originalFirst = this.originalFirst;
       if (pointer == originalFirst) {
         throw new IllegalStateException();
       }
-      if ((mFirst != originalFirst) || (mLast != mOriginalLast)) {
+      if ((first != originalFirst) || (last != originalLast)) {
         throw new ConcurrentModificationException();
       }
-      final int mask = mMask;
+      final int mask = CQueue.this.mask;
       final int index = (pointer - 1) & mask;
       if (removeElement(index)) {
-        mOriginalFirst = mFirst;
+        this.originalFirst = first;
 
       } else {
-        mOriginalLast = mLast;
-        mPointer = (mPointer - 1) & mask;
+        originalLast = last;
+        this.pointer = (this.pointer - 1) & mask;
       }
-      mIsRemoved = true;
+      isRemoved = true;
     }
   }
 }

@@ -27,45 +27,45 @@ import java.util.WeakHashMap;
  */
 public class SingletonMemory implements Memory {
 
-  private final WeakHashMap<MemoryIterator, Void> mIterators =
+  private final WeakHashMap<MemoryIterator, Void> iterators =
       new WeakHashMap<MemoryIterator, Void>();
 
-  private boolean mHasValue;
-  private Object mValue;
+  private boolean hasValue;
+  private Object value;
 
   @NotNull
   public Iterator<Object> iterator() {
-    final MemoryIterator iterator = new MemoryIterator(mHasValue);
-    mIterators.put(iterator, null);
+    final MemoryIterator iterator = new MemoryIterator(hasValue);
+    iterators.put(iterator, null);
     return iterator;
   }
 
   public void put(final Object value) {
-    mHasValue = true;
-    mValue = value;
-    for (final MemoryIterator iterator : mIterators.keySet()) {
+    hasValue = true;
+    this.value = value;
+    for (final MemoryIterator iterator : iterators.keySet()) {
       iterator.setNext();
     }
   }
 
   private class MemoryIterator implements Iterator<Object> {
 
-    private boolean mHasNext;
+    private boolean hasNext;
 
     private MemoryIterator(final boolean hasNext) {
-      mHasNext = hasNext;
+      this.hasNext = hasNext;
     }
 
     public boolean hasNext() {
-      return mHasNext;
+      return hasNext;
     }
 
     public Object next() {
-      if (!mHasNext) {
+      if (!hasNext) {
         throw new NoSuchElementException();
       }
-      mHasNext = false;
-      return mValue;
+      hasNext = false;
+      return value;
     }
 
     public void remove() {
@@ -73,7 +73,7 @@ public class SingletonMemory implements Memory {
     }
 
     void setNext() {
-      mHasNext = true;
+      hasNext = true;
     }
   }
 }

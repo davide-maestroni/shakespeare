@@ -44,7 +44,7 @@ import dm.shakespeare.template.annotation.OnStop;
 public class AnnotationBehavior extends AbstractBehavior {
 
   private static final HashMap<Class<? extends Annotation>, AnnotationHandler<?>>
-      sAnnotationHandlers = new HashMap<Class<? extends Annotation>, AnnotationHandler<?>>() {{
+      annotationHandlers = new HashMap<Class<? extends Annotation>, AnnotationHandler<?>>() {{
     put(OnStart.class, new OnStartHandler());
     put(OnStop.class, new OnStopHandler());
     put(OnParams.class, new OnParamsHandler());
@@ -55,14 +55,14 @@ public class AnnotationBehavior extends AbstractBehavior {
     put(OnNoMatch.class, new OnNoMatchHandler());
   }};
 
-  private final Behavior mBehavior;
+  private final Behavior behavior;
 
   @SuppressWarnings("unchecked")
   AnnotationBehavior(@NotNull final Object object) throws Exception {
     final Class<?> objectClass = object.getClass();
     final BehaviorBuilder builder = Role.newBehavior();
     final Set<Entry<Class<? extends Annotation>, AnnotationHandler<?>>> entries =
-        sAnnotationHandlers.entrySet();
+        annotationHandlers.entrySet();
     for (final Method method : objectClass.getMethods()) {
       for (final Entry<Class<? extends Annotation>, AnnotationHandler<?>> entry : entries) {
         final Annotation annotation = method.getAnnotation(entry.getKey());
@@ -72,11 +72,11 @@ public class AnnotationBehavior extends AbstractBehavior {
         }
       }
     }
-    mBehavior = builder.build();
+    behavior = builder.build();
   }
 
   public void onMessage(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
-    mBehavior.onMessage(message, envelop, agent);
+    behavior.onMessage(message, envelop, agent);
   }
 }

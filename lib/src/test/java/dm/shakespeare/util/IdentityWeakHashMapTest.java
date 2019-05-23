@@ -294,15 +294,15 @@ public class IdentityWeakHashMapTest {
 
   private static class MyInteger {
 
-    private final int mInt;
+    private final int value;
 
     private MyInteger(final int i) {
-      mInt = i;
+      value = i;
     }
 
     @Override
     public int hashCode() {
-      return mInt;
+      return value;
     }
 
     @Override
@@ -316,7 +316,7 @@ public class IdentityWeakHashMapTest {
       }
 
       final MyInteger myInteger = (MyInteger) o;
-      return mInt == myInteger.mInt;
+      return value == myInteger.value;
     }
   }
 }

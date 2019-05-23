@@ -35,16 +35,16 @@ import dm.shakespeare.util.ConstantConditions;
  */
 class TimeoutExecutorService extends AbstractExecutorService {
 
-  private static final Object sMutex = new Object();
+  private static final Object mutex = new Object();
 
-  private static long sCount;
-  private static ScheduledExecutorService sTimeoutService;
+  private static long count;
+  private static ScheduledExecutorService timeoutService;
 
-  private final ExecutorService mExecutorService;
-  private final AtomicBoolean mIsShutdown = new AtomicBoolean();
-  private final boolean mMayInterruptIfRunning;
-  private final TimeUnit mTimeUnit;
-  private final long mTimeout;
+  private final ExecutorService executorService;
+  private final AtomicBoolean isShutdown = new AtomicBoolean();
+  private final boolean mayInterruptIfRunning;
+  private final TimeUnit timeUnit;
+  private final long timeout;
 
   /**
    * Creates a new executor service wrapping the specified instance.
@@ -56,81 +56,80 @@ class TimeoutExecutorService extends AbstractExecutorService {
    */
   TimeoutExecutorService(@NotNull final ExecutorService executorService, final long timeout,
       @NotNull final TimeUnit timeUnit, final boolean mayInterruptIfRunning) {
-    mExecutorService = ConstantConditions.notNull("executorService", executorService);
-    mTimeout = ConstantConditions.positive("timeout", timeout);
-    mTimeUnit = ConstantConditions.notNull("timeUnit", timeUnit);
-    mMayInterruptIfRunning = mayInterruptIfRunning;
+    this.executorService = ConstantConditions.notNull("executorService", executorService);
+    this.timeout = ConstantConditions.positive("timeout", timeout);
+    this.timeUnit = ConstantConditions.notNull("timeUnit", timeUnit);
+    this.mayInterruptIfRunning = mayInterruptIfRunning;
     startGlobalService();
   }
 
   private static void shutdownGlobalService() {
-    synchronized (sMutex) {
-      if (--sCount == 0) {
-        sTimeoutService.shutdown();
+    synchronized (mutex) {
+      if (--count == 0) {
+        timeoutService.shutdown();
       }
     }
   }
 
   private static void startGlobalService() {
-    synchronized (sMutex) {
-      if (sCount++ == 0) {
-        sTimeoutService = Executors.newSingleThreadScheduledExecutor();
+    synchronized (mutex) {
+      if (count++ == 0) {
+        timeoutService = Executors.newSingleThreadScheduledExecutor();
       }
     }
   }
 
   public void execute(@NotNull final Runnable command) {
-    timeout(mExecutorService.submit(command));
+    timeout(executorService.submit(command));
   }
 
   public void shutdown() {
-    mExecutorService.shutdown();
-    if (!mIsShutdown.getAndSet(true)) {
+    executorService.shutdown();
+    if (!isShutdown.getAndSet(true)) {
       shutdownGlobalService();
     }
   }
 
   @NotNull
   public List<Runnable> shutdownNow() {
-    final List<Runnable> commands = mExecutorService.shutdownNow();
-    if (!mIsShutdown.getAndSet(true)) {
+    final List<Runnable> commands = executorService.shutdownNow();
+    if (!isShutdown.getAndSet(true)) {
       shutdownGlobalService();
     }
     return commands;
   }
 
   public boolean isShutdown() {
-    return mExecutorService.isShutdown();
+    return executorService.isShutdown();
   }
 
   public boolean isTerminated() {
-    return mExecutorService.isTerminated();
+    return executorService.isTerminated();
   }
 
   public boolean awaitTermination(final long timeout, @NotNull final TimeUnit unit) throws
       InterruptedException {
-    return mExecutorService.awaitTermination(timeout, unit);
+    return executorService.awaitTermination(timeout, unit);
   }
 
   @NotNull
   <F extends Future<?>> F timeout(@NotNull final F future) {
-    sTimeoutService.schedule(new CancelRunnable(future, mMayInterruptIfRunning), mTimeout,
-        mTimeUnit);
+    timeoutService.schedule(new CancelRunnable(future, mayInterruptIfRunning), timeout, timeUnit);
     return future;
   }
 
   private static class CancelRunnable implements Runnable {
 
-    private final Future<?> mFuture;
-    private final boolean mMayInterruptIfRunning;
+    private final Future<?> future;
+    private final boolean mayInterruptIfRunning;
 
     private CancelRunnable(@NotNull final Future<?> future, final boolean mayInterruptIfRunning) {
-      mFuture = future;
-      mMayInterruptIfRunning = mayInterruptIfRunning;
+      this.future = future;
+      this.mayInterruptIfRunning = mayInterruptIfRunning;
     }
 
     public void run() {
-      mFuture.cancel(mMayInterruptIfRunning);
+      future.cancel(mayInterruptIfRunning);
     }
   }
 }

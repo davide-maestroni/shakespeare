@@ -18,8 +18,11 @@ package dm.shakespeare.actor;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serializable;
+
 import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.BehaviorBuilder.Handler;
+import dm.shakespeare.config.BuildConfig;
 import dm.shakespeare.function.Observer;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -28,17 +31,20 @@ import dm.shakespeare.util.ConstantConditions;
  *
  * @param <T> the observed type.
  */
-class AcceptHandler<T> implements Handler<T> {
+class AcceptHandler<T> implements Handler<T>, Serializable {
 
-  private final Observer<T> mObserver;
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+  private final Observer<T> observer;
 
   /**
-   * Creates a new handler wrapping the specified observer instance.
+   * Creates a new handler wrapping the specified observer instance.<br>
+   * The returned instance will be serializable only if the observer instance effectively is.
    *
    * @param observer the observer to wrap.
    */
   AcceptHandler(@NotNull final Observer<T> observer) {
-    mObserver = ConstantConditions.notNull("observer", observer);
+    this.observer = ConstantConditions.notNull("observer", observer);
   }
 
   /**
@@ -46,6 +52,6 @@ class AcceptHandler<T> implements Handler<T> {
    */
   public void handle(final T message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
-    mObserver.accept(message);
+    observer.accept(message);
   }
 }

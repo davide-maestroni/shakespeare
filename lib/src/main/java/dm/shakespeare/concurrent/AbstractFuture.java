@@ -36,11 +36,11 @@ import dm.shakespeare.util.TimeUnits.Condition;
  */
 abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
 
-  private final Object mMutex = new Object();
-  private final AtomicLong mTimestamp;
+  private final Object mutex = new Object();
+  private final AtomicLong timestamp;
 
-  private Future<V> mFuture;
-  private ScheduledFuture<?> mScheduledFuture;
+  private Future<V> future;
+  private ScheduledFuture<?> scheduledFuture;
 
   /**
    * Creates a new future instance to be executed at the specified timestamp.
@@ -48,15 +48,15 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
    * @param timestamp the execution timestamp in number of nanoseconds.
    */
   AbstractFuture(final long timestamp) {
-    mTimestamp = new AtomicLong(timestamp);
+    this.timestamp = new AtomicLong(timestamp);
   }
 
   public boolean cancel(final boolean mayInterruptIfRunning) {
-    final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
+    final ScheduledFuture<?> scheduledFuture = this.scheduledFuture;
     boolean isCancelled =
         (scheduledFuture != null) && scheduledFuture.cancel(mayInterruptIfRunning);
-    synchronized (mMutex) {
-      final Future<?> future = mFuture;
+    synchronized (mutex) {
+      final Future<?> future = this.future;
       if (future != null) {
         isCancelled |= future.cancel(mayInterruptIfRunning);
       }
@@ -65,10 +65,10 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
   }
 
   public boolean isCancelled() {
-    final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
+    final ScheduledFuture<?> scheduledFuture = this.scheduledFuture;
     boolean isCancelled = (scheduledFuture != null) && scheduledFuture.isCancelled();
-    synchronized (mMutex) {
-      final Future<?> future = mFuture;
+    synchronized (mutex) {
+      final Future<?> future = this.future;
       if (future != null) {
         isCancelled |= future.isCancelled();
       }
@@ -77,11 +77,11 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
   }
 
   public boolean isDone() {
-    final ScheduledFuture<?> scheduledFuture = mScheduledFuture;
+    final ScheduledFuture<?> scheduledFuture = this.scheduledFuture;
     boolean isDone = (scheduledFuture != null) && scheduledFuture.isDone();
     if (isDone) {
-      synchronized (mMutex) {
-        final Future<?> future = mFuture;
+      synchronized (mutex) {
+        final Future<?> future = this.future;
         if (future != null) {
           return future.isDone();
         }
@@ -91,14 +91,14 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
   }
 
   public V get() throws InterruptedException, ExecutionException {
-    synchronized (mMutex) {
-      if (TimeUnits.waitUntil(mMutex, -1, TimeUnit.MILLISECONDS, new Condition() {
+    synchronized (mutex) {
+      if (TimeUnits.waitUntil(mutex, -1, TimeUnit.MILLISECONDS, new Condition() {
 
         public boolean isTrue() {
-          return (mFuture != null);
+          return (future != null);
         }
       })) {
-        return mFuture.get();
+        return future.get();
       }
     }
 
@@ -107,15 +107,15 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
 
   public V get(final long timeout, @NotNull final TimeUnit timeUnit) throws InterruptedException,
       ExecutionException, TimeoutException {
-    synchronized (mMutex) {
+    synchronized (mutex) {
       final long startTime = System.currentTimeMillis();
-      if (TimeUnits.waitUntil(mMutex, timeout, timeUnit, new Condition() {
+      if (TimeUnits.waitUntil(mutex, timeout, timeUnit, new Condition() {
 
         public boolean isTrue() {
-          return (mFuture != null);
+          return (future != null);
         }
       })) {
-        return mFuture.get(timeUnit.toMillis(timeout) + startTime - System.currentTimeMillis(),
+        return future.get(timeUnit.toMillis(timeout) + startTime - System.currentTimeMillis(),
             TimeUnit.MILLISECONDS);
       }
     }
@@ -132,14 +132,14 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
   }
 
   public long getDelay(@NotNull final TimeUnit timeUnit) {
-    return timeUnit.convert(mTimestamp.get() - System.nanoTime(), TimeUnit.NANOSECONDS);
+    return timeUnit.convert(timestamp.get() - System.nanoTime(), TimeUnit.NANOSECONDS);
   }
 
   @Override
   public int hashCode() {
-    int result = mTimestamp.hashCode();
-    result = 31 * result + (mFuture != null ? mFuture.hashCode() : 0);
-    result = 31 * result + (mScheduledFuture != null ? mScheduledFuture.hashCode() : 0);
+    int result = timestamp.hashCode();
+    result = 31 * result + (future != null ? future.hashCode() : 0);
+    result = 31 * result + (scheduledFuture != null ? scheduledFuture.hashCode() : 0);
     return result;
   }
 
@@ -153,26 +153,26 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
       return false;
     }
     final AbstractFuture<?> that = (AbstractFuture<?>) o;
-    return mTimestamp.equals(that.mTimestamp) && (mFuture != null ? mFuture.equals(that.mFuture)
-        : that.mFuture == null) && (mScheduledFuture != null ? mScheduledFuture.equals(
-        that.mScheduledFuture) : that.mScheduledFuture == null);
+    return timestamp.equals(that.timestamp) && (future != null ? future.equals(that.future)
+        : that.future == null) && (scheduledFuture != null ? scheduledFuture.equals(
+        that.scheduledFuture) : that.scheduledFuture == null);
   }
 
   public void run() {
     final Future<V> future = submit();
-    synchronized (mMutex) {
-      mFuture = future;
-      mMutex.notifyAll();
+    synchronized (mutex) {
+      this.future = future;
+      mutex.notifyAll();
     }
   }
 
   @NotNull
   AtomicLong getTimestamp() {
-    return mTimestamp;
+    return timestamp;
   }
 
   void setFuture(@NotNull final ScheduledFuture<?> scheduledFuture) {
-    mScheduledFuture = scheduledFuture;
+    this.scheduledFuture = scheduledFuture;
   }
 
   @NotNull

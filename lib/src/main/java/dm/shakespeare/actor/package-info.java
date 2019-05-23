@@ -20,7 +20,7 @@
  * <li>{@link dm.shakespeare.actor.Behavior}: implementing the actor behavior</li>
  * <li>{@link dm.shakespeare.actor.Behavior.Agent}: providing the actor execution environment</li>
  * <li>{@link dm.shakespeare.actor.Role}: defining the actor behavior and options</li>
- * <li>{@link dm.shakespeare.actor.Stage}: a roster of actors, acting also as new actors
+ * <li>{@link dm.shakespeare.Stage}: a roster of actors, acting also as new actors
  * creator</li>
  * <li>{@link dm.shakespeare.actor.Actor}: defining the actor interface</li>
  * </ul>

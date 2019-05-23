@@ -29,23 +29,23 @@ import dm.shakespeare.util.ConstantConditions;
  */
 class CreatorIterable<T> implements Iterable<T> {
 
-  private final Iterator<T> mIterator;
+  private final Iterator<T> iterator;
 
   CreatorIterable(@NotNull final NullaryFunction<? extends T> effectsCreator) {
-    mIterator = new CreatorIterator<T>(effectsCreator);
+    iterator = new CreatorIterator<T>(effectsCreator);
   }
 
   @NotNull
   public Iterator<T> iterator() {
-    return mIterator;
+    return iterator;
   }
 
   private static class CreatorIterator<T> implements Iterator<T> {
 
-    private final NullaryFunction<? extends T> mEffectsCreator;
+    private final NullaryFunction<? extends T> effectsCreator;
 
     CreatorIterator(@NotNull final NullaryFunction<? extends T> effectsCreator) {
-      mEffectsCreator = ConstantConditions.notNull("effectsCreator", effectsCreator);
+      this.effectsCreator = ConstantConditions.notNull("effectsCreator", effectsCreator);
     }
 
     public boolean hasNext() {
@@ -54,7 +54,7 @@ class CreatorIterable<T> implements Iterable<T> {
 
     public T next() {
       try {
-        return mEffectsCreator.call();
+        return effectsCreator.call();
 
       } catch (final Exception e) {
         if (e instanceof RuntimeException) {

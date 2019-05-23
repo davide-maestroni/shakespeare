@@ -38,7 +38,7 @@ import dm.shakespeare.util.ConstantConditions;
 class AgentScheduledExecutorService extends AgentExecutorService
     implements ScheduledExecutorService {
 
-  private final ScheduledExecutorService mExecutorService;
+  private final ScheduledExecutorService executorService;
 
   /**
    * Creates a new scheduled executor service wrapping the specified one.
@@ -49,33 +49,33 @@ class AgentScheduledExecutorService extends AgentExecutorService
   AgentScheduledExecutorService(@NotNull final ScheduledExecutorService executorService,
       @NotNull final Agent agent) {
     super(executorService, agent);
-    mExecutorService = executorService;
+    this.executorService = executorService;
   }
 
   @NotNull
   public ScheduledFuture<?> schedule(@NotNull final Runnable command, final long delay,
       @NotNull final TimeUnit unit) {
-    return wrap(addFuture(mExecutorService.schedule(wrap(command), delay, unit)));
+    return wrap(addFuture(executorService.schedule(wrap(command), delay, unit)));
   }
 
   @NotNull
   public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> callable, final long delay,
       @NotNull final TimeUnit unit) {
-    return wrap(addFuture(mExecutorService.schedule(wrap(callable), delay, unit)));
+    return wrap(addFuture(executorService.schedule(wrap(callable), delay, unit)));
   }
 
   @NotNull
   public ScheduledFuture<?> scheduleAtFixedRate(@NotNull final Runnable command,
       final long initialDelay, final long period, @NotNull final TimeUnit unit) {
     return wrap(
-        addFuture(mExecutorService.scheduleAtFixedRate(wrap(command), initialDelay, period, unit)));
+        addFuture(executorService.scheduleAtFixedRate(wrap(command), initialDelay, period, unit)));
   }
 
   @NotNull
   public ScheduledFuture<?> scheduleWithFixedDelay(@NotNull final Runnable command,
       final long initialDelay, final long delay, @NotNull final TimeUnit unit) {
     return wrap(addFuture(
-        mExecutorService.scheduleWithFixedDelay(wrap(command), initialDelay, delay, unit)));
+        executorService.scheduleWithFixedDelay(wrap(command), initialDelay, delay, unit)));
   }
 
   @NotNull
@@ -85,22 +85,22 @@ class AgentScheduledExecutorService extends AgentExecutorService
 
   private static class AgentScheduledFuture<V> implements ScheduledFuture<V> {
 
-    private final ScheduledFuture<V> mFuture;
+    private final ScheduledFuture<V> future;
 
     private AgentScheduledFuture(@NotNull final ScheduledFuture<V> future) {
-      mFuture = ConstantConditions.notNull("future", future);
+      this.future = ConstantConditions.notNull("future", future);
     }
 
     public boolean cancel(final boolean mayInterruptIfRunning) {
-      return mFuture.cancel(mayInterruptIfRunning);
+      return future.cancel(mayInterruptIfRunning);
     }
 
     public boolean isCancelled() {
-      return mFuture.isCancelled();
+      return future.isCancelled();
     }
 
     public boolean isDone() {
-      return mFuture.isDone();
+      return future.isDone();
     }
 
     public V get() {
@@ -112,16 +112,16 @@ class AgentScheduledExecutorService extends AgentExecutorService
     }
 
     public int compareTo(@NotNull final Delayed delayed) {
-      return mFuture.compareTo(delayed);
+      return future.compareTo(delayed);
     }
 
     public long getDelay(@NotNull final TimeUnit unit) {
-      return mFuture.getDelay(unit);
+      return future.getDelay(unit);
     }
 
     @Override
     public int hashCode() {
-      return mFuture.hashCode();
+      return future.hashCode();
     }
 
     @Override
@@ -134,7 +134,7 @@ class AgentScheduledExecutorService extends AgentExecutorService
         return false;
       }
       final AgentScheduledFuture<?> that = (AgentScheduledFuture<?>) o;
-      return mFuture.equals(that.mFuture);
+      return future.equals(that.future);
     }
   }
 }

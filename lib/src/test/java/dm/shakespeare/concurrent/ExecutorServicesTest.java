@@ -849,14 +849,14 @@ public class ExecutorServicesTest {
 
   private static class CountingRunnable implements Runnable {
 
-    private final AtomicInteger mCount;
+    private final AtomicInteger count;
 
     CountingRunnable(@NotNull final AtomicInteger count) {
-      mCount = count;
+      this.count = count;
     }
 
     public void run() {
-      mCount.incrementAndGet();
+      count.incrementAndGet();
     }
   }
 
@@ -869,60 +869,60 @@ public class ExecutorServicesTest {
 
   private static class Delay {
 
-    private final long mDelay;
-    private final TimeUnit mTimeUnit;
+    private final long delay;
+    private final TimeUnit timeUnit;
 
     private Delay(final long delay, @NotNull final TimeUnit timeUnit) {
-      mDelay = delay;
-      mTimeUnit = timeUnit;
+      this.delay = delay;
+      this.timeUnit = timeUnit;
     }
 
     long getDelay() {
-      return mDelay;
+      return delay;
     }
 
     @NotNull
     TimeUnit getTimeUnit() {
-      return mTimeUnit;
+      return timeUnit;
     }
   }
 
   private static class IntegerRunnable implements Runnable {
 
-    private final AtomicInteger mInteger;
-    private final int mValue;
+    private final AtomicInteger integer;
+    private final int value;
 
     private IntegerRunnable(@NotNull final AtomicInteger integer, final int value) {
-      mInteger = integer;
-      mValue = value;
+      this.integer = integer;
+      this.value = value;
     }
 
     public void run() {
-      mInteger.set(mValue);
+      integer.set(value);
     }
   }
 
   private static class RecursiveTestRunnable extends TestRunnable {
 
-    private final ArrayList<Delay> mDelays;
-    private final ArrayList<TestRunnable> mExecutions;
-    private final ScheduledExecutorService mExecutor;
+    private final ArrayList<Delay> delays;
+    private final ArrayList<TestRunnable> executions;
+    private final ScheduledExecutorService executor;
 
     RecursiveTestRunnable(@NotNull final ScheduledExecutorService executor,
         @NotNull final ArrayList<TestRunnable> executions, @NotNull final ArrayList<Delay> delays,
         final long delay, @NotNull final TimeUnit timeUnit) {
       super(delay, timeUnit);
-      mExecutor = executor;
-      mExecutions = executions;
-      mDelays = delays;
+      this.executor = executor;
+      this.executions = executions;
+      this.delays = delays;
     }
 
     @Override
     @SuppressWarnings("UnnecessaryLocalVariable")
     public void run() {
-      final ArrayList<TestRunnable> executions = mExecutions;
-      final ArrayList<Delay> delays = mDelays;
-      final ScheduledExecutorService executor = mExecutor;
+      final ArrayList<TestRunnable> executions = this.executions;
+      final ArrayList<Delay> delays = this.delays;
+      final ScheduledExecutorService executor = this.executor;
       final int size = executions.size();
       for (int i = 0; i < size; ++i) {
         final Delay delay = delays.get(i);
@@ -935,104 +935,104 @@ public class ExecutorServicesTest {
 
   private static class SleepCallable<V> implements Callable<V> {
 
-    private final long mSleepMillis;
+    private final long sleepMillis;
 
     SleepCallable(final long sleepMillis) {
-      mSleepMillis = sleepMillis;
+      this.sleepMillis = sleepMillis;
     }
 
     public V call() throws InterruptedException {
-      Thread.sleep(mSleepMillis);
+      Thread.sleep(sleepMillis);
       return null;
     }
   }
 
   private static class TestCallable<V> implements Callable<V> {
 
-    private final V mValue;
+    private final V value;
 
     TestCallable(final V value) {
-      mValue = value;
+      this.value = value;
     }
 
     public V call() {
-      return mValue;
+      return value;
     }
   }
 
   private static class TestRunnable implements Runnable {
 
-    private final long mDelay;
-    private final Semaphore mSemaphore = new Semaphore(0);
-    private final long mStartTime;
-    private final TimeUnit mTimeUnit;
-    private boolean mIsPassed;
+    private final long delay;
+    private final Semaphore semaphore = new Semaphore(0);
+    private final long startTime;
+    private final TimeUnit timeUnit;
+    private boolean isPassed;
 
     TestRunnable(final long delay, @NotNull final TimeUnit timeUnit) {
-      mStartTime = System.currentTimeMillis();
-      mDelay = delay;
-      mTimeUnit = timeUnit;
-    }
-
-    void await() throws InterruptedException {
-      mSemaphore.acquire();
-    }
-
-    boolean isPassed() {
-      return mIsPassed;
+      startTime = System.currentTimeMillis();
+      this.delay = delay;
+      this.timeUnit = timeUnit;
     }
 
     public void run() {
       // The JVM might not have nanosecond precision...
-      mIsPassed = (System.currentTimeMillis() - mStartTime >= mTimeUnit.toMillis(mDelay));
-      mSemaphore.release();
+      isPassed = (System.currentTimeMillis() - startTime >= timeUnit.toMillis(delay));
+      semaphore.release();
+    }
+
+    void await() throws InterruptedException {
+      semaphore.acquire();
+    }
+
+    boolean isPassed() {
+      return isPassed;
     }
 
   }
 
   private static class ThrottlingRunnable implements Runnable {
 
-    private final AtomicBoolean mIsFailed;
-    private final AtomicBoolean mIsRunning;
-    private final CountDownLatch mLatch;
-    private final long mSleepMillis;
+    private final AtomicBoolean isFailed;
+    private final AtomicBoolean isRunning;
+    private final CountDownLatch latch;
+    private final long sleepMillis;
 
     ThrottlingRunnable(final long sleepMillis, @NotNull final AtomicBoolean isRunning,
         @NotNull final AtomicBoolean isFailed, @NotNull final CountDownLatch latch) {
-      mSleepMillis = sleepMillis;
-      mIsRunning = isRunning;
-      mIsFailed = isFailed;
-      mLatch = latch;
+      this.sleepMillis = sleepMillis;
+      this.isRunning = isRunning;
+      this.isFailed = isFailed;
+      this.latch = latch;
     }
 
     public void run() {
       try {
-        if (mIsRunning.getAndSet(true)) {
-          mIsFailed.set(true);
+        if (isRunning.getAndSet(true)) {
+          isFailed.set(true);
 
         } else {
-          Thread.sleep(mSleepMillis);
+          Thread.sleep(sleepMillis);
         }
 
       } catch (final InterruptedException ignored) {
 
       } finally {
-        mIsRunning.set(false);
-        mLatch.countDown();
+        isRunning.set(false);
+        latch.countDown();
       }
     }
   }
 
   private static class ThrowingRunnable implements Runnable {
 
-    private final RuntimeException mException;
+    private final RuntimeException exception;
 
     ThrowingRunnable(@NotNull final RuntimeException exception) {
-      mException = exception;
+      this.exception = exception;
     }
 
     public void run() {
-      throw mException;
+      throw exception;
     }
   }
 
@@ -1045,26 +1045,26 @@ public class ExecutorServicesTest {
 
   private static class TimeoutRunnable implements Runnable {
 
-    private final AtomicBoolean mIsFailed;
-    private final CountDownLatch mLatch;
-    private final long mSleepMillis;
+    private final AtomicBoolean isFailed;
+    private final CountDownLatch latch;
+    private final long sleepMillis;
 
     TimeoutRunnable(final long sleepMillis, @NotNull final AtomicBoolean isFailed,
         @NotNull final CountDownLatch latch) {
-      mSleepMillis = sleepMillis;
-      mIsFailed = isFailed;
-      mLatch = latch;
+      this.sleepMillis = sleepMillis;
+      this.isFailed = isFailed;
+      this.latch = latch;
     }
 
     public void run() {
       try {
-        Thread.sleep(mSleepMillis);
-        mIsFailed.set(true);
+        Thread.sleep(sleepMillis);
+        isFailed.set(true);
 
       } catch (final InterruptedException ignored) {
 
       } finally {
-        mLatch.countDown();
+        latch.countDown();
       }
     }
   }

@@ -41,7 +41,7 @@ import dm.shakespeare.util.TimeUnits;
  */
 class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
 
-  private final ExecutorService mExecutorService;
+  private final ExecutorService executorService;
 
   /**
    * Creates a new executor service wrapping the specified instance.
@@ -50,7 +50,7 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
    */
   ScheduledThreadPoolWrapper(@NotNull final ExecutorService executorService) {
     super(1);
-    mExecutorService = ConstantConditions.notNull("executorService", executorService);
+    this.executorService = ConstantConditions.notNull("executorService", executorService);
   }
 
   /**
@@ -70,7 +70,7 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
   ScheduledThreadPoolWrapper(final int corePoolSize, final int maximumPoolSize,
       final long keepAliveTime, @NotNull final TimeUnit keepAliveUnit) {
     super(1);
-    mExecutorService =
+    executorService =
         new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, keepAliveUnit,
             new LinkedBlockingQueue<Runnable>());
   }
@@ -94,19 +94,19 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
       final long keepAliveTime, @NotNull final TimeUnit keepAliveUnit,
       @NotNull final ThreadFactory threadFactory) {
     super(1);
-    mExecutorService =
+    executorService =
         new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, keepAliveUnit,
             new LinkedBlockingQueue<Runnable>(), threadFactory);
   }
 
   @Override
   public boolean isShutdown() {
-    return super.isShutdown() && mExecutorService.isShutdown();
+    return super.isShutdown() && executorService.isShutdown();
   }
 
   @Override
   public boolean isTerminated() {
-    return super.isTerminated() && mExecutorService.isTerminated();
+    return super.isTerminated() && executorService.isTerminated();
   }
 
   @Override
@@ -115,7 +115,7 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
     final long startTime = System.currentTimeMillis();
     if (super.awaitTermination(timeout, unit)) {
       long remainingTime = unit.toMillis(timeout) + startTime - System.currentTimeMillis();
-      return (remainingTime > 0) && mExecutorService.awaitTermination(remainingTime,
+      return (remainingTime > 0) && executorService.awaitTermination(remainingTime,
           TimeUnit.MILLISECONDS);
     }
     return false;
@@ -126,7 +126,7 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
   public ScheduledFuture<?> schedule(final Runnable command, final long delay,
       final TimeUnit unit) {
     final RunnableFuture future =
-        new RunnableFuture(mExecutorService, command, TimeUnits.toTimestampNanos(delay, unit));
+        new RunnableFuture(executorService, command, TimeUnits.toTimestampNanos(delay, unit));
     future.setFuture(super.schedule(future, delay, unit));
     return future;
   }
@@ -136,7 +136,7 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
   public <V> ScheduledFuture<V> schedule(final Callable<V> callable, final long delay,
       final TimeUnit unit) {
     final CallableFuture<V> future =
-        new CallableFuture<V>(mExecutorService, callable, TimeUnits.toTimestampNanos(delay, unit));
+        new CallableFuture<V>(executorService, callable, TimeUnits.toTimestampNanos(delay, unit));
     future.setFuture(super.schedule(future, delay, unit));
     return future;
   }
@@ -145,9 +145,9 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
   @Override
   public ScheduledFuture<?> scheduleAtFixedRate(final Runnable command, final long initialDelay,
       final long period, final TimeUnit unit) {
-    final RunnableFuture future = new RunnableFuture(mExecutorService, command,
-        TimeUnits.toTimestampNanos(initialDelay, unit),
-        unit.toNanos(ConstantConditions.positive("period", period)));
+    final RunnableFuture future =
+        new RunnableFuture(executorService, command, TimeUnits.toTimestampNanos(initialDelay, unit),
+            unit.toNanos(ConstantConditions.positive("period", period)));
     future.setFuture(super.scheduleAtFixedRate(future, initialDelay, period, unit));
     return future;
   }
@@ -156,46 +156,46 @@ class ScheduledThreadPoolWrapper extends ScheduledThreadPoolExecutor {
   @Override
   public ScheduledFuture<?> scheduleWithFixedDelay(final Runnable command, final long initialDelay,
       final long delay, final TimeUnit unit) {
-    final RunnableFuture future = new RunnableFuture(mExecutorService, command,
-        TimeUnits.toTimestampNanos(initialDelay, unit),
-        unit.toNanos(-ConstantConditions.positive("delay", delay)));
+    final RunnableFuture future =
+        new RunnableFuture(executorService, command, TimeUnits.toTimestampNanos(initialDelay, unit),
+            unit.toNanos(-ConstantConditions.positive("delay", delay)));
     future.setFuture(super.scheduleWithFixedDelay(future, initialDelay, delay, unit));
     return future;
   }
 
   @Override
   public void execute(final Runnable command) {
-    mExecutorService.execute(command);
+    executorService.execute(command);
   }
 
   @NotNull
   @Override
   public Future<?> submit(final Runnable task) {
-    return mExecutorService.submit(task);
+    return executorService.submit(task);
   }
 
   @NotNull
   @Override
   public <T> Future<T> submit(final Runnable task, final T result) {
-    return mExecutorService.submit(task, result);
+    return executorService.submit(task, result);
   }
 
   @NotNull
   @Override
   public <T> Future<T> submit(final Callable<T> task) {
-    return mExecutorService.submit(task);
+    return executorService.submit(task);
   }
 
   @Override
   public void shutdown() {
-    mExecutorService.shutdown();
+    executorService.shutdown();
     super.shutdown();
   }
 
   @NotNull
   @Override
   public List<Runnable> shutdownNow() {
-    final ArrayList<Runnable> commands = new ArrayList<Runnable>(mExecutorService.shutdownNow());
+    final ArrayList<Runnable> commands = new ArrayList<Runnable>(executorService.shutdownNow());
     commands.addAll(super.shutdownNow());
     return commands;
   }

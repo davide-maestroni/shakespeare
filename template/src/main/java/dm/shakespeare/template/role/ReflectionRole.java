@@ -52,14 +52,14 @@ public class ReflectionRole extends SerializableRole {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private final Object mObject;
+  private final Object object;
 
   public ReflectionRole() {
-    mObject = this;
+    object = this;
   }
 
   public ReflectionRole(@NotNull final Object object) {
-    mObject = ConstantConditions.notNull("object", object);
+    this.object = ConstantConditions.notNull("object", object);
   }
 
   @NotNull
@@ -71,26 +71,26 @@ public class ReflectionRole extends SerializableRole {
   }
 
   @NotNull
-  public Behavior getBehavior(@NotNull final String id) {
-    return Behaviors.reflection(mObject);
+  protected Behavior getSerializableBehavior(@NotNull final String id) {
+    return Behaviors.reflection(object);
   }
 
   private static class ActorHandler implements InvocationHandler {
 
-    private final Actor mActor;
-    private final Options mOptions;
-    private final Actor mSender;
+    private final Actor actor;
+    private final Options options;
+    private final Actor sender;
 
     private ActorHandler(@NotNull final Actor actor, @Nullable final Options options,
         @NotNull final Actor sender) {
-      mActor = ConstantConditions.notNull("actor", actor);
-      mSender = ConstantConditions.notNull("sender", sender);
-      mOptions = options;
+      this.actor = ConstantConditions.notNull("actor", actor);
+      this.sender = ConstantConditions.notNull("sender", sender);
+      this.options = options;
     }
 
     public Object invoke(final Object o, final Method method, final Object[] objects) {
-      mActor.tell(ReflectionBehavior.invoke(method.getName(), method.getParameterTypes(), objects),
-          mOptions, mSender);
+      actor.tell(ReflectionBehavior.invoke(method.getName(), method.getParameterTypes(), objects),
+          options, sender);
       return DEFAULT_RETURN_VALUES.get(method.getReturnType());
     }
   }

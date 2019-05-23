@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
 
-import dm.shakespeare.BackStage;
+import dm.shakespeare.Stage;
 import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
@@ -40,20 +40,20 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class ProxyBehavior extends AbstractBehavior {
 
-  private final WeakReference<Actor> mActor;
-  private final HashMap<Actor, WeakReference<Actor>> mProxyToSenderMap =
+  private final WeakReference<Actor> actor;
+  private final HashMap<Actor, WeakReference<Actor>> proxyToSenderMap =
       new HashMap<Actor, WeakReference<Actor>>();
-  private final WeakHashMap<Actor, Actor> mSenderToProxyMap = new WeakHashMap<Actor, Actor>();
+  private final WeakHashMap<Actor, Actor> senderToProxyMap = new WeakHashMap<Actor, Actor>();
 
   public ProxyBehavior(@NotNull final WeakReference<Actor> actorRef) {
-    mActor = ConstantConditions.notNull("actorRef", actorRef);
+    actor = ConstantConditions.notNull("actorRef", actorRef);
   }
 
   public void onMessage(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
-    final Actor actor = mActor.get();
-    final WeakHashMap<Actor, Actor> senderToProxyMap = mSenderToProxyMap;
-    final HashMap<Actor, WeakReference<Actor>> proxyToSenderMap = mProxyToSenderMap;
+    final Actor actor = this.actor.get();
+    final WeakHashMap<Actor, Actor> senderToProxyMap = this.senderToProxyMap;
+    final HashMap<Actor, WeakReference<Actor>> proxyToSenderMap = this.proxyToSenderMap;
     final Actor sender = envelop.getSender();
     final Options options = envelop.getOptions();
     if (actor == null) {
@@ -91,7 +91,7 @@ public class ProxyBehavior extends AbstractBehavior {
       final Actor self = agent.getSelf();
       if (!senderToProxyMap.containsKey(sender)) {
         proxyToSenderMap.keySet().retainAll(senderToProxyMap.values());
-        final Actor proxy = BackStage.newActor(sender.getId(), new SenderRole(self, actor));
+        final Actor proxy = Stage.newActor(sender.getId(), new SenderRole(self, actor));
         senderToProxyMap.put(sender, proxy);
         proxyToSenderMap.put(proxy, new WeakReference<Actor>(sender));
       }
@@ -103,7 +103,7 @@ public class ProxyBehavior extends AbstractBehavior {
   protected void onIncoming(@NotNull final Actor proxied, @NotNull final Actor sender,
       final Object message, final long sentAt, @NotNull final Options options,
       @NotNull final Agent agent) throws Exception {
-    final Actor proxy = mSenderToProxyMap.get(sender);
+    final Actor proxy = senderToProxyMap.get(sender);
     if (proxy != null) {
       proxied.tell(message, options.asSentAt(sentAt), proxy);
     }
@@ -117,12 +117,12 @@ public class ProxyBehavior extends AbstractBehavior {
 
   private static class SenderRole extends Role {
 
-    private final Actor mProxied;
-    private final Actor mProxy;
+    private final Actor proxied;
+    private final Actor proxy;
 
     private SenderRole(@NotNull final Actor proxy, @NotNull final Actor proxied) {
-      mProxy = proxy;
-      mProxied = proxied;
+      this.proxy = proxy;
+      this.proxied = proxied;
     }
 
     @NotNull
@@ -131,9 +131,9 @@ public class ProxyBehavior extends AbstractBehavior {
 
         public void onMessage(final Object message, @NotNull final Envelop envelop,
             @NotNull final Agent agent) {
-          final Actor proxy = mProxy;
+          final Actor proxy = SenderRole.this.proxy;
           if (proxy.equals(envelop.getSender())) {
-            mProxied.tell(message, envelop.getOptions().asSentAt(envelop.getSentAt()),
+            proxied.tell(message, envelop.getOptions().asSentAt(envelop.getSentAt()),
                 agent.getSelf());
             agent.dismissSelf();
 

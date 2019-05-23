@@ -29,7 +29,7 @@ import dm.shakespeare.util.ConstantConditions;
  */
 class MultiPrinter implements LogPrinter {
 
-  private final HashSet<LogPrinter> mPrinters;
+  private final HashSet<LogPrinter> printers;
 
   /**
    * Creates a new broadcasting printer.
@@ -37,11 +37,12 @@ class MultiPrinter implements LogPrinter {
    * @param printers the log printers which will receive the broadcast messages.
    */
   MultiPrinter(@NotNull final Collection<? extends LogPrinter> printers) {
-    mPrinters = new HashSet<LogPrinter>(ConstantConditions.notNullElements("printers", printers));
+    this.printers =
+        new HashSet<LogPrinter>(ConstantConditions.notNullElements("printers", printers));
   }
 
   public boolean canLogDbg() {
-    for (final LogPrinter printer : mPrinters) {
+    for (final LogPrinter printer : printers) {
       if (printer.canLogDbg()) {
         return true;
       }
@@ -50,7 +51,7 @@ class MultiPrinter implements LogPrinter {
   }
 
   public boolean canLogErr() {
-    for (final LogPrinter printer : mPrinters) {
+    for (final LogPrinter printer : printers) {
       if (printer.canLogErr()) {
         return true;
       }
@@ -59,7 +60,7 @@ class MultiPrinter implements LogPrinter {
   }
 
   public boolean canLogWrn() {
-    for (final LogPrinter printer : mPrinters) {
+    for (final LogPrinter printer : printers) {
       if (printer.canLogWrn()) {
         return true;
       }
@@ -68,19 +69,19 @@ class MultiPrinter implements LogPrinter {
   }
 
   public void dbg(@NotNull final LogMessage message) {
-    for (final LogPrinter printer : mPrinters) {
+    for (final LogPrinter printer : printers) {
       printer.dbg(message);
     }
   }
 
   public void err(@NotNull final LogMessage message) {
-    for (final LogPrinter printer : mPrinters) {
+    for (final LogPrinter printer : printers) {
       printer.err(message);
     }
   }
 
   public void wrn(@NotNull final LogMessage message) {
-    for (final LogPrinter printer : mPrinters) {
+    for (final LogPrinter printer : printers) {
       printer.wrn(message);
     }
   }

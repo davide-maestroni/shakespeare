@@ -30,31 +30,31 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class RoleWrapper extends Role {
 
-  private final Role mRole;
+  private final Role role;
 
   public RoleWrapper(@NotNull final Role role) {
-    mRole = ConstantConditions.notNull("role", role);
+    this.role = ConstantConditions.notNull("role", role);
   }
 
   @NotNull
   public Behavior getBehavior(@NotNull final String id) throws Exception {
-    return mRole.getBehavior(id);
+    return role.getBehavior(id);
   }
 
   @NotNull
   @Override
   public ExecutorService getExecutorService(@NotNull final String id) throws Exception {
-    return mRole.getExecutorService(id);
+    return role.getExecutorService(id);
   }
 
   @NotNull
   @Override
   public Logger getLogger(@NotNull final String id) throws Exception {
-    return mRole.getLogger(id);
+    return role.getLogger(id);
   }
 
   @Override
   public int getQuota(@NotNull final String id) throws Exception {
-    return mRole.getQuota(id);
+    return role.getQuota(id);
   }
 }

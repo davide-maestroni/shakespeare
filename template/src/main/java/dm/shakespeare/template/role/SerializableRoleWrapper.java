@@ -18,9 +18,6 @@ package dm.shakespeare.template.role;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.concurrent.ExecutorService;
 
 import dm.shakespeare.actor.Behavior;
@@ -37,43 +34,31 @@ public class SerializableRoleWrapper extends SerializableRole {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private transient Role mRole;
+  private final Role role;
 
   public SerializableRoleWrapper(@NotNull final Role role) {
-    mRole = ConstantConditions.notNull("role", role);
-  }
-
-  @NotNull
-  public Behavior getBehavior(@NotNull final String id) throws Exception {
-    return mRole.getBehavior(id);
+    this.role = ConstantConditions.notNull("role", role);
   }
 
   @NotNull
   @Override
   public ExecutorService getExecutorService(@NotNull final String id) throws Exception {
-    return mRole.getExecutorService(id);
+    return role.getExecutorService(id);
   }
 
   @NotNull
   @Override
   public Logger getLogger(@NotNull final String id) throws Exception {
-    return mRole.getLogger(id);
+    return role.getLogger(id);
   }
 
   @Override
   public int getQuota(@NotNull final String id) throws Exception {
-    return mRole.getQuota(id);
+    return role.getQuota(id);
   }
 
-  @SuppressWarnings("unchecked")
-  private void readObject(@NotNull final ObjectInputStream in) throws IOException,
-      ClassNotFoundException {
-    in.defaultReadObject();
-    mRole = (Role) in.readObject();
-  }
-
-  private void writeObject(@NotNull final ObjectOutputStream out) throws IOException {
-    out.defaultWriteObject();
-    out.writeObject(mRole);
+  @NotNull
+  protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
+    return role.getBehavior(id);
   }
 }

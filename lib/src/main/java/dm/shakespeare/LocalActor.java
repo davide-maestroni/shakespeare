@@ -45,10 +45,10 @@ class LocalActor implements Actor {
     }
   };
 
-  private final LocalAgent mAgent;
-  private final String mId;
-  private final Logger mLogger;
-  private final QuotaHandler mQuotaHandler;
+  private final LocalAgent agent;
+  private final String id;
+  private final Logger logger;
+  private final QuotaHandler quotaHandler;
 
   /**
    * Creates a new actor instance.
@@ -58,42 +58,42 @@ class LocalActor implements Actor {
    * @param agent the agent instance.
    */
   LocalActor(@NotNull final String id, final int quota, @NotNull final LocalAgent agent) {
-    mId = ConstantConditions.notNull("id", id);
-    mAgent = ConstantConditions.notNull("agent", agent);
-    mQuotaHandler = (quota < Integer.MAX_VALUE) ? new DefaultQuotaHandler(
+    this.id = ConstantConditions.notNull("id", id);
+    this.agent = ConstantConditions.notNull("agent", agent);
+    quotaHandler = (quota < Integer.MAX_VALUE) ? new DefaultQuotaHandler(
         ConstantConditions.positive("quota", quota)) : DUMMY_HANDLER;
-    mLogger = mAgent.getLogger();
+    logger = this.agent.getLogger();
   }
 
   @NotNull
   public Actor addObserver(@NotNull final Actor observer) {
-    mLogger.dbg("[%s] adding observer: observer=%s", this, observer);
-    mAgent.getActorExecutorService().executeNext(new Runnable() {
+    logger.dbg("[%s] adding observer: observer=%s", this, observer);
+    agent.getActorExecutorService().executeNext(new Runnable() {
 
       public void run() {
-        mAgent.addObserver(observer);
+        agent.addObserver(observer);
       }
     });
     return this;
   }
 
   public void dismiss(final boolean mayInterruptIfRunning) {
-    mLogger.dbg("[%s] dismissing: mayInterruptIfRunning=%s", this, mayInterruptIfRunning);
-    mAgent.dismiss(mayInterruptIfRunning);
+    logger.dbg("[%s] dismissing: mayInterruptIfRunning=%s", this, mayInterruptIfRunning);
+    agent.dismiss(mayInterruptIfRunning);
   }
 
   @NotNull
   public String getId() {
-    return mId;
+    return id;
   }
 
   @NotNull
   public Actor removeObserver(@NotNull final Actor observer) {
-    mLogger.dbg("[%s] removing observer: observer=%s", this, observer);
-    mAgent.getActorExecutorService().executeNext(new Runnable() {
+    logger.dbg("[%s] removing observer: observer=%s", this, observer);
+    agent.getActorExecutorService().executeNext(new Runnable() {
 
       public void run() {
-        mAgent.removeObserver(observer);
+        agent.removeObserver(observer);
       }
     });
     return this;
@@ -102,28 +102,27 @@ class LocalActor implements Actor {
   @NotNull
   public Actor tell(final Object message, @Nullable final Options options,
       @NotNull final Actor sender) {
-    mLogger.dbg("[%s] sending: options=%s - sender=%s - message=%s", this, options, sender,
-        message);
-    if (mQuotaHandler.consumeQuota()) {
+    logger.dbg("[%s] sending: options=%s - sender=%s - message=%s", this, options, sender, message);
+    if (quotaHandler.consumeQuota()) {
       try {
-        mAgent.getActorExecutorService().execute(new DefaultEnvelop(sender, options) {
+        agent.getActorExecutorService().execute(new DefaultEnvelop(sender, options) {
 
           void open() {
-            mQuotaHandler.releaseQuota();
-            mAgent.message(message, this);
+            quotaHandler.releaseQuota();
+            agent.message(message, this);
           }
         });
-        mLogger.dbg("[%s] sent: options=%s - sender=%s - message=%s", this, options, sender,
+        logger.dbg("[%s] sent: options=%s - sender=%s - message=%s", this, options, sender,
             message);
 
       } catch (final RejectedExecutionException e) {
-        mLogger.wrn(e, "[%s] failed to send: options=%s - sender=%s - message=%s", this, options,
+        logger.wrn(e, "[%s] failed to send: options=%s - sender=%s - message=%s", this, options,
             sender, message);
         quotaExceeded(message, new BounceEnvelop(sender, options));
       }
 
     } else {
-      mLogger.wrn("[%s] quota exceeded: options=%s - sender=%s - message=%s", this, options, sender,
+      logger.wrn("[%s] quota exceeded: options=%s - sender=%s - message=%s", this, options, sender,
           message);
       quotaExceeded(message, new BounceEnvelop(sender, options));
     }
@@ -133,28 +132,28 @@ class LocalActor implements Actor {
   @NotNull
   public Actor tellAll(@NotNull final Iterable<?> messages, @Nullable final Options options,
       @NotNull final Actor sender) {
-    mLogger.dbg("[%s] sending all: options=%s - sender=%s - message=%s", this, options, sender,
+    logger.dbg("[%s] sending all: options=%s - sender=%s - message=%s", this, options, sender,
         messages);
-    if (mQuotaHandler.consumeQuota()) {
+    if (quotaHandler.consumeQuota()) {
       try {
-        mAgent.getActorExecutorService().execute(new DefaultEnvelop(sender, options) {
+        agent.getActorExecutorService().execute(new DefaultEnvelop(sender, options) {
 
           void open() {
-            mQuotaHandler.releaseQuota();
-            mAgent.messages(messages, this);
+            quotaHandler.releaseQuota();
+            agent.messages(messages, this);
           }
         });
-        mLogger.dbg("[%s] sent all: options=%s - sender=%s - message=%s", this, options, sender,
+        logger.dbg("[%s] sent all: options=%s - sender=%s - message=%s", this, options, sender,
             messages);
 
       } catch (final RejectedExecutionException e) {
-        mLogger.wrn(e, "[%s] failed to send all: options=%s - sender=%s - message=%s", this,
-            options, sender, messages);
+        logger.wrn(e, "[%s] failed to send all: options=%s - sender=%s - message=%s", this, options,
+            sender, messages);
         quotaExceeded(messages, new BounceEnvelop(sender, options));
       }
 
     } else {
-      mLogger.wrn("[%s] quota exceeded all: options=%s - sender=%s - message=%s", this, options,
+      logger.wrn("[%s] quota exceeded all: options=%s - sender=%s - message=%s", this, options,
           sender, messages);
       quotaExceeded(messages, new BounceEnvelop(sender, options));
     }
@@ -163,7 +162,7 @@ class LocalActor implements Actor {
 
   @Override
   public String toString() {
-    return super.toString() + ":" + mId;
+    return super.toString() + ":" + id;
   }
 
   private void quotaExceeded(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
@@ -173,14 +172,14 @@ class LocalActor implements Actor {
       for (final Object message : messages) {
         bounces.add(new QuotaExceeded(message, options));
       }
-      mAgent.replyAll(envelop.getSender(), bounces, options.threadOnly());
+      agent.replyAll(envelop.getSender(), bounces, options.threadOnly());
     }
   }
 
   private void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
     final Options options = envelop.getOptions();
     if (options.getReceiptId() != null) {
-      mAgent.reply(envelop.getSender(), new QuotaExceeded(message, options), options.threadOnly());
+      agent.reply(envelop.getSender(), new QuotaExceeded(message, options), options.threadOnly());
     }
   }
 
@@ -203,16 +202,16 @@ class LocalActor implements Actor {
 
   private static class DefaultQuotaHandler implements QuotaHandler {
 
-    private final AtomicInteger mCount = new AtomicInteger();
-    private final int mQuota;
+    private final AtomicInteger count = new AtomicInteger();
+    private final int quota;
 
     private DefaultQuotaHandler(final int quota) {
-      mQuota = quota;
+      this.quota = quota;
     }
 
     public boolean consumeQuota() {
-      final AtomicInteger count = mCount;
-      if (count.incrementAndGet() > mQuota) {
+      final AtomicInteger count = this.count;
+      if (count.incrementAndGet() > quota) {
         count.decrementAndGet();
         return false;
       }
@@ -220,7 +219,7 @@ class LocalActor implements Actor {
     }
 
     public void releaseQuota() {
-      mCount.decrementAndGet();
+      count.decrementAndGet();
     }
   }
 }

@@ -41,13 +41,13 @@ class PriorityExecutorService extends AbstractExecutorService {
 
   private static final PriorityRunnableComparator PRIORITY_RUNNABLE_COMPARATOR =
       new PriorityRunnableComparator();
-  private static final WeakHashMap<ExecutorService, PriorityContext> sContexts =
+  private static final WeakHashMap<ExecutorService, PriorityContext> contexts =
       new WeakHashMap<ExecutorService, PriorityContext>();
 
-  private final PriorityContext mContext;
-  private final ExecutorService mExecutorService;
-  private final int mPriority;
-  private final PriorityRunnable mRunnable = new PriorityRunnable();
+  private final PriorityContext context;
+  private final ExecutorService executorService;
+  private final int priority;
+  private final PriorityRunnable runnable = new PriorityRunnable();
 
   /**
    * Creates a new executor service wrapping the specified instance.
@@ -56,16 +56,17 @@ class PriorityExecutorService extends AbstractExecutorService {
    * @param priority        the tasks priority.
    */
   PriorityExecutorService(@NotNull final ExecutorService executorService, final int priority) {
-    mExecutorService = ConstantConditions.notNull("executorService", executorService);
-    mPriority = priority;
-    synchronized (sContexts) {
-      final WeakHashMap<ExecutorService, PriorityContext> contexts = sContexts;
+    this.executorService = ConstantConditions.notNull("executorService", executorService);
+    this.priority = priority;
+    synchronized (contexts) {
+      final WeakHashMap<ExecutorService, PriorityContext> contexts =
+          PriorityExecutorService.contexts;
       PriorityContext context = contexts.get(executorService);
       if (context == null) {
         context = new PriorityContext();
         contexts.put(executorService, context);
       }
-      mContext = context;
+      this.context = context;
     }
   }
 
@@ -74,25 +75,25 @@ class PriorityExecutorService extends AbstractExecutorService {
   }
 
   public void execute(@NotNull final Runnable command) {
-    synchronized (mContext) {
-      final PriorityContext context = mContext;
+    synchronized (context) {
+      final PriorityContext context = this.context;
       context.queue.add(
-          new WrappedRunnable(ConstantConditions.notNull("command", command), mPriority,
+          new WrappedRunnable(ConstantConditions.notNull("command", command), priority,
               context.age--));
     }
-    mExecutorService.execute(mRunnable);
+    executorService.execute(runnable);
   }
 
   public void shutdown() {
-    mExecutorService.shutdown();
+    executorService.shutdown();
   }
 
   @NotNull
   public List<Runnable> shutdownNow() {
-    mExecutorService.shutdownNow();
+    executorService.shutdownNow();
     final ArrayList<Runnable> commands;
-    synchronized (mContext) {
-      final PriorityQueue<WrappedRunnable> queue = mContext.queue;
+    synchronized (context) {
+      final PriorityQueue<WrappedRunnable> queue = context.queue;
       commands = new ArrayList<Runnable>(queue);
       queue.clear();
     }
@@ -100,16 +101,16 @@ class PriorityExecutorService extends AbstractExecutorService {
   }
 
   public boolean isShutdown() {
-    return mExecutorService.isShutdown();
+    return executorService.isShutdown();
   }
 
   public boolean isTerminated() {
-    return mExecutorService.isTerminated();
+    return executorService.isTerminated();
   }
 
   public boolean awaitTermination(final long timeout, @NotNull final TimeUnit unit) throws
       InterruptedException {
-    return mExecutorService.awaitTermination(timeout, unit);
+    return executorService.awaitTermination(timeout, unit);
   }
 
   private static class PriorityContext {
@@ -127,10 +128,10 @@ class PriorityExecutorService extends AbstractExecutorService {
     private static final long serialVersionUID = -1;
 
     public int compare(final WrappedRunnable e1, final WrappedRunnable e2) {
-      final int thisPriority = e1.mPriority;
-      final long thisAge = e1.mAge;
-      final int thatPriority = e2.mPriority;
-      final long thatAge = e2.mAge;
+      final int thisPriority = e1.priority;
+      final long thisAge = e1.age;
+      final int thatPriority = e2.priority;
+      final long thatAge = e2.age;
       final int compare = compareLong(thatAge + thatPriority, thisAge + thisPriority);
       return (compare == 0) ? compareLong(thatAge, thisAge) : compare;
     }
@@ -138,18 +139,18 @@ class PriorityExecutorService extends AbstractExecutorService {
 
   private static class WrappedRunnable implements Runnable {
 
-    private final long mAge;
-    private final int mPriority;
-    private final Runnable mRunnable;
+    private final long age;
+    private final int priority;
+    private final Runnable runnable;
 
     private WrappedRunnable(@NotNull final Runnable runnable, final int priority, final long age) {
-      mRunnable = runnable;
-      mPriority = priority;
-      mAge = age;
+      this.runnable = runnable;
+      this.priority = priority;
+      this.age = age;
     }
 
     public void run() {
-      mRunnable.run();
+      runnable.run();
     }
   }
 
@@ -157,8 +158,8 @@ class PriorityExecutorService extends AbstractExecutorService {
 
     public void run() {
       final Runnable command;
-      synchronized (mContext) {
-        command = mContext.queue.poll();
+      synchronized (context) {
+        command = context.queue.poll();
       }
 
       if (command != null) {

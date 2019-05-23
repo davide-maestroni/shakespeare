@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-package dm.shakespeare;
+package dm.shakespeare.actor;
 
-import org.jetbrains.annotations.NotNull;
+import java.io.Serializable;
 
-import dm.shakespeare.actor.Actor;
-import dm.shakespeare.actor.Role;
+import dm.shakespeare.config.BuildConfig;
 
 /**
- * {@link dm.shakespeare.actor.Stage Stage} implementation managing local actor instances.
+ * Created by davide-maestroni on 05/22/2019.
  */
-public class LocalStage extends AbstractStage {
+public abstract class SerializableAbstractBehavior extends AbstractBehavior
+    implements Serializable {
 
-  @NotNull
-  @Override
-  protected Actor createActor(@NotNull final String id, @NotNull final Role role) throws Exception {
-    return BackStage.createActor(id, role);
-  }
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 }

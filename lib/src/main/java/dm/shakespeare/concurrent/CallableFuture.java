@@ -31,8 +31,8 @@ import dm.shakespeare.util.ConstantConditions;
  */
 class CallableFuture<V> extends AbstractFuture<V> {
 
-  private final Callable<V> mCallable;
-  private final ExecutorService mExecutorService;
+  private final Callable<V> callable;
+  private final ExecutorService executorService;
 
   /**
    * Creates a new future wrapping the specified callable instance.
@@ -44,14 +44,14 @@ class CallableFuture<V> extends AbstractFuture<V> {
   CallableFuture(@NotNull final ExecutorService executorService,
       @NotNull final Callable<V> callable, final long timestamp) {
     super(timestamp);
-    mExecutorService = ConstantConditions.notNull("executorService", executorService);
-    mCallable = ConstantConditions.notNull("callable", callable);
+    this.executorService = ConstantConditions.notNull("executorService", executorService);
+    this.callable = ConstantConditions.notNull("callable", callable);
   }
 
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + mCallable.hashCode();
+    result = 31 * result + callable.hashCode();
     return result;
   }
 
@@ -69,11 +69,11 @@ class CallableFuture<V> extends AbstractFuture<V> {
       return false;
     }
     final CallableFuture<?> that = (CallableFuture<?>) o;
-    return mCallable.equals(that.mCallable);
+    return callable.equals(that.callable);
   }
 
   @NotNull
   Future<V> submit() {
-    return mExecutorService.submit(mCallable);
+    return executorService.submit(callable);
   }
 }

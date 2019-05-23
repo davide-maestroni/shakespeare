@@ -24,8 +24,6 @@ import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-import dm.shakespeare.BackStage;
-import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.log.Logger;
@@ -38,7 +36,7 @@ import dm.shakespeare.util.IdentityWeakHashMap;
  */
 class Setting {
 
-  private static final ThreadLocal<CQueue<Setting>> sLocalSetting =
+  private static final ThreadLocal<CQueue<Setting>> localSettings =
       new ThreadLocal<CQueue<Setting>>() {
 
         @Override
@@ -47,22 +45,22 @@ class Setting {
         }
       };
 
-  private final HashMap<Class<?>, Cache> mCaches = new HashMap<Class<?>, Cache>();
-  private final ExecutorService mExecutor;
-  private final Logger mLogger;
+  private final HashMap<Class<?>, Cache> caches = new HashMap<Class<?>, Cache>();
+  private final ExecutorService executor;
+  private final Logger logger;
 
-  private ExecutorService mTrampolineExecutor;
+  private ExecutorService localExecutor;
 
   Setting(@Nullable final ExecutorService executor, @Nullable final Logger logger) {
-    mExecutor = (executor != null) ? asActorExecutor(executor)
+    this.executor = (executor != null) ? asActorExecutor(executor)
         : asActorExecutor(Role.defaultExecutorService());
-    mLogger = logger;
+    this.logger = logger;
   }
 
   @NotNull
   static Setting get() {
     try {
-      return sLocalSetting.get().get(0);
+      return localSettings.get().get(0);
 
     } catch (final IndexOutOfBoundsException e) {
       throw new IllegalStateException("code is not running inside a plot");
@@ -70,11 +68,11 @@ class Setting {
   }
 
   static void set(@NotNull final Setting setting) {
-    sLocalSetting.get().add(ConstantConditions.notNull("setting", setting));
+    localSettings.get().add(ConstantConditions.notNull("setting", setting));
   }
 
   static void unset() {
-    sLocalSetting.get().removeLast();
+    localSettings.get().removeLast();
   }
 
   @NotNull
@@ -85,40 +83,35 @@ class Setting {
 
   @NotNull
   Cache getCache(@NotNull final Class<?> type) {
-    Cache cache = mCaches.get(type);
+    Cache cache = caches.get(type);
     if (cache == null) {
       cache = new Cache();
-      mCaches.put(type, cache);
+      caches.put(type, cache);
     }
     return cache;
   }
 
   @Nullable
   ExecutorService getExecutor() {
-    return mExecutor;
+    return executor;
   }
 
   @NotNull
   ExecutorService getLocalExecutor() {
-    if (mTrampolineExecutor == null) {
-      mTrampolineExecutor = ExecutorServices.asActorExecutor(ExecutorServices.localExecutor());
+    if (localExecutor == null) {
+      localExecutor = ExecutorServices.asActorExecutor(ExecutorServices.localExecutor());
     }
-    return mTrampolineExecutor;
+    return localExecutor;
   }
 
   @Nullable
   Logger getLogger() {
-    return mLogger;
-  }
-
-  @NotNull
-  Actor newActor(@NotNull final Role role) {
-    return BackStage.newActor(role);
+    return logger;
   }
 
   static class Cache {
 
-    private final IdentityWeakHashMap<Object, WeakReference<Object>> mData =
+    private final IdentityWeakHashMap<Object, WeakReference<Object>> data =
         new IdentityWeakHashMap<Object, WeakReference<Object>>();
 
     private Cache() {
@@ -127,12 +120,12 @@ class Setting {
     @Nullable
     @SuppressWarnings("unchecked")
     <T> T get(final Object key) {
-      final WeakReference<Object> reference = mData.get(key);
+      final WeakReference<Object> reference = data.get(key);
       return (reference != null) ? (T) reference.get() : null;
     }
 
     <T> void put(@NotNull final Object key, final T value) {
-      mData.put(key, new WeakReference<Object>(value));
+      data.put(key, new WeakReference<Object>(value));
     }
   }
 }

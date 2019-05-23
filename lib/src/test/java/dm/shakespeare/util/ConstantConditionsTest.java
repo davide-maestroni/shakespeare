@@ -325,15 +325,15 @@ public class ConstantConditionsTest {
 
   private static class GenericIterable<T> implements Iterable<T> {
 
-    private final Iterable<T> mIterable;
+    private final Iterable<T> iterable;
 
     private GenericIterable(@NotNull final Iterable<T> iterable) {
-      mIterable = iterable;
+      this.iterable = iterable;
     }
 
     @NotNull
     public Iterator<T> iterator() {
-      return mIterable.iterator();
+      return iterable.iterator();
     }
   }
 }

@@ -68,7 +68,6 @@ public class Iterables {
    * @return the collection containing the iterable elements.
    */
   @NotNull
-  @SuppressWarnings("unchecked")
   public static <T> List<T> asList(@NotNull final Iterable<T> iterable) {
     if (iterable instanceof List) {
       return (List<T>) iterable;
@@ -87,7 +86,6 @@ public class Iterables {
    * @return the collection containing the iterable elements.
    */
   @NotNull
-  @SuppressWarnings("unchecked")
   public static <T> Set<T> asSet(@NotNull final Iterable<T> iterable) {
     if (iterable instanceof Set) {
       return (Set<T>) iterable;
@@ -194,7 +192,6 @@ public class Iterables {
    * @return the element at the specified position.
    * @throws NoSuchElementException if the index is out of range.
    */
-  @SuppressWarnings("unchecked")
   public static <T> T get(@NotNull final Iterable<T> iterable, final int index) {
     if (iterable instanceof List) {
       try {
@@ -316,6 +313,7 @@ public class Iterables {
    * @return {@code true} if at least one element was removed as a result of this call.
    * @throws UnsupportedOperationException if the remove operation is not supported by the iterable.
    */
+  @SuppressWarnings("SuspiciousMethodCalls")
   public static boolean retainAll(@NotNull final Iterable<?> iterable,
       @NotNull final Collection<?> collection) {
     if (iterable instanceof Collection) {
@@ -433,7 +431,7 @@ public class Iterables {
       final StringBuilder builder = new StringBuilder();
       builder.append('[');
       while (true) {
-        builder.append(String.valueOf(iterator.next()));
+        builder.append(iterator.next());
         if (!iterator.hasNext()) {
           return builder.append(']').toString();
         }
@@ -445,66 +443,66 @@ public class Iterables {
 
   private static class ConcatIterable<T> implements Iterable<T> {
 
-    private final Iterable<? extends Iterable<? extends T>> mIterables;
+    private final Iterable<? extends Iterable<? extends T>> iterables;
 
     private ConcatIterable(@NotNull final Iterable<? extends Iterable<? extends T>> iterables) {
-      mIterables = ConstantConditions.notNullElements("iterables", iterables);
+      this.iterables = ConstantConditions.notNullElements("iterables", iterables);
     }
 
     @NotNull
     public Iterator<T> iterator() {
-      return new ConcatIterator<T>(mIterables.iterator());
+      return new ConcatIterator<T>(iterables.iterator());
     }
   }
 
   private static class ConcatIterator<T> implements Iterator<T> {
 
-    private final Iterator<? extends Iterable<? extends T>> mIterables;
-    private Iterator<? extends T> mIterator = null;
+    private final Iterator<? extends Iterable<? extends T>> iterables;
+    private Iterator<? extends T> iterator = null;
 
     private ConcatIterator(@NotNull final Iterator<? extends Iterable<? extends T>> iterator) {
-      mIterables = iterator;
+      iterables = iterator;
     }
 
     public boolean hasNext() {
-      final Iterator<? extends Iterable<? extends T>> iterables = mIterables;
-      if (mIterator == null) {
+      final Iterator<? extends Iterable<? extends T>> iterables = this.iterables;
+      if (iterator == null) {
         if (iterables.hasNext()) {
-          mIterator = iterables.next().iterator();
+          iterator = iterables.next().iterator();
 
         } else {
           return false;
         }
       }
-      while (!mIterator.hasNext()) {
+      while (!iterator.hasNext()) {
         if (iterables.hasNext()) {
-          mIterator = iterables.next().iterator();
+          iterator = iterables.next().iterator();
 
         } else {
           return false;
         }
       }
-      return mIterator.hasNext();
+      return true;
     }
 
     public T next() {
-      if (mIterator == null) {
-        final Iterator<? extends Iterable<? extends T>> iterables = mIterables;
+      if (iterator == null) {
+        final Iterator<? extends Iterable<? extends T>> iterables = this.iterables;
         if (iterables.hasNext()) {
-          mIterator = iterables.next().iterator();
+          iterator = iterables.next().iterator();
 
         } else {
           throw new NoSuchElementException();
         }
       }
-      return mIterator.next();
+      return iterator.next();
     }
 
     public void remove() {
-      if (mIterator == null) {
+      if (iterator == null) {
         throw new IllegalStateException();
       }
-      mIterator.remove();
+      iterator.remove();
     }
   }
 }

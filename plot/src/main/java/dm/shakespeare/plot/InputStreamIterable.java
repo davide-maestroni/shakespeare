@@ -32,28 +32,29 @@ import dm.shakespeare.util.ConstantConditions;
  */
 class InputStreamIterable implements Iterable<ByteBuffer> {
 
-  private final NullaryFunction<? extends ByteBuffer> mBufferCreator;
-  private final InputStream mInputStream;
-  private final Memory mMemory;
+  private final NullaryFunction<? extends ByteBuffer> bufferCreator;
+  private final InputStream inputStream;
+  private final Memory memory;
 
-  private NullaryFunction<ByteBuffer> mReader;
+  private NullaryFunction<ByteBuffer> reader;
 
   InputStreamIterable(@NotNull final InputStream inputStream,
       @NotNull final NullaryFunction<? extends ByteBuffer> bufferCreator,
       @NotNull final Memory memory) {
-    mInputStream = ConstantConditions.notNull("inputStream", inputStream);
-    mBufferCreator = ConstantConditions.notNull("bufferCreator", bufferCreator);
-    mMemory = ConstantConditions.notNull("memory", memory);
+    this.inputStream = ConstantConditions.notNull("inputStream", inputStream);
+    this.bufferCreator = ConstantConditions.notNull("bufferCreator", bufferCreator);
+    this.memory = ConstantConditions.notNull("memory", memory);
     if (inputStream instanceof FileInputStream) {
-      mReader = new NullaryFunction<ByteBuffer>() {
+      reader = new NullaryFunction<ByteBuffer>() {
 
         public ByteBuffer call() throws Exception {
-          final ByteBuffer byteBuffer = mBufferCreator.call();
-          final int read = ((FileInputStream) mInputStream).getChannel().read(byteBuffer);
+          final ByteBuffer byteBuffer = InputStreamIterable.this.bufferCreator.call();
+          final int read = ((FileInputStream) InputStreamIterable.this.inputStream).getChannel()
+              .read(byteBuffer);
           if (read > 0) {
             return byteBuffer;
           }
-          mReader = new NullaryFunction<ByteBuffer>() {
+          reader = new NullaryFunction<ByteBuffer>() {
 
             public ByteBuffer call() {
               return null;
@@ -64,11 +65,11 @@ class InputStreamIterable implements Iterable<ByteBuffer> {
       };
 
     } else {
-      mReader = new NullaryFunction<ByteBuffer>() {
+      reader = new NullaryFunction<ByteBuffer>() {
 
         public ByteBuffer call() throws Exception {
-          final InputStream inputStream = mInputStream;
-          final ByteBuffer byteBuffer = mBufferCreator.call();
+          final InputStream inputStream = InputStreamIterable.this.inputStream;
+          final ByteBuffer byteBuffer = InputStreamIterable.this.bufferCreator.call();
           int read = 0;
           if (byteBuffer.hasArray()) {
             read = inputStream.read(byteBuffer.array());
@@ -85,7 +86,7 @@ class InputStreamIterable implements Iterable<ByteBuffer> {
           if (read > 0) {
             return byteBuffer;
           }
-          mReader = new NullaryFunction<ByteBuffer>() {
+          reader = new NullaryFunction<ByteBuffer>() {
 
             public ByteBuffer call() {
               return null;
@@ -104,29 +105,29 @@ class InputStreamIterable implements Iterable<ByteBuffer> {
 
   private class InputStreamIterator implements Iterator<ByteBuffer> {
 
-    private final Iterator<Object> mIterator;
+    private final Iterator<Object> iterator;
 
     private InputStreamIterator() {
-      mIterator = mMemory.iterator();
+      iterator = memory.iterator();
     }
 
     public boolean hasNext() {
-      if (!mIterator.hasNext()) {
+      if (!iterator.hasNext()) {
         try {
-          final ByteBuffer byteBuffer = mReader.call();
+          final ByteBuffer byteBuffer = reader.call();
           if (byteBuffer != null) {
-            mMemory.put(byteBuffer);
+            memory.put(byteBuffer);
           }
 
         } catch (final Exception e) {
           throw new IllegalStateException(e);
         }
       }
-      return mIterator.hasNext();
+      return iterator.hasNext();
     }
 
     public ByteBuffer next() {
-      return (ByteBuffer) mIterator.next();
+      return (ByteBuffer) iterator.next();
     }
 
     public void remove() {

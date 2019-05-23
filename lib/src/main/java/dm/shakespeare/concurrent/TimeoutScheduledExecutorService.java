@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 class TimeoutScheduledExecutorService extends TimeoutExecutorService
     implements ScheduledExecutorService {
 
-  private final ScheduledExecutorService mExecutorService;
+  private final ScheduledExecutorService executorService;
 
   /**
    * Creates a new executor service wrapping the specified instance.
@@ -44,30 +44,30 @@ class TimeoutScheduledExecutorService extends TimeoutExecutorService
   TimeoutScheduledExecutorService(@NotNull final ScheduledExecutorService executorService,
       final long timeout, @NotNull final TimeUnit timeUnit, final boolean mayInterruptIfRunning) {
     super(executorService, timeout, timeUnit, mayInterruptIfRunning);
-    mExecutorService = executorService;
+    this.executorService = executorService;
   }
 
   @NotNull
   public ScheduledFuture<?> schedule(@NotNull final Runnable command, final long delay,
       @NotNull final TimeUnit unit) {
-    return timeout(mExecutorService.schedule(command, delay, unit));
+    return timeout(executorService.schedule(command, delay, unit));
   }
 
   @NotNull
   public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> callable, final long delay,
       @NotNull final TimeUnit unit) {
-    return timeout(mExecutorService.schedule(callable, delay, unit));
+    return timeout(executorService.schedule(callable, delay, unit));
   }
 
   @NotNull
   public ScheduledFuture<?> scheduleAtFixedRate(@NotNull final Runnable command,
       final long initialDelay, final long period, @NotNull final TimeUnit unit) {
-    return timeout(mExecutorService.scheduleAtFixedRate(command, initialDelay, period, unit));
+    return timeout(executorService.scheduleAtFixedRate(command, initialDelay, period, unit));
   }
 
   @NotNull
   public ScheduledFuture<?> scheduleWithFixedDelay(@NotNull final Runnable command,
       final long initialDelay, final long delay, @NotNull final TimeUnit unit) {
-    return timeout(mExecutorService.scheduleWithFixedDelay(command, initialDelay, delay, unit));
+    return timeout(executorService.scheduleWithFixedDelay(command, initialDelay, delay, unit));
   }
 }

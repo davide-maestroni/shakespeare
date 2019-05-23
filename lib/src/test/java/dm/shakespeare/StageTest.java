@@ -19,4 +19,4 @@ package dm.shakespeare;
 /**
  * Created by davide-maestroni on 03/05/2019.
  */
-public class BackStageTest {}
+public class StageTest {}

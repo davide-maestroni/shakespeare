@@ -36,7 +36,7 @@ public class PoisonableRole extends SerializableRoleWrapper {
 
   @NotNull
   @Override
-  public Behavior getBehavior(@NotNull final String id) throws Exception {
+  protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
     return Behaviors.poisonable(super.getBehavior(id));
   }
 }

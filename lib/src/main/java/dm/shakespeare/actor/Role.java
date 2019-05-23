@@ -29,6 +29,7 @@ import dm.shakespeare.function.Mapper;
 import dm.shakespeare.function.Observer;
 import dm.shakespeare.log.LogPrinters;
 import dm.shakespeare.log.Logger;
+import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Base abstract implementation of a role object.<br>
@@ -41,10 +42,10 @@ import dm.shakespeare.log.Logger;
  */
 public abstract class Role {
 
-  private static final AtomicLong sCount = new AtomicLong();
-  private static final Object sMutex = new Object();
+  private static final AtomicLong count = new AtomicLong();
+  private static final Object mutex = new Object();
 
-  private static ScheduledExecutorService sDefaultExecutorService;
+  private static ScheduledExecutorService defaultExecutorService;
 
   /**
    * Creates a new message handler wrapping the specified observer instance.
@@ -78,18 +79,37 @@ public abstract class Role {
    */
   @NotNull
   public static ExecutorService defaultExecutorService() {
-    synchronized (sMutex) {
-      if ((sDefaultExecutorService == null) || sDefaultExecutorService.isShutdown()) {
-        sDefaultExecutorService =
+    synchronized (mutex) {
+      if ((defaultExecutorService == null) || defaultExecutorService.isShutdown()) {
+        defaultExecutorService =
             ExecutorServices.newDynamicScheduledThreadPool(new ThreadFactory() {
 
               public Thread newThread(@NotNull final Runnable runnable) {
-                return new Thread(runnable, "shakespeare-thread-" + sCount.getAndIncrement());
+                return new Thread(runnable, "shakespeare-thread-" + count.getAndIncrement());
               }
             });
       }
     }
-    return sDefaultExecutorService;
+    return defaultExecutorService;
+  }
+
+  /**
+   * TODO
+   *
+   * @param mapper
+   * @return
+   */
+  @NotNull
+  public static Role from(@NotNull final Mapper<? super String, ? extends Behavior> mapper) {
+    ConstantConditions.notNull("mapper", mapper);
+    return new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) throws Exception {
+        return mapper.apply(id);
+      }
+    };
   }
 
   /**

@@ -30,9 +30,9 @@ import dm.shakespeare.util.ConstantConditions;
  */
 class LocalExecutorService extends AbstractExecutorService {
 
-  private static final LocalExecutorService sInstance = new LocalExecutorService();
+  private static final LocalExecutorService instance = new LocalExecutorService();
 
-  private final LocalExecutorThreadLocal mLocalExecutor = new LocalExecutorThreadLocal();
+  private final LocalExecutorThreadLocal localExecutor = new LocalExecutorThreadLocal();
 
   /**
    * Avoid explicit instantiation.
@@ -42,11 +42,11 @@ class LocalExecutorService extends AbstractExecutorService {
 
   @NotNull
   static LocalExecutorService defaultInstance() {
-    return sInstance;
+    return instance;
   }
 
   public void execute(@NotNull final Runnable command) {
-    mLocalExecutor.get().execute(ConstantConditions.notNull("command", command));
+    localExecutor.get().execute(ConstantConditions.notNull("command", command));
   }
 
   public void shutdown() {

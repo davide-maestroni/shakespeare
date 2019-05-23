@@ -120,7 +120,7 @@ public class RemoteServerTest {
             .withRecipientRef(actorRef)
             .withSenderRef(actorRef)
             .withSenderId("senderId"));
-    Thread.sleep(2000000);
+    Thread.sleep(2000);
   }
 
   private static class TestConnector implements Connector {

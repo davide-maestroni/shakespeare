@@ -43,35 +43,35 @@ public class CopyRole extends ReferenceRole {
   }
 
   @NotNull
-  public Behavior getBehavior(@NotNull final String id) throws Exception {
+  protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
     return new CopyBehavior(super.getBehavior(id));
   }
 
   private class CopyBehavior implements Behavior {
 
-    private Behavior mBehavior;
-    private boolean mIsStopped;
+    private Behavior behavior;
+    private boolean isStopped;
 
     private CopyBehavior(@NotNull final Behavior behavior) {
-      mBehavior = ConstantConditions.notNull("behavior", behavior);
+      this.behavior = ConstantConditions.notNull("behavior", behavior);
     }
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) throws Exception {
-      mBehavior.onMessage(message, envelop, agent);
+      behavior.onMessage(message, envelop, agent);
     }
 
     public void onStart(@NotNull final Agent agent) throws Exception {
-      if (mIsStopped) {
-        mIsStopped = false;
-        mBehavior = newRoleInstance().getBehavior(agent.getSelf().getId());
+      if (isStopped) {
+        isStopped = false;
+        behavior = newRoleInstance().getBehavior(agent.getSelf().getId());
       }
-      mBehavior.onStart(agent);
+      behavior.onStart(agent);
     }
 
     public void onStop(@NotNull final Agent agent) throws Exception {
-      mIsStopped = true;
-      mBehavior.onStop(agent);
+      isStopped = true;
+      behavior.onStop(agent);
     }
   }
 }

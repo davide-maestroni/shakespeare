@@ -29,8 +29,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import dm.shakespeare.AbstractStage;
-import dm.shakespeare.BackStage;
+import dm.shakespeare.Stage;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
@@ -55,7 +54,7 @@ import dm.shakespeare.remote.util.SerializableData;
 /**
  * Created by davide-maestroni on 04/18/2019.
  */
-public class RemoteClient extends AbstractStage {
+public class RemoteClient extends Stage {
 
   private static final Object sMutex = new Object();
 
@@ -116,7 +115,7 @@ public class RemoteClient extends AbstractStage {
       if (mActor != null) {
         return;
       }
-      mActor = BackStage.newActor(new Role() {
+      mActor = Stage.newActor(new Role() {
 
         @NotNull
         @Override
@@ -180,7 +179,7 @@ public class RemoteClient extends AbstractStage {
               mSender = mConnector.connect(new Receiver() {
 
                 public void receive(@NotNull final Remote remote) {
-                  mActor.tell(remote, null, BackStage.STAND_IN);
+                  mActor.tell(remote, null, Stage.STAND_IN);
                 }
               });
               safeSend(new DescribeRequest());
@@ -198,7 +197,7 @@ public class RemoteClient extends AbstractStage {
         public ExecutorService getExecutorService(@NotNull final String id) {
           return Executors.newSingleThreadExecutor();
         }
-      }).tell(null, null, BackStage.STAND_IN);
+      }).tell(null, null, Stage.STAND_IN);
     }
   }
 
@@ -212,7 +211,7 @@ public class RemoteClient extends AbstractStage {
   }
 
   @NotNull
-  protected Actor createActor(@NotNull final String id, @NotNull final Role role) throws Exception {
+  protected Actor buildActor(@NotNull final String id, @NotNull final Role role) throws Exception {
     return null;
   }
 

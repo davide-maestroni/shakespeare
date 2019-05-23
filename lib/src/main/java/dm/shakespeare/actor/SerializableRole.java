@@ -16,14 +16,255 @@
 
 package dm.shakespeare.actor;
 
-import java.io.Serializable;
+import org.jetbrains.annotations.NotNull;
 
+import java.io.Serializable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+
+import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.config.BuildConfig;
+import dm.shakespeare.function.Mapper;
+import dm.shakespeare.log.Logger;
+import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Serializable implementation of a {@code Role}.
+ * Serializable implementation of a {@code Role}.<br>
+ * The role instance will be serializable only if all the behavior instances, set during the actor
+ * lifecycle, effectively are.
  */
 public abstract class SerializableRole extends Role implements Serializable {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+  private static Behavior NO_OP = new Behavior() {
+
+    public void onMessage(final Object message, @NotNull final Envelop envelop,
+        @NotNull final Agent agent) {
+    }
+
+    public void onStart(@NotNull final Agent agent) {
+    }
+
+    public void onStop(@NotNull final Agent agent) {
+    }
+  };
+
+  private Behavior behavior;
+  private RoleState state = RoleState.CREATED;
+
+  /**
+   * TODO
+   *
+   * @param mapper
+   * @return
+   */
+  @NotNull
+  public static SerializableRole from(
+      @NotNull final Mapper<? super String, ? extends Behavior> mapper) {
+    ConstantConditions.notNull("mapper", mapper);
+    return new SerializableRole() {
+
+      @NotNull
+      protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
+        return mapper.apply(id);
+      }
+    };
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @NotNull
+  @Override
+  public final Behavior getBehavior(@NotNull final String id) throws Exception {
+    final Behavior behavior = this.behavior;
+    return new BehaviorWrapper((behavior != null) ? behavior : getSerializableBehavior(id));
+  }
+
+  /**
+   * Returns the initial actor behavior.<br>
+   * The returned instance should be serializable according to the specific serializer which is
+   * going to be employed.
+   *
+   * @param id the actor ID.
+   * @return the behavior instance.
+   * @throws Exception when an unexpected error occurs.
+   */
+  @NotNull
+  protected abstract Behavior getSerializableBehavior(@NotNull final String id) throws Exception;
+
+  private enum RoleState {
+    CREATED(new BehaviorHandler() {
+
+      @NotNull
+      public Behavior onMessage(@NotNull final Behavior behavior) {
+        throw new IllegalStateException("invalid role state: " + RoleState.CREATED);
+      }
+
+      @NotNull
+      public Behavior onStart(@NotNull final Behavior behavior) {
+        return behavior;
+      }
+
+      @NotNull
+      public Behavior onStop(@NotNull final Behavior behavior) {
+        return NO_OP;
+      }
+    }),
+
+    STARTED(new BehaviorHandler() {
+
+      @NotNull
+      public Behavior onMessage(@NotNull final Behavior behavior) {
+        return behavior;
+      }
+
+      @NotNull
+      public Behavior onStart(@NotNull final Behavior behavior) {
+        return NO_OP;
+      }
+
+      @NotNull
+      public Behavior onStop(@NotNull final Behavior behavior) {
+        return behavior;
+      }
+    }),
+
+    STOPPED(new BehaviorHandler() {
+
+      @NotNull
+      public Behavior onMessage(@NotNull final Behavior behavior) {
+        throw new IllegalStateException("invalid role state: " + RoleState.STOPPED);
+      }
+
+      @NotNull
+      public Behavior onStart(@NotNull final Behavior behavior) {
+        return behavior;
+      }
+
+      @NotNull
+      public Behavior onStop(@NotNull final Behavior behavior) {
+        return NO_OP;
+      }
+    }),
+
+    DISMISSED(new BehaviorHandler() {
+
+      @NotNull
+      public Behavior onMessage(@NotNull final Behavior behavior) {
+        throw new IllegalStateException("invalid role state: " + RoleState.DISMISSED);
+      }
+
+      @NotNull
+      public Behavior onStart(@NotNull final Behavior behavior) {
+        throw new IllegalStateException("invalid role state: " + RoleState.DISMISSED);
+      }
+
+      @NotNull
+      public Behavior onStop(@NotNull final Behavior behavior) {
+        throw new IllegalStateException("invalid role state: " + RoleState.DISMISSED);
+      }
+    });
+
+    private transient final BehaviorHandler handler;
+
+    RoleState(@NotNull final BehaviorHandler handler) {
+      this.handler = handler;
+    }
+
+    @NotNull
+    public BehaviorHandler getBehaviorHandler() {
+      return handler;
+    }
+  }
+
+  private interface BehaviorHandler {
+
+    @NotNull
+    Behavior onMessage(@NotNull Behavior behavior);
+
+    @NotNull
+    Behavior onStart(@NotNull Behavior behavior);
+
+    @NotNull
+    Behavior onStop(@NotNull Behavior behavior);
+  }
+
+  private class AgentWrapper implements Agent {
+
+    private Agent agent;
+
+    public void dismissSelf() {
+      agent.dismissSelf();
+    }
+
+    @NotNull
+    public ExecutorService getExecutorService() {
+      return agent.getExecutorService();
+    }
+
+    @NotNull
+    public Logger getLogger() {
+      return agent.getLogger();
+    }
+
+    @NotNull
+    public ScheduledExecutorService getScheduledExecutorService() {
+      return agent.getScheduledExecutorService();
+    }
+
+    @NotNull
+    public Actor getSelf() {
+      return agent.getSelf();
+    }
+
+    public boolean isDismissed() {
+      return agent.isDismissed();
+    }
+
+    public void restartSelf() {
+      agent.restartSelf();
+    }
+
+    public void setBehavior(@NotNull final Behavior behavior) {
+      SerializableRole.this.behavior = ConstantConditions.notNull("behavior", behavior);
+      agent.setBehavior(behavior);
+    }
+
+    @NotNull
+    private AgentWrapper withAgent(final Agent agent) {
+      this.agent = agent;
+      return this;
+    }
+  }
+
+  private class BehaviorWrapper implements Behavior {
+
+    private final AgentWrapper agent;
+
+    private BehaviorWrapper(@NotNull final Behavior behavior) {
+      SerializableRole.this.behavior = ConstantConditions.notNull("behavior", behavior);
+      agent = new AgentWrapper();
+    }
+
+    public void onMessage(final Object message, @NotNull final Envelop envelop,
+        @NotNull final Agent agent) throws Exception {
+      state.getBehaviorHandler()
+          .onMessage(behavior)
+          .onMessage(message, envelop, this.agent.withAgent(agent));
+    }
+
+    public void onStart(@NotNull final Agent agent) throws Exception {
+      final Behavior behavior = state.getBehaviorHandler().onStart(SerializableRole.this.behavior);
+      state = RoleState.STARTED;
+      behavior.onStart(this.agent.withAgent(agent));
+    }
+
+    public void onStop(@NotNull final Agent agent) throws Exception {
+      final Behavior behavior = state.getBehaviorHandler().onStop(SerializableRole.this.behavior);
+      state = RoleState.STOPPED;
+      behavior.onStart(this.agent.withAgent(agent));
+    }
+  }
 }

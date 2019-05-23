@@ -33,15 +33,15 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class ProxyRole extends Role {
 
-  private final WeakReference<Actor> mActorRef;
+  private final WeakReference<Actor> actorRef;
 
   public ProxyRole(@NotNull final Actor actor) {
-    mActorRef = new WeakReference<Actor>(ConstantConditions.notNull("actor", actor));
+    actorRef = new WeakReference<Actor>(ConstantConditions.notNull("actor", actor));
   }
 
   @NotNull
   public Behavior getBehavior(@NotNull final String id) {
-    return new ProxyBehavior(mActorRef) {
+    return new ProxyBehavior(actorRef) {
 
       @Override
       protected void onIncoming(@NotNull final Actor proxied, @NotNull final Actor sender,

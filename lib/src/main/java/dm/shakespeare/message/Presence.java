@@ -22,7 +22,7 @@ import dm.shakespeare.config.BuildConfig;
 
 /**
  * Base presence message sent to notify when an actor is added or removed from a
- * {@link dm.shakespeare.actor.Stage Stage}.
+ * {@link dm.shakespeare.Stage Stage}.
  */
 public class Presence implements Serializable {
 

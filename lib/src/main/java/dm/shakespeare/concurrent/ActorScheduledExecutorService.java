@@ -33,7 +33,7 @@ import dm.shakespeare.util.TimeUnits;
 public class ActorScheduledExecutorService extends ActorExecutorService
     implements ScheduledExecutorService {
 
-  private final ScheduledExecutorService mExecutorService;
+  private final ScheduledExecutorService executorService;
 
   /**
    * Creates a new executor service wrapping the specified instance.
@@ -42,7 +42,7 @@ public class ActorScheduledExecutorService extends ActorExecutorService
    */
   ActorScheduledExecutorService(@NotNull final ScheduledExecutorService executorService) {
     super(executorService);
-    mExecutorService = executorService;
+    this.executorService = executorService;
   }
 
   @Override
@@ -54,8 +54,8 @@ public class ActorScheduledExecutorService extends ActorExecutorService
   public ScheduledFuture<?> schedule(@NotNull final Runnable command, final long delay,
       @NotNull final TimeUnit unit) {
     final RunnableFuture future =
-        new RunnableFuture(mExecutorService, command, TimeUnits.toTimestampNanos(delay, unit));
-    future.setFuture(mExecutorService.schedule(future, delay, unit));
+        new RunnableFuture(executorService, command, TimeUnits.toTimestampNanos(delay, unit));
+    future.setFuture(executorService.schedule(future, delay, unit));
     return future;
   }
 
@@ -63,28 +63,28 @@ public class ActorScheduledExecutorService extends ActorExecutorService
   public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> callable, final long delay,
       @NotNull final TimeUnit unit) {
     final CallableFuture<V> future =
-        new CallableFuture<V>(mExecutorService, callable, TimeUnits.toTimestampNanos(delay, unit));
-    future.setFuture(mExecutorService.schedule(future, delay, unit));
+        new CallableFuture<V>(executorService, callable, TimeUnits.toTimestampNanos(delay, unit));
+    future.setFuture(executorService.schedule(future, delay, unit));
     return future;
   }
 
   @NotNull
   public ScheduledFuture<?> scheduleAtFixedRate(@NotNull final Runnable command,
       final long initialDelay, final long period, @NotNull final TimeUnit unit) {
-    final RunnableFuture future = new RunnableFuture(mExecutorService, command,
-        TimeUnits.toTimestampNanos(initialDelay, unit),
-        unit.toNanos(ConstantConditions.positive("period", period)));
-    future.setFuture(mExecutorService.scheduleAtFixedRate(future, initialDelay, period, unit));
+    final RunnableFuture future =
+        new RunnableFuture(executorService, command, TimeUnits.toTimestampNanos(initialDelay, unit),
+            unit.toNanos(ConstantConditions.positive("period", period)));
+    future.setFuture(executorService.scheduleAtFixedRate(future, initialDelay, period, unit));
     return future;
   }
 
   @NotNull
   public ScheduledFuture<?> scheduleWithFixedDelay(@NotNull final Runnable command,
       final long initialDelay, final long delay, @NotNull final TimeUnit unit) {
-    final RunnableFuture future = new RunnableFuture(mExecutorService, command,
-        TimeUnits.toTimestampNanos(initialDelay, unit),
-        unit.toNanos(-ConstantConditions.positive("delay", delay)));
-    future.setFuture(mExecutorService.scheduleWithFixedDelay(future, initialDelay, delay, unit));
+    final RunnableFuture future =
+        new RunnableFuture(executorService, command, TimeUnits.toTimestampNanos(initialDelay, unit),
+            unit.toNanos(-ConstantConditions.positive("delay", delay)));
+    future.setFuture(executorService.scheduleWithFixedDelay(future, initialDelay, delay, unit));
     return future;
   }
 }

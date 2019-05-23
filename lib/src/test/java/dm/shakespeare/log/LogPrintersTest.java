@@ -307,13 +307,7 @@ public class LogPrintersTest {
 
   private static class TestLogPrinter implements LogPrinter {
 
-    private String mMessage;
-
-    String getMessage() {
-      final String message = mMessage;
-      mMessage = null;
-      return message;
-    }
+    private String message;
 
     public boolean canLogDbg() {
       return true;
@@ -328,16 +322,21 @@ public class LogPrintersTest {
     }
 
     public void dbg(@NotNull final LogMessage message) {
-      mMessage = message.formatLogMessage("%2$s - %3$s", 1000);
+      this.message = message.formatLogMessage("%2$s - %3$s", 1000);
     }
 
     public void err(@NotNull final LogMessage message) {
-      mMessage = message.formatLogMessage("%2$s - %3$s", 1000);
+      this.message = message.formatLogMessage("%2$s - %3$s", 1000);
     }
 
     public void wrn(@NotNull final LogMessage message) {
-      mMessage = message.formatLogMessage("%2$s - %3$s", 1000);
+      this.message = message.formatLogMessage("%2$s - %3$s", 1000);
     }
 
+    String getMessage() {
+      final String message = this.message;
+      this.message = null;
+      return message;
+    }
   }
 }

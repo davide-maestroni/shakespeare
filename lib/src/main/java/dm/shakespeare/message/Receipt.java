@@ -35,8 +35,8 @@ public class Receipt implements Serializable {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private final Object mMessage;
-  private final Options mOptions;
+  private final Object message;
+  private final Options options;
 
   /**
    * Creates a new receipt message.
@@ -45,8 +45,8 @@ public class Receipt implements Serializable {
    * @param options the original message delivery options.
    */
   public Receipt(final Object message, @NotNull final Options options) {
-    mMessage = message;
-    mOptions = ConstantConditions.notNull("options", options);
+    this.message = message;
+    this.options = ConstantConditions.notNull("options", options);
   }
 
   /**
@@ -67,7 +67,7 @@ public class Receipt implements Serializable {
    * @return the message object.
    */
   public final Object getMessage() {
-    return mMessage;
+    return message;
   }
 
   /**
@@ -77,6 +77,6 @@ public class Receipt implements Serializable {
    */
   @NotNull
   public final Options getOptions() {
-    return mOptions;
+    return options;
   }
 }

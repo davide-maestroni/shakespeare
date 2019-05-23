@@ -31,18 +31,18 @@ public class AnnotatedRole extends SerializableRole {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private final Object mObject;
+  private final Object object;
 
   public AnnotatedRole() {
-    mObject = this;
+    object = this;
   }
 
   public AnnotatedRole(@NotNull final Object object) {
-    mObject = ConstantConditions.notNull("object", object);
+    this.object = ConstantConditions.notNull("object", object);
   }
 
   @NotNull
-  public Behavior getBehavior(@NotNull final String id) throws Exception {
-    return Behaviors.annotated(mObject);
+  protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
+    return Behaviors.annotated(object);
   }
 }

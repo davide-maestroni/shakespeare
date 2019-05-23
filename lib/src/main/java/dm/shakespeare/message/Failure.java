@@ -29,7 +29,14 @@ public class Failure extends Bounce {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private final Throwable mCause;
+  private final Throwable cause;
+
+  /**
+   * Creates a new empty failure message.
+   */
+  public Failure() {
+    this(null, Options.EMPTY, new IllegalArgumentException());
+  }
 
   /**
    * Creates a new failure message.
@@ -41,7 +48,7 @@ public class Failure extends Bounce {
   public Failure(final Object message, @NotNull final Options options,
       @NotNull final Throwable cause) {
     super(message, options);
-    mCause = ConstantConditions.notNull("cause", cause);
+    this.cause = ConstantConditions.notNull("cause", cause);
   }
 
   /**
@@ -51,6 +58,6 @@ public class Failure extends Bounce {
    */
   @NotNull
   public final Throwable getCause() {
-    return mCause;
+    return cause;
   }
 }

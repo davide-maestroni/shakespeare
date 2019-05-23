@@ -34,7 +34,7 @@ import dm.shakespeare.util.ConstantConditions;
 @SuppressWarnings("WeakerAccess")
 public class Reflections {
 
-  private static final HashMap<Class<?>, Class<?>> sBoxingClasses =
+  private static final HashMap<Class<?>, Class<?>> boxingClasses =
       new HashMap<Class<?>, Class<?>>(9) {{
         put(boolean.class, Boolean.class);
         put(byte.class, Byte.class);
@@ -93,7 +93,7 @@ public class Reflections {
     if (!type.isPrimitive()) {
       return type;
     }
-    return sBoxingClasses.get(type);
+    return boxingClasses.get(type);
   }
 
   /**
@@ -211,7 +211,7 @@ public class Reflections {
    */
   private static class SetAccessibleConstructorAction implements PrivilegedAction<Void> {
 
-    private final Constructor<?> mConstructor;
+    private final Constructor<?> constructor;
 
     /**
      * Constructor.
@@ -219,11 +219,11 @@ public class Reflections {
      * @param constructor the constructor instance.
      */
     private SetAccessibleConstructorAction(@NotNull final Constructor<?> constructor) {
-      mConstructor = constructor;
+      this.constructor = constructor;
     }
 
     public Void run() {
-      mConstructor.setAccessible(true);
+      constructor.setAccessible(true);
       return null;
     }
   }
@@ -233,7 +233,7 @@ public class Reflections {
    */
   private static class SetAccessibleMethodAction implements PrivilegedAction<Void> {
 
-    private final Method mMethod;
+    private final Method method;
 
     /**
      * Constructor.
@@ -241,11 +241,11 @@ public class Reflections {
      * @param method the method instance.
      */
     private SetAccessibleMethodAction(@NotNull final Method method) {
-      mMethod = method;
+      this.method = method;
     }
 
     public Void run() {
-      mMethod.setAccessible(true);
+      method.setAccessible(true);
       return null;
     }
   }

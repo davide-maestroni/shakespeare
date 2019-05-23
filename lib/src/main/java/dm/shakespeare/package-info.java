@@ -15,11 +15,7 @@
  */
 
 /**
- * Main library package providing basic implementations of the {@link dm.shakespeare.actor.Stage
- * Stage} interface.<br>
- * This package provides an {@link dm.shakespeare.AbstractStage}, a
- * {@link dm.shakespeare.LocalStage} and a {@link dm.shakespeare.BackStage} implementation.<br>
- * While a {@code BackStage} is not actually a {@code Stage}, it provides a basic way to instantiate
- * {@link dm.shakespeare.actor.Actor Actor}s.
+ * Main library package providing basic implementation of the {@link dm.shakespeare.Stage
+ * Stage} class.
  */
 package dm.shakespeare;

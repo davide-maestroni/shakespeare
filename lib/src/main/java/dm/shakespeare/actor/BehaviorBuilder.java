@@ -26,7 +26,7 @@ import dm.shakespeare.function.Tester;
 
 /**
  * Interface defining a builder of {@code Behavior} instances.<br>
- * The created behavior instances will call in definition order, upon reception of a new message,
+ * The created behavior instances will call in registration order, upon reception of a new message,
  * all the handlers matching the specified conditions. In case the message or sender match none of
  * them, all the handlers registered by calling {@link #onNoMatch(Handler)} will be invoked.<br>
  * In the same way, all the handlers registered by calling {@link #onStart(Observer)} and
@@ -37,7 +37,8 @@ import dm.shakespeare.function.Tester;
 public interface BehaviorBuilder {
 
   /**
-   * Builds the behavior instance.
+   * Builds the behavior instance.<br>
+   * The returned instance will be serializable only if all the registered handlers effectively are.
    *
    * @return the new behavior instance.
    */

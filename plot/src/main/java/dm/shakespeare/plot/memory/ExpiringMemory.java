@@ -31,32 +31,32 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class ExpiringMemory implements Memory {
 
-  private final long mExpireTime;
-  private final WeakHashMap<MemoryIterator, Void> mIterators =
+  private final long expireTime;
+  private final WeakHashMap<MemoryIterator, Void> iterators =
       new WeakHashMap<MemoryIterator, Void>();
-  private final CQueue<TimedReference> mReferences = new CQueue<TimedReference>();
-  private final TimeUnit mUnit;
+  private final CQueue<TimedReference> references = new CQueue<TimedReference>();
+  private final TimeUnit unit;
 
   public ExpiringMemory(final long expireTime, @NotNull final TimeUnit unit) {
-    mExpireTime = ConstantConditions.positive(expireTime);
-    mUnit = ConstantConditions.notNull("unit", unit);
+    this.expireTime = ConstantConditions.positive(expireTime);
+    this.unit = ConstantConditions.notNull("unit", unit);
   }
 
   @NotNull
   public Iterator<Object> iterator() {
     final MemoryIterator iterator = new MemoryIterator();
-    mIterators.put(iterator, null);
+    iterators.put(iterator, null);
     return iterator;
   }
 
   public void put(final Object value) {
-    mReferences.add(new TimedReference(value));
+    references.add(new TimedReference(value));
     prune();
   }
 
   private void prune() {
-    final long timeOffset = System.currentTimeMillis() - mUnit.toMillis(mExpireTime);
-    final CQueue<TimedReference> references = mReferences;
+    final long timeOffset = System.currentTimeMillis() - unit.toMillis(expireTime);
+    final CQueue<TimedReference> references = this.references;
     int removed = 0;
     while (!references.isEmpty() && (references.peekFirst().getTime() < timeOffset)) {
       references.removeFirst();
@@ -64,7 +64,7 @@ public class ExpiringMemory implements Memory {
     }
 
     if (removed > 0) {
-      for (final MemoryIterator iterator : mIterators.keySet()) {
+      for (final MemoryIterator iterator : iterators.keySet()) {
         iterator.decrementIndex(removed);
       }
     }
@@ -72,15 +72,15 @@ public class ExpiringMemory implements Memory {
 
   private static class TimedReference {
 
-    private final Object mObject;
+    private final Object object;
     private final long timestamp = System.currentTimeMillis();
 
     private TimedReference(final Object object) {
-      mObject = object;
+      this.object = object;
     }
 
     Object getObject() {
-      return mObject;
+      return object;
     }
 
     long getTime() {
@@ -90,18 +90,18 @@ public class ExpiringMemory implements Memory {
 
   private class MemoryIterator implements Iterator<Object> {
 
-    private int mIndex = 0;
+    private int index = 0;
 
     public boolean hasNext() {
       prune();
-      return ((mIndex = Math.max(mIndex, 0)) < mReferences.size());
+      return ((index = Math.max(index, 0)) < references.size());
     }
 
     public Object next() {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      return mReferences.get(mIndex++);
+      return references.get(index++);
     }
 
     public void remove() {
@@ -109,7 +109,7 @@ public class ExpiringMemory implements Memory {
     }
 
     void decrementIndex(final int delta) {
-      mIndex -= delta;
+      index -= delta;
     }
   }
 }

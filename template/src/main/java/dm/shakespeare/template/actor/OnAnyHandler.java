@@ -30,7 +30,6 @@ import dm.shakespeare.template.annotation.OnAny;
  */
 class OnAnyHandler implements AnnotationHandler<OnAny> {
 
-  @SuppressWarnings("unchecked")
   public void handle(@NotNull final BehaviorBuilder builder, @NotNull final Object object,
       @NotNull final Method method, @NotNull final OnAny annotation) {
     final String name = method.getName();
