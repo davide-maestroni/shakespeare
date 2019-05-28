@@ -18,19 +18,23 @@ package dm.shakespeare.template.actor;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
 import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.BehaviorBuilder.Handler;
 import dm.shakespeare.actor.Envelop;
+import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Created by davide-maestroni on 09/12/2018.
  */
-class MethodHandler implements Handler<Object> {
+class MethodHandler implements Handler<Object>, Serializable {
+
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   private final Method method;
   private final Object object;

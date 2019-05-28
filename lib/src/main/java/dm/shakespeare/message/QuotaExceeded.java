@@ -30,6 +30,12 @@ public class QuotaExceeded extends Bounce {
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   /**
+   * Creates a new empty quota exceeded message.
+   */
+  public QuotaExceeded() {
+  }
+
+  /**
    * Creates a new quota exceeded message.
    *
    * @param message the bounced message.

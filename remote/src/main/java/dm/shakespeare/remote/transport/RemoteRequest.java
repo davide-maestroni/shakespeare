@@ -14,33 +14,34 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.message;
+package dm.shakespeare.remote.transport;
 
 import org.jetbrains.annotations.NotNull;
 
-import dm.shakespeare.actor.Options;
-import dm.shakespeare.config.BuildConfig;
+import java.io.Serializable;
 
 /**
- * {@code Receipt} implementation notifying that the sent message has been bounced.
+ * Created by davide-maestroni on 04/09/2019.
  */
-public class Bounce extends Receipt {
+public class RemoteRequest implements Serializable {
 
-  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+  public static final int VERSION = 1;
 
-  /**
-   * Creates a new empty bounce message.
-   */
-  public Bounce() {
+  private static final long serialVersionUID = VERSION;
+
+  private String senderId;
+
+  public String getSenderId() {
+    return senderId;
   }
 
-  /**
-   * Creates a new bounce message.
-   *
-   * @param message the bounced message.
-   * @param options the original message delivery options.
-   */
-  public Bounce(final Object message, @NotNull final Options options) {
-    super(message, options);
+  public void setSenderId(final String senderId) {
+    this.senderId = senderId;
+  }
+
+  @NotNull
+  public RemoteRequest withSenderId(final String senderId) {
+    this.senderId = senderId;
+    return this;
   }
 }

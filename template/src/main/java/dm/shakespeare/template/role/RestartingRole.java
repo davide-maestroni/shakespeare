@@ -22,9 +22,10 @@ import java.io.Serializable;
 import java.util.concurrent.ExecutorService;
 
 import dm.shakespeare.actor.Behavior;
+import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Role;
-import dm.shakespeare.actor.SerializableRole;
 import dm.shakespeare.log.Logger;
+import dm.shakespeare.template.actor.AgentWrapper;
 import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;
@@ -32,7 +33,7 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 03/21/2019.
  */
-public class ReferenceRole extends SerializableRole {
+public class RestartingRole extends Role implements Serializable {
 
   private static final Object[] NO_ARGS = new Object[0];
 
@@ -43,15 +44,20 @@ public class ReferenceRole extends SerializableRole {
 
   private transient Role role;
 
-  public ReferenceRole(@NotNull final Class<? extends Role> roleClass) {
+  public RestartingRole(@NotNull final Class<? extends Role> roleClass) {
     this.roleClass = ConstantConditions.notNull("roleClass", roleClass);
     roleArgs = null;
   }
 
-  public ReferenceRole(@NotNull final Class<? extends Role> roleClass,
+  public RestartingRole(@NotNull final Class<? extends Role> roleClass,
       @NotNull final Serializable... roleArgs) {
     this.roleClass = ConstantConditions.notNull("roleClass", roleClass);
     this.roleArgs = ConstantConditions.notNull("roleArgs", roleArgs).clone();
+  }
+
+  @NotNull
+  public Behavior getBehavior(@NotNull final String id) throws Exception {
+    return new RestartingBehavior(getRoleInstance().getBehavior(id));
   }
 
   @NotNull
@@ -72,7 +78,7 @@ public class ReferenceRole extends SerializableRole {
   }
 
   @NotNull
-  protected Role getRoleInstance() {
+  private Role getRoleInstance() {
     if (role == null) {
       role = newRoleInstance();
     }
@@ -80,14 +86,44 @@ public class ReferenceRole extends SerializableRole {
   }
 
   @NotNull
-  protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
-    return getRoleInstance().getBehavior(id);
-  }
-
-  @NotNull
-  protected Role newRoleInstance() {
+  private Role newRoleInstance() {
     final Serializable[] roleArgs = this.roleArgs;
     return Reflections.newInstance(roleClass,
         ((roleArgs != null) && (roleArgs.length > 0)) ? roleArgs : NO_ARGS);
+  }
+
+  private class RestartingBehavior implements Behavior {
+
+    private final RestartingAgentWrapper agent = new RestartingAgentWrapper();
+
+    private Behavior behavior;
+
+    private RestartingBehavior(@NotNull final Behavior behavior) {
+      this.behavior = ConstantConditions.notNull("behavior", behavior);
+    }
+
+    public void onMessage(final Object message, @NotNull final Envelop envelop,
+        @NotNull final Agent agent) throws Exception {
+      behavior.onMessage(message, envelop, this.agent.withAgent(agent));
+    }
+
+    public void onStart(@NotNull final Agent agent) throws Exception {
+      behavior.onStart(this.agent.withAgent(agent));
+    }
+
+    public void onStop(@NotNull final Agent agent) throws Exception {
+      behavior.onStop(this.agent.withAgent(agent));
+      if (!agent.isDismissed()) {
+        behavior = newRoleInstance().getBehavior(agent.getSelf().getId());
+      }
+    }
+
+    private class RestartingAgentWrapper extends AgentWrapper {
+
+      @Override
+      public void setBehavior(@NotNull final Behavior behavior) {
+        RestartingBehavior.this.behavior = ConstantConditions.notNull("behavior", behavior);
+      }
+    }
   }
 }

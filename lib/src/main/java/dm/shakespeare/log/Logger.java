@@ -37,32 +37,24 @@ public class Logger {
   private final Locale locale;
   private final LogPrinter printer;
 
-  private Logger(@NotNull final LogPrinter printer, @NotNull final Locale locale) {
-    this.printer = ConstantConditions.notNull("printer", printer);
-    this.locale = ConstantConditions.notNull("locale", locale);
-  }
-
   /**
-   * Returns a new {@code Logger} instance initialized with {@link Locale#ENGLISH} locale.
+   * Creates a new {@code Logger} instance initialized with {@link Locale#ENGLISH} locale.
    *
    * @param printer the logs printer.
-   * @return the new logger.
    */
-  @NotNull
-  public static Logger newLogger(@NotNull final LogPrinter printer) {
-    return newLogger(printer, Locale.ENGLISH);
+  public Logger(@NotNull final LogPrinter printer) {
+    this(printer, Locale.ENGLISH);
   }
 
   /**
-   * Returns a new {@code Logger} instance initialized with the specified locale.
+   * Creates a new {@code Logger} instance initialized with the specified locale.
    *
    * @param printer the logs printer.
    * @param locale  the logs locale.
-   * @return the new logger.
    */
-  @NotNull
-  public static Logger newLogger(@NotNull final LogPrinter printer, @NotNull final Locale locale) {
-    return new Logger(printer, locale);
+  public Logger(@NotNull final LogPrinter printer, @NotNull final Locale locale) {
+    this.printer = ConstantConditions.notNull("printer", printer);
+    this.locale = ConstantConditions.notNull("locale", locale);
   }
 
   /**

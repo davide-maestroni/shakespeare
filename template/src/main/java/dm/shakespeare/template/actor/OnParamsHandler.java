@@ -18,6 +18,7 @@ package dm.shakespeare.template.actor;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +29,7 @@ import dm.shakespeare.actor.BehaviorBuilder.Handler;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.function.Tester;
 import dm.shakespeare.template.annotation.OnParams;
+import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.Iterables;
 
@@ -36,12 +38,16 @@ import dm.shakespeare.util.Iterables;
  */
 class OnParamsHandler implements AnnotationHandler<OnParams> {
 
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
   public void handle(@NotNull final BehaviorBuilder builder, @NotNull final Object object,
       @NotNull final Method method, @NotNull final OnParams annotation) {
     builder.onMessage(new MessageTester(method), new MessageHandler(object, method));
   }
 
-  private static class MessageHandler implements Handler<Iterable<?>> {
+  private static class MessageHandler implements Handler<Iterable<?>>, Serializable {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private final Method method;
     private final Object object;
@@ -79,7 +85,9 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
     }
   }
 
-  private static class MessageTester implements Tester<Object> {
+  private static class MessageTester implements Tester<Object>, Serializable {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private final Class<?>[] parameterTypes;
 

@@ -20,11 +20,7 @@
   xmlns="https://github.com/spotbugs/filter/3.0.0"
   xsi:schemaLocation="https://github.com/spotbugs/filter/3.0.0 https://raw.githubusercontent.com/spotbugs/spotbugs/3.1.0/spotbugs/etc/findbugsfilter.xsd">
   <Match>
-    <Class name="dm.shakespeare.template.role.SerializableRoleWrapper"/>
+    <Class name="~dm\.shakespeare\.template\.role\.(RestartingRole|SerializableRoleWrapper)"/>
     <Bug pattern="SE_BAD_FIELD"/>
-  </Match>
-  <Match>
-    <Class name="dm.shakespeare.template.role.ReferenceRole"/>
-    <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED"/>
   </Match>
 </FindBugsFilter>

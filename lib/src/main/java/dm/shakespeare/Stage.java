@@ -17,6 +17,7 @@
 package dm.shakespeare;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -239,7 +240,7 @@ public class Stage {
    * @return the matching actor.
    * @throws IllegalArgumentException if no matching actor is found within this stage.
    */
-  @NotNull
+  @Nullable
   public Actor findAny(@NotNull final Pattern idPattern) {
     return findAny(new PatternTester(idPattern));
   }
@@ -251,7 +252,7 @@ public class Stage {
    * @return the matching actor.
    * @throws IllegalArgumentException if no matching actor is found within this stage.
    */
-  @NotNull
+  @Nullable
   public Actor findAny(@NotNull final Tester<? super Actor> tester) {
     ConstantConditions.notNull("tester", tester);
     final ArrayList<Actor> actors;
@@ -272,8 +273,7 @@ public class Stage {
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
-
-    throw new IllegalArgumentException("cannot find an actor satisfying the tester: " + tester);
+    return null;
   }
 
   /**

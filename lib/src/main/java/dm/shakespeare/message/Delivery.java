@@ -29,6 +29,12 @@ public class Delivery extends Receipt {
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   /**
+   * Creates a new empty delivery message.
+   */
+  public Delivery() {
+  }
+
+  /**
    * Creates a new delivery message.
    *
    * @param message the delivered message.

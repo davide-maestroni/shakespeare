@@ -24,11 +24,14 @@ import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.BehaviorBuilder;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.template.annotation.OnNoMatch;
+import dm.shakespeare.template.config.BuildConfig;
 
 /**
  * Created by davide-maestroni on 09/07/2018.
  */
 class OnNoMatchHandler implements AnnotationHandler<OnNoMatch> {
+
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   public void handle(@NotNull final BehaviorBuilder builder, @NotNull final Object object,
       @NotNull final Method method, @NotNull final OnNoMatch annotation) {

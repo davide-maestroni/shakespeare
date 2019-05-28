@@ -18,6 +18,7 @@ package dm.shakespeare.template.actor;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 
 import dm.shakespeare.actor.Behavior.Agent;
@@ -26,12 +27,15 @@ import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.function.Tester;
 import dm.shakespeare.template.annotation.OnEnvelop;
 import dm.shakespeare.template.annotation.VoidTester;
+import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
 
 /**
  * Created by davide-maestroni on 09/07/2018.
  */
 class OnEnvelopHandler implements AnnotationHandler<OnEnvelop> {
+
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   public void handle(@NotNull final BehaviorBuilder builder, @NotNull final Object object,
       @NotNull final Method method, @NotNull final OnEnvelop annotation) throws Exception {
@@ -79,7 +83,9 @@ class OnEnvelopHandler implements AnnotationHandler<OnEnvelop> {
     builder.onEnvelop(tester, new MethodHandler(object, method));
   }
 
-  private static class MessageTester implements Tester<Envelop> {
+  private static class MessageTester implements Tester<Envelop>, Serializable {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private final Method method;
     private final Object object;

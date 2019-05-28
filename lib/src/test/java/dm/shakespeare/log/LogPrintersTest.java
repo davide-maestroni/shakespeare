@@ -41,7 +41,7 @@ public class LogPrintersTest {
   @Test
   public void javaLogDbg() {
     final NullPointerException ex = new NullPointerException();
-    final Logger logger = Logger.newLogger(LogPrinters.javaLoggingPrinter("test"));
+    final Logger logger = new Logger(LogPrinters.javaLoggingPrinter("test"));
     final java.util.logging.Logger loggerParent =
         java.util.logging.Logger.getLogger("test").getParent();
     for (final Handler handler : loggerParent.getHandlers()) {
@@ -66,7 +66,7 @@ public class LogPrintersTest {
   @Test
   public void javaLogErr() {
     final NullPointerException ex = new NullPointerException();
-    final Logger logger = Logger.newLogger(LogPrinters.javaLoggingPrinter("test", 100, 200));
+    final Logger logger = new Logger(LogPrinters.javaLoggingPrinter("test", 100, 200));
     logger.err(ARGS[0]);
     logger.err(FORMAT0, ARGS[0]);
     logger.err(FORMAT1, ARGS[0], ARGS[1]);
@@ -85,7 +85,7 @@ public class LogPrintersTest {
   @Test
   public void javaLogWrn() {
     final NullPointerException ex = new NullPointerException();
-    final Logger logger = Logger.newLogger(LogPrinters.javaLoggingPrinter("test"));
+    final Logger logger = new Logger(LogPrinters.javaLoggingPrinter("test"));
     logger.wrn(ARGS[0]);
     logger.wrn(FORMAT0, ARGS[0]);
     logger.wrn(FORMAT1, ARGS[0], ARGS[1]);
@@ -104,7 +104,7 @@ public class LogPrintersTest {
   @Test
   public void mergeCannotLogDbg() {
     final NullPointerException ex = new NullPointerException();
-    final Logger logger = Logger.newLogger(LogPrinters.mergePrinters(new NoLogPrinter()));
+    final Logger logger = new Logger(LogPrinters.mergePrinters(new NoLogPrinter()));
     logger.dbg(ARGS[0]);
     logger.dbg(FORMAT0, ARGS[0]);
     logger.dbg(FORMAT1, ARGS[0], ARGS[1]);
@@ -123,7 +123,7 @@ public class LogPrintersTest {
   @Test
   public void mergeCannotLogErr() {
     final NullPointerException ex = new NullPointerException();
-    final Logger logger = Logger.newLogger(LogPrinters.mergePrinters(new NoLogPrinter()));
+    final Logger logger = new Logger(LogPrinters.mergePrinters(new NoLogPrinter()));
     logger.err(ARGS[0]);
     logger.err(FORMAT0, ARGS[0]);
     logger.err(FORMAT1, ARGS[0], ARGS[1]);
@@ -142,7 +142,7 @@ public class LogPrintersTest {
   @Test
   public void mergeCannotLogWrn() {
     final NullPointerException ex = new NullPointerException();
-    final Logger logger = Logger.newLogger(LogPrinters.mergePrinters(new NoLogPrinter()));
+    final Logger logger = new Logger(LogPrinters.mergePrinters(new NoLogPrinter()));
     logger.wrn(ARGS[0]);
     logger.wrn(FORMAT0, ARGS[0]);
     logger.wrn(FORMAT1, ARGS[0], ARGS[1]);
@@ -162,8 +162,8 @@ public class LogPrintersTest {
   public void mergeLogDbg() {
     final NullPointerException ex = new NullPointerException();
     final TestLogPrinter testPrinter = new TestLogPrinter();
-    final Logger logger = Logger.newLogger(
-        LogPrinters.mergePrinters(LogPrinters.javaLoggingPrinter("test"), testPrinter));
+    final Logger logger =
+        new Logger(LogPrinters.mergePrinters(LogPrinters.javaLoggingPrinter("test"), testPrinter));
     logger.dbg(ARGS[0]);
     assertThat(testPrinter.getMessage()).contains(ARGS[0]);
     logger.dbg(FORMAT0, ARGS[0]);
@@ -202,8 +202,8 @@ public class LogPrintersTest {
   public void mergeLogErr() {
     final NullPointerException ex = new NullPointerException();
     final TestLogPrinter testPrinter = new TestLogPrinter();
-    final Logger logger = Logger.newLogger(
-        LogPrinters.mergePrinters(LogPrinters.javaLoggingPrinter("test"), testPrinter));
+    final Logger logger =
+        new Logger(LogPrinters.mergePrinters(LogPrinters.javaLoggingPrinter("test"), testPrinter));
     logger.err(ARGS[0]);
     assertThat(testPrinter.getMessage()).contains(ARGS[0]);
     logger.err(FORMAT0, ARGS[0]);
@@ -242,8 +242,8 @@ public class LogPrintersTest {
   public void mergeLogWrn() {
     final NullPointerException ex = new NullPointerException();
     final TestLogPrinter testPrinter = new TestLogPrinter();
-    final Logger logger = Logger.newLogger(
-        LogPrinters.mergePrinters(LogPrinters.javaLoggingPrinter("test"), testPrinter));
+    final Logger logger =
+        new Logger(LogPrinters.mergePrinters(LogPrinters.javaLoggingPrinter("test"), testPrinter));
     logger.wrn(ARGS[0]);
     assertThat(testPrinter.getMessage()).contains(ARGS[0]);
     logger.wrn(FORMAT0, ARGS[0]);

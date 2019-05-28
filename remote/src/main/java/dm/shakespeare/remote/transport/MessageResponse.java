@@ -14,33 +14,30 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.message;
+package dm.shakespeare.remote.transport;
 
 import org.jetbrains.annotations.NotNull;
 
-import dm.shakespeare.actor.Options;
-import dm.shakespeare.config.BuildConfig;
-
 /**
- * {@code Receipt} implementation notifying that the sent message has been bounced.
+ * Created by davide-maestroni on 04/09/2019.
  */
-public class Bounce extends Receipt {
+public class MessageResponse extends RemoteResponse {
 
-  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+  private static final long serialVersionUID = VERSION;
 
-  /**
-   * Creates a new empty bounce message.
-   */
-  public Bounce() {
+  private Throwable error;
+
+  public Throwable getError() {
+    return error;
   }
 
-  /**
-   * Creates a new bounce message.
-   *
-   * @param message the bounced message.
-   * @param options the original message delivery options.
-   */
-  public Bounce(final Object message, @NotNull final Options options) {
-    super(message, options);
+  public void setError(final Throwable error) {
+    this.error = error;
+  }
+
+  @NotNull
+  public MessageResponse withError(final Throwable error) {
+    this.error = error;
+    return this;
   }
 }

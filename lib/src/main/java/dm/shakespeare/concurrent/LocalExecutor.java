@@ -31,7 +31,7 @@ class LocalExecutor implements Executor {
 
   private static final int INITIAL_CAPACITY = 1 << 3;
   private static final Logger logger =
-      Logger.newLogger(LogPrinters.javaLoggingPrinter(LocalExecutor.class.getName()));
+      new Logger(LogPrinters.javaLoggingPrinter(LocalExecutor.class.getName()));
 
   private final CQueue<Runnable> commands = new CQueue<Runnable>(INITIAL_CAPACITY);
 

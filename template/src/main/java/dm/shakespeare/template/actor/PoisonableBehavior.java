@@ -20,28 +20,25 @@ import org.jetbrains.annotations.NotNull;
 
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
+import dm.shakespeare.actor.SerializableBehavior;
+import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Created by davide-maestroni on 03/24/2019.
  */
-public class PoisonableBehavior implements Behavior {
+public class PoisonableBehavior implements SerializableBehavior {
 
   public static final Object POISON_PILL = new Object();
 
-  private final AgentWrapper agent;
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+  private transient AgentWrapper agent = new PoisonableAgentWrapper();
 
   private Behavior behavior;
 
   PoisonableBehavior(@NotNull final Behavior behavior) {
     this.behavior = ConstantConditions.notNull("behavior", behavior);
-    agent = new AgentWrapper() {
-
-      @Override
-      public void setBehavior(@NotNull final Behavior behavior) {
-        PoisonableBehavior.this.behavior = ConstantConditions.notNull("behavior", behavior);
-      }
-    };
   }
 
   public void onMessage(final Object message, @NotNull final Envelop envelop,
@@ -59,5 +56,13 @@ public class PoisonableBehavior implements Behavior {
 
   public void onStop(@NotNull final Agent agent) throws Exception {
     behavior.onStop(this.agent.withAgent(agent));
+  }
+
+  private class PoisonableAgentWrapper extends AgentWrapper {
+
+    @Override
+    public void setBehavior(@NotNull final Behavior behavior) {
+      PoisonableBehavior.this.behavior = ConstantConditions.notNull("behavior", behavior);
+    }
   }
 }

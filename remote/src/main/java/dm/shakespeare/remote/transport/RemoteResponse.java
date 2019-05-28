@@ -14,27 +14,16 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.role;
+package dm.shakespeare.remote.transport;
 
-import org.jetbrains.annotations.NotNull;
-
-import dm.shakespeare.actor.Behavior;
-import dm.shakespeare.actor.Role;
-import dm.shakespeare.template.actor.Behaviors;
-import dm.shakespeare.template.config.BuildConfig;
+import java.io.Serializable;
 
 /**
- * Created by davide-maestroni on 01/16/2019.
+ * Created by davide-maestroni on 04/09/2019.
  */
-public class SupervisedRole extends RoleWrapper {
+public class RemoteResponse implements Serializable {
 
-  public SupervisedRole(@NotNull final Role role) {
-    super(role);
-  }
+  public static final int VERSION = RemoteRequest.VERSION;
 
-  @NotNull
-  @Override
-  public Behavior getBehavior(@NotNull final String id) throws Exception {
-    return Behaviors.supervised(super.getBehavior(id));
-  }
+  private static final long serialVersionUID = VERSION;
 }

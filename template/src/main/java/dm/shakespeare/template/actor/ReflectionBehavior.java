@@ -25,8 +25,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 
-import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Envelop;
+import dm.shakespeare.actor.SerializableAbstractBehavior;
 import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.CQueue;
@@ -35,7 +35,7 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 03/24/2019.
  */
-public class ReflectionBehavior extends AbstractBehavior {
+public class ReflectionBehavior extends SerializableAbstractBehavior {
 
   private static final ThreadLocal<CQueue<Agent>> agents = new ThreadLocal<CQueue<Agent>>() {
 
@@ -51,6 +51,7 @@ public class ReflectionBehavior extends AbstractBehavior {
       return new CQueue<Envelop>();
     }
   };
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   private final Object object;
 
@@ -78,7 +79,6 @@ public class ReflectionBehavior extends AbstractBehavior {
       agent.getLogger().wrn("ignoring message: %s", message);
       return;
     }
-
     final Object object = this.object;
     final Invoke invoke = (Invoke) message;
     final Method method;
@@ -90,7 +90,6 @@ public class ReflectionBehavior extends AbstractBehavior {
       agent.getLogger().wrn(e, "ignoring message: %s", message);
       return;
     }
-
     agents.get().addFirst(agent);
     envelops.get().addFirst(envelop);
     try {

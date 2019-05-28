@@ -78,7 +78,7 @@ public class RemoteClient extends Stage {
     mSerializer = (serializer != null) ? serializer : new JavaSerializer();
     final Logger logger = config.getLogger();
     mLogger = (logger != null) ? logger
-        : Logger.newLogger(LogPrinters.javaLoggingPrinter(getClass().getName()));
+        : new Logger(LogPrinters.javaLoggingPrinter(getClass().getName()));
   }
 
   private static void registerFile(@NotNull final File root, @NotNull final File file,

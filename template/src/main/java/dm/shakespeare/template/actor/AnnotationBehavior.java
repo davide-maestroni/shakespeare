@@ -24,11 +24,11 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.BehaviorBuilder;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Role;
+import dm.shakespeare.actor.SerializableAbstractBehavior;
 import dm.shakespeare.template.annotation.OnAny;
 import dm.shakespeare.template.annotation.OnEnvelop;
 import dm.shakespeare.template.annotation.OnMatch;
@@ -37,11 +37,12 @@ import dm.shakespeare.template.annotation.OnNoMatch;
 import dm.shakespeare.template.annotation.OnParams;
 import dm.shakespeare.template.annotation.OnStart;
 import dm.shakespeare.template.annotation.OnStop;
+import dm.shakespeare.template.config.BuildConfig;
 
 /**
  * Created by davide-maestroni on 03/24/2019.
  */
-public class AnnotationBehavior extends AbstractBehavior {
+public class AnnotationBehavior extends SerializableAbstractBehavior {
 
   private static final HashMap<Class<? extends Annotation>, AnnotationHandler<?>>
       annotationHandlers = new HashMap<Class<? extends Annotation>, AnnotationHandler<?>>() {{
@@ -54,6 +55,7 @@ public class AnnotationBehavior extends AbstractBehavior {
     put(OnEnvelop.class, new OnEnvelopHandler());
     put(OnNoMatch.class, new OnNoMatchHandler());
   }};
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   private final Behavior behavior;
 

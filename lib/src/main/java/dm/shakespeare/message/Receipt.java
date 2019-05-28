@@ -39,6 +39,13 @@ public class Receipt implements Serializable {
   private final Options options;
 
   /**
+   * Creates a new empty receipt message.
+   */
+  public Receipt() {
+    this(null, Options.EMPTY);
+  }
+
+  /**
    * Creates a new receipt message.
    *
    * @param message the received message.

@@ -18,20 +18,24 @@ package dm.shakespeare.template.actor;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.util.Collections;
 
 import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.function.Observer;
+import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Created by davide-maestroni on 09/12/2018.
  */
-class MethodObserver implements Observer<Agent> {
+class MethodObserver implements Observer<Agent>, Serializable {
 
   private static final Object[] EMPTY_ARGS = new Object[0];
+
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   private final Method method;
   private final Object object;

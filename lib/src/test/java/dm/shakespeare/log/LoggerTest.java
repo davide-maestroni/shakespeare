@@ -39,7 +39,7 @@ public class LoggerTest {
   public void debug() {
     final NullPointerException ex = new NullPointerException();
     final TestLogPrinter testPrinter = new TestLogPrinter(Level.DEBUG);
-    final Logger logger = Logger.newLogger(testPrinter);
+    final Logger logger = new Logger(testPrinter);
 
     assertThat(testPrinter.canLogDbg()).isTrue();
     assertThat(testPrinter.canLogWrn()).isTrue();
@@ -203,7 +203,7 @@ public class LoggerTest {
   public void error() {
     final NullPointerException ex = new NullPointerException();
     final TestLogPrinter testPrinter = new TestLogPrinter(Level.ERROR);
-    final Logger logger = Logger.newLogger(testPrinter);
+    final Logger logger = new Logger(testPrinter);
 
     assertThat(testPrinter.canLogDbg()).isFalse();
     assertThat(testPrinter.canLogWrn()).isFalse();
@@ -344,26 +344,26 @@ public class LoggerTest {
   @Test
   public void locale() {
     final TestLogPrinter testPrinter = new TestLogPrinter(Level.WARNING);
-    final Logger logger = Logger.newLogger(testPrinter, Locale.CANADA_FRENCH);
+    final Logger logger = new Logger(testPrinter, Locale.CANADA_FRENCH);
     assertThat(logger.getLocale()).isEqualTo(Locale.CANADA_FRENCH);
   }
 
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void newLoggerLocaleNPE() {
-    Logger.newLogger(LogPrinters.javaLoggingPrinter(""), null);
+    new Logger(LogPrinters.javaLoggingPrinter(""), null);
   }
 
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void newLoggerNPE() {
-    Logger.newLogger(null);
+    new Logger(null);
   }
 
   @Test
   public void printer() {
     final TestLogPrinter testPrinter = new TestLogPrinter(Level.WARNING);
-    final Logger logger = Logger.newLogger(testPrinter);
+    final Logger logger = new Logger(testPrinter);
     assertThat(logger.getPrinter()).isSameAs(testPrinter);
     assertThat(logger.getLocale()).isEqualTo(Locale.ENGLISH);
   }
@@ -372,7 +372,7 @@ public class LoggerTest {
   public void silence() {
     final NullPointerException ex = new NullPointerException();
     final TestLogPrinter testPrinter = new TestLogPrinter(Level.SILENCE);
-    final Logger logger = Logger.newLogger(testPrinter);
+    final Logger logger = new Logger(testPrinter);
 
     assertThat(testPrinter.canLogDbg()).isFalse();
     assertThat(testPrinter.canLogWrn()).isFalse();
@@ -503,7 +503,7 @@ public class LoggerTest {
   public void warning() {
     final NullPointerException ex = new NullPointerException();
     final TestLogPrinter testPrinter = new TestLogPrinter(Level.WARNING);
-    final Logger logger = Logger.newLogger(testPrinter);
+    final Logger logger = new Logger(testPrinter);
 
     assertThat(testPrinter.canLogDbg()).isFalse();
     assertThat(testPrinter.canLogWrn()).isTrue();

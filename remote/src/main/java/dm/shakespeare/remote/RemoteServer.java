@@ -89,7 +89,7 @@ public class RemoteServer extends Stage {
     mSerializer = (serializer != null) ? serializer : new JavaSerializer();
     final Logger logger = config.getLogger();
     mLogger = (logger != null) ? logger
-        : Logger.newLogger(LogPrinters.javaLoggingPrinter(getClass().getName()));
+        : new Logger(LogPrinters.javaLoggingPrinter(getClass().getName()));
   }
 
   public void start() {

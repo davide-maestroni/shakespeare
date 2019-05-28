@@ -18,6 +18,8 @@ package dm.shakespeare.remote;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
+
 import dm.shakespeare.remote.util.SerializableData;
 
 /**
@@ -25,10 +27,14 @@ import dm.shakespeare.remote.util.SerializableData;
  */
 public interface Serializer {
 
+  void blacklist(@NotNull Collection<String> classNames);
+
   @NotNull
   Object deserialize(@NotNull SerializableData data, @NotNull ClassLoader classLoader) throws
       Exception;
 
   @NotNull
   byte[] serialize(@NotNull Object o) throws Exception;
+
+  void whitelist(@NotNull Collection<String> classNames);
 }
