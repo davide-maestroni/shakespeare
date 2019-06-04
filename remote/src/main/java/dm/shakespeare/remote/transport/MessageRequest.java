@@ -31,18 +31,19 @@ public class MessageRequest extends RemoteRequest {
 
   private static final long serialVersionUID = VERSION;
 
-  private ActorUUID actorUUID;
+  private ActorID actorID;
   private SerializableData messageData;
   private Options options;
   private Map<String, SerializableData> resources;
+  private ActorID senderActorID;
   private long sentTimestamp = System.currentTimeMillis();
 
-  public ActorUUID getActorUUID() {
-    return actorUUID;
+  public ActorID getActorID() {
+    return actorID;
   }
 
-  public void setActorUUID(final ActorUUID actorUUID) {
-    this.actorUUID = actorUUID;
+  public void setActorID(final ActorID actorID) {
+    this.actorID = actorID;
   }
 
   public SerializableData getMessageData() {
@@ -67,6 +68,14 @@ public class MessageRequest extends RemoteRequest {
 
   public void setResources(final Map<String, SerializableData> resources) {
     this.resources = resources;
+  }
+
+  public ActorID getSenderActorID() {
+    return senderActorID;
+  }
+
+  public void setSenderActorID(final ActorID senderActorID) {
+    this.senderActorID = senderActorID;
   }
 
   public long getSentTimestamp() {
@@ -97,8 +106,8 @@ public class MessageRequest extends RemoteRequest {
   }
 
   @NotNull
-  public MessageRequest withActorId(final ActorUUID actorUUID) {
-    this.actorUUID = actorUUID;
+  public MessageRequest withActorID(final ActorID actorID) {
+    this.actorID = actorID;
     return this;
   }
 
@@ -117,6 +126,12 @@ public class MessageRequest extends RemoteRequest {
   @NotNull
   public MessageRequest withResources(final Map<String, SerializableData> resources) {
     this.resources = resources;
+    return this;
+  }
+
+  @NotNull
+  public MessageRequest withSenderActorID(final ActorID senderActorID) {
+    this.senderActorID = senderActorID;
     return this;
   }
 

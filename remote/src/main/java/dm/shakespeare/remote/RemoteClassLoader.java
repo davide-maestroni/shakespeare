@@ -48,10 +48,11 @@ import dm.shakespeare.remote.util.SerializableData;
  */
 class RemoteClassLoader extends ClassLoader {
 
-  private final File mContainer;
-  private final HashMap<String, String> mPaths = new HashMap<String, String>();
-  private final ProtectionDomain mProtectionDomain;
-  private final HashMap<String, File> mResources = new HashMap<String, File>();
+  private final File container;
+  private final Object mutex = new Object();
+  private final HashMap<String, String> paths = new HashMap<String, String>();
+  private final ProtectionDomain protectionDomain;
+  private final HashMap<String, File> resources = new HashMap<String, File>();
 
   RemoteClassLoader(@NotNull final ClassLoader classLoader, @NotNull final File container,
       @Nullable final ProtectionDomain protectionDomain) {
@@ -59,8 +60,8 @@ class RemoteClassLoader extends ClassLoader {
     if (!container.isDirectory()) {
       throw new IllegalArgumentException("container is not a directory");
     }
-    mContainer = container;
-    mProtectionDomain = protectionDomain;
+    this.container = container;
+    this.protectionDomain = protectionDomain;
     loadResources(container);
   }
 
@@ -69,8 +70,8 @@ class RemoteClassLoader extends ClassLoader {
     if (!container.isDirectory()) {
       throw new IllegalArgumentException("container is not a directory");
     }
-    mContainer = container;
-    mProtectionDomain = protectionDomain;
+    this.container = container;
+    this.protectionDomain = protectionDomain;
     loadResources(container);
   }
 
@@ -86,14 +87,17 @@ class RemoteClassLoader extends ClassLoader {
   @Override
   protected Class<?> loadClass(final String name, final boolean resolve) throws
       ClassNotFoundException {
-    final File file = mResources.get(mPaths.get(toPath(name)));
+    final File file;
+    synchronized (mutex) {
+      file = resources.get(paths.get(toPath(name)));
+    }
     if (file != null) {
       FileInputStream inputStream = null;
       try {
         inputStream = new FileInputStream(file);
         FileChannel channel = inputStream.getChannel();
         final ByteBuffer buffer = channel.map(MapMode.READ_ONLY, 0, channel.size());
-        final Class<?> definedClass = super.defineClass(name, buffer, mProtectionDomain);
+        final Class<?> definedClass = super.defineClass(name, buffer, protectionDomain);
         if (resolve) {
           super.resolveClass(definedClass);
         }
@@ -121,9 +125,9 @@ class RemoteClassLoader extends ClassLoader {
   protected URL findResource(final String path) {
     final URL resource = super.findResource(path);
     if (resource == null) {
-      final String name = mPaths.get(normalize(path));
+      final String name = paths.get(normalize(path));
       if (name != null) {
-        final File file = mResources.get(name);
+        final File file = resources.get(name);
         if (file != null) {
           try {
             return file.toURI().toURL();
@@ -143,15 +147,17 @@ class RemoteClassLoader extends ClassLoader {
       return super.findResources(null);
     }
     final ArrayList<URL> urls = new ArrayList<URL>(Collections.list(super.findResources(path)));
-    final String name = mPaths.get(normalize(path));
+    final String name = paths.get(normalize(path));
     if (name != null) {
-      final File file = mResources.get(name);
-      if (file != null) {
-        try {
-          urls.add(file.toURI().toURL());
+      synchronized (mutex) {
+        final File file = resources.get(name);
+        if (file != null) {
+          try {
+            urls.add(file.toURI().toURL());
 
-        } catch (final MalformedURLException e) {
-          throw new IllegalArgumentException(e);
+          } catch (final MalformedURLException e) {
+            throw new IllegalArgumentException(e);
+          }
         }
       }
     }
@@ -162,15 +168,16 @@ class RemoteClassLoader extends ClassLoader {
   File register(@NotNull final String path, @NotNull final SerializableData data) throws
       IOException {
     final String name = Integer.toHexString(path.hashCode());
-    final FileOutputStream outputStream =
-        new FileOutputStream(new File(mContainer, name + ".path"));
+    final FileOutputStream outputStream = new FileOutputStream(new File(container, name + ".path"));
     try {
       outputStream.write(path.getBytes("UTF-8"));
-      final File file = new File(mContainer, name);
+      final File file = new File(container, name);
       data.copyTo(file);
       file.deleteOnExit();
-      mPaths.put(path, name);
-      mResources.put(name, file);
+      synchronized (mutex) {
+        paths.put(path, name);
+        resources.put(name, file);
+      }
       return file;
 
     } finally {
@@ -194,10 +201,15 @@ class RemoteClassLoader extends ClassLoader {
         FileChannel channel = inputStream.getChannel();
         final ByteBuffer buffer = channel.map(MapMode.READ_ONLY, 0, channel.size());
         final Set<String> dependencies = Classes.getDependencies(buffer);
-        final HashMap<String, String> paths = mPaths;
+        final HashMap<String, String> paths = this.paths;
         for (final String name : dependencies) {
           final String path = toPath(name);
-          if (!paths.containsKey(path) && !(name.startsWith("java.") || name.startsWith("javax.")
+          final boolean hasPath;
+          synchronized (mutex) {
+            hasPath = paths.containsKey(path);
+          }
+
+          if (!hasPath && !(name.startsWith("java.") || name.startsWith("javax.")
               || name.startsWith("sun.") || name.startsWith("com.sun.") || name.startsWith(
               "com.oracle."))) {
             try {
@@ -228,8 +240,8 @@ class RemoteClassLoader extends ClassLoader {
   private void loadResources(@NotNull final File container) {
     final File[] files = container.listFiles();
     if (files != null) {
-      final HashMap<String, String> paths = mPaths;
-      final HashMap<String, File> resources = mResources;
+      final HashMap<String, String> paths = this.paths;
+      final HashMap<String, File> resources = this.resources;
       for (final File file : files) {
         final String name = file.getName();
         if (name.endsWith(".path")) {

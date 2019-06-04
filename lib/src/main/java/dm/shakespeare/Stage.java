@@ -283,7 +283,7 @@ public class Stage {
    * @return the matching actor.
    * @throws IllegalArgumentException if no matching actor is found within this stage.
    */
-  @NotNull
+  @Nullable
   public Actor get(@NotNull final String id) {
     ConstantConditions.notNull("id", id);
     final Actor actor;

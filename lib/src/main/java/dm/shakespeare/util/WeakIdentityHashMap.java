@@ -36,7 +36,7 @@ import java.util.Set;
  * @param <K> the key type.
  * @param <V> the value type.
  */
-public class IdentityWeakHashMap<K, V> implements Map<K, V> {
+public class WeakIdentityHashMap<K, V> implements Map<K, V> {
 
   private final HashMap<IdentityWeakReference, V> map;
   private final ProbeReference probe = new ProbeReference();
@@ -49,7 +49,7 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
    * Creates a new empty map with the default initial capacity (16) and the default load factor
    * (0.75).
    */
-  public IdentityWeakHashMap() {
+  public WeakIdentityHashMap() {
     map = new HashMap<IdentityWeakReference, V>();
   }
 
@@ -59,7 +59,7 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
    * @param initialCapacity the initial capacity.
    * @throws IllegalArgumentException if the initial capacity is negative.
    */
-  public IdentityWeakHashMap(final int initialCapacity) {
+  public WeakIdentityHashMap(final int initialCapacity) {
     map = new HashMap<IdentityWeakReference, V>(initialCapacity);
   }
 
@@ -71,7 +71,7 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
    * @throws IllegalArgumentException if the initial capacity is negative or the load factor is
    *                                  not positive.
    */
-  public IdentityWeakHashMap(final int initialCapacity, final float loadFactor) {
+  public WeakIdentityHashMap(final int initialCapacity, final float loadFactor) {
     map = new HashMap<IdentityWeakReference, V>(initialCapacity, loadFactor);
   }
 
@@ -82,8 +82,8 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
    *
    * @param map the initial mapping.
    */
-  public IdentityWeakHashMap(@NotNull final Map<? extends K, ? extends V> map) {
-    this.map = new HashMap<IdentityWeakReference, V>(map.size());
+  public WeakIdentityHashMap(@NotNull final Map<? extends K, ? extends V> map) {
+    this(map.size());
     putAll(map);
   }
 
@@ -98,10 +98,10 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
       return true;
     }
 
-    if (!(o instanceof IdentityWeakHashMap)) {
+    if (!(o instanceof WeakIdentityHashMap)) {
       return (o instanceof Map) && o.equals(this);
     }
-    final IdentityWeakHashMap<?, ?> that = (IdentityWeakHashMap<?, ?>) o;
+    final WeakIdentityHashMap<?, ?> that = (WeakIdentityHashMap<?, ?>) o;
     return map.equals(that.map);
   }
 
@@ -111,7 +111,7 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
    * @return this map.
    */
   @NotNull
-  public IdentityWeakHashMap<K, V> prune() {
+  public WeakIdentityHashMap<K, V> prune() {
     final HashMap<IdentityWeakReference, V> map = this.map;
     final ReferenceQueue<Object> queue = this.queue;
     IdentityWeakReference reference = (IdentityWeakReference) queue.poll();
@@ -139,38 +139,38 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
   /**
    * {@inheritDoc}
    */
-  public boolean containsKey(final Object o) {
-    return map.containsKey(probe.withReferent(o));
+  public boolean containsKey(final Object key) {
+    return map.containsKey(probe.withReferent(key));
   }
 
   /**
    * {@inheritDoc}
    */
-  public boolean containsValue(final Object o) {
-    return map.containsValue(o);
+  public boolean containsValue(final Object value) {
+    return map.containsValue(value);
   }
 
   /**
    * {@inheritDoc}
    */
-  public V get(final Object o) {
-    return map.get(probe.withReferent(o));
+  public V get(final Object key) {
+    return map.get(probe.withReferent(key));
   }
 
   /**
    * {@inheritDoc}
    */
-  public V put(final K k, final V v) {
+  public V put(final K key, final V value) {
     prune();
-    return map.put(new IdentityWeakReference(k, queue), v);
+    return map.put(new IdentityWeakReference(key, queue), value);
   }
 
   /**
    * {@inheritDoc}
    */
-  public V remove(final Object o) {
+  public V remove(final Object key) {
     prune();
-    return map.remove(probe.withReferent(o));
+    return map.remove(probe.withReferent(key));
   }
 
   /**
@@ -387,8 +387,8 @@ public class IdentityWeakHashMap<K, V> implements Map<K, V> {
       return map.get(reference);
     }
 
-    public V setValue(final V v) {
-      return map.put(reference, v);
+    public V setValue(final V value) {
+      return map.put(reference, value);
     }
   }
 }

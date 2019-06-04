@@ -29,7 +29,7 @@ import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
-import dm.shakespeare.util.IdentityWeakHashMap;
+import dm.shakespeare.util.WeakIdentityHashMap;
 
 /**
  * Created by davide-maestroni on 01/25/2019.
@@ -111,8 +111,8 @@ class Setting {
 
   static class Cache {
 
-    private final IdentityWeakHashMap<Object, WeakReference<Object>> data =
-        new IdentityWeakHashMap<Object, WeakReference<Object>>();
+    private final WeakIdentityHashMap<Object, WeakReference<Object>> data =
+        new WeakIdentityHashMap<Object, WeakReference<Object>>();
 
     private Cache() {
     }

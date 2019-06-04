@@ -21,24 +21,11 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
-public class CreateActorResponse extends RemoteResponse {
+public class UploadResponse extends RemoteResponse {
 
   private static final long serialVersionUID = VERSION;
 
-  private ActorID actorID;
   private Throwable error;
-
-  public static long getSerialVersionUID() {
-    return serialVersionUID;
-  }
-
-  public ActorID getActorID() {
-    return actorID;
-  }
-
-  public void setActorID(final ActorID actorID) {
-    this.actorID = actorID;
-  }
 
   public Throwable getError() {
     return error;
@@ -49,13 +36,7 @@ public class CreateActorResponse extends RemoteResponse {
   }
 
   @NotNull
-  public CreateActorResponse withActorID(final ActorID actorID) {
-    this.actorID = actorID;
-    return this;
-  }
-
-  @NotNull
-  public CreateActorResponse withError(final Throwable error) {
+  public UploadResponse withError(final Throwable error) {
     this.error = error;
     return this;
   }

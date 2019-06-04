@@ -18,7 +18,9 @@ package dm.shakespeare.remote.config;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.AbstractMap;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -31,7 +33,7 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 05/28/2019.
  */
-public class StageConfig extends AbstractMap<String, Object> {
+public class StageConfig extends HashMap<String, Object> {
 
   private final HashMap<String, Object> map = new HashMap<String, Object>();
 
@@ -48,6 +50,7 @@ public class StageConfig extends AbstractMap<String, Object> {
   }
 
   @NotNull
+  @Override
   public Set<Entry<String, Object>> entrySet() {
     return (entrySet != null) ? entrySet : (entrySet = new ConfigEntrySet(map.entrySet()));
   }
@@ -106,19 +109,73 @@ public class StageConfig extends AbstractMap<String, Object> {
       return set.toArray(a);
     }
 
+    @SuppressWarnings("unchecked")
     public boolean add(final Entry<String, Object> entry) {
       final String key = ConstantConditions.notNull("key", entry.getKey());
       final Object value = entry.getValue();
-      if (key.endsWith(".class") && (value instanceof String)) {
-        try {
+      if (key.endsWith(".class")) {
+        if (value instanceof String) {
+          try {
+            return set.add(
+                new SimpleEntry<String, Object>(key, Class.forName((String) value).newInstance()));
+
+          } catch (final RuntimeException e) {
+            throw e;
+
+          } catch (final Exception e) {
+            throw new IllegalArgumentException(e);
+          }
+
+        } else if (value instanceof Class) {
+          try {
+            return set.add(new SimpleEntry<String, Object>(key, ((Class) value).newInstance()));
+
+          } catch (final RuntimeException e) {
+            throw e;
+
+          } catch (final Exception e) {
+            throw new IllegalArgumentException(e);
+          }
+        }
+
+      } else if (key.endsWith(".list")) {
+        if (value instanceof String) {
+          final String[] parts = ((String) value).split("\\s*,\\s*");
+          return set.add(new SimpleEntry<String, Object>(key, Arrays.asList(parts)));
+
+        } else if (value instanceof Collection) {
+          return set.add(new SimpleEntry<String, Object>(key,
+              new ArrayList<String>((Collection<? extends String>) value)));
+
+        } else if ((value != null) && value.getClass().isArray()) {
+          final ArrayList<String> list = new ArrayList<String>();
+          final int length = Array.getLength(value);
+          for (int i = 0; i < length; ++i) {
+            list.add((String) Array.get(value, i));
+          }
+          return set.add(new SimpleEntry<String, Object>(key, list));
+        }
+
+      } else if (key.endsWith(".size")) {
+        if (value instanceof String) {
+          return set.add(new SimpleEntry<String, Object>(key, Integer.parseInt((String) value)));
+
+        } else if (value instanceof Number) {
+          return set.add(new SimpleEntry<String, Object>(key, ((Number) value).intValue()));
+        }
+
+      } else if (key.endsWith(".millis")) {
+        if (value instanceof String) {
+          return set.add(new SimpleEntry<String, Object>(key, Long.parseLong((String) value)));
+
+        } else if (value instanceof Number) {
+          return set.add(new SimpleEntry<String, Object>(key, ((Number) value).longValue()));
+        }
+
+      } else if (key.endsWith(".enable")) {
+        if (value instanceof String) {
           return set.add(
-              new SimpleEntry<String, Object>(key, Class.forName((String) value).newInstance()));
-
-        } catch (final RuntimeException e) {
-          throw e;
-
-        } catch (final Exception e) {
-          throw new IllegalArgumentException(e);
+              new SimpleEntry<String, Object>(key, Boolean.parseBoolean((String) value)));
         }
       }
       return set.add(entry);

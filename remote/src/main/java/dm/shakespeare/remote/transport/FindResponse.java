@@ -29,41 +29,41 @@ public class FindResponse extends RemoteResponse {
 
   private static final long serialVersionUID = VERSION;
 
-  private Set<ActorUUID> actorUUIDs;
+  private Set<ActorID> actorIDs;
 
   public static long getSerialVersionUID() {
     return serialVersionUID;
   }
 
   @NotNull
-  public FindResponse addActorUUID(final ActorUUID actorUUID) {
-    if (this.actorUUIDs == null) {
-      this.actorUUIDs = new HashSet<ActorUUID>();
+  public FindResponse addActorID(final ActorID actorID) {
+    if (this.actorIDs == null) {
+      this.actorIDs = new HashSet<ActorID>();
     }
-    this.actorUUIDs.add(actorUUID);
+    this.actorIDs.add(actorID);
     return this;
   }
 
   @NotNull
-  public FindResponse addAllActorUUIDs(final Collection<? extends ActorUUID> actorUUIDs) {
-    if (this.actorUUIDs == null) {
-      this.actorUUIDs = new HashSet<ActorUUID>();
+  public FindResponse addAllActorIDs(final Collection<? extends ActorID> actorUUIDs) {
+    if (this.actorIDs == null) {
+      this.actorIDs = new HashSet<ActorID>();
     }
-    this.actorUUIDs.addAll(actorUUIDs);
+    this.actorIDs.addAll(actorUUIDs);
     return this;
   }
 
-  public Set<ActorUUID> getActorUUIDs() {
-    return actorUUIDs;
+  public Set<ActorID> getActorIDs() {
+    return actorIDs;
   }
 
-  public void setActorUUIDs(final Set<ActorUUID> actorUUIDs) {
-    this.actorUUIDs = actorUUIDs;
+  public void setActorIDs(final Set<ActorID> actorIDs) {
+    this.actorIDs = actorIDs;
   }
 
   @NotNull
-  public FindResponse withActorUUIDs(final Set<ActorUUID> actorUUIDs) {
-    this.actorUUIDs = actorUUIDs;
+  public FindResponse withActorIDs(final Set<ActorID> actorIDs) {
+    this.actorIDs = actorIDs;
     return this;
   }
 }

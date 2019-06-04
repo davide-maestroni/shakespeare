@@ -17,6 +17,7 @@
 package dm.shakespeare.remote;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -48,7 +49,7 @@ class JavaSerializer extends AbstractSerializer {
   }
 
   @NotNull
-  public byte[] serialize(@NotNull final Object o) throws Exception {
+  public byte[] serialize(@Nullable final Object o) throws Exception {
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     final ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
     try {

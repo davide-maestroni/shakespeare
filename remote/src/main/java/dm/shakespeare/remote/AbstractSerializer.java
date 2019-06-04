@@ -36,9 +36,9 @@ public abstract class AbstractSerializer implements Serializer {
   private static Pattern toPattern(@NotNull final String className) {
     String regex = className.replaceAll("\\.", "\\.")
         .replaceAll("\\$", "\\$")
-        .replaceAll("\\*\\*", "[a-zA-Z0-9.]+")
-        .replaceAll("\\*", "[a-zA-Z0-9]+");
-    return Pattern.compile("^" + regex + "$");
+        .replaceAll("\\*\\*", "[a-zA-Z0-9_$.]+")
+        .replaceAll("\\*", "[a-zA-Z0-9_]+");
+    return Pattern.compile("^" + regex + "(\\$[a-zA-Z0-9_]+)*$");
   }
 
   public void blacklist(@NotNull final Collection<String> classNames) {

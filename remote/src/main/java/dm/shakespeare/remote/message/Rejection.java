@@ -14,28 +14,22 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.remote;
+package dm.shakespeare.remote.message;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-
-import dm.shakespeare.remote.util.SerializableData;
+import dm.shakespeare.actor.Options;
+import dm.shakespeare.message.Bounce;
 
 /**
- * Created by davide-maestroni on 04/16/2019.
+ * Created by davide-maestroni on 06/03/2019.
  */
-public interface Serializer {
+public class Rejection extends Bounce {
 
-  void blacklist(@NotNull Collection<String> classNames);
+  public Rejection() {
+  }
 
-  @NotNull
-  Object deserialize(@NotNull SerializableData data, @NotNull ClassLoader classLoader) throws
-      Exception;
-
-  @NotNull
-  byte[] serialize(@Nullable Object o) throws Exception;
-
-  void whitelist(@NotNull Collection<String> classNames);
+  public Rejection(final Object message, @NotNull final Options options) {
+    super(message, options);
+  }
 }

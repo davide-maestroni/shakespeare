@@ -14,28 +14,20 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.remote;
+package dm.shakespeare.util;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
-
-import dm.shakespeare.remote.util.SerializableData;
+import org.junit.Test;
 
 /**
- * Created by davide-maestroni on 04/16/2019.
+ * Created by davide-maestroni on 05/30/2019.
  */
-public interface Serializer {
+public class WeakValueHashMapTest {
 
-  void blacklist(@NotNull Collection<String> classNames);
-
-  @NotNull
-  Object deserialize(@NotNull SerializableData data, @NotNull ClassLoader classLoader) throws
-      Exception;
-
-  @NotNull
-  byte[] serialize(@Nullable Object o) throws Exception;
-
-  void whitelist(@NotNull Collection<String> classNames);
+  @Test
+  public void test() {
+    final WeakValueHashMap<String, String> map = new WeakValueHashMap<String, String>();
+    map.put("ciao", "1");
+    map.put("ciao", "2");
+    map.size();
+  }
 }

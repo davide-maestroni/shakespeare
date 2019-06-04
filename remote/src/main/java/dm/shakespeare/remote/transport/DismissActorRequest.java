@@ -25,23 +25,38 @@ public class DismissActorRequest extends RemoteRequest {
 
   private static final long serialVersionUID = VERSION;
 
-  private ActorUUID actorUUID;
+  private ActorID actorID;
+  private boolean mayInterruptIfRunning;
 
   public static long getSerialVersionUID() {
     return serialVersionUID;
   }
 
-  public ActorUUID getActorUUID() {
-    return actorUUID;
+  public ActorID getActorID() {
+    return actorID;
   }
 
-  public void setActorUUID(final ActorUUID actorUUID) {
-    this.actorUUID = actorUUID;
+  public void setActorID(final ActorID actorID) {
+    this.actorID = actorID;
+  }
+
+  public boolean getMayInterruptIfRunning() {
+    return mayInterruptIfRunning;
+  }
+
+  public void setMayInterruptIfRunning(final boolean mayInterruptIfRunning) {
+    this.mayInterruptIfRunning = mayInterruptIfRunning;
   }
 
   @NotNull
-  public DismissActorRequest withActorUUID(final ActorUUID actorUUID) {
-    this.actorUUID = actorUUID;
+  public DismissActorRequest withActorID(final ActorID actorID) {
+    this.actorID = actorID;
+    return this;
+  }
+
+  @NotNull
+  public DismissActorRequest withMayInterruptIfRunning(final boolean mayInterruptIfRunning) {
+    this.mayInterruptIfRunning = mayInterruptIfRunning;
     return this;
   }
 
