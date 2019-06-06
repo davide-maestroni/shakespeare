@@ -290,10 +290,6 @@ public class Stage {
     synchronized (mutex) {
       actor = actors.get(id);
     }
-
-    if (actor == null) {
-      throw new IllegalArgumentException("cannot find an actor with ID: " + id);
-    }
     return actor;
   }
 

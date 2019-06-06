@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamClass;
 
+import dm.shakespeare.remote.io.AbstractSerializer;
 import dm.shakespeare.remote.util.ClassLoaderObjectInputStream;
 import dm.shakespeare.remote.util.SerializableData;
 

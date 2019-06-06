@@ -20,11 +20,14 @@ import org.jetbrains.annotations.NotNull;
 
 import dm.shakespeare.actor.Options;
 import dm.shakespeare.message.Bounce;
+import dm.shakespeare.remote.config.BuildConfig;
 
 /**
  * Created by davide-maestroni on 06/03/2019.
  */
 public class Rejection extends Bounce {
+
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   public Rejection() {
   }

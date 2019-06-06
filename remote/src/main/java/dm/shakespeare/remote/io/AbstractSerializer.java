@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.remote;
+package dm.shakespeare.remote.io;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -34,9 +34,9 @@ public abstract class AbstractSerializer implements Serializer {
 
   @NotNull
   private static Pattern toPattern(@NotNull final String className) {
-    String regex = className.replaceAll("\\.", "\\.")
-        .replaceAll("\\$", "\\$")
-        .replaceAll("\\*\\*", "[a-zA-Z0-9_$.]+")
+    String regex = className.replaceAll("\\.", "\\\\.")
+        .replaceAll("\\$", "\\\\$")
+        .replaceAll("\\*\\*", "[a-zA-Z0-9_\\$.]+")
         .replaceAll("\\*", "[a-zA-Z0-9_]+");
     return Pattern.compile("^" + regex + "(\\$[a-zA-Z0-9_]+)*$");
   }

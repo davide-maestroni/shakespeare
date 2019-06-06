@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -48,7 +49,9 @@ import dm.shakespeare.actor.Role;
 import dm.shakespeare.function.Tester;
 import dm.shakespeare.log.LogPrinters;
 import dm.shakespeare.log.Logger;
+import dm.shakespeare.remote.ConfigKeys.Local;
 import dm.shakespeare.remote.config.StageConfig;
+import dm.shakespeare.remote.io.Serializer;
 import dm.shakespeare.remote.message.Rejection;
 import dm.shakespeare.remote.transport.ActorID;
 import dm.shakespeare.remote.transport.Connector;
@@ -75,19 +78,7 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 05/27/2019.
  */
-public class RemoteStage extends Stage {
-
-  public static final String KEY_ACTORS_FULL_SYNC_TIME = "sks.actors.sync.full.millis";
-  public static final String KEY_ACTORS_PART_SYNC_TIME = "sks.actors.sync.part.millis";
-  public static final String KEY_CONNECTOR_CLASS = "sks.connector.class";
-  public static final String KEY_LOGGER_CLASS = "sks.logger.class";
-  public static final String KEY_LOGGER_NAME = "sks.logger.name";
-  public static final String KEY_REMOTE_ID = "sks.remote.id";
-  public static final String KEY_SENDERS_CACHE_MAX_SIZE = "sks.senders.cache.max.size";
-  public static final String KEY_SENDERS_CACHE_TIMEOUT = "sks.senders.cache.timeout.millis";
-  public static final String KEY_SERIALIZER_BLACKLIST = "sks.serializer.black.list";
-  public static final String KEY_SERIALIZER_CLASS = "sks.serializer.class";
-  public static final String KEY_SERIALIZER_WHITELIST = "sks.serializer.white.list";
+public class StageRef extends Stage {
 
   private static final Object resourcesMutex = new Object();
 
@@ -97,6 +88,7 @@ public class RemoteStage extends Stage {
   private final long actorsPartialSyncTime;
   private final Object connectionMutex = new Object();
   private final Connector connector;
+  private final ExecutorService executorService;
   private final AtomicLong lastSyncTime = new AtomicLong();
   private final Logger logger;
   private final Syncer presync;
@@ -105,61 +97,72 @@ public class RemoteStage extends Stage {
   private final Long sendersCacheTimeout;
   private final Serializer serializer;
 
-  private ScheduledExecutorService executorService;
+  private ScheduledExecutorService scheduledExecutorService;
   private Sender sender;
 
-  public RemoteStage(@NotNull final StageConfig config) {
-    this.remoteId = config.getOption(String.class, KEY_REMOTE_ID);
+  public StageRef(@NotNull final StageConfig config) {
+    this.remoteId = config.getOption(String.class, Local.KEY_REMOTE_ID);
     // connector
     final Connector connector =
-        (this.connector = config.getOption(Connector.class, KEY_CONNECTOR_CLASS));
+        (this.connector = config.getOption(Connector.class, Local.KEY_CONNECTOR_CLASS));
     if (connector == null) {
       throw new IllegalArgumentException("missing connector configuration");
     }
     // serializer
-    final Serializer serializer = config.getOption(Serializer.class, KEY_SERIALIZER_CLASS);
+    final Serializer serializer = config.getOption(Serializer.class, Local.KEY_SERIALIZER_CLASS);
     this.serializer = (serializer != null) ? serializer : new JavaSerializer();
     @SuppressWarnings("unchecked") final List<String> whitelist =
-        config.getOption(List.class, KEY_SERIALIZER_WHITELIST);
+        config.getOption(List.class, Local.KEY_SERIALIZER_WHITELIST);
     if (whitelist != null) {
       this.serializer.whitelist(whitelist);
     }
     @SuppressWarnings("unchecked") final List<String> blacklist =
-        config.getOption(List.class, KEY_SERIALIZER_BLACKLIST);
+        config.getOption(List.class, Local.KEY_SERIALIZER_BLACKLIST);
     if (blacklist != null) {
       this.serializer.blacklist(blacklist);
     }
+    // executor
+    final ExecutorService executorService =
+        config.getOption(ExecutorService.class, Local.KEY_EXECUTOR_CLASS);
+    if (executorService != null) {
+      this.executorService = executorService;
+
+    } else {
+      this.executorService = Role.defaultExecutorService();
+    }
     // logger
-    final Logger logger = config.getOption(Logger.class, KEY_LOGGER_CLASS);
+    final Logger logger = config.getOption(Logger.class, Local.KEY_LOGGER_CLASS);
     if (logger != null) {
       this.logger = logger;
 
     } else {
-      final String loggerName = config.getOption(String.class, KEY_LOGGER_NAME);
+      final String loggerName = config.getOption(String.class, Local.KEY_LOGGER_NAME);
       this.logger = new Logger(LogPrinters.javaLoggingPrinter(
           isNotEmpty(loggerName) ? loggerName : getClass().getName()));
     }
     // options
-    final Integer sendersCacheSize = config.getOption(Integer.class, KEY_SENDERS_CACHE_MAX_SIZE);
+    final Integer sendersCacheSize =
+        config.getOption(Integer.class, Local.KEY_SENDERS_CACHE_MAX_SIZE);
     if (sendersCacheSize != null) {
       this.sendersCacheSize = sendersCacheSize;
     } else {
       this.sendersCacheSize = 1000;
     }
-    final Long sendersCacheTimeout = config.getOption(Long.class, KEY_SENDERS_CACHE_TIMEOUT);
+    final Long sendersCacheTimeout = config.getOption(Long.class, Local.KEY_SENDERS_CACHE_TIMEOUT);
     if (sendersCacheTimeout != null) {
       this.sendersCacheTimeout = sendersCacheTimeout;
     } else {
       this.sendersCacheTimeout = TimeUnit.MINUTES.toMillis(10);
     }
     // tasks
-    final Long actorsPartialSyncTime = config.getOption(Long.class, KEY_ACTORS_PART_SYNC_TIME);
+    final Long actorsPartialSyncTime =
+        config.getOption(Long.class, Local.KEY_ACTORS_PART_SYNC_TIME);
     if (actorsPartialSyncTime != null) {
       this.actorsPartialSyncTime = actorsPartialSyncTime;
     } else {
       this.actorsPartialSyncTime = 0;
     }
-    final Long actorsFullSyncTime = config.getOption(Long.class, KEY_ACTORS_FULL_SYNC_TIME);
+    final Long actorsFullSyncTime = config.getOption(Long.class, Local.KEY_ACTORS_FULL_SYNC_TIME);
     if (actorsFullSyncTime != null) {
       this.actorsFullSyncTime = actorsFullSyncTime;
     } else {
@@ -191,7 +194,7 @@ public class RemoteStage extends Stage {
 
           public boolean sync() {
             final long currentTimeMillis = System.currentTimeMillis();
-            final long lastSyncTime = RemoteStage.this.lastSyncTime.get();
+            final long lastSyncTime = StageRef.this.lastSyncTime.get();
             return (lastSyncTime > (currentTimeMillis - partialSyncTime));
           }
         };
@@ -213,7 +216,7 @@ public class RemoteStage extends Stage {
 
           public boolean sync() throws Exception {
             final long currentTimeMillis = System.currentTimeMillis();
-            final long lastSyncTime = RemoteStage.this.lastSyncTime.get();
+            final long lastSyncTime = StageRef.this.lastSyncTime.get();
             if (lastSyncTime <= (currentTimeMillis - fullSyncTime)) {
               syncActors(currentTimeMillis);
               return true;
@@ -247,7 +250,7 @@ public class RemoteStage extends Stage {
     synchronized (resourcesMutex) {
       if (resourceFiles.isEmpty()) {
         final HashMap<String, File> fileMap = new HashMap<String, File>();
-        final Enumeration<URL> resources = RemoteClient.class.getClassLoader().getResources("");
+        final Enumeration<URL> resources = StageRef.class.getClassLoader().getResources("");
         while (resources.hasMoreElements()) {
           final URL url = resources.nextElement();
           final File root = new File(url.getPath());
@@ -265,11 +268,11 @@ public class RemoteStage extends Stage {
       public RemoteResponse receive(@NotNull final RemoteRequest request) {
         if (request instanceof MessageRequest) {
           final MessageRequest messageRequest = (MessageRequest) request;
-          final ActorID actorID = messageRequest.getActorID();
+          final ActorID actorID = messageRequest.getSenderActorID();
           if (actorID != null) {
             final String actorId = actorID.getActorId();
             if (actorId != null) {
-              final Actor actor = get(actorId);
+              final Actor actor = StageRef.super.get(actorId);
               if (actor != null) {
                 actor.tell(request, null, Stage.STAND_IN);
               }
@@ -286,14 +289,14 @@ public class RemoteStage extends Stage {
       this.sender = sender;
       registerFiles();
       final ScheduledExecutorService executorService =
-          (this.executorService = Executors.newSingleThreadScheduledExecutor());
+          (this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor());
       final long fullSyncTime = this.actorsFullSyncTime;
       if (fullSyncTime > 0) {
         executorService.schedule(new Runnable() {
 
           public void run() {
             final long currentTimeMillis = System.currentTimeMillis();
-            final long lastSyncTime = RemoteStage.this.lastSyncTime.get();
+            final long lastSyncTime = StageRef.this.lastSyncTime.get();
             final long nextSyncTime;
             if (lastSyncTime <= (currentTimeMillis - fullSyncTime)) {
               try {
@@ -319,10 +322,10 @@ public class RemoteStage extends Stage {
     synchronized (connectionMutex) {
       sender = this.sender;
       this.sender = null;
-      final ScheduledExecutorService executorService = this.executorService;
+      final ScheduledExecutorService executorService = this.scheduledExecutorService;
       if (executorService != null) {
         executorService.shutdown();
-        this.executorService = null;
+        this.scheduledExecutorService = null;
       }
     }
 
@@ -452,7 +455,7 @@ public class RemoteStage extends Stage {
   @Override
   protected Actor buildActor(@NotNull final String id, @NotNull final Role role) throws Exception {
     final HashMap<String, SerializableData> resources = new HashMap<String, SerializableData>();
-    final Map<String, File> resourceFiles = RemoteStage.resourceFiles;
+    final Map<String, File> resourceFiles = StageRef.resourceFiles;
     final byte[] data = serializer.serialize(role);
     RemoteResponse response = getSender().send(new CreateActorRequest().withActorId(id)
         .withRoleData(SerializableData.wrap(data))
@@ -495,7 +498,7 @@ public class RemoteStage extends Stage {
   public void uploadResources(@NotNull final String pathRegex) {
     final Pattern pattern = Pattern.compile(pathRegex);
     final HashMap<String, SerializableData> resources = new HashMap<String, SerializableData>();
-    final Map<String, File> resourceFiles = RemoteStage.resourceFiles;
+    final Map<String, File> resourceFiles = StageRef.resourceFiles;
     for (final Entry<String, File> entry : resourceFiles.entrySet()) {
       final String path = entry.getKey();
       if (pattern.matcher(path).matches()) {
@@ -541,7 +544,7 @@ public class RemoteStage extends Stage {
       ids.put(actorID.getActorId(), actorID);
     }
 
-    for (final Actor actor : getAll()) {
+    for (final Actor actor : super.getAll()) {
       final ActorID actorID = ids.get(actor.getId());
       if (actorID != null) {
         actor.tell(new RefreshInstanceId(actorID.getInstanceId()), null, Stage.STAND_IN);
@@ -656,6 +659,12 @@ public class RemoteStage extends Stage {
       };
     }
 
+    @NotNull
+    @Override
+    public ExecutorService getExecutorService(@NotNull final String id) {
+      return executorService;
+    }
+
     private void flushSenders() {
       final CQueue<SenderActor> senders = this.senders;
       final HashMap<Actor, SenderActor> actors = this.actors;
@@ -704,7 +713,7 @@ public class RemoteStage extends Stage {
         final SerializableData messageData = request.getMessageData();
         final Object object;
         if (messageData != null) {
-          object = serializer.deserialize(messageData, RemoteStage.class.getClassLoader());
+          object = serializer.deserialize(messageData, StageRef.class.getClassLoader());
 
         } else {
           object = null;
@@ -726,6 +735,8 @@ public class RemoteStage extends Stage {
         @NotNull final Agent agent) throws Exception {
       final String senderInstanceId;
       final Actor sender = envelop.getSender();
+      final HashMap<Actor, SenderActor> actors = this.actors;
+      final HashMap<String, SenderActor> instanceIds = this.instanceIds;
       final CQueue<SenderActor> senders = RemoteRole.this.senders;
       SenderActor senderActor = actors.get(sender);
       if (senderActor != null) {
@@ -735,18 +746,20 @@ public class RemoteStage extends Stage {
       } else {
         senderInstanceId = UUID.randomUUID().toString();
         senderActor = new SenderActor(sender, senderInstanceId);
+        actors.put(sender, senderActor);
+        instanceIds.put(senderInstanceId, senderActor);
       }
       senders.add(senderActor);
       RemoteResponse response;
       try {
         final byte[] data = serializer.serialize(message);
         final HashMap<String, SerializableData> resources = new HashMap<String, SerializableData>();
-        final Map<String, File> resourceFiles = RemoteStage.resourceFiles;
+        final Map<String, File> resourceFiles = StageRef.resourceFiles;
         final ActorID actorID =
             new ActorID().withActorId(agent.getSelf().getId()).withInstanceId(instanceId);
         final ActorID senderID =
             new ActorID().withActorId(sender.getId()).withInstanceId(senderInstanceId);
-        final String remoteId = RemoteStage.this.remoteId;
+        final String remoteId = StageRef.this.remoteId;
         response = getSender().send(new MessageRequest().withActorID(actorID)
             .withMessageData(SerializableData.wrap(data))
             .withOptions(envelop.getOptions())

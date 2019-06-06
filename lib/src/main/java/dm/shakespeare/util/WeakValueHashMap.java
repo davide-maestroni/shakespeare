@@ -121,7 +121,8 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
   }
 
   public V get(final Object key) {
-    return keys.get(key).get();
+    final WeakReference<V> reference = keys.get(key);
+    return (reference != null) ? reference.get() : null;
   }
 
   @Nullable

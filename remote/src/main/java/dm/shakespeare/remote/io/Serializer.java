@@ -14,37 +14,28 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.remote.protocol;
+package dm.shakespeare.remote.io;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Collection;
+
+import dm.shakespeare.remote.util.SerializableData;
 
 /**
- * Created by davide-maestroni on 04/11/2019.
+ * Created by davide-maestroni on 04/16/2019.
  */
-public class RemoteRecipient extends Remote {
+public interface Serializer {
 
-  private static final long serialVersionUID = VERSION;
-
-  private ActorRef mRecipientRef;
-
-  public ActorRef getRecipientRef() {
-    return mRecipientRef;
-  }
-
-  public void setRecipientRef(final ActorRef recipientRef) {
-    mRecipientRef = recipientRef;
-  }
+  void blacklist(@NotNull Collection<String> classNames);
 
   @NotNull
-  public RemoteRecipient withRecipientRef(final ActorRef recipientRef) {
-    mRecipientRef = recipientRef;
-    return this;
-  }
+  Object deserialize(@NotNull SerializableData data, @NotNull ClassLoader classLoader) throws
+      Exception;
 
   @NotNull
-  @Override
-  public RemoteRecipient withSenderId(final String senderId) {
-    super.withSenderId(senderId);
-    return this;
-  }
+  byte[] serialize(@Nullable Object o) throws Exception;
+
+  void whitelist(@NotNull Collection<String> classNames);
 }
