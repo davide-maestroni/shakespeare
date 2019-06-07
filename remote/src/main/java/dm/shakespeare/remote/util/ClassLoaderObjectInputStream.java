@@ -31,19 +31,19 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class ClassLoaderObjectInputStream extends ObjectInputStream {
 
-  private final ClassLoader mClassLoader;
+  private final ClassLoader classLoader;
 
   public ClassLoaderObjectInputStream(@NotNull final ClassLoader classLoader,
       @NotNull final InputStream inputStream) throws IOException {
     super(inputStream);
-    mClassLoader = ConstantConditions.notNull("classLoader", classLoader);
+    this.classLoader = ConstantConditions.notNull("classLoader", classLoader);
   }
 
   @Override
   protected Class<?> resolveClass(@NotNull final ObjectStreamClass desc) throws IOException,
       ClassNotFoundException {
     try {
-      return Class.forName(desc.getName(), false, mClassLoader);
+      return Class.forName(desc.getName(), false, classLoader);
 
     } catch (final ClassNotFoundException ignored) {
       return super.resolveClass(desc);
@@ -53,7 +53,7 @@ public class ClassLoaderObjectInputStream extends ObjectInputStream {
   @Override
   protected Class<?> resolveProxyClass(@NotNull final String[] interfaces) throws IOException,
       ClassNotFoundException {
-    final ClassLoader classLoader = mClassLoader;
+    final ClassLoader classLoader = this.classLoader;
     final int length = interfaces.length;
     final Class<?>[] interfaceClasses = new Class[length];
     for (int i = 0; i < length; ++i) {

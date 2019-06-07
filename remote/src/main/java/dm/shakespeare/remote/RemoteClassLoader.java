@@ -88,8 +88,9 @@ class RemoteClassLoader extends ClassLoader {
   protected Class<?> loadClass(final String name, final boolean resolve) throws
       ClassNotFoundException {
     final File file;
+    final String path = toPath(name);
     synchronized (mutex) {
-      file = resources.get(paths.get(toPath(name)));
+      file = resources.get(paths.get(path));
     }
     if (file != null) {
       FileInputStream inputStream = null;
@@ -117,7 +118,7 @@ class RemoteClassLoader extends ClassLoader {
       return super.loadClass(name, resolve);
 
     } catch (final ClassNotFoundException e) {
-      throw new RemoteClassNotFoundException(name, e);
+      throw new RemoteClassNotFoundException(path, e);
     }
   }
 

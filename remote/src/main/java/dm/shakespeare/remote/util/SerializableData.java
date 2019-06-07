@@ -64,7 +64,7 @@ public abstract class SerializableData implements Serializable {
   }
 
   @NotNull
-  public static SerializableData wrapNoCache(@NotNull final InputStream inputStream) {
+  public static SerializableData wrapOnce(@NotNull final InputStream inputStream) {
     return new UncachedInputStreamData(inputStream);
   }
 
@@ -99,59 +99,59 @@ public abstract class SerializableData implements Serializable {
 
   private static class ByteArrayData extends SerializableData {
 
-    private final byte[] mData;
+    private final byte[] data;
 
     private ByteArrayData(@NotNull final byte[] data) {
-      mData = ConstantConditions.notNull("data", data);
+      this.data = ConstantConditions.notNull("data", data);
+    }
+
+    public void copyTo(@NotNull final OutputStream out) throws IOException {
+      out.write(data);
+    }
+
+    public void copyTo(@NotNull final ByteBuffer buffer) {
+      buffer.put(data);
+    }
+
+    public long size() {
+      return data.length;
+    }
+
+    @NotNull
+    public byte[] toByteArray() {
+      return data;
+    }
+
+    @NotNull
+    public InputStream toInputStream() {
+      return new ByteArrayInputStream(data);
+    }
+
+    void serialize(@NotNull final ObjectOutputStream out) throws IOException {
+      final byte[] data = this.data;
+      out.writeInt(data.length);
+      out.write(data);
+      out.writeInt(0);
     }
 
     Object writeReplace() throws ObjectStreamException {
       return new SerializableWrapper(this);
     }
-
-    public void copyTo(@NotNull final OutputStream out) throws IOException {
-      out.write(mData);
-    }
-
-    public void copyTo(@NotNull final ByteBuffer buffer) {
-      buffer.put(mData);
-    }
-
-    public long size() {
-      return mData.length;
-    }
-
-    @NotNull
-    public byte[] toByteArray() {
-      return mData;
-    }
-
-    @NotNull
-    public InputStream toInputStream() {
-      return new ByteArrayInputStream(mData);
-    }
-
-    void serialize(@NotNull final ObjectOutputStream out) throws IOException {
-      final byte[] data = mData;
-      out.writeInt(data.length);
-      out.write(data);
-      out.writeInt(0);
-    }
   }
 
   private static class ByteBufferData extends SerializableData {
 
-    private final ByteBuffer mBuffer;
+    private final ByteBuffer buffer;
 
     private ByteBufferData(@NotNull final ByteBuffer buffer) {
-      mBuffer = ConstantConditions.notNull("buffer", buffer);
+      this.buffer = ConstantConditions.notNull("buffer", buffer);
     }
 
     @Override
     public void copyTo(@NotNull final File file) throws IOException {
       final FileOutputStream outputStream = new FileOutputStream(file);
       try {
-        outputStream.getChannel().write(mBuffer);
+        outputStream.getChannel().write(buffer);
 
       } finally {
         try {
@@ -163,13 +163,9 @@ public abstract class SerializableData implements Serializable {
       }
     }
 
-    Object writeReplace() throws ObjectStreamException {
-      return new SerializableWrapper(this);
-    }
-
     public void copyTo(@NotNull final OutputStream out) throws IOException {
       if (out instanceof FileOutputStream) {
-        ((FileOutputStream) out).getChannel().write(mBuffer);
+        ((FileOutputStream) out).getChannel().write(buffer);
 
       } else {
         out.write(toByteArray());
@@ -177,16 +173,16 @@ public abstract class SerializableData implements Serializable {
     }
 
     public void copyTo(@NotNull final ByteBuffer buffer) {
-      buffer.put(mBuffer);
+      buffer.put(this.buffer);
     }
 
     public long size() {
-      return mBuffer.remaining();
+      return buffer.remaining();
     }
 
     @NotNull
     public byte[] toByteArray() {
-      final ByteBuffer buffer = mBuffer;
+      final ByteBuffer buffer = this.buffer;
       final byte[] data = new byte[buffer.remaining()];
       buffer.slice().get(data);
       return data;
@@ -194,12 +190,12 @@ public abstract class SerializableData implements Serializable {
 
     @NotNull
     public InputStream toInputStream() {
-      return new ByteBufferInputStream(mBuffer);
+      return new ByteBufferInputStream(buffer);
     }
 
     void serialize(@NotNull final ObjectOutputStream out) throws IOException {
       final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-      final ByteBufferInputStream inputStream = new ByteBufferInputStream(mBuffer);
+      final ByteBufferInputStream inputStream = new ByteBufferInputStream(buffer);
       try {
         int length;
         while ((length = inputStream.read(chunk)) > 0) {
@@ -213,23 +209,23 @@ public abstract class SerializableData implements Serializable {
         inputStream.close();
       }
     }
+
+    Object writeReplace() throws ObjectStreamException {
+      return new SerializableWrapper(this);
+    }
   }
 
   private static class FileData extends SerializableData {
 
-    private final File mFile;
+    private final File file;
 
-    private byte[] mData;
+    private byte[] data;
 
     private FileData(@NotNull final File file) {
       if (!file.isFile()) {
         throw new IllegalArgumentException();
       }
-      mFile = file;
-    }
-
-    Object writeReplace() throws ObjectStreamException {
-      return new SerializableWrapper(this);
+      this.file = file;
     }
 
     @Override
@@ -237,8 +233,8 @@ public abstract class SerializableData implements Serializable {
       FileInputStream inputStream = null;
       final FileOutputStream outputStream = new FileOutputStream(file);
       try {
-        inputStream = new FileInputStream(mFile);
-        inputStream.getChannel().transferTo(0, mFile.length(), outputStream.getChannel());
+        inputStream = new FileInputStream(this.file);
+        inputStream.getChannel().transferTo(0, this.file.length(), outputStream.getChannel());
 
       } finally {
         if (inputStream != null) {
@@ -261,7 +257,7 @@ public abstract class SerializableData implements Serializable {
 
     public void copyTo(@NotNull final OutputStream out) throws IOException {
       if (out instanceof FileOutputStream) {
-        final File file = mFile;
+        final File file = this.file;
         final FileInputStream inputStream = new FileInputStream(file);
         try {
           inputStream.getChannel()
@@ -276,13 +272,13 @@ public abstract class SerializableData implements Serializable {
         }
 
       } else {
-        final byte[] data = mData;
+        final byte[] data = this.data;
         if (data != null) {
           out.write(data);
 
         } else {
           final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-          final FileInputStream inputStream = new FileInputStream(mFile);
+          final FileInputStream inputStream = new FileInputStream(file);
           try {
             int length;
             while ((length = inputStream.read(chunk)) > 0) {
@@ -302,12 +298,12 @@ public abstract class SerializableData implements Serializable {
     }
 
     public void copyTo(@NotNull final ByteBuffer buffer) throws IOException {
-      final byte[] data = mData;
+      final byte[] data = this.data;
       if (data != null) {
         buffer.put(data);
 
       } else {
-        final File file = mFile;
+        final File file = this.file;
         final FileInputStream inputStream = new FileInputStream(file);
         try {
           buffer.put(inputStream.getChannel().map(MapMode.READ_ONLY, 0, file.length()));
@@ -324,13 +320,13 @@ public abstract class SerializableData implements Serializable {
     }
 
     public long size() {
-      return mFile.length();
+      return file.length();
     }
 
     @NotNull
     public byte[] toByteArray() throws IOException {
-      if (mData == null) {
-        final File file = mFile;
+      if (data == null) {
+        final File file = this.file;
         final long length = file.length();
         if (length > Integer.MAX_VALUE) {
           throw new IOException();
@@ -341,7 +337,7 @@ public abstract class SerializableData implements Serializable {
           final MappedByteBuffer buffer =
               inputStream.getChannel().map(MapMode.READ_ONLY, 0, length);
           buffer.get(data);
-          mData = data;
+          this.data = data;
 
         } finally {
           try {
@@ -352,19 +348,19 @@ public abstract class SerializableData implements Serializable {
           }
         }
       }
-      return mData;
+      return data;
     }
 
     @NotNull
     public InputStream toInputStream() throws IOException {
-      if (mData == null) {
-        return new FileInputStream(mFile);
+      if (data == null) {
+        return new FileInputStream(file);
       }
-      return new ByteArrayInputStream(mData);
+      return new ByteArrayInputStream(data);
     }
 
     void serialize(@NotNull final ObjectOutputStream out) throws IOException {
-      final byte[] data = mData;
+      final byte[] data = this.data;
       if (data != null) {
         out.write(data.length);
         out.write(data);
@@ -372,7 +368,7 @@ public abstract class SerializableData implements Serializable {
 
       } else {
         final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-        final FileInputStream inputStream = new FileInputStream(mFile);
+        final FileInputStream inputStream = new FileInputStream(file);
         try {
           int length;
           while ((length = inputStream.read(chunk)) > 0) {
@@ -392,30 +388,30 @@ public abstract class SerializableData implements Serializable {
         }
       }
     }
-  }
-
-  private static class InputStreamData extends SerializableData {
-
-    private final InputStream mInput;
-
-    private byte[] mData;
-
-    private InputStreamData(@NotNull final InputStream input) {
-      mInput = ConstantConditions.notNull("input", input);
-    }
 
     Object writeReplace() throws ObjectStreamException {
       return new SerializableWrapper(this);
     }
+  }
+
+  private static class InputStreamData extends SerializableData {
+
+    private final InputStream input;
+
+    private byte[] data;
+
+    private InputStreamData(@NotNull final InputStream input) {
+      this.input = ConstantConditions.notNull("input", input);
+    }
 
     public void copyTo(@NotNull final OutputStream out) throws IOException {
-      final byte[] data = mData;
+      final byte[] data = this.data;
       if (data != null) {
         out.write(data);
 
       } else {
         final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-        final InputStream inputStream = mInput;
+        final InputStream inputStream = input;
         try {
           final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
           int length;
@@ -424,7 +420,7 @@ public abstract class SerializableData implements Serializable {
             outputStream.write(chunk, 0, length);
           }
           outputStream.close();
-          mData = outputStream.toByteArray();
+          this.data = outputStream.toByteArray();
 
         } finally {
           try {
@@ -438,13 +434,13 @@ public abstract class SerializableData implements Serializable {
     }
 
     public void copyTo(@NotNull final ByteBuffer buffer) throws IOException {
-      final byte[] data = mData;
+      final byte[] data = this.data;
       if (data != null) {
         buffer.put(data);
 
       } else {
         final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-        final InputStream inputStream = mInput;
+        final InputStream inputStream = input;
         try {
           final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
           int length;
@@ -453,7 +449,7 @@ public abstract class SerializableData implements Serializable {
             outputStream.write(chunk, 0, length);
           }
           outputStream.close();
-          mData = outputStream.toByteArray();
+          this.data = outputStream.toByteArray();
 
         } finally {
           try {
@@ -467,15 +463,15 @@ public abstract class SerializableData implements Serializable {
     }
 
     public long size() {
-      final byte[] data = mData;
+      final byte[] data = this.data;
       return (data != null) ? data.length : -1;
     }
 
     @NotNull
     public byte[] toByteArray() throws IOException {
-      if (mData == null) {
+      if (data == null) {
         final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-        final InputStream inputStream = mInput;
+        final InputStream inputStream = input;
         try {
           final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
           int length;
@@ -483,7 +479,7 @@ public abstract class SerializableData implements Serializable {
             outputStream.write(chunk, 0, length);
           }
           outputStream.close();
-          mData = outputStream.toByteArray();
+          data = outputStream.toByteArray();
 
         } finally {
           try {
@@ -494,7 +490,7 @@ public abstract class SerializableData implements Serializable {
           }
         }
       }
-      return mData;
+      return data;
     }
 
     @NotNull
@@ -503,7 +499,7 @@ public abstract class SerializableData implements Serializable {
     }
 
     void serialize(@NotNull final ObjectOutputStream out) throws IOException {
-      final byte[] data = mData;
+      final byte[] data = this.data;
       if (data != null) {
         out.write(data.length);
         out.write(data);
@@ -511,7 +507,7 @@ public abstract class SerializableData implements Serializable {
 
       } else {
         final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-        final InputStream inputStream = mInput;
+        final InputStream inputStream = input;
         try {
           final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
           int length;
@@ -523,7 +519,7 @@ public abstract class SerializableData implements Serializable {
           out.writeInt(0);
           out.close();
           outputStream.close();
-          mData = outputStream.toByteArray();
+          this.data = outputStream.toByteArray();
 
         } finally {
           try {
@@ -535,14 +531,49 @@ public abstract class SerializableData implements Serializable {
         }
       }
     }
+
+    Object writeReplace() throws ObjectStreamException {
+      return new SerializableWrapper(this);
+    }
   }
 
   private static class SerializableWrapper extends SerializableData {
 
-    private transient SerializableData mData;
+    private transient SerializableData data;
 
     private SerializableWrapper(@NotNull final SerializableData data) {
-      mData = data;
+      this.data = data;
+    }
+
+    @Override
+    public void copyTo(@NotNull final File file) throws IOException {
+      data.copyTo(file);
+    }
+
+    public void copyTo(@NotNull final OutputStream out) throws IOException {
+      data.copyTo(out);
+    }
+
+    public void copyTo(@NotNull final ByteBuffer buffer) throws IOException {
+      data.copyTo(buffer);
+    }
+
+    public long size() throws IOException {
+      return data.size();
+    }
+
+    @NotNull
+    public byte[] toByteArray() throws IOException {
+      return data.toByteArray();
+    }
+
+    @NotNull
+    public InputStream toInputStream() throws IOException {
+      return data.toInputStream();
+    }
+
+    void serialize(@NotNull final ObjectOutputStream out) throws IOException {
+      data.serialize(out);
     }
 
     private void readObject(final ObjectInputStream in) throws IOException, ClassNotFoundException {
@@ -579,10 +610,10 @@ public abstract class SerializableData implements Serializable {
       }
 
       if (outputStream instanceof ByteArrayOutputStream) {
-        mData = new ByteArrayData(((ByteArrayOutputStream) outputStream).toByteArray());
+        data = new ByteArrayData(((ByteArrayOutputStream) outputStream).toByteArray());
 
       } else {
-        mData = new FileData(file);
+        data = new FileData(file);
       }
     }
 
@@ -590,54 +621,19 @@ public abstract class SerializableData implements Serializable {
       out.defaultWriteObject();
       serialize(out);
     }
-
-    @Override
-    public void copyTo(@NotNull final File file) throws IOException {
-      mData.copyTo(file);
-    }
-
-    public void copyTo(@NotNull final OutputStream out) throws IOException {
-      mData.copyTo(out);
-    }
-
-    public void copyTo(@NotNull final ByteBuffer buffer) throws IOException {
-      mData.copyTo(buffer);
-    }
-
-    public long size() throws IOException {
-      return mData.size();
-    }
-
-    @NotNull
-    public byte[] toByteArray() throws IOException {
-      return mData.toByteArray();
-    }
-
-    @NotNull
-    public InputStream toInputStream() throws IOException {
-      return mData.toInputStream();
-    }
-
-    void serialize(@NotNull final ObjectOutputStream out) throws IOException {
-      mData.serialize(out);
-    }
   }
 
   private static class UncachedInputStreamData extends SerializableData {
 
-    private final InputStream mInput;
+    private final InputStream input;
 
     private UncachedInputStreamData(@NotNull final InputStream input) {
-      mInput = ConstantConditions.notNull("input", input);
-    }
-
-    Object writeReplace() throws ObjectStreamException {
-      return new SerializableWrapper(this);
+      this.input = ConstantConditions.notNull("input", input);
     }
 
     public void copyTo(@NotNull final OutputStream out) throws IOException {
       final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-      final InputStream inputStream = mInput;
+      final InputStream inputStream = input;
       try {
         int length;
         while ((length = inputStream.read(chunk)) > 0) {
@@ -656,7 +652,7 @@ public abstract class SerializableData implements Serializable {
 
     public void copyTo(@NotNull final ByteBuffer buffer) throws IOException {
       final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-      final InputStream inputStream = mInput;
+      final InputStream inputStream = input;
       try {
         int length;
         while ((length = inputStream.read(chunk)) > 0) {
@@ -680,7 +676,7 @@ public abstract class SerializableData implements Serializable {
     @NotNull
     public byte[] toByteArray() throws IOException {
       final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-      final InputStream inputStream = mInput;
+      final InputStream inputStream = input;
       try {
         final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         int length;
@@ -702,12 +698,12 @@ public abstract class SerializableData implements Serializable {
 
     @NotNull
     public InputStream toInputStream() {
-      return mInput;
+      return input;
     }
 
     void serialize(@NotNull final ObjectOutputStream out) throws IOException {
       final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-      final InputStream inputStream = mInput;
+      final InputStream inputStream = input;
       try {
         int length;
         while ((length = inputStream.read(chunk)) > 0) {
@@ -725,6 +721,10 @@ public abstract class SerializableData implements Serializable {
           // TODO: 18/04/2019 ???
         }
       }
+    }
+
+    Object writeReplace() throws ObjectStreamException {
+      return new SerializableWrapper(this);
     }
   }
 }

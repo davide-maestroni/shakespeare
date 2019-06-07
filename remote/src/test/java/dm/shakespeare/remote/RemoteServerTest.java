@@ -76,13 +76,13 @@ public class RemoteServerTest {
   @Test
   public void tes() throws Exception {
     {
-      final byte[] bytes = SerializableData.wrapNoCache(
+      final byte[] bytes = SerializableData.wrapOnce(
           RemoteServerTest.class.getResourceAsStream("/TestRole.class")).toByteArray();
       final Set<String> dependencies = Classes.getDependencies(ByteBuffer.wrap(bytes));
       System.out.println(dependencies);
     }
     {
-      final byte[] bytes = SerializableData.wrapNoCache(
+      final byte[] bytes = SerializableData.wrapOnce(
           RemoteServerTest.class.getResourceAsStream("/TestRole$1.class")).toByteArray();
       final Set<String> dependencies = Classes.getDependencies(ByteBuffer.wrap(bytes));
       System.out.println(dependencies);

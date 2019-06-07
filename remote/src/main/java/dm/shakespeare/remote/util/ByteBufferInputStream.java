@@ -28,38 +28,38 @@ import java.nio.InvalidMarkException;
  */
 public class ByteBufferInputStream extends InputStream {
 
-  private final ByteBuffer mBuffer;
-  private final int mPosition;
+  private final ByteBuffer buffer;
+  private final int position;
 
-  private boolean mIsClosed;
+  private boolean isClosed;
 
   public ByteBufferInputStream(@NotNull final ByteBuffer buffer) {
-    mPosition = buffer.position();
-    mBuffer = buffer;
+    position = buffer.position();
+    this.buffer = buffer;
   }
 
   public int read() throws IOException {
-    if (mIsClosed) {
+    if (isClosed) {
       throw new IOException();
     }
 
-    if (!mBuffer.hasRemaining()) {
+    if (!buffer.hasRemaining()) {
       return -1;
     }
-    return mBuffer.get() & 0xFF;
+    return buffer.get() & 0xFF;
   }
 
   @Override
   public int read(@NotNull final byte[] bytes, final int offset, final int length) throws
       IOException {
-    if (mIsClosed) {
+    if (isClosed) {
       throw new IOException();
     }
 
     if (length == 0) {
       return 0;
     }
-    final ByteBuffer buffer = mBuffer;
+    final ByteBuffer buffer = this.buffer;
     final int count = Math.min(buffer.remaining(), length);
     if (count == 0) {
       return -1;
@@ -70,14 +70,14 @@ public class ByteBufferInputStream extends InputStream {
 
   @Override
   public long skip(final long n) throws IOException {
-    if (mIsClosed) {
+    if (isClosed) {
       throw new IOException();
     }
 
     if (n <= 0) {
       return 0;
     }
-    final ByteBuffer buffer = mBuffer;
+    final ByteBuffer buffer = this.buffer;
     final int skip = Math.min(buffer.remaining(), (int) n);
     buffer.position(buffer.position() + skip);
     return skip;
@@ -85,32 +85,32 @@ public class ByteBufferInputStream extends InputStream {
 
   @Override
   public int available() throws IOException {
-    if (mIsClosed) {
+    if (isClosed) {
       throw new IOException();
     }
-    return mBuffer.remaining();
+    return buffer.remaining();
   }
 
   @Override
   public void close() {
-    if (!mIsClosed) {
-      mIsClosed = true;
-      mBuffer.position(mPosition);
+    if (!isClosed) {
+      isClosed = true;
+      buffer.position(position);
     }
   }
 
   @Override
   public void mark(final int readlimit) {
-    if (!mIsClosed) {
-      mBuffer.mark();
+    if (!isClosed) {
+      buffer.mark();
     }
   }
 
   @Override
   public void reset() throws IOException {
-    if (!mIsClosed) {
+    if (!isClosed) {
       try {
-        mBuffer.reset();
+        buffer.reset();
 
       } catch (final InvalidMarkException e) {
         throw new IOException(e);

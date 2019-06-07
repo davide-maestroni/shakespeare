@@ -292,6 +292,7 @@ public class StageReceiver {
         }
       }
       actor.dismiss(request.getMayInterruptIfRunning());
+      return new DismissActorResponse();
     }
     return new DismissActorResponse().withError(new UnsupportedOperationException());
   }
