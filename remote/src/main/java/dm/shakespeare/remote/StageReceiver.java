@@ -42,7 +42,7 @@ import dm.shakespeare.actor.Role;
 import dm.shakespeare.function.Tester;
 import dm.shakespeare.log.LogPrinters;
 import dm.shakespeare.log.Logger;
-import dm.shakespeare.remote.ConfigKeys.Remote;
+import dm.shakespeare.remote.config.RemoteConfig;
 import dm.shakespeare.remote.config.StageConfig;
 import dm.shakespeare.remote.io.Serializer;
 import dm.shakespeare.remote.transport.ActorID;
@@ -97,27 +97,28 @@ public class StageReceiver {
     this.stage = ConstantConditions.notNull("stage", stage);
     // connector
     final Connector connector =
-        (this.connector = config.getOption(Connector.class, Remote.KEY_CONNECTOR_CLASS));
+        (this.connector = config.getOption(Connector.class, RemoteConfig.KEY_CONNECTOR_CLASS));
     if (connector == null) {
       throw new IllegalArgumentException("missing connector configuration");
     }
     // serializer
-    final Serializer serializer = config.getOption(Serializer.class, Remote.KEY_SERIALIZER_CLASS);
+    final Serializer serializer =
+        config.getOption(Serializer.class, RemoteConfig.KEY_SERIALIZER_CLASS);
     this.serializer = (serializer != null) ? serializer : new JavaSerializer();
     @SuppressWarnings("unchecked") final List<String> whitelist =
-        config.getOption(List.class, Remote.KEY_SERIALIZER_WHITELIST);
+        config.getOption(List.class, RemoteConfig.KEY_SERIALIZER_WHITELIST);
     if (whitelist != null) {
       this.serializer.whitelist(whitelist);
     }
     @SuppressWarnings("unchecked") final List<String> blacklist =
-        config.getOption(List.class, Remote.KEY_SERIALIZER_BLACKLIST);
+        config.getOption(List.class, RemoteConfig.KEY_SERIALIZER_BLACKLIST);
     if (blacklist != null) {
       this.serializer.blacklist(blacklist);
     }
     // classloader
     final ClassLoader classLoader =
-        config.getOption(ClassLoader.class, Remote.KEY_CLASSLOADER_CLASS);
-    File container = config.getOption(File.class, Remote.KEY_CLASSLOADER_DIR);
+        config.getOption(ClassLoader.class, RemoteConfig.KEY_CLASSLOADER_CLASS);
+    File container = config.getOption(File.class, RemoteConfig.KEY_CLASSLOADER_DIR);
     if (container == null) {
       container = new File(new File(System.getProperty("java.io.tmpdir")), "shakespeare");
       if (!container.isDirectory() && !container.mkdir()) {
@@ -125,7 +126,7 @@ public class StageReceiver {
       }
     }
     final ProtectionDomain protectionDomain =
-        config.getOption(ProtectionDomain.class, Remote.KEY_CLASSLOADER_PROTECTION_DOMAIN_CLASS);
+        config.getOption(ProtectionDomain.class, RemoteConfig.KEY_PROTECTION_DOMAIN_CLASS);
     if (classLoader != null) {
       this.classLoader = new RemoteClassLoader(classLoader, container, protectionDomain);
 
@@ -134,7 +135,7 @@ public class StageReceiver {
     }
     // executor
     final ExecutorService executorService =
-        config.getOption(ExecutorService.class, Remote.KEY_EXECUTOR_CLASS);
+        config.getOption(ExecutorService.class, RemoteConfig.KEY_EXECUTOR_CLASS);
     if (executorService != null) {
       this.executorService = executorService;
 
@@ -142,30 +143,30 @@ public class StageReceiver {
       this.executorService = Role.defaultExecutorService();
     }
     // logger
-    final Logger logger = config.getOption(Logger.class, Remote.KEY_LOGGER_CLASS);
+    final Logger logger = config.getOption(Logger.class, RemoteConfig.KEY_LOGGER_CLASS);
     if (logger != null) {
       this.logger = logger;
 
     } else {
-      final String loggerName = config.getOption(String.class, Remote.KEY_LOGGER_NAME);
+      final String loggerName = config.getOption(String.class, RemoteConfig.KEY_LOGGER_NAME);
       this.logger = new Logger(LogPrinters.javaLoggingPrinter(
           isNotEmpty(loggerName) ? loggerName : getClass().getName()));
     }
     // options
     final Boolean remoteRolesEnabled =
-        config.getOption(Boolean.class, Remote.KEY_REMOTE_ROLES_ENABLE);
+        config.getOption(Boolean.class, RemoteConfig.KEY_REMOTE_ROLES_ENABLE);
     this.remoteRolesEnabled = (remoteRolesEnabled != null) ? remoteRolesEnabled : false;
     final Boolean remoteMessagesEnabled =
-        config.getOption(Boolean.class, Remote.KEY_REMOTE_MESSAGES_ENABLE);
+        config.getOption(Boolean.class, RemoteConfig.KEY_REMOTE_MESSAGES_ENABLE);
     this.remoteMessagesEnabled = (remoteMessagesEnabled != null) ? remoteMessagesEnabled : false;
     final Boolean remoteResourcesEnabled =
-        config.getOption(Boolean.class, Remote.KEY_REMOTE_RESOURCES_ENABLE);
+        config.getOption(Boolean.class, RemoteConfig.KEY_REMOTE_RESOURCES_ENABLE);
     this.remoteResourcesEnabled = (remoteResourcesEnabled != null) ? remoteResourcesEnabled : false;
     final Boolean remoteCreateEnabled =
-        config.getOption(Boolean.class, Remote.KEY_REMOTE_CREATE_ENABLE);
+        config.getOption(Boolean.class, RemoteConfig.KEY_REMOTE_CREATE_ENABLE);
     this.remoteCreateEnabled = (remoteCreateEnabled != null) ? remoteCreateEnabled : false;
     final Boolean remoteDismissEnabled =
-        config.getOption(Boolean.class, Remote.KEY_REMOTE_DISMISS_ENABLE);
+        config.getOption(Boolean.class, RemoteConfig.KEY_REMOTE_DISMISS_ENABLE);
     this.remoteDismissEnabled = (remoteDismissEnabled != null) ? remoteDismissEnabled : false;
   }
 

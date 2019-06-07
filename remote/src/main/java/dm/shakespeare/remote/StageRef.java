@@ -49,7 +49,7 @@ import dm.shakespeare.actor.Role;
 import dm.shakespeare.function.Tester;
 import dm.shakespeare.log.LogPrinters;
 import dm.shakespeare.log.Logger;
-import dm.shakespeare.remote.ConfigKeys.Local;
+import dm.shakespeare.remote.config.LocalConfig;
 import dm.shakespeare.remote.config.StageConfig;
 import dm.shakespeare.remote.io.Serializer;
 import dm.shakespeare.remote.message.Rejection;
@@ -101,29 +101,30 @@ public class StageRef extends Stage {
   private Sender sender;
 
   public StageRef(@NotNull final StageConfig config) {
-    this.remoteId = config.getOption(String.class, Local.KEY_REMOTE_ID);
+    this.remoteId = config.getOption(String.class, LocalConfig.KEY_REMOTE_ID);
     // connector
     final Connector connector =
-        (this.connector = config.getOption(Connector.class, Local.KEY_CONNECTOR_CLASS));
+        (this.connector = config.getOption(Connector.class, LocalConfig.KEY_CONNECTOR_CLASS));
     if (connector == null) {
       throw new IllegalArgumentException("missing connector configuration");
     }
     // serializer
-    final Serializer serializer = config.getOption(Serializer.class, Local.KEY_SERIALIZER_CLASS);
+    final Serializer serializer =
+        config.getOption(Serializer.class, LocalConfig.KEY_SERIALIZER_CLASS);
     this.serializer = (serializer != null) ? serializer : new JavaSerializer();
     @SuppressWarnings("unchecked") final List<String> whitelist =
-        config.getOption(List.class, Local.KEY_SERIALIZER_WHITELIST);
+        config.getOption(List.class, LocalConfig.KEY_SERIALIZER_WHITELIST);
     if (whitelist != null) {
       this.serializer.whitelist(whitelist);
     }
     @SuppressWarnings("unchecked") final List<String> blacklist =
-        config.getOption(List.class, Local.KEY_SERIALIZER_BLACKLIST);
+        config.getOption(List.class, LocalConfig.KEY_SERIALIZER_BLACKLIST);
     if (blacklist != null) {
       this.serializer.blacklist(blacklist);
     }
     // executor
     final ExecutorService executorService =
-        config.getOption(ExecutorService.class, Local.KEY_EXECUTOR_CLASS);
+        config.getOption(ExecutorService.class, LocalConfig.KEY_EXECUTOR_CLASS);
     if (executorService != null) {
       this.executorService = executorService;
 
@@ -131,38 +132,40 @@ public class StageRef extends Stage {
       this.executorService = Role.defaultExecutorService();
     }
     // logger
-    final Logger logger = config.getOption(Logger.class, Local.KEY_LOGGER_CLASS);
+    final Logger logger = config.getOption(Logger.class, LocalConfig.KEY_LOGGER_CLASS);
     if (logger != null) {
       this.logger = logger;
 
     } else {
-      final String loggerName = config.getOption(String.class, Local.KEY_LOGGER_NAME);
+      final String loggerName = config.getOption(String.class, LocalConfig.KEY_LOGGER_NAME);
       this.logger = new Logger(LogPrinters.javaLoggingPrinter(
           isNotEmpty(loggerName) ? loggerName : getClass().getName()));
     }
     // options
     final Integer sendersCacheSize =
-        config.getOption(Integer.class, Local.KEY_SENDERS_CACHE_MAX_SIZE);
+        config.getOption(Integer.class, LocalConfig.KEY_SENDERS_CACHE_MAX_SIZE);
     if (sendersCacheSize != null) {
       this.sendersCacheSize = sendersCacheSize;
     } else {
       this.sendersCacheSize = 1000;
     }
-    final Long sendersCacheTimeout = config.getOption(Long.class, Local.KEY_SENDERS_CACHE_TIMEOUT);
+    final Long sendersCacheTimeout =
+        config.getOption(Long.class, LocalConfig.KEY_SENDERS_CACHE_TIMEOUT);
     if (sendersCacheTimeout != null) {
       this.sendersCacheTimeout = sendersCacheTimeout;
     } else {
-      this.sendersCacheTimeout = TimeUnit.MINUTES.toMillis(10);
+      this.sendersCacheTimeout = TimeUnit.MINUTES.toMillis(15);
     }
     // tasks
     final Long actorsPartialSyncTime =
-        config.getOption(Long.class, Local.KEY_ACTORS_PART_SYNC_TIME);
+        config.getOption(Long.class, LocalConfig.KEY_ACTORS_PART_SYNC_TIME);
     if (actorsPartialSyncTime != null) {
       this.actorsPartialSyncTime = actorsPartialSyncTime;
     } else {
       this.actorsPartialSyncTime = 0;
     }
-    final Long actorsFullSyncTime = config.getOption(Long.class, Local.KEY_ACTORS_FULL_SYNC_TIME);
+    final Long actorsFullSyncTime =
+        config.getOption(Long.class, LocalConfig.KEY_ACTORS_FULL_SYNC_TIME);
     if (actorsFullSyncTime != null) {
       this.actorsFullSyncTime = actorsFullSyncTime;
     } else {

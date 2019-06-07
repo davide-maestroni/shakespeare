@@ -22,13 +22,13 @@ import java.lang.reflect.Array;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 
 import dm.shakespeare.util.ConstantConditions;
+import dm.shakespeare.util.Iterables;
 
 /**
  * Created by davide-maestroni on 05/28/2019.
@@ -36,6 +36,13 @@ import dm.shakespeare.util.ConstantConditions;
 public class StageConfig extends AbstractMap<String, Object> {
 
   private final HashMap<String, Object> map = new HashMap<String, Object>();
+
+  public StageConfig() {
+  }
+
+  public StageConfig(@NotNull final Map<? extends String, ?> map) {
+    putAll(map);
+  }
 
   @NotNull
   public static StageConfig from(@NotNull final Properties properties) {
@@ -53,6 +60,7 @@ public class StageConfig extends AbstractMap<String, Object> {
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public Object put(final String key, final Object value) {
     ConstantConditions.notNull("key", key);
     if (key.endsWith(".class")) {
@@ -84,8 +92,8 @@ public class StageConfig extends AbstractMap<String, Object> {
         final String[] parts = ((String) value).split("\\s*,\\s*");
         return map.put(key, Arrays.asList(parts));
 
-      } else if (value instanceof Collection) {
-        return map.put(key, new ArrayList<String>((Collection<? extends String>) value));
+      } else if (value instanceof Iterable) {
+        return map.put(key, Iterables.toList((Iterable<? extends String>) value));
 
       } else if ((value != null) && value.getClass().isArray()) {
         final ArrayList<String> list = new ArrayList<String>();

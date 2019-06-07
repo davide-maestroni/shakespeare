@@ -27,7 +27,10 @@ import java.security.Permission;
 import java.security.Permissions;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -39,9 +42,8 @@ import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.SerializableRole;
 import dm.shakespeare.concurrent.ExecutorServices;
-import dm.shakespeare.remote.ConfigKeys.Local;
-import dm.shakespeare.remote.ConfigKeys.Remote;
-import dm.shakespeare.remote.config.StageConfig;
+import dm.shakespeare.remote.config.LocalConfig;
+import dm.shakespeare.remote.config.RemoteConfig;
 import dm.shakespeare.remote.transport.Connector;
 import dm.shakespeare.remote.transport.RemoteRequest;
 import dm.shakespeare.remote.transport.RemoteResponse;
@@ -56,18 +58,16 @@ public class RemoteServerTest {
   @Test
   public void localTest() throws Exception {
     final ExecutorService executorService = ExecutorServices.localExecutor();
-    final ReceiverConnector receiverConnector = new ReceiverConnector();
+    final DirectConnector connector = new DirectConnector();
     final StageReceiver stageReceiver = new StageReceiver(
-        new StageConfig().withOption(Remote.KEY_CONNECTOR_CLASS, receiverConnector)
-            .withOption(Remote.KEY_REMOTE_CREATE_ENABLE, true)
-            .withOption(Remote.KEY_SERIALIZER_WHITELIST, "java.lang.**,dm.shakespeare.**")
-            .withOption(Remote.KEY_EXECUTOR_CLASS, executorService), new Stage());
-    final SenderConnector senderConnector = new SenderConnector(stageReceiver.connect());
-    final StageRef stage = new StageRef(new StageConfig().withOption(Local.KEY_REMOTE_ID, "id")
-        .withOption(Local.KEY_CONNECTOR_CLASS, senderConnector)
-        .withOption(Local.KEY_EXECUTOR_CLASS, executorService));
+        new RemoteConfig().withConnector(connector)
+            .withRemoteCreateEnable(true)
+            .withSerializerWhitelist("java.lang.**,dm.shakespeare.**")
+            .withExecutor(executorService), new Stage());
+    final StageRef stage = new StageRef(new LocalConfig().withRemoteId("id")
+        .withConnector(connector.localConnector(stageReceiver.connect()))
+        .withExecutor(executorService));
     stage.connect();
-    receiverConnector.setReceiver(senderConnector.getRemoteReceiver());
     final Actor printActor = Stage.newActor(new PrintRole());
     final Actor actor = stage.createActor(new UpperRole());
     actor.tell("hello remote!", null, printActor);
@@ -131,6 +131,50 @@ public class RemoteServerTest {
     Thread.sleep(2000);
   }
 
+  private static class DirectConnector implements Connector {
+
+    private final Map<String, Receiver> receivers =
+        Collections.synchronizedMap(new HashMap<String, Receiver>());
+
+    @NotNull
+    public Sender connect(@NotNull final Receiver receiver) {
+      return new Sender() {
+
+        public void disconnect() {
+        }
+
+        @NotNull
+        public RemoteResponse send(@NotNull final RemoteRequest request,
+            @NotNull final String receiverId) throws Exception {
+          return receivers.get(receiverId).receive(request);
+        }
+      };
+    }
+
+    @NotNull
+    public Connector localConnector(@NotNull final Receiver localReceiver) {
+      final String id = UUID.randomUUID().toString();
+      return new Connector() {
+
+        @NotNull
+        public Sender connect(@NotNull final Receiver receiver) {
+          receivers.put(id, receiver);
+          return new Sender() {
+
+            public void disconnect() {
+            }
+
+            @NotNull
+            public RemoteResponse send(@NotNull final RemoteRequest request,
+                @NotNull final String receiverId) throws Exception {
+              return localReceiver.receive(request.withSenderId(id));
+            }
+          };
+        }
+      };
+    }
+  }
+
   private static class PrintRole extends SerializableRole {
 
     @NotNull
@@ -149,63 +193,6 @@ public class RemoteServerTest {
           System.out.println("message: " + message);
         }
       };
-    }
-  }
-
-  private static class ReceiverConnector implements Connector {
-
-    private Receiver receiver;
-
-    @NotNull
-    public Sender connect(@NotNull final Receiver receiver) {
-      return new Sender() {
-
-        public void disconnect() {
-        }
-
-        @NotNull
-        public RemoteResponse send(@NotNull final RemoteRequest request,
-            @NotNull final String receiverId) throws Exception {
-          return ReceiverConnector.this.receiver.receive(request);
-        }
-      };
-    }
-
-    public void setReceiver(final Receiver receiver) {
-      this.receiver = receiver;
-    }
-  }
-
-  private static class SenderConnector implements Connector {
-
-    private final String id;
-    private final Receiver receiver;
-
-    private Receiver remoteReceiver;
-
-    private SenderConnector(@NotNull final Receiver receiver) {
-      this.receiver = receiver;
-      this.id = UUID.randomUUID().toString();
-    }
-
-    @NotNull
-    public Sender connect(@NotNull final Receiver receiver) {
-      this.remoteReceiver = receiver;
-      return new Sender() {
-
-        public void disconnect() {
-        }
-
-        @NotNull
-        public RemoteResponse send(@NotNull final RemoteRequest request,
-            @NotNull final String receiverId) throws Exception {
-          return SenderConnector.this.receiver.receive(request.withSenderId(id));
-        }
-      };
-    }
-
-    public Receiver getRemoteReceiver() {
-      return remoteReceiver;
     }
   }
 
