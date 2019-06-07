@@ -375,13 +375,12 @@ public class StageReceiver {
         return new MessageContinue().addAllResourcePaths(dependencies);
       }
       Object msg = serializer.deserialize(request.getMessageData(), classLoader);
-      final long offset = request.getSentTimestamp() - System.currentTimeMillis();
       Options options = request.getOptions();
       if (options != null) {
-        options = options.withTimeOffset(options.getTimeOffset() + offset);
+        options = options.asSentAt(request.getSentTimestamp());
 
       } else {
-        options = new Options().withTimeOffset(offset);
+        options = new Options().asSentAt(request.getSentTimestamp());
       }
       actor.tell(msg, options, sender);
 

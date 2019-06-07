@@ -278,6 +278,7 @@ public class StageRef extends Stage {
               final Actor actor = StageRef.super.get(actorId);
               if (actor != null) {
                 actor.tell(request, null, Stage.STAND_IN);
+                return new MessageResponse();
               }
             }
           }
@@ -645,8 +646,11 @@ public class StageRef extends Stage {
           } else {
             flushSenders();
             if (!send(message, envelop, agent)) {
-              envelop.getSender()
-                  .tell(new Rejection(message, envelop.getOptions()), null, agent.getSelf());
+              final Options options = envelop.getOptions();
+              if (options.getReceiptId() != null) {
+                envelop.getSender()
+                    .tell(new Rejection(message, options), options.threadOnly(), agent.getSelf());
+              }
             }
           }
         }
@@ -812,14 +816,18 @@ public class StageRef extends Stage {
     }
 
     private void sendRejection(@NotNull final MessageRequest request) {
-      try {
-        getSender().send(new MessageRequest().withActorID(request.getSenderActorID())
-            .withSenderActorID(request.getSenderActorID())
-            .withMessageData(SerializableData.wrap(
-                serializer.serialize(new Rejection(null, request.getOptions())))), remoteId);
+      final Options options = request.getOptions();
+      if ((options != null) && (options.getReceiptId() != null)) {
+        try {
+          getSender().send(new MessageRequest().withActorID(request.getSenderActorID())
+              .withSenderActorID(request.getSenderActorID())
+              .withMessageData(
+                  SerializableData.wrap(serializer.serialize(new Rejection(null, options))))
+              .withOptions(options.threadOnly()), remoteId);
 
-      } catch (final Exception e) {
-        logger.wrn(e, "failed to send bounce message");
+        } catch (final Exception e) {
+          logger.err(e, "failed to send rejection message");
+        }
       }
     }
   }
