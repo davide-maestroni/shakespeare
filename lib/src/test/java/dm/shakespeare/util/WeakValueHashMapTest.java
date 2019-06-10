@@ -18,6 +18,8 @@ package dm.shakespeare.util;
 
 import org.junit.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 /**
  * Created by davide-maestroni on 05/30/2019.
  */
@@ -28,6 +30,6 @@ public class WeakValueHashMapTest {
     final WeakValueHashMap<String, String> map = new WeakValueHashMap<String, String>();
     map.put("ciao", "1");
     map.put("ciao", "2");
-    map.size();
+    assertThat(map).hasSize(1);
   }
 }

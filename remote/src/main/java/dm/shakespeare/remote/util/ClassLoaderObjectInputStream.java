@@ -42,12 +42,7 @@ public class ClassLoaderObjectInputStream extends ObjectInputStream {
   @Override
   protected Class<?> resolveClass(@NotNull final ObjectStreamClass desc) throws IOException,
       ClassNotFoundException {
-    try {
-      return Class.forName(desc.getName(), false, classLoader);
-
-    } catch (final ClassNotFoundException ignored) {
-      return super.resolveClass(desc);
-    }
+    return Class.forName(desc.getName(), false, classLoader);
   }
 
   @Override
@@ -59,11 +54,6 @@ public class ClassLoaderObjectInputStream extends ObjectInputStream {
     for (int i = 0; i < length; ++i) {
       interfaceClasses[i] = Class.forName(interfaces[i], false, classLoader);
     }
-    try {
-      return Proxy.getProxyClass(classLoader, interfaceClasses);
-
-    } catch (final IllegalArgumentException ignored) {
-      return super.resolveProxyClass(interfaces);
-    }
+    return Proxy.getProxyClass(classLoader, interfaceClasses);
   }
 }

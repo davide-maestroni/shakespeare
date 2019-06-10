@@ -245,7 +245,7 @@ public class StageRef extends Stage {
         }
       }
     } else {
-      fileMap.put(file.getPath().substring(root.getPath().length() + 1), file);
+      fileMap.put(file.getPath().substring(root.getPath().length()), file);
     }
   }
 
@@ -742,21 +742,26 @@ public class StageRef extends Stage {
         @NotNull final Agent agent) throws Exception {
       final String senderInstanceId;
       final Actor sender = envelop.getSender();
-      final HashMap<Actor, SenderActor> actors = this.actors;
-      final HashMap<String, SenderActor> instanceIds = this.instanceIds;
-      final CQueue<SenderActor> senders = RemoteRole.this.senders;
-      SenderActor senderActor = actors.get(sender);
-      if (senderActor != null) {
-        senderInstanceId = senderActor.getInstanceId();
-        senders.remove(senderActor);
+      if (sender.equals(StageRef.super.get(sender.getId()))) {
+        senderInstanceId = null;
 
       } else {
-        senderInstanceId = UUID.randomUUID().toString();
-        senderActor = new SenderActor(sender, senderInstanceId);
-        actors.put(sender, senderActor);
-        instanceIds.put(senderInstanceId, senderActor);
+        final HashMap<Actor, SenderActor> actors = this.actors;
+        final HashMap<String, SenderActor> instanceIds = this.instanceIds;
+        final CQueue<SenderActor> senders = RemoteRole.this.senders;
+        SenderActor senderActor = actors.get(sender);
+        if (senderActor != null) {
+          senderInstanceId = senderActor.getInstanceId();
+          senders.remove(senderActor);
+
+        } else {
+          senderInstanceId = "local:" + UUID.randomUUID().toString();
+          senderActor = new SenderActor(sender, senderInstanceId);
+          actors.put(sender, senderActor);
+          instanceIds.put(senderInstanceId, senderActor);
+        }
+        senders.add(senderActor);
       }
-      senders.add(senderActor);
       RemoteResponse response;
       try {
         final byte[] data = serializer.serialize(message);

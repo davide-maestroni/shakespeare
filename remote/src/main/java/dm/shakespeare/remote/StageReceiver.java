@@ -77,19 +77,18 @@ public class StageReceiver {
   private final RemoteClassLoader classLoader;
   private final Object connectionMutex = new Object();
   private final Connector connector;
+  private final RequestHandler<CreateActorRequest> createHandler;
+  private final RequestHandler<DismissActorRequest> dismissHandler;
   private final ExecutorService executorService;
   private final Object idsMutex = new Object();
   private final WeakHashMap<Actor, String> instances = new WeakHashMap<Actor, String>();
   private final Logger logger;
-  private final boolean remoteCreateEnabled;
-  private final boolean remoteDismissEnabled;
-  private final boolean remoteMessagesEnabled;
-  private final boolean remoteResourcesEnabled;
-  private final boolean remoteRolesEnabled;
+  private final RequestHandler<MessageRequest> messageHandler;
   private final WeakValueHashMap<SenderID, Actor> senders = new WeakValueHashMap<SenderID, Actor>();
   private final Object sendersMutex = new Object();
   private final Serializer serializer;
   private final Stage stage;
+  private final RequestHandler<UploadRequest> uploadHandler;
 
   private Sender sender;
 
@@ -152,28 +151,53 @@ public class StageReceiver {
       this.logger = new Logger(LogPrinters.javaLoggingPrinter(
           isNotEmpty(loggerName) ? loggerName : getClass().getName()));
     }
-    // options
-    final Boolean remoteRolesEnabled =
-        config.getOption(Boolean.class, RemoteConfig.KEY_REMOTE_ROLES_ENABLE);
-    this.remoteRolesEnabled = (remoteRolesEnabled != null) ? remoteRolesEnabled : false;
-    final Boolean remoteMessagesEnabled =
-        config.getOption(Boolean.class, RemoteConfig.KEY_REMOTE_MESSAGES_ENABLE);
-    this.remoteMessagesEnabled = (remoteMessagesEnabled != null) ? remoteMessagesEnabled : false;
-    final Boolean remoteResourcesEnabled =
-        config.getOption(Boolean.class, RemoteConfig.KEY_REMOTE_RESOURCES_ENABLE);
-    this.remoteResourcesEnabled = (remoteResourcesEnabled != null) ? remoteResourcesEnabled : false;
+    // handlers
     final Boolean remoteCreateEnabled =
         config.getOption(Boolean.class, RemoteConfig.KEY_REMOTE_CREATE_ENABLE);
-    this.remoteCreateEnabled = (remoteCreateEnabled != null) ? remoteCreateEnabled : false;
+    if ((remoteCreateEnabled != null) && remoteCreateEnabled) {
+      final Boolean remoteRolesEnabled =
+          config.getOption(Boolean.class, RemoteConfig.KEY_REMOTE_ROLES_ENABLE);
+      if ((remoteRolesEnabled != null) && remoteRolesEnabled) {
+        this.createHandler = new CreateWithResourcesHandler();
+
+      } else {
+        this.createHandler = new CreateHandler();
+      }
+
+    } else {
+      this.createHandler = new CreateUnsupportedHandler();
+    }
     final Boolean remoteDismissEnabled =
         config.getOption(Boolean.class, RemoteConfig.KEY_REMOTE_DISMISS_ENABLE);
-    this.remoteDismissEnabled = (remoteDismissEnabled != null) ? remoteDismissEnabled : false;
+    if ((remoteDismissEnabled != null) && remoteDismissEnabled) {
+      this.dismissHandler = new DismissHandler();
+
+    } else {
+      this.dismissHandler = new DismissUnsupportedHandler();
+    }
+    final Boolean remoteMessagesEnabled =
+        config.getOption(Boolean.class, RemoteConfig.KEY_REMOTE_MESSAGES_ENABLE);
+    if ((remoteMessagesEnabled != null) && remoteMessagesEnabled) {
+      this.messageHandler = new MessageWithResourcesHandler();
+
+    } else {
+      this.messageHandler = new MessageHandler();
+    }
+    final Boolean remoteResourcesEnabled =
+        config.getOption(Boolean.class, RemoteConfig.KEY_REMOTE_RESOURCES_ENABLE);
+    if ((remoteResourcesEnabled != null) && remoteResourcesEnabled) {
+      this.uploadHandler = new UploadHandler();
+
+    } else {
+      this.uploadHandler = new UploadUnsupportedHandler();
+    }
   }
 
   private static boolean isNotEmpty(@Nullable final String string) {
     return ((string != null) && (string.trim().length() > 0));
   }
 
+  @NotNull
   public Receiver connect() throws Exception {
     final RemoteReceiver receiver = new RemoteReceiver();
     final Sender sender = connector.connect(receiver);
@@ -216,8 +240,12 @@ public class StageReceiver {
     }
   }
 
-  @NotNull
+  @Nullable
   private Actor getSenderActor(@NotNull final ActorID actorID, @NotNull final String senderId) {
+    if (actorID.getInstanceId() == null) {
+      return stage.get(actorID.getActorId());
+    }
+
     synchronized (sendersMutex) {
       final SenderID senderID = new SenderID(actorID, senderId);
       Actor sender = senders.get(senderID);
@@ -227,74 +255,6 @@ public class StageReceiver {
       }
       return sender;
     }
-  }
-
-  @NotNull
-  private RemoteResponse handleCreate(@NotNull final CreateActorRequest request) {
-    final String actorId = request.getActorId();
-    if ((actorId == null)) {
-      return new CreateActorResponse().withError(new IllegalArgumentException());
-    }
-    if (remoteCreateEnabled) {
-      final SerializableData roleData = request.getRoleData();
-      try {
-        Set<String> dependencies = null;
-        final RemoteClassLoader classLoader = this.classLoader;
-        final Map<String, SerializableData> resources = request.getResources();
-        if (remoteRolesEnabled) {
-          dependencies = classLoader.register(resources);
-        }
-
-        if ((dependencies != null) && !dependencies.isEmpty()) {
-          return new CreateActorContinue().addAllResourcePaths(dependencies);
-        }
-        final Object role = serializer.deserialize(roleData, classLoader);
-        if (!(role instanceof Role)) {
-          return new CreateActorResponse().withError(new IllegalArgumentException());
-        }
-        final Actor actor = stage.createActor(actorId, (Role) role);
-        final String instanceId = UUID.randomUUID().toString();
-        synchronized (idsMutex) {
-          actors.put(instanceId, actor);
-          instances.put(actor, instanceId);
-        }
-        return new CreateActorResponse().withActorID(
-            new ActorID().withActorId(actorId).withInstanceId(instanceId));
-
-      } catch (final RemoteClassNotFoundException e) {
-        if (remoteRolesEnabled) {
-          return new CreateActorContinue().addResourcePath(e.getMessage());
-        }
-        return new CreateActorResponse().withError(e);
-
-      } catch (final Exception e) {
-        logger.err(e, "error while handling create request");
-        return new CreateActorResponse().withError(e);
-      }
-    }
-    return new CreateActorResponse().withError(new UnsupportedOperationException());
-  }
-
-  @NotNull
-  private DismissActorResponse handleDismiss(@NotNull final DismissActorRequest request) {
-    if (remoteDismissEnabled) {
-      final ActorID actorID = request.getActorID();
-      if (actorID == null) {
-        return new DismissActorResponse().withError(new IllegalArgumentException());
-      }
-      final Actor actor = stage.get(actorID.getActorId());
-      if (actor == null) {
-        return new DismissActorResponse().withError(new IllegalArgumentException());
-      }
-      synchronized (idsMutex) {
-        if (!actor.equals(actors.get(actorID.getInstanceId()))) {
-          return new DismissActorResponse().withError(new IllegalArgumentException());
-        }
-      }
-      actor.dismiss(request.getMayInterruptIfRunning());
-      return new DismissActorResponse();
-    }
-    return new DismissActorResponse().withError(new UnsupportedOperationException());
   }
 
   @NotNull
@@ -346,71 +306,30 @@ public class StageReceiver {
     return new FindResponse().withActorIDs(Collections.<ActorID>emptySet());
   }
 
-  @NotNull
-  private RemoteResponse handleMessage(@NotNull final MessageRequest request) {
-    final String senderId = request.getSenderId();
-    final ActorID actorID = request.getActorID();
-    final ActorID senderID = request.getSenderActorID();
-    if ((actorID == null) || (actorID.getActorId() == null) || (senderID == null) || (
-        senderID.getActorId() == null)) {
-      return new MessageResponse().withError(new IllegalArgumentException());
-    }
-    final Actor actor = stage.get(actorID.getActorId());
-    if (actor == null) {
-      return new MessageResponse().withError(new IllegalArgumentException());
-    }
-    final String instanceId = getInstanceId(actor);
-    if ((instanceId == null) || !instanceId.equals(actorID.getInstanceId())) {
-      return new MessageResponse().withError(new IllegalArgumentException());
-    }
-    final Actor sender = getSenderActor(senderID, senderId);
-    try {
-      final RemoteClassLoader classLoader = this.classLoader;
-      Set<String> dependencies = null;
-      final Map<String, SerializableData> resources = request.getResources();
-      if ((resources != null) && remoteMessagesEnabled) {
-        dependencies = classLoader.register(resources);
-      }
+  private interface RequestHandler<R extends RemoteRequest> {
 
-      if ((dependencies != null) && !dependencies.isEmpty()) {
-        return new MessageContinue().addAllResourcePaths(dependencies);
-      }
-      Object msg = serializer.deserialize(request.getMessageData(), classLoader);
-      Options options = request.getOptions();
-      if (options != null) {
-        options = options.asSentAt(request.getSentTimestamp());
-
-      } else {
-        options = new Options().asSentAt(request.getSentTimestamp());
-      }
-      actor.tell(msg, options, sender);
-
-    } catch (final RemoteClassNotFoundException e) {
-      if (remoteMessagesEnabled) {
-        return new MessageContinue().addResourcePath(e.getMessage());
-      }
-      logger.err(e, "error while handling message request");
-      return new MessageResponse().withError(e);
-
-    } catch (final Exception e) {
-      logger.err(e, "error while handling message request");
-      return new MessageResponse().withError(e);
-    }
-    return new MessageResponse();
+    @NotNull
+    RemoteResponse handle(@NotNull R request);
   }
 
-  @NotNull
-  private UploadResponse handleUpload(@NotNull final UploadRequest request) {
-    if (remoteResourcesEnabled) {
-      try {
-        classLoader.register(request.getResources());
+  private static class CreateUnsupportedHandler implements RequestHandler<CreateActorRequest> {
 
-      } catch (final Exception e) {
-        logger.err(e, "error while handling upload request");
-        return new UploadResponse().withError(e);
+    @NotNull
+    public RemoteResponse handle(@NotNull final CreateActorRequest request) {
+      final String actorId = request.getActorId();
+      if (actorId == null) {
+        return new CreateActorResponse().withError(new IllegalArgumentException());
       }
+      return new CreateActorResponse().withError(new UnsupportedOperationException());
     }
-    return new UploadResponse().withError(new UnsupportedOperationException());
+  }
+
+  private static class DismissUnsupportedHandler implements RequestHandler<DismissActorRequest> {
+
+    @NotNull
+    public DismissActorResponse handle(@NotNull final DismissActorRequest request) {
+      return new DismissActorResponse().withError(new UnsupportedOperationException());
+    }
   }
 
   private static class SenderID {
@@ -439,10 +358,219 @@ public class StageReceiver {
       if ((o == null) || getClass() != o.getClass()) {
         return false;
       }
-
       final SenderID senderID = (SenderID) o;
       return actorID.equals(senderID.actorID) && ((senderId != null) ? senderId.equals(
           senderID.senderId) : senderID.senderId == null);
+    }
+  }
+
+  private static class UploadUnsupportedHandler implements RequestHandler<UploadRequest> {
+
+    @NotNull
+    public UploadResponse handle(@NotNull final UploadRequest request) {
+      return new UploadResponse().withError(new UnsupportedOperationException());
+    }
+  }
+
+  private class CreateHandler implements RequestHandler<CreateActorRequest> {
+
+    @NotNull
+    public RemoteResponse handle(@NotNull final CreateActorRequest request) {
+      final String actorId = request.getActorId();
+      if (actorId == null) {
+        return new CreateActorResponse().withError(new IllegalArgumentException());
+      }
+
+      final SerializableData roleData = request.getRoleData();
+      try {
+        final RemoteClassLoader classLoader = StageReceiver.this.classLoader;
+        final Object role = serializer.deserialize(roleData, classLoader);
+        if (!(role instanceof Role)) {
+          return new CreateActorResponse().withError(new IllegalArgumentException());
+        }
+        final Actor actor = stage.createActor(actorId, (Role) role);
+        final String instanceId = "remote:" + UUID.randomUUID().toString();
+        synchronized (idsMutex) {
+          actors.put(instanceId, actor);
+          instances.put(actor, instanceId);
+        }
+        return new CreateActorResponse().withActorID(
+            new ActorID().withActorId(actorId).withInstanceId(instanceId));
+
+      } catch (final RemoteClassNotFoundException e) {
+        return new CreateActorResponse().withError(e);
+
+      } catch (final Exception e) {
+        logger.err(e, "error while handling create request");
+        return new CreateActorResponse().withError(e);
+      }
+    }
+  }
+
+  private class CreateWithResourcesHandler implements RequestHandler<CreateActorRequest> {
+
+    @NotNull
+    public RemoteResponse handle(@NotNull final CreateActorRequest request) {
+      final String actorId = request.getActorId();
+      if (actorId == null) {
+        return new CreateActorResponse().withError(new IllegalArgumentException());
+      }
+
+      final SerializableData roleData = request.getRoleData();
+      try {
+        final RemoteClassLoader classLoader = StageReceiver.this.classLoader;
+        final Map<String, SerializableData> resources = request.getResources();
+        final Set<String> dependencies = classLoader.register(resources);
+        if (!dependencies.isEmpty()) {
+          return new CreateActorContinue().addAllResourcePaths(dependencies);
+        }
+        final Object role = serializer.deserialize(roleData, classLoader);
+        if (!(role instanceof Role)) {
+          return new CreateActorResponse().withError(new IllegalArgumentException());
+        }
+        final Actor actor = stage.createActor(actorId, (Role) role);
+        final String instanceId = "remote:" + UUID.randomUUID().toString();
+        synchronized (idsMutex) {
+          actors.put(instanceId, actor);
+          instances.put(actor, instanceId);
+        }
+        return new CreateActorResponse().withActorID(
+            new ActorID().withActorId(actorId).withInstanceId(instanceId));
+
+      } catch (final RemoteClassNotFoundException e) {
+        return new CreateActorContinue().addResourcePath(e.getMessage());
+
+      } catch (final Exception e) {
+        logger.err(e, "error while handling create request");
+        return new CreateActorResponse().withError(e);
+      }
+    }
+  }
+
+  private class DismissHandler implements RequestHandler<DismissActorRequest> {
+
+    @NotNull
+    public DismissActorResponse handle(@NotNull final DismissActorRequest request) {
+      final ActorID actorID = request.getActorID();
+      if (actorID == null) {
+        return new DismissActorResponse().withError(new IllegalArgumentException());
+      }
+      final Actor actor = stage.get(actorID.getActorId());
+      if (actor == null) {
+        return new DismissActorResponse().withError(new IllegalArgumentException());
+      }
+
+      synchronized (idsMutex) {
+        if (!actor.equals(actors.get(actorID.getInstanceId()))) {
+          return new DismissActorResponse().withError(new IllegalArgumentException());
+        }
+      }
+      actor.dismiss(request.getMayInterruptIfRunning());
+      return new DismissActorResponse();
+    }
+  }
+
+  private class MessageHandler implements RequestHandler<MessageRequest> {
+
+    @NotNull
+    public RemoteResponse handle(@NotNull final MessageRequest request) {
+      final String senderId = request.getSenderId();
+      final ActorID actorID = request.getActorID();
+      final ActorID senderID = request.getSenderActorID();
+      if ((actorID == null) || (actorID.getActorId() == null) || (senderID == null) || (
+          senderID.getActorId() == null)) {
+        return new MessageResponse().withError(new IllegalArgumentException());
+      }
+      final Actor actor = stage.get(actorID.getActorId());
+      if (actor == null) {
+        return new MessageResponse().withError(new IllegalArgumentException());
+      }
+      final String instanceId = getInstanceId(actor);
+      if ((instanceId == null) || !instanceId.equals(actorID.getInstanceId())) {
+        return new MessageResponse().withError(new IllegalArgumentException());
+      }
+      final Actor sender = getSenderActor(senderID, senderId);
+      if (sender == null) {
+        return new MessageResponse().withError(new IllegalArgumentException());
+      }
+
+      try {
+        final RemoteClassLoader classLoader = StageReceiver.this.classLoader;
+        Object msg = serializer.deserialize(request.getMessageData(), classLoader);
+        Options options = request.getOptions();
+        if (options != null) {
+          options = options.asSentAt(request.getSentTimestamp());
+
+        } else {
+          options = new Options().asSentAt(request.getSentTimestamp());
+        }
+        actor.tell(msg, options, sender);
+
+      } catch (final RemoteClassNotFoundException e) {
+        logger.err(e, "error while handling message request");
+        return new MessageResponse().withError(e);
+
+      } catch (final Exception e) {
+        logger.err(e, "error while handling message request");
+        return new MessageResponse().withError(e);
+      }
+      return new MessageResponse();
+    }
+  }
+
+  private class MessageWithResourcesHandler implements RequestHandler<MessageRequest> {
+
+    @NotNull
+    public RemoteResponse handle(@NotNull final MessageRequest request) {
+      final String senderId = request.getSenderId();
+      final ActorID actorID = request.getActorID();
+      final ActorID senderID = request.getSenderActorID();
+      if ((actorID == null) || (actorID.getActorId() == null) || (senderID == null) || (
+          senderID.getActorId() == null)) {
+        return new MessageResponse().withError(new IllegalArgumentException());
+      }
+      final Actor actor = stage.get(actorID.getActorId());
+      if (actor == null) {
+        return new MessageResponse().withError(new IllegalArgumentException());
+      }
+      final String instanceId = getInstanceId(actor);
+      if ((instanceId == null) || !instanceId.equals(actorID.getInstanceId())) {
+        return new MessageResponse().withError(new IllegalArgumentException());
+      }
+      final Actor sender = getSenderActor(senderID, senderId);
+      if (sender == null) {
+        return new MessageResponse().withError(new IllegalArgumentException());
+      }
+
+      try {
+        final RemoteClassLoader classLoader = StageReceiver.this.classLoader;
+        Set<String> dependencies = null;
+        final Map<String, SerializableData> resources = request.getResources();
+        if (resources != null) {
+          dependencies = classLoader.register(resources);
+        }
+
+        if ((dependencies != null) && !dependencies.isEmpty()) {
+          return new MessageContinue().addAllResourcePaths(dependencies);
+        }
+        Object msg = serializer.deserialize(request.getMessageData(), classLoader);
+        Options options = request.getOptions();
+        if (options != null) {
+          options = options.asSentAt(request.getSentTimestamp());
+
+        } else {
+          options = new Options().asSentAt(request.getSentTimestamp());
+        }
+        actor.tell(msg, options, sender);
+
+      } catch (final RemoteClassNotFoundException e) {
+        return new MessageContinue().addResourcePath(e.getMessage());
+
+      } catch (final Exception e) {
+        logger.err(e, "error while handling message request");
+        return new MessageResponse().withError(e);
+      }
+      return new MessageResponse();
     }
   }
 
@@ -450,20 +578,20 @@ public class StageReceiver {
 
     @NotNull
     public RemoteResponse receive(@NotNull final RemoteRequest request) {
-      if (request instanceof CreateActorRequest) {
-        return handleCreate((CreateActorRequest) request);
-
-      } else if (request instanceof DismissActorRequest) {
-        return handleDismiss((DismissActorRequest) request);
+      if (request instanceof MessageRequest) {
+        return messageHandler.handle((MessageRequest) request);
 
       } else if (request instanceof FindRequest) {
         return handleFind((FindRequest) request);
 
-      } else if (request instanceof MessageRequest) {
-        return handleMessage((MessageRequest) request);
+      } else if (request instanceof CreateActorRequest) {
+        return createHandler.handle((CreateActorRequest) request);
+
+      } else if (request instanceof DismissActorRequest) {
+        return dismissHandler.handle((DismissActorRequest) request);
 
       } else if (request instanceof UploadRequest) {
-        return handleUpload((UploadRequest) request);
+        return uploadHandler.handle((UploadRequest) request);
       }
       throw new UnsupportedOperationException();
     }
@@ -501,6 +629,21 @@ public class StageReceiver {
     @Override
     public ExecutorService getExecutorService(@NotNull final String id) {
       return executorService;
+    }
+  }
+
+  private class UploadHandler implements RequestHandler<UploadRequest> {
+
+    @NotNull
+    public UploadResponse handle(@NotNull final UploadRequest request) {
+      try {
+        classLoader.register(request.getResources());
+
+      } catch (final Exception e) {
+        logger.err(e, "error while handling upload request");
+        return new UploadResponse().withError(e);
+      }
+      return new UploadResponse();
     }
   }
 }

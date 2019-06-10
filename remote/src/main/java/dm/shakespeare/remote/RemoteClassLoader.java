@@ -32,10 +32,12 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -172,9 +174,8 @@ class RemoteClassLoader extends ClassLoader {
     final FileOutputStream outputStream = new FileOutputStream(new File(container, name + ".path"));
     try {
       outputStream.write(path.getBytes("UTF-8"));
-      final File file = new File(container, name);
+      final File file = new File(container, name + ".raw");
       data.copyTo(file);
-      file.deleteOnExit();
       synchronized (mutex) {
         paths.put(path, name);
         resources.put(name, file);
@@ -265,10 +266,19 @@ class RemoteClassLoader extends ClassLoader {
             }
           }
 
-        } else {
-          resources.put(name, file);
+        } else if (name.endsWith(".raw")) {
+          resources.put(name.substring(0, name.length() - ".raw".length()), file);
         }
       }
+      final Collection<String> names = paths.values();
+      final Iterator<String> iterator = names.iterator();
+      while (iterator.hasNext()) {
+        final String name = iterator.next();
+        if (!resources.containsKey(name)) {
+          iterator.remove();
+        }
+      }
+      resources.keySet().retainAll(names);
     }
   }
 }
