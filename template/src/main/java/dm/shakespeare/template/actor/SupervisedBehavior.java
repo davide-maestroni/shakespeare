@@ -27,7 +27,7 @@ import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.BehaviorBuilder.Handler;
 import dm.shakespeare.actor.Envelop;
-import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.DeadLetter;
 import dm.shakespeare.message.Failure;
@@ -84,10 +84,10 @@ public class SupervisedBehavior extends AbstractBehavior {
     final DelayedMessage failureMessage = this.failureMessage;
     if ((failure != null) && (failureMessage != null)) {
       final Envelop envelop = failureMessage.getEnvelop();
-      final Options options = envelop.getOptions();
-      if (options.getReceiptId() != null) {
+      final Headers headers = envelop.getHeaders();
+      if (headers.getReceiptId() != null) {
         envelop.getSender()
-            .tell(new Bounce(failureMessage.getMessage(), options), options.threadOnly(),
+            .tell(new Bounce(failureMessage.getMessage(), headers), headers.threadOnly(),
                 agent.getSelf());
       }
     }
@@ -100,10 +100,10 @@ public class SupervisedBehavior extends AbstractBehavior {
     final CQueue<DelayedMessage> delayedMessages = this.delayedMessages;
     for (final DelayedMessage delayedMessage : delayedMessages) {
       final Envelop envelop = delayedMessage.getEnvelop();
-      final Options options = envelop.getOptions();
-      if (options.getReceiptId() != null) {
+      final Headers headers = envelop.getHeaders();
+      if (headers.getReceiptId() != null) {
         envelop.getSender()
-            .tell(new Bounce(delayedMessage.getMessage(), options), options.threadOnly(),
+            .tell(new Bounce(delayedMessage.getMessage(), headers), headers.threadOnly(),
                 agent.getSelf());
       }
     }
@@ -231,19 +231,19 @@ public class SupervisedBehavior extends AbstractBehavior {
       if (message == DUMMY_MESSAGE) {
         return;
       }
-      final Options options = envelop.getOptions();
+      final Headers headers = envelop.getHeaders();
       if (message instanceof Supervise) {
         final Actor self = agent.getSelf();
         final Actor sender = envelop.getSender();
         if (!sender.equals(self)) {
           supervisor = sender;
-          supervisorThread = options.getThreadId();
+          supervisorThread = headers.getThreadId();
           sender.addObserver(agent.getSelf());
 
-        } else if (options.getReceiptId() != null) {
-          sender.tell(new Failure(message, options,
+        } else if (headers.getReceiptId() != null) {
+          sender.tell(new Failure(message, headers,
                   new IllegalRecipientException("an actor can't supervise itself")),
-              options.threadOnly(), self);
+              headers.threadOnly(), self);
           envelop.preventReceipt();
         }
 
@@ -259,10 +259,10 @@ public class SupervisedBehavior extends AbstractBehavior {
           supervisor = null;
           supervisorThread = null;
 
-        } else if (options.getReceiptId() != null) {
-          sender.tell(new Failure(message, options,
+        } else if (headers.getReceiptId() != null) {
+          sender.tell(new Failure(message, headers,
                   new IllegalStateException("sender is not the current supervisor")),
-              options.threadOnly(), agent.getSelf());
+              headers.threadOnly(), agent.getSelf());
           envelop.preventReceipt();
         }
 
@@ -271,10 +271,10 @@ public class SupervisedBehavior extends AbstractBehavior {
         if (sender.equals(supervisor)) {
           agent.getLogger().wrn("ignoring recovery message: " + message);
 
-        } else if (options.getReceiptId() != null) {
-          sender.tell(new Failure(message, options,
+        } else if (headers.getReceiptId() != null) {
+          sender.tell(new Failure(message, headers,
                   new IllegalStateException("sender is not the current supervisor")),
-              options.threadOnly(), agent.getSelf());
+              headers.threadOnly(), agent.getSelf());
           envelop.preventReceipt();
         }
 
@@ -298,7 +298,7 @@ public class SupervisedBehavior extends AbstractBehavior {
             if (supervisor != null) {
               final String failureId = UUID.randomUUID().toString();
               supervisor.tell(new SupervisedFailure(failureId, t),
-                  new Options().withThreadId(supervisorThread).withReceiptId(receiptId),
+                  new Headers().withThreadId(supervisorThread).withReceiptId(receiptId),
                   agent.getSelf());
               failure = t;
               SupervisedBehavior.this.failureId = failureId;
@@ -346,7 +346,7 @@ public class SupervisedBehavior extends AbstractBehavior {
       if (message == DUMMY_MESSAGE) {
         return;
       }
-      final Options options = envelop.getOptions();
+      final Headers headers = envelop.getHeaders();
       if (message instanceof Supervise) {
         final Actor self = agent.getSelf();
         final Actor sender = envelop.getSender();
@@ -354,16 +354,16 @@ public class SupervisedBehavior extends AbstractBehavior {
           if (!sender.equals(supervisor)) {
             // TODO: 14/01/2019 notify old supervisor???
             supervisor = sender;
-            supervisorThread = options.getThreadId();
+            supervisorThread = headers.getThreadId();
             sender.addObserver(self);
             sender.tell(new SupervisedFailure(failureId, failure),
-                new Options().withThreadId(supervisorThread).withReceiptId(receiptId), self);
+                new Headers().withThreadId(supervisorThread).withReceiptId(receiptId), self);
           }
 
-        } else if (options.getReceiptId() != null) {
-          sender.tell(new Failure(message, options,
+        } else if (headers.getReceiptId() != null) {
+          sender.tell(new Failure(message, headers,
                   new IllegalRecipientException("an actor can't supervise itself")),
-              options.threadOnly(), self);
+              headers.threadOnly(), self);
           envelop.preventReceipt();
         }
 
@@ -372,10 +372,10 @@ public class SupervisedBehavior extends AbstractBehavior {
         if (sender.equals(supervisor)) {
           agent.dismissSelf();
 
-        } else if (options.getReceiptId() != null) {
-          sender.tell(new Failure(message, options,
+        } else if (headers.getReceiptId() != null) {
+          sender.tell(new Failure(message, headers,
                   new IllegalStateException("sender is not the current supervisor")),
-              options.threadOnly(), agent.getSelf());
+              headers.threadOnly(), agent.getSelf());
           envelop.preventReceipt();
         }
 
@@ -394,11 +394,11 @@ public class SupervisedBehavior extends AbstractBehavior {
 
             } else if (recoveryType == RecoveryType.RESUME) {
               final Envelop failureEnvelop = failureMessage.getEnvelop();
-              final Options failureOptions = failureEnvelop.getOptions();
-              if (failureOptions.getReceiptId() != null) {
+              final Headers failureHeaders = failureEnvelop.getHeaders();
+              if (failureHeaders.getReceiptId() != null) {
                 failureEnvelop.getSender()
-                    .tell(new Failure(failureMessage.getMessage(), failureOptions, failure),
-                        failureOptions.threadOnly(), agent.getSelf());
+                    .tell(new Failure(failureMessage.getMessage(), failureHeaders, failure),
+                        failureHeaders.threadOnly(), agent.getSelf());
               }
               resetFailure(agent);
               handler = new ResumeHandler();
@@ -413,11 +413,11 @@ public class SupervisedBehavior extends AbstractBehavior {
 
             } else if (recoveryType == RecoveryType.RESTART_AND_RESUME) {
               final Envelop failureEnvelop = failureMessage.getEnvelop();
-              final Options failureOptions = failureEnvelop.getOptions();
-              if (failureOptions.getReceiptId() != null) {
+              final Headers failureHeaders = failureEnvelop.getHeaders();
+              if (failureHeaders.getReceiptId() != null) {
                 failureEnvelop.getSender()
-                    .tell(new Failure(failureMessage.getMessage(), failureOptions, failure),
-                        failureOptions.threadOnly(), agent.getSelf());
+                    .tell(new Failure(failureMessage.getMessage(), failureHeaders, failure),
+                        failureHeaders.threadOnly(), agent.getSelf());
               }
               resetFailure(agent);
               handler = new ResumeHandler();
@@ -431,17 +431,17 @@ public class SupervisedBehavior extends AbstractBehavior {
               agent.dismissSelf();
             }
 
-          } else if (options.getReceiptId() != null) {
+          } else if (headers.getReceiptId() != null) {
             sender.tell(
-                new Failure(message, options, new IllegalArgumentException("invalid failure ID")),
-                options.threadOnly(), agent.getSelf());
+                new Failure(message, headers, new IllegalArgumentException("invalid failure ID")),
+                headers.threadOnly(), agent.getSelf());
             envelop.preventReceipt();
           }
 
-        } else if (options.getReceiptId() != null) {
-          sender.tell(new Failure(message, options,
+        } else if (headers.getReceiptId() != null) {
+          sender.tell(new Failure(message, headers,
                   new IllegalStateException("sender is not the current supervisor")),
-              options.threadOnly(), agent.getSelf());
+              headers.threadOnly(), agent.getSelf());
           envelop.preventReceipt();
         }
 

@@ -20,7 +20,19 @@
   xmlns="https://github.com/spotbugs/filter/3.0.0"
   xsi:schemaLocation="https://github.com/spotbugs/filter/3.0.0 https://raw.githubusercontent.com/spotbugs/spotbugs/3.1.0/spotbugs/etc/findbugsfilter.xsd">
   <Match>
-    <Class name="~dm\.shakespeare\.template\.role\.(RestartingRole|SerializableRoleWrapper)"/>
+    <Class name="~dm\.shakespeare\.template\.actor\.(AnnotationBehavior|AnnotationBehavior|MethodHandler|MethodObserver|OnEnvelopHandler\$MessageTester|OnMatchHandler\$MessageMatcher|OnMessageHandler\$MessageTester|OnParamsHandler\$MessageHandler|PoisonableBehavior)"/>
+    <Bug pattern="SE_BAD_FIELD"/>
+  </Match>
+  <Match>
+    <Class name="~dm\.shakespeare\.template\.actor\.PoisonableBehavior"/>
+    <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED"/>
+  </Match>
+  <Match>
+    <Class name="~dm\.shakespeare\.template\.role\.RestartingRole"/>
+    <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED"/>
+  </Match>
+  <Match>
+    <Class name="~dm\.shakespeare\.template\.role\.SerializableRoleWrapper"/>
     <Bug pattern="SE_BAD_FIELD"/>
   </Match>
 </FindBugsFilter>

@@ -62,23 +62,23 @@ public interface ActorSet extends Set<Actor> {
    * Tells the specified message to all the actors in this set.
    *
    * @param message the message instance (may be {@code null}).
-   * @param options the delivery options.
+   * @param headers the message headers.
    * @param sender  the sender actor.
    * @return this actor set.
-   * @see Actor#tell(Object, Options, Actor)
+   * @see Actor#tell(Object, Headers, Actor)
    */
   @NotNull
-  ActorSet tell(Object message, @Nullable Options options, @NotNull Actor sender);
+  ActorSet tell(Object message, @Nullable Headers headers, @NotNull Actor sender);
 
   /**
    * Tells the specified batch of messages to all the actors in this set.
    *
    * @param messages the messages (may contains {@code null} objects).
-   * @param options  the delivery options.
+   * @param headers  the message headers.
    * @param sender   the sender actor.
    * @return this actor set.
-   * @see Actor#tellAll(Iterable, Options, Actor)
+   * @see Actor#tellAll(Iterable, Headers, Actor)
    */
   @NotNull
-  ActorSet tellAll(@NotNull Iterable<?> messages, @Nullable Options options, @NotNull Actor sender);
+  ActorSet tellAll(@NotNull Iterable<?> messages, @Nullable Headers headers, @NotNull Actor sender);
 }

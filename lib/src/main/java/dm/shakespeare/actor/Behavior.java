@@ -51,13 +51,13 @@ import dm.shakespeare.log.Logger;
  * {@link #onStop(Agent)} and {@link #onStart(Agent)} methods respectively.<br>
  * In any case, if an exception escapes those two methods, the actor will be automatically
  * dismissed.<p>
- * Each received message will come with an envelop containing the sender data and the delivery
- * options. The options include a time offset (used to modify the send time), a thread ID (useful
+ * Each received message will come with an envelop containing the sender data and the message
+ * headers. The headers include a time offset (used to modify the send time), a thread ID (useful
  * to identify messages belonging to the same thread) and a receipt ID (indicating that the sender
  * wants to be notified of the message delivery). The actor will automatically employ the optional
  * receipt ID to send back notifications (unless {@link Envelop#preventReceipt()} is called). All
- * the replies to the sender should contain in the delivery options the same thread ID as the
- * originating message.
+ * the replies to the sender should contain in the headers the same thread ID as the originating
+ * message.
  */
 public interface Behavior {
 

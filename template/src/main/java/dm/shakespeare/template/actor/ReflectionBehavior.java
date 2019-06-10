@@ -98,7 +98,7 @@ public class ReflectionBehavior extends SerializableAbstractBehavior {
       if ((returnType != void.class) && (returnType != Void.class)) {
         try {
           // TODO: 31/08/2018 specific message?
-          envelop.getSender().tell(result, envelop.getOptions().threadOnly(), agent.getSelf());
+          envelop.getSender().tell(result, envelop.getHeaders().threadOnly(), agent.getSelf());
 
         } catch (final RejectedExecutionException e) {
           agent.getLogger().err(e, "ignoring exception");

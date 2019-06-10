@@ -24,18 +24,18 @@ import java.io.Serializable;
 import dm.shakespeare.config.BuildConfig;
 
 /**
- * Object containing the message delivery options.<br>
- * The options include a time offset (used to modify the send time), a thread ID (useful to
+ * Object containing the message headers.<br>
+ * The headers include a time offset (used to modify the send time), a thread ID (useful to
  * identify messages belonging to the same thread) and a receipt ID (indicating that the sender
  * wants to be notified of the message delivery).<br>
  * The instances of this class are immutable and, inherently, thread safe.
  */
-public class Options implements Serializable {
+public class Headers implements Serializable {
 
   /**
-   * Empty options instance.
+   * Empty headers instance.
    */
-  public static final Options EMPTY = new Options();
+  public static final Headers EMPTY = new Headers();
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
@@ -44,30 +44,30 @@ public class Options implements Serializable {
   private final long timeOffset;
 
   /**
-   * Creates a new options instance with an empty configuration.
+   * Creates a new headers instance with an empty configuration.
    */
-  public Options() {
+  public Headers() {
     threadId = null;
     receiptId = null;
     timeOffset = 0;
   }
 
-  private Options(@Nullable final String threadId, final String receiptId, final long timeOffset) {
+  private Headers(@Nullable final String threadId, final String receiptId, final long timeOffset) {
     this.threadId = threadId;
     this.receiptId = receiptId;
     this.timeOffset = timeOffset;
   }
 
   /**
-   * Creates a new options instance with a modified time offset so that the message will result as
+   * Creates a new headers instance with a modified time offset so that the message will result as
    * sent as the specified Epoch time in milliseconds.<br>
    * All the other configurations will be retained.
    *
    * @param timeMillis the timestamp in number of milliseconds.
-   * @return the new options instance.
+   * @return the new headers instance.
    */
   @NotNull
-  public Options asSentAt(final long timeMillis) {
+  public Headers asSentAt(final long timeMillis) {
     return withTimeOffset(System.currentTimeMillis() - timeMillis + timeOffset);
   }
 
@@ -101,13 +101,13 @@ public class Options implements Serializable {
   }
 
   /**
-   * Creates a new options instance retaining only the configured thread ID.
+   * Creates a new headers instance retaining only the configured thread ID.
    *
-   * @return the new options instance.
+   * @return the new headers instance.
    */
   @NotNull
-  public Options threadOnly() {
-    return new Options(threadId, null, 0);
+  public Headers threadOnly() {
+    return new Headers(threadId, null, 0);
   }
 
   /**
@@ -115,43 +115,43 @@ public class Options implements Serializable {
    */
   @Override
   public String toString() {
-    return "Options{" + "receiptId='" + receiptId + '\'' + ", threadId='" + threadId + '\''
+    return "Headers{" + "receiptId='" + receiptId + '\'' + ", threadId='" + threadId + '\''
         + ", timeOffset=" + timeOffset + '}';
   }
 
   /**
-   * Creates a new options instance configured with the specified receipt ID.<br>
+   * Creates a new headers instance configured with the specified receipt ID.<br>
    * All the other configurations will be retained.
    *
    * @param receiptId the new receipt ID.
-   * @return the new options instance.
+   * @return the new headers instance.
    */
   @NotNull
-  public Options withReceiptId(@Nullable final String receiptId) {
-    return new Options(threadId, receiptId, timeOffset);
+  public Headers withReceiptId(@Nullable final String receiptId) {
+    return new Headers(threadId, receiptId, timeOffset);
   }
 
   /**
-   * Creates a new options instance configured with the specified thread ID.<br>
+   * Creates a new headers instance configured with the specified thread ID.<br>
    * All the other configurations will be retained.
    *
    * @param threadId the new thread ID.
-   * @return the new options instance.
+   * @return the new headers instance.
    */
   @NotNull
-  public Options withThreadId(@Nullable final String threadId) {
-    return new Options(threadId, receiptId, timeOffset);
+  public Headers withThreadId(@Nullable final String threadId) {
+    return new Headers(threadId, receiptId, timeOffset);
   }
 
   /**
-   * Creates a new options instance configured with the specified time offset.<br>
+   * Creates a new headers instance configured with the specified time offset.<br>
    * All the other configurations will be retained.
    *
    * @param offsetMillis the time offset in number of milliseconds.
-   * @return the new options instance.
+   * @return the new headers instance.
    */
   @NotNull
-  public Options withTimeOffset(final long offsetMillis) {
-    return new Options(threadId, receiptId, offsetMillis);
+  public Headers withTimeOffset(final long offsetMillis) {
+    return new Headers(threadId, receiptId, offsetMillis);
   }
 }

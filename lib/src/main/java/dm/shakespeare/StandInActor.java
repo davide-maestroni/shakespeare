@@ -20,7 +20,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import dm.shakespeare.actor.Actor;
-import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Headers;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.message.Delivery;
 
 /**
@@ -47,19 +48,19 @@ class StandInActor implements Actor {
   }
 
   @NotNull
-  public Actor tell(final Object message, @Nullable final Options options,
+  public Actor tell(final Object message, @Nullable final Headers headers,
       @NotNull final Actor sender) {
-    if ((options != null) && (options.getReceiptId() != null)) {
-      sender.tell(new Delivery(message, options), options.threadOnly(), this);
+    if ((headers != null) && (headers.getReceiptId() != null)) {
+      sender.tell(new Delivery(message, headers), headers.threadOnly(), this);
     }
     return this;
   }
 
   @NotNull
-  public Actor tellAll(@NotNull final Iterable<?> messages, @Nullable final Options options,
+  public Actor tellAll(@NotNull final Iterable<?> messages, @Nullable final Headers headers,
       @NotNull final Actor sender) {
     for (final Object message : messages) {
-      tell(message, options, sender);
+      tell(message, headers, sender);
     }
     return this;
   }

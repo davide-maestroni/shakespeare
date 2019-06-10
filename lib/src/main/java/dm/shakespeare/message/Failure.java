@@ -18,7 +18,8 @@ package dm.shakespeare.message;
 
 import org.jetbrains.annotations.NotNull;
 
-import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Headers;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -35,19 +36,19 @@ public class Failure extends Bounce {
    * Creates a new empty failure message.
    */
   public Failure() {
-    this(null, Options.EMPTY, new IllegalArgumentException());
+    this(null, Headers.EMPTY, new IllegalArgumentException());
   }
 
   /**
    * Creates a new failure message.
    *
    * @param message the bounced message.
-   * @param options the original message delivery options.
+   * @param headers the original message headers.
    * @param cause   the cause of the failure.
    */
-  public Failure(final Object message, @NotNull final Options options,
+  public Failure(final Object message, @NotNull final Headers headers,
       @NotNull final Throwable cause) {
-    super(message, options);
+    super(message, headers);
     this.cause = ConstantConditions.notNull("cause", cause);
   }
 

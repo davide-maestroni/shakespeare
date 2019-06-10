@@ -26,12 +26,12 @@ import org.jetbrains.annotations.NotNull;
 public interface Envelop {
 
   /**
-   * Returns the delivery options.
+   * Returns the message headers.
    *
-   * @return the options instance.
+   * @return the headers instance.
    */
   @NotNull
-  Options getOptions();
+  Headers getHeaders();
 
   /**
    * Returns the Epoch time in milliseconds when the message has been received.
@@ -50,7 +50,7 @@ public interface Envelop {
 
   /**
    * Returns the Epoch time in milliseconds when the message was sent.<br>
-   * The returned value might be corrected by the offset specified in the delivery options.
+   * The returned value might be corrected by the offset specified in the message headers.
    *
    * @return the timestamp in number of milliseconds.
    */

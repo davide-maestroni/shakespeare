@@ -26,7 +26,8 @@ import java.util.Set;
 
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.ActorSet;
-import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Headers;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -68,19 +69,19 @@ class LocalActorSet extends AbstractSet<Actor> implements ActorSet {
   }
 
   @NotNull
-  public ActorSet tell(final Object message, @Nullable final Options options,
+  public ActorSet tell(final Object message, @Nullable final Headers headers,
       @NotNull final Actor sender) {
     for (final Actor actor : actors) {
-      actor.tell(message, options, sender);
+      actor.tell(message, headers, sender);
     }
     return this;
   }
 
   @NotNull
-  public ActorSet tellAll(@NotNull final Iterable<?> messages, @Nullable final Options options,
+  public ActorSet tellAll(@NotNull final Iterable<?> messages, @Nullable final Headers headers,
       @NotNull final Actor sender) {
     for (final Actor actor : actors) {
-      actor.tellAll(messages, options, sender);
+      actor.tellAll(messages, headers, sender);
     }
     return this;
   }

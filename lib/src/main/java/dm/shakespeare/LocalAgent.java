@@ -29,7 +29,8 @@ import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.Envelop;
-import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Headers;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.concurrent.ActorExecutorService;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.log.Logger;
@@ -208,13 +209,13 @@ class LocalAgent implements Agent {
   }
 
   void messages(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
-    final Options options = envelop.getOptions();
-    if (isDismissed() && (options.getReceiptId() != null)) {
+    final Headers headers = envelop.getHeaders();
+    if (isDismissed() && (headers.getReceiptId() != null)) {
       final ArrayList<Object> bounces = new ArrayList<Object>();
       for (final Object message : messages) {
-        bounces.add(new Bounce(message, options));
+        bounces.add(new Bounce(message, headers));
       }
-      replyAll(envelop.getSender(), bounces, options.threadOnly());
+      replyAll(envelop.getSender(), bounces, headers.threadOnly());
       return;
     }
     final Thread runner = (this.runner = Thread.currentThread());
@@ -237,11 +238,11 @@ class LocalAgent implements Agent {
     observers.remove(observer);
   }
 
-  void reply(@NotNull final Actor actor, final Object message, @Nullable final Options options) {
+  void reply(@NotNull final Actor actor, final Object message, @Nullable final Headers headers) {
     final Actor self = this.actor;
-    logger.dbg("[%s] replying: actor=%s - options=%s - message=%s", self, actor, options, message);
+    logger.dbg("[%s] replying: actor=%s - headers=%s - message=%s", self, actor, headers, message);
     try {
-      actor.tell(message, options, self);
+      actor.tell(message, headers, self);
 
     } catch (final RejectedExecutionException e) {
       logger.err(e, "[%s] ignoring exception", self);
@@ -249,12 +250,12 @@ class LocalAgent implements Agent {
   }
 
   void replyAll(@NotNull final Actor actor, @NotNull final Iterable<?> messages,
-      @Nullable final Options options) {
+      @Nullable final Headers headers) {
     final Actor self = this.actor;
-    logger.dbg("[%s] replying all: actor=%s - options=%s - message=%s", self, actor, options,
+    logger.dbg("[%s] replying all: actor=%s - headers=%s - message=%s", self, actor, headers,
         messages);
     try {
-      actor.tellAll(messages, options, self);
+      actor.tellAll(messages, headers, self);
 
     } catch (final RejectedExecutionException e) {
       logger.err(e, "[%s] ignoring exception", self);
@@ -304,23 +305,23 @@ class LocalAgent implements Agent {
         @NotNull final Agent agent) {
       logger.dbg("[%s] handling new message: envelop=%s - message=%s", actor, envelop, message);
       if (isDismissed()) {
-        final Options options = envelop.getOptions();
-        if (options.getReceiptId() != null) {
-          reply(envelop.getSender(), new Bounce(message, options), options.threadOnly());
+        final Headers headers = envelop.getHeaders();
+        if (headers.getReceiptId() != null) {
+          reply(envelop.getSender(), new Bounce(message, headers), headers.threadOnly());
         }
         return;
       }
-      final Options options = envelop.getOptions();
-      if (options.getReceiptId() != null) {
+      final Headers headers = envelop.getHeaders();
+      if (headers.getReceiptId() != null) {
         try {
           behavior.onMessage(message, envelop, agent);
           if (!envelop.isPreventReceipt()) {
-            reply(envelop.getSender(), new Delivery(message, options), options.threadOnly());
+            reply(envelop.getSender(), new Delivery(message, headers), headers.threadOnly());
           }
 
         } catch (final Throwable t) {
           if (!envelop.isPreventReceipt()) {
-            reply(envelop.getSender(), new Failure(message, options, t), options.threadOnly());
+            reply(envelop.getSender(), new Failure(message, headers, t), headers.threadOnly());
           }
           onStop(agent);
           if (t instanceof InterruptedException) {

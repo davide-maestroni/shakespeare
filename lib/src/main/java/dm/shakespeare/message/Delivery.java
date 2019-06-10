@@ -18,7 +18,7 @@ package dm.shakespeare.message;
 
 import org.jetbrains.annotations.NotNull;
 
-import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.config.BuildConfig;
 
 /**
@@ -38,9 +38,9 @@ public class Delivery extends Receipt {
    * Creates a new delivery message.
    *
    * @param message the delivered message.
-   * @param options the original message delivery options.
+   * @param headers the original message headers.
    */
-  public Delivery(final Object message, @NotNull final Options options) {
-    super(message, options);
+  public Delivery(final Object message, @NotNull final Headers headers) {
+    super(message, headers);
   }
 }

@@ -79,36 +79,36 @@ public interface Actor {
 
   /**
    * Tells to this actor the specified message.<br>
-   * The options include a time offset (used to modify the send time), a thread ID (useful
+   * The headers include a time offset (used to modify the send time), a thread ID (useful
    * to identify messages belonging to the same thread) and a receipt ID (indicating that the sender
    * wants to be notified of the message delivery). The actor will automatically employ the optional
    * receipt ID to send back notifications (unless {@link Envelop#preventReceipt()} is called). All
-   * the replies to the sender should contain in the delivery options the same thread ID as the
-   * originating message.<br>
+   * the replies to the sender should contain in the headers the same thread ID as the originating
+   * message.<br>
    * If the number of unprocessed messages still in the inbox exceeds the configured quota, the
    * message will be bounced (see {@link dm.shakespeare.message.Bounce Bounce}).<br>
    * In case no reply is expected or no actor is interested in receiving it, it is possible to
    * use a {@link dm.shakespeare.Stage#STAND_IN Stage.STAND_IN} as sender.
    *
    * @param message the message instance (may be {@code null}).
-   * @param options the delivery options.
+   * @param headers the message headers.
    * @param sender  the sender actor.
    * @return this actor.
    * @see Role
    */
   @NotNull
-  Actor tell(Object message, @Nullable Options options, @NotNull Actor sender);
+  Actor tell(Object message, @Nullable Headers headers, @NotNull Actor sender);
 
   /**
    * Tells to this actor the specified batch of messages.<br>
    * This method will delivered a single object containing all the messages to this actor. Then,
-   * each of them will be processed separately with the same delivery options.<br>
-   * The options include a time offset (used to modify the send time), a thread ID (useful
+   * each of them will be processed separately with the same headers.<br>
+   * The headers include a time offset (used to modify the send time), a thread ID (useful
    * to identify messages belonging to the same thread) and a receipt ID (indicating that the sender
    * wants to be notified of the message delivery). The actor will automatically employ the optional
    * receipt ID to send back notifications (unless {@link Envelop#preventReceipt()} is called). All
-   * the replies to the sender should contain in the delivery options the same thread ID as the
-   * originating message.<br>
+   * the replies to the sender should contain in the headers the same thread ID as the originating
+   * message.<br>
    * If the number of unprocessed messages still in the inbox exceeds the configured quota, the
    * message will be bounced (see {@link dm.shakespeare.message.Bounce Bounce}).<br>
    * The batch object will count as one message in the inbox quota.<br>
@@ -116,11 +116,11 @@ public interface Actor {
    * use a {@link dm.shakespeare.Stage#STAND_IN Stage.STAND_IN} as sender.
    *
    * @param messages the messages (may contains {@code null} objects).
-   * @param options  the delivery options.
+   * @param headers  the messages headers.
    * @param sender   the sender actor.
    * @return this actor.
    * @see Role
    */
   @NotNull
-  Actor tellAll(@NotNull Iterable<?> messages, @Nullable Options options, @NotNull Actor sender);
+  Actor tellAll(@NotNull Iterable<?> messages, @Nullable Headers headers, @NotNull Actor sender);
 }

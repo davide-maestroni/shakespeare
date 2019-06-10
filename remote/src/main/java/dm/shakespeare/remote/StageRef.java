@@ -44,7 +44,7 @@ import dm.shakespeare.actor.ActorSet;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.Envelop;
-import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.function.Tester;
 import dm.shakespeare.log.LogPrinters;
@@ -646,10 +646,10 @@ public class StageRef extends Stage {
           } else {
             flushSenders();
             if (!send(message, envelop, agent)) {
-              final Options options = envelop.getOptions();
-              if (options.getReceiptId() != null) {
+              final Headers headers = envelop.getHeaders();
+              if (headers.getReceiptId() != null) {
                 envelop.getSender()
-                    .tell(new Rejection(message, options), options.threadOnly(), agent.getSelf());
+                    .tell(new Rejection(message, headers), headers.threadOnly(), agent.getSelf());
               }
             }
           }
@@ -725,10 +725,10 @@ public class StageRef extends Stage {
         } else {
           object = null;
         }
-        final Options options = request.getOptions();
+        final Headers headers = request.getHeaders();
         senderActor.getActor()
             .tell(object,
-                ((options != null) ? options : Options.EMPTY).asSentAt(request.getSentTimestamp()),
+                ((headers != null) ? headers : Headers.EMPTY).asSentAt(request.getSentTimestamp()),
                 agent.getSelf());
 
       } catch (final Exception e) {
@@ -774,7 +774,7 @@ public class StageRef extends Stage {
         final String remoteId = StageRef.this.remoteId;
         response = getSender().send(new MessageRequest().withActorID(actorID)
             .withMessageData(SerializableData.wrap(data))
-            .withOptions(envelop.getOptions())
+            .withHeaders(envelop.getHeaders())
             .withSenderActorID(senderID)
             .withResources(resources), remoteId);
         while (response instanceof MessageContinue) {
@@ -799,7 +799,7 @@ public class StageRef extends Stage {
           }
           response = getSender().send(new MessageRequest().withActorID(actorID)
               .withMessageData(SerializableData.wrap(data))
-              .withOptions(envelop.getOptions())
+              .withHeaders(envelop.getHeaders())
               .withSenderActorID(senderID)
               .withResources(resources), remoteId);
         }
@@ -821,14 +821,14 @@ public class StageRef extends Stage {
     }
 
     private void sendRejection(@NotNull final MessageRequest request) {
-      final Options options = request.getOptions();
-      if ((options != null) && (options.getReceiptId() != null)) {
+      final Headers headers = request.getHeaders();
+      if ((headers != null) && (headers.getReceiptId() != null)) {
         try {
           getSender().send(new MessageRequest().withActorID(request.getSenderActorID())
               .withSenderActorID(request.getSenderActorID())
               .withMessageData(
-                  SerializableData.wrap(serializer.serialize(new Rejection(null, options))))
-              .withOptions(options.threadOnly()), remoteId);
+                  SerializableData.wrap(serializer.serialize(new Rejection(null, headers))))
+              .withHeaders(headers.threadOnly()), remoteId);
 
         } catch (final Exception e) {
           logger.err(e, "failed to send rejection message");

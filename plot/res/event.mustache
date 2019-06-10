@@ -41,7 +41,7 @@ import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.Envelop;
-import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.function.Observer;
@@ -153,7 +153,7 @@ public abstract class Event<T> {
       @NotNull final Agent agent) {
     final Actor self = agent.getSelf();
     for (final Sender sender : senders.values()) {
-      sender.getSender().tell(message, sender.getOptions(), self);
+      sender.getSender().tell(message, sender.getHeaders(), self);
     }
     agent.setBehavior(new DoneBehavior(message));
   }
@@ -190,7 +190,7 @@ public abstract class Event<T> {
   public Spectator play(@NotNull final EventObserver<? super T> eventObserver) {
     final Actor actor = Stage.newActor(new EventObserverRole<T>(getActor(), eventObserver));
     final String actorId = actor.getId();
-    getActor().tell(GET, new Options().withReceiptId(actorId).withThreadId(actorId), actor);
+    getActor().tell(GET, new Headers().withReceiptId(actorId).withThreadId(actorId), actor);
     return new Spectator(actor);
   }
 
@@ -416,8 +416,8 @@ public abstract class Event<T> {
             agent.setBehavior(new DoneBehavior(new Conflict(new NarrationStoppedException())));
 
           } else {
-            final Options options = envelop.getOptions().threadOnly();
-            senders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+            final Headers headers = envelop.getHeaders().threadOnly();
+            senders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
             agent.setBehavior(new InputBehavior());
           }
 
@@ -435,8 +435,8 @@ public abstract class Event<T> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
         if (message == GET) {
-          final Options options = envelop.getOptions().threadOnly();
-          senders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+          final Headers headers = envelop.getHeaders().threadOnly();
+          senders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
         } else if (message == CANCEL) {
           final Conflict conflict = Conflict.ofCancel();
@@ -459,7 +459,7 @@ public abstract class Event<T> {
           }
           final Actor self = agent.getSelf();
           for (final Sender sender : senders.values()) {
-            sender.getSender().tell(effect, sender.getOptions(), self);
+            sender.getSender().tell(effect, sender.getHeaders(), self);
           }
           agent.setBehavior(new DoneBehavior(effect));
         }
@@ -493,11 +493,11 @@ public abstract class Event<T> {
   private abstract static class AbstractEvent<T> extends Event<T> {
 
     private final Actor actor;
-    private final HashMap<Actor, Options> inputActors = new HashMap<Actor, Options>();
+    private final Headers headers;
+    private final HashMap<Actor, Headers> inputActors = new HashMap<Actor, Headers>();
     private final String inputThread;
     private final Object[] inputs;
-    private final Options options;
-    private final Options outputOptions;
+    private final Headers outputHeaders;
     private final HashMap<String, Sender> senders = new HashMap<String, Sender>();
     private final Setting setting;
 
@@ -515,9 +515,9 @@ public abstract class Event<T> {
           return new InitBehavior();
         }
       })).getId();
-      final Options options = (this.options = new Options().withReceiptId(actorId));
+      final Headers headers = (this.headers = new Headers().withReceiptId(actorId));
       inputThread = actorId + ":input";
-      outputOptions = options.withThreadId(actorId + ":output");
+      outputHeaders = headers.withThreadId(actorId + ":output");
     }
 
     void endAction() throws Exception {
@@ -564,7 +564,7 @@ public abstract class Event<T> {
       try {
         final Actor conflictActor = getConflictActor(conflict, agent);
         if (conflictActor != null) {
-          conflictActor.tell(GET, outputOptions, agent.getSelf());
+          conflictActor.tell(GET, outputHeaders, agent.getSelf());
           agent.setBehavior(new OutputBehavior());
         }
 
@@ -604,20 +604,20 @@ public abstract class Event<T> {
 
     private void getInputActors(@NotNull final Agent agent) {
       final Actor self = agent.getSelf();
-      final HashMap<Actor, Options> inputActors = this.inputActors;
+      final HashMap<Actor, Headers> inputActors = this.inputActors;
       if (inputActors.isEmpty()) {
-        final Options options = this.options;
+        final Headers headers = this.headers;
         final String inputThread = this.inputThread;
         final StringBuilder builder = new StringBuilder();
         for (final Actor actor : getInputActors()) {
           final String threadId = inputThread + builder.append('#').toString();
-          final Options inputOptions = options.withThreadId(threadId);
-          inputActors.put(actor, inputOptions);
-          actor.tell(GET, inputOptions, self);
+          final Headers inputHeaders = headers.withThreadId(threadId);
+          inputActors.put(actor, inputHeaders);
+          actor.tell(GET, inputHeaders, self);
         }
 
       } else {
-        for (final Entry<Actor, Options> entry : inputActors.entrySet()) {
+        for (final Entry<Actor, Headers> entry : inputActors.entrySet()) {
           entry.getKey().tell(GET, entry.getValue(), self);
         }
       }
@@ -628,14 +628,14 @@ public abstract class Event<T> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
         if (message == GET) {
-          final Options options = envelop.getOptions().threadOnly();
-          senders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+          final Headers headers = envelop.getHeaders().threadOnly();
+          senders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
-        } else if (isSame(outputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
+        } else if (isSame(outputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
           fail(Conflict.ofCancel(), agent);
 
         } else {
-          final String thread = envelop.getOptions().getThreadId();
+          final String thread = envelop.getHeaders().getThreadId();
           if ((thread != null) && thread.startsWith(inputThread)) {
             if (++inputCount == inputs.length) {
               final Conflict conflict = Conflict.ofCancel();
@@ -663,8 +663,8 @@ public abstract class Event<T> {
       public void onMessage(Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
         if (message == GET) {
-          final Options options = envelop.getOptions().threadOnly();
-          senders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+          final Headers headers = envelop.getHeaders().threadOnly();
+          senders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
           getInputActors(agent);
           agent.setBehavior(new InputBehavior());
 
@@ -681,8 +681,8 @@ public abstract class Event<T> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
         if (message == GET) {
-          final Options options = envelop.getOptions().threadOnly();
-          senders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+          final Headers headers = envelop.getHeaders().threadOnly();
+          senders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
         } else if (message == CANCEL) {
           cancelInputActors(agent);
@@ -690,7 +690,7 @@ public abstract class Event<T> {
 
         } else {
           final String inputThread = AbstractEvent.this.inputThread;
-          final String thread = envelop.getOptions().getThreadId();
+          final String thread = envelop.getHeaders().getThreadId();
           if ((thread != null) && thread.startsWith(inputThread)) {
             if (message instanceof Conflict) {
               if (conflict == null) {
@@ -724,7 +724,7 @@ public abstract class Event<T> {
                     try {
                       final Actor outputActor = getOutputActor(inputs, agent);
                       if (outputActor != null) {
-                        outputActor.tell(GET, outputOptions, agent.getSelf());
+                        outputActor.tell(GET, outputHeaders, agent.getSelf());
                         agent.setBehavior(new OutputBehavior());
                       }
 
@@ -752,15 +752,15 @@ public abstract class Event<T> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
         if (message == GET) {
-          final Options options = envelop.getOptions().threadOnly();
-          senders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+          final Headers headers = envelop.getHeaders().threadOnly();
+          senders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
         } else if (message == CANCEL) {
           cancelInputActors(agent);
           agent.setBehavior(new CancelBehavior());
 
         } else {
-          if (isSame(outputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
+          if (isSame(outputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
             if (message instanceof Conflict) {
               fail((Conflict) message, agent);
 
@@ -793,7 +793,7 @@ public abstract class Event<T> {
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) {
       if (message == GET) {
-        envelop.getSender().tell(effect, envelop.getOptions().threadOnly(), agent.getSelf());
+        envelop.getSender().tell(effect, envelop.getHeaders().threadOnly(), agent.getSelf());
       }
       envelop.preventReceipt();
     }
@@ -1158,7 +1158,7 @@ public abstract class Event<T> {
     private final Actor actor;
     private final long delay;
     private final Actor inputActor;
-    private final Options inputOptions;
+    private final Headers inputHeaders;
     private final HashMap<String, Sender> senders = new HashMap<String, Sender>();
     private final TimeUnit unit;
 
@@ -1178,12 +1178,12 @@ public abstract class Event<T> {
           return new InitBehavior();
         }
       })).getId();
-      inputOptions = new Options().withReceiptId(actorId).withThreadId(actorId + ":input");
+      inputHeaders = new Headers().withReceiptId(actorId).withThreadId(actorId + ":input");
     }
 
     public void run() {
       inputPending = true;
-      inputActor.tell(GET, inputOptions, actor);
+      inputActor.tell(GET, inputHeaders, actor);
     }
 
     private void done(Object message, @NotNull final Agent agent) {
@@ -1207,10 +1207,10 @@ public abstract class Event<T> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
         if (message == GET) {
-          final Options options = envelop.getOptions().threadOnly();
-          senders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+          final Headers headers = envelop.getHeaders().threadOnly();
+          senders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
-        } else if (isSame(inputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
+        } else if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
           fail(Conflict.ofCancel(), agent);
         }
       }
@@ -1221,8 +1221,8 @@ public abstract class Event<T> {
       public void onMessage(Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
         if (message == GET) {
-          final Options options = envelop.getOptions().threadOnly();
-          senders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+          final Headers headers = envelop.getHeaders().threadOnly();
+          senders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
           scheduledFuture = agent.getScheduledExecutorService()
               .schedule(ScheduleWithDelayEvent.this, delay, unit);
           agent.setBehavior(new InputBehavior());
@@ -1240,8 +1240,8 @@ public abstract class Event<T> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
         if (message == GET) {
-          final Options options = envelop.getOptions().threadOnly();
-          senders.put(options.getThreadId(), new Sender(envelop.getSender(), options));
+          final Headers headers = envelop.getHeaders().threadOnly();
+          senders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
         } else if (message == CANCEL) {
           inputActor.tell(CANCEL, null, actor);
@@ -1252,7 +1252,7 @@ public abstract class Event<T> {
             fail(Conflict.ofCancel(), agent);
           }
 
-        } else if (isSame(inputOptions.getThreadId(), envelop.getOptions().getThreadId())) {
+        } else if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
           if (message instanceof Conflict) {
             fail((Conflict) message, agent);
 
@@ -1275,17 +1275,17 @@ public abstract class Event<T> {
 
   private static class Sender {
 
-    private final Options options;
+    private final Headers headers;
     private final Actor sender;
 
-    private Sender(@NotNull final Actor sender, @NotNull final Options options) {
+    private Sender(@NotNull final Actor sender, @NotNull final Headers headers) {
       this.sender = sender;
-      this.options = options;
+      this.headers = headers;
     }
 
     @NotNull
-    Options getOptions() {
-      return options;
+    Headers getHeaders() {
+      return headers;
     }
 
     @NotNull

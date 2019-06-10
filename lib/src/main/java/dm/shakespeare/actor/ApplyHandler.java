@@ -53,6 +53,6 @@ class ApplyHandler<T> implements Handler<T>, Serializable {
   public void handle(final T message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
     envelop.getSender()
-        .tell(mapper.apply(message), envelop.getOptions().threadOnly(), agent.getSelf());
+        .tell(mapper.apply(message), envelop.getHeaders().threadOnly(), agent.getSelf());
   }
 }

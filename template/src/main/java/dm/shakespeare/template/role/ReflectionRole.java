@@ -26,7 +26,7 @@ import java.util.HashMap;
 
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
-import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.actor.SerializableRole;
 import dm.shakespeare.template.actor.Behaviors;
 import dm.shakespeare.template.actor.ReflectionBehavior;
@@ -65,9 +65,9 @@ public class ReflectionRole extends SerializableRole {
   @NotNull
   @SuppressWarnings("unchecked")
   public static <T> T tellAs(@NotNull final Class<? super T> type, @NotNull final Actor actor,
-      @Nullable final Options options, @NotNull final Actor sender) {
+      @Nullable final Headers headers, @NotNull final Actor sender) {
     return (T) Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type},
-        new ActorHandler(actor, options, sender));
+        new ActorHandler(actor, headers, sender));
   }
 
   @NotNull
@@ -78,19 +78,19 @@ public class ReflectionRole extends SerializableRole {
   private static class ActorHandler implements InvocationHandler {
 
     private final Actor actor;
-    private final Options options;
+    private final Headers headers;
     private final Actor sender;
 
-    private ActorHandler(@NotNull final Actor actor, @Nullable final Options options,
+    private ActorHandler(@NotNull final Actor actor, @Nullable final Headers headers,
         @NotNull final Actor sender) {
       this.actor = ConstantConditions.notNull("actor", actor);
       this.sender = ConstantConditions.notNull("sender", sender);
-      this.options = options;
+      this.headers = headers;
     }
 
     public Object invoke(final Object o, final Method method, final Object[] objects) {
       actor.tell(ReflectionBehavior.invoke(method.getName(), method.getParameterTypes(), objects),
-          options, sender);
+          headers, sender);
       return DEFAULT_RETURN_VALUES.get(method.getReturnType());
     }
   }

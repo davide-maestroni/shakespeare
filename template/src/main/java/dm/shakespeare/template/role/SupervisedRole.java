@@ -21,7 +21,6 @@ import org.jetbrains.annotations.NotNull;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.template.actor.Behaviors;
-import dm.shakespeare.template.config.BuildConfig;
 
 /**
  * Created by davide-maestroni on 01/16/2019.

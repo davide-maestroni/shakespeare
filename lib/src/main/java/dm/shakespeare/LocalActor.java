@@ -25,7 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Envelop;
-import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Headers;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.message.QuotaExceeded;
 import dm.shakespeare.util.ConstantConditions;
@@ -100,62 +101,62 @@ class LocalActor implements Actor {
   }
 
   @NotNull
-  public Actor tell(final Object message, @Nullable final Options options,
+  public Actor tell(final Object message, @Nullable final Headers headers,
       @NotNull final Actor sender) {
-    logger.dbg("[%s] sending: options=%s - sender=%s - message=%s", this, options, sender, message);
+    logger.dbg("[%s] sending: headers=%s - sender=%s - message=%s", this, headers, sender, message);
     if (quotaHandler.consumeQuota()) {
       try {
-        agent.getActorExecutorService().execute(new DefaultEnvelop(sender, options) {
+        agent.getActorExecutorService().execute(new DefaultEnvelop(sender, headers) {
 
           void open() {
             quotaHandler.releaseQuota();
             agent.message(message, this);
           }
         });
-        logger.dbg("[%s] sent: options=%s - sender=%s - message=%s", this, options, sender,
+        logger.dbg("[%s] sent: headers=%s - sender=%s - message=%s", this, headers, sender,
             message);
 
       } catch (final RejectedExecutionException e) {
-        logger.wrn(e, "[%s] failed to send: options=%s - sender=%s - message=%s", this, options,
+        logger.wrn(e, "[%s] failed to send: headers=%s - sender=%s - message=%s", this, headers,
             sender, message);
-        quotaExceeded(message, new BounceEnvelop(sender, options));
+        quotaExceeded(message, new BounceEnvelop(sender, headers));
       }
 
     } else {
-      logger.wrn("[%s] quota exceeded: options=%s - sender=%s - message=%s", this, options, sender,
+      logger.wrn("[%s] quota exceeded: headers=%s - sender=%s - message=%s", this, headers, sender,
           message);
-      quotaExceeded(message, new BounceEnvelop(sender, options));
+      quotaExceeded(message, new BounceEnvelop(sender, headers));
     }
     return this;
   }
 
   @NotNull
-  public Actor tellAll(@NotNull final Iterable<?> messages, @Nullable final Options options,
+  public Actor tellAll(@NotNull final Iterable<?> messages, @Nullable final Headers headers,
       @NotNull final Actor sender) {
-    logger.dbg("[%s] sending all: options=%s - sender=%s - message=%s", this, options, sender,
+    logger.dbg("[%s] sending all: headers=%s - sender=%s - message=%s", this, headers, sender,
         messages);
     if (quotaHandler.consumeQuota()) {
       try {
-        agent.getActorExecutorService().execute(new DefaultEnvelop(sender, options) {
+        agent.getActorExecutorService().execute(new DefaultEnvelop(sender, headers) {
 
           void open() {
             quotaHandler.releaseQuota();
             agent.messages(messages, this);
           }
         });
-        logger.dbg("[%s] sent all: options=%s - sender=%s - message=%s", this, options, sender,
+        logger.dbg("[%s] sent all: headers=%s - sender=%s - message=%s", this, headers, sender,
             messages);
 
       } catch (final RejectedExecutionException e) {
-        logger.wrn(e, "[%s] failed to send all: options=%s - sender=%s - message=%s", this, options,
+        logger.wrn(e, "[%s] failed to send all: headers=%s - sender=%s - message=%s", this, headers,
             sender, messages);
-        quotaExceeded(messages, new BounceEnvelop(sender, options));
+        quotaExceeded(messages, new BounceEnvelop(sender, headers));
       }
 
     } else {
-      logger.wrn("[%s] quota exceeded all: options=%s - sender=%s - message=%s", this, options,
+      logger.wrn("[%s] quota exceeded all: headers=%s - sender=%s - message=%s", this, headers,
           sender, messages);
-      quotaExceeded(messages, new BounceEnvelop(sender, options));
+      quotaExceeded(messages, new BounceEnvelop(sender, headers));
     }
     return this;
   }
@@ -166,20 +167,20 @@ class LocalActor implements Actor {
   }
 
   private void quotaExceeded(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
-    final Options options = envelop.getOptions();
-    if (options.getReceiptId() != null) {
+    final Headers headers = envelop.getHeaders();
+    if (headers.getReceiptId() != null) {
       final ArrayList<Object> bounces = new ArrayList<Object>();
       for (final Object message : messages) {
-        bounces.add(new QuotaExceeded(message, options));
+        bounces.add(new QuotaExceeded(message, headers));
       }
-      agent.replyAll(envelop.getSender(), bounces, options.threadOnly());
+      agent.replyAll(envelop.getSender(), bounces, headers.threadOnly());
     }
   }
 
   private void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
-    final Options options = envelop.getOptions();
-    if (options.getReceiptId() != null) {
-      agent.reply(envelop.getSender(), new QuotaExceeded(message, options), options.threadOnly());
+    final Headers headers = envelop.getHeaders();
+    if (headers.getReceiptId() != null) {
+      agent.reply(envelop.getSender(), new QuotaExceeded(message, headers), headers.threadOnly());
     }
   }
 
@@ -192,8 +193,8 @@ class LocalActor implements Actor {
 
   private static class BounceEnvelop extends DefaultEnvelop {
 
-    BounceEnvelop(@NotNull final Actor sender, @Nullable final Options options) {
-      super(sender, options);
+    BounceEnvelop(@NotNull final Actor sender, @Nullable final Headers headers) {
+      super(sender, headers);
     }
 
     void open() {

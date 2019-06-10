@@ -21,39 +21,39 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 
-import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Base receipt message sent in response to a received message when the delivery options contains
- * a receipt ID.
+ * Base receipt message sent in response to a received message when the headers contain a receipt
+ * ID.
  *
- * @see Options
+ * @see Headers
  */
 public class Receipt implements Serializable {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
+  private final Headers headers;
   private final Object message;
-  private final Options options;
 
   /**
    * Creates a new empty receipt message.
    */
   public Receipt() {
-    this(null, Options.EMPTY);
+    this(null, Headers.EMPTY);
   }
 
   /**
    * Creates a new receipt message.
    *
    * @param message the received message.
-   * @param options the original message delivery options.
+   * @param headers the original message headers.
    */
-  public Receipt(final Object message, @NotNull final Options options) {
+  public Receipt(final Object message, @NotNull final Headers headers) {
     this.message = message;
-    this.options = ConstantConditions.notNull("options", options);
+    this.headers = ConstantConditions.notNull("headers", headers);
   }
 
   /**
@@ -65,7 +65,17 @@ public class Receipt implements Serializable {
    */
   public static boolean isReceipt(@Nullable final Object message, @NotNull final String receiptId) {
     return (message instanceof Receipt) && receiptId.equals(
-        ((Receipt) message).getOptions().getReceiptId());
+        ((Receipt) message).getHeaders().getReceiptId());
+  }
+
+  /**
+   * Returns the original message headers.
+   *
+   * @return the headers.
+   */
+  @NotNull
+  public final Headers getHeaders() {
+    return headers;
   }
 
   /**
@@ -75,15 +85,5 @@ public class Receipt implements Serializable {
    */
   public final Object getMessage() {
     return message;
-  }
-
-  /**
-   * Returns the original message delivery options.
-   *
-   * @return the delivery options.
-   */
-  @NotNull
-  public final Options getOptions() {
-    return options;
   }
 }

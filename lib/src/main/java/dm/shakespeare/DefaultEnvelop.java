@@ -21,7 +21,8 @@ import org.jetbrains.annotations.Nullable;
 
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Envelop;
-import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Headers;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -29,7 +30,7 @@ import dm.shakespeare.util.ConstantConditions;
  */
 abstract class DefaultEnvelop implements Envelop, Runnable {
 
-  private final Options options;
+  private final Headers headers;
   private final Actor sender;
   private final long sentAt;
   private boolean preventReceipt;
@@ -39,17 +40,17 @@ abstract class DefaultEnvelop implements Envelop, Runnable {
    * Creates a new envelop.
    *
    * @param sender  the sender actor.
-   * @param options the delivery options.
+   * @param headers the message headers.
    */
-  DefaultEnvelop(@NotNull final Actor sender, @Nullable final Options options) {
+  DefaultEnvelop(@NotNull final Actor sender, @Nullable final Headers headers) {
     this.sender = ConstantConditions.notNull("sender", sender);
-    this.options = (options != null) ? options : Options.EMPTY;
-    sentAt = System.currentTimeMillis() - this.options.getTimeOffset();
+    this.headers = (headers != null) ? headers : Headers.EMPTY;
+    sentAt = System.currentTimeMillis() - this.headers.getTimeOffset();
   }
 
   @NotNull
-  public Options getOptions() {
-    return options;
+  public Headers getHeaders() {
+    return headers;
   }
 
   public long getReceivedAt() {
@@ -80,7 +81,7 @@ abstract class DefaultEnvelop implements Envelop, Runnable {
 
   @Override
   public String toString() {
-    return "DefaultEnvelop{" + "options=" + options + ", sender=" + sender + ", sentAt=" + sentAt
+    return "DefaultEnvelop{" + "headers=" + headers + ", sender=" + sender + ", sentAt=" + sentAt
         + ", preventReceipt=" + preventReceipt + ", receivedAt=" + receivedAt + '}';
   }
 

@@ -18,7 +18,7 @@ package dm.shakespeare.message;
 
 import org.jetbrains.annotations.NotNull;
 
-import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.config.BuildConfig;
 
 /**
@@ -39,9 +39,9 @@ public class QuotaExceeded extends Bounce {
    * Creates a new quota exceeded message.
    *
    * @param message the bounced message.
-   * @param options the original message delivery options.
+   * @param headers the original message headers.
    */
-  public QuotaExceeded(final Object message, @NotNull final Options options) {
-    super(message, options);
+  public QuotaExceeded(final Object message, @NotNull final Headers headers) {
+    super(message, headers);
   }
 }

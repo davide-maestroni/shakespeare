@@ -18,7 +18,7 @@ package dm.shakespeare.remote.message;
 
 import org.jetbrains.annotations.NotNull;
 
-import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.remote.config.BuildConfig;
 
@@ -32,7 +32,7 @@ public class Rejection extends Bounce {
   public Rejection() {
   }
 
-  public Rejection(final Object message, @NotNull final Options options) {
-    super(message, options);
+  public Rejection(final Object message, @NotNull final Headers headers) {
+    super(message, headers);
   }
 }

@@ -37,7 +37,7 @@ import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.ActorSet;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
-import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.function.Tester;
 import dm.shakespeare.log.LogPrinters;
@@ -497,14 +497,14 @@ public class StageReceiver {
       try {
         final RemoteClassLoader classLoader = StageReceiver.this.classLoader;
         Object msg = serializer.deserialize(request.getMessageData(), classLoader);
-        Options options = request.getOptions();
-        if (options != null) {
-          options = options.asSentAt(request.getSentTimestamp());
+        Headers headers = request.getHeaders();
+        if (headers != null) {
+          headers = headers.asSentAt(request.getSentTimestamp());
 
         } else {
-          options = new Options().asSentAt(request.getSentTimestamp());
+          headers = new Headers().asSentAt(request.getSentTimestamp());
         }
-        actor.tell(msg, options, sender);
+        actor.tell(msg, headers, sender);
 
       } catch (final RemoteClassNotFoundException e) {
         logger.err(e, "error while handling message request");
@@ -554,14 +554,14 @@ public class StageReceiver {
           return new MessageContinue().addAllResourcePaths(dependencies);
         }
         Object msg = serializer.deserialize(request.getMessageData(), classLoader);
-        Options options = request.getOptions();
-        if (options != null) {
-          options = options.asSentAt(request.getSentTimestamp());
+        Headers headers = request.getHeaders();
+        if (headers != null) {
+          headers = headers.asSentAt(request.getSentTimestamp());
 
         } else {
-          options = new Options().asSentAt(request.getSentTimestamp());
+          headers = new Headers().asSentAt(request.getSentTimestamp());
         }
-        actor.tell(msg, options, sender);
+        actor.tell(msg, headers, sender);
 
       } catch (final RemoteClassNotFoundException e) {
         return new MessageContinue().addResourcePath(e.getMessage());
@@ -618,7 +618,7 @@ public class StageReceiver {
               new ActorID().withActorId(sender.getId()).withInstanceId(getInstanceId(sender));
           getSender().send(new MessageRequest().withActorID(SenderRole.this.actorID)
               .withSenderActorID(senderID)
-              .withOptions(envelop.getOptions())
+              .withHeaders(envelop.getHeaders())
               .withMessageData(SerializableData.wrap(serializer.serialize(message)))
               .withSentTimestamp(envelop.getSentAt()), senderId);
         }

@@ -49,7 +49,7 @@ class MethodHandler implements Handler<Object>, Serializable {
     final Class<?> returnType = method.getReturnType();
     if ((returnType != void.class) && (returnType != Void.class)) {
       // TODO: 31/08/2018 specific message?
-      envelop.getSender().tell(value, envelop.getOptions().threadOnly(), agent.getSelf());
+      envelop.getSender().tell(value, envelop.getHeaders().threadOnly(), agent.getSelf());
     }
   }
 

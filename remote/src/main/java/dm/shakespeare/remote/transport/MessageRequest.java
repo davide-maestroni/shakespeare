@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
-import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.remote.util.SerializableData;
 
 /**
@@ -32,8 +32,8 @@ public class MessageRequest extends RemoteRequest {
   private static final long serialVersionUID = VERSION;
 
   private ActorID actorID;
+  private Headers headers;
   private SerializableData messageData;
-  private Options options;
   private Map<String, SerializableData> resources;
   private ActorID senderActorID;
   private long sentTimestamp = System.currentTimeMillis();
@@ -46,20 +46,20 @@ public class MessageRequest extends RemoteRequest {
     this.actorID = actorID;
   }
 
+  public Headers getHeaders() {
+    return headers;
+  }
+
+  public void setHeaders(final Headers headers) {
+    this.headers = headers;
+  }
+
   public SerializableData getMessageData() {
     return messageData;
   }
 
   public void setMessageData(final SerializableData messageData) {
     this.messageData = messageData;
-  }
-
-  public Options getOptions() {
-    return options;
-  }
-
-  public void setOptions(final Options options) {
-    this.options = options;
   }
 
   public Map<String, SerializableData> getResources() {
@@ -112,14 +112,14 @@ public class MessageRequest extends RemoteRequest {
   }
 
   @NotNull
-  public MessageRequest withMessageData(final SerializableData messageData) {
-    this.messageData = messageData;
+  public MessageRequest withHeaders(final Headers headers) {
+    this.headers = headers;
     return this;
   }
 
   @NotNull
-  public MessageRequest withOptions(final Options options) {
-    this.options = options;
+  public MessageRequest withMessageData(final SerializableData messageData) {
+    this.messageData = messageData;
     return this;
   }
 

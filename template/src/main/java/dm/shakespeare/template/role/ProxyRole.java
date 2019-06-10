@@ -23,7 +23,7 @@ import java.lang.ref.WeakReference;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Behavior.Agent;
-import dm.shakespeare.actor.Options;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.template.actor.ProxyBehavior;
 import dm.shakespeare.util.ConstantConditions;
@@ -45,32 +45,32 @@ public class ProxyRole extends Role {
 
       @Override
       protected void onIncoming(@NotNull final Actor proxied, @NotNull final Actor sender,
-          final Object message, final long sentAt, @NotNull final Options options,
+          final Object message, final long sentAt, @NotNull final Headers headers,
           @NotNull final Agent agent) throws Exception {
-        if (ProxyRole.this.onIncoming(proxied, sender, message, sentAt, options, agent)) {
-          super.onIncoming(proxied, sender, message, sentAt, options, agent);
+        if (ProxyRole.this.onIncoming(proxied, sender, message, sentAt, headers, agent)) {
+          super.onIncoming(proxied, sender, message, sentAt, headers, agent);
         }
       }
 
       @Override
       protected void onOutgoing(@NotNull final Actor proxied, @NotNull final Actor recipient,
-          final Object message, final long sentAt, @NotNull final Options options,
+          final Object message, final long sentAt, @NotNull final Headers headers,
           @NotNull final Agent agent) throws Exception {
-        if (ProxyRole.this.onOutgoing(proxied, recipient, message, sentAt, options, agent)) {
-          super.onOutgoing(proxied, recipient, message, sentAt, options, agent);
+        if (ProxyRole.this.onOutgoing(proxied, recipient, message, sentAt, headers, agent)) {
+          super.onOutgoing(proxied, recipient, message, sentAt, headers, agent);
         }
       }
     };
   }
 
   protected boolean onIncoming(@NotNull final Actor proxied, @NotNull final Actor sender,
-      final Object message, final long sentAt, @NotNull final Options options,
+      final Object message, final long sentAt, @NotNull final Headers headers,
       @NotNull final Agent agent) throws Exception {
     return true;
   }
 
   protected boolean onOutgoing(@NotNull final Actor proxied, @NotNull final Actor recipient,
-      final Object message, final long sentAt, @NotNull final Options options,
+      final Object message, final long sentAt, @NotNull final Headers headers,
       @NotNull final Agent agent) throws Exception {
     return true;
   }
