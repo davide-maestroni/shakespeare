@@ -25,7 +25,7 @@ import dm.shakespeare.actor.Headers;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Default implementation of an {@code Envelop}.
+ * Standard implementation of an {@code Envelop}.
  */
 abstract class StandardEnvelop implements Envelop, Runnable {
 
