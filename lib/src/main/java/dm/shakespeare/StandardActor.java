@@ -45,7 +45,7 @@ class StandardActor implements Actor {
     }
   };
 
-  private final DefaultAgent agent;
+  private final StandardAgent agent;
   private final String id;
   private final Logger logger;
   private final QuotaHandler quotaHandler;
@@ -57,7 +57,7 @@ class StandardActor implements Actor {
    * @param quota the actor inbox quota.
    * @param agent the agent instance.
    */
-  StandardActor(@NotNull final String id, final int quota, @NotNull final DefaultAgent agent) {
+  StandardActor(@NotNull final String id, final int quota, @NotNull final StandardAgent agent) {
     this.id = ConstantConditions.notNull("id", id);
     this.agent = ConstantConditions.notNull("agent", agent);
     quotaHandler = (quota < Integer.MAX_VALUE) ? new DefaultQuotaHandler(
@@ -105,7 +105,7 @@ class StandardActor implements Actor {
     logger.dbg("[%s] sending: headers=%s - sender=%s - message=%s", this, headers, sender, message);
     if (quotaHandler.consumeQuota()) {
       try {
-        agent.getActorExecutorService().execute(new DefaultEnvelop(sender, headers) {
+        agent.getActorExecutorService().execute(new StandardEnvelop(sender, headers) {
 
           void open() {
             quotaHandler.releaseQuota();
@@ -136,7 +136,7 @@ class StandardActor implements Actor {
         messages);
     if (quotaHandler.consumeQuota()) {
       try {
-        agent.getActorExecutorService().execute(new DefaultEnvelop(sender, headers) {
+        agent.getActorExecutorService().execute(new StandardEnvelop(sender, headers) {
 
           void open() {
             quotaHandler.releaseQuota();
@@ -190,7 +190,7 @@ class StandardActor implements Actor {
     void releaseQuota();
   }
 
-  private static class BounceEnvelop extends DefaultEnvelop {
+  private static class BounceEnvelop extends StandardEnvelop {
 
     BounceEnvelop(@NotNull final Actor sender, @Nullable final Headers headers) {
       super(sender, headers);

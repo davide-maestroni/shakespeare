@@ -42,7 +42,7 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Class implementing a behavior agent.
  */
-class DefaultAgent implements Agent {
+class StandardAgent implements Agent {
 
   private static final DeadLetter DEAD_LETTER = new DeadLetter();
 
@@ -68,7 +68,7 @@ class DefaultAgent implements Agent {
    * @param executorService the backing executor service.
    * @param logger          the logger instance.
    */
-  DefaultAgent(@NotNull final Behavior behavior, @NotNull final ExecutorService executorService,
+  StandardAgent(@NotNull final Behavior behavior, @NotNull final ExecutorService executorService,
       @NotNull final Logger logger) {
     this.behavior = ConstantConditions.notNull("behavior", behavior);
     actorExecutorService =
@@ -85,7 +85,7 @@ class DefaultAgent implements Agent {
       dismissRunnable = new Runnable() {
 
         public void run() {
-          behaviorWrapper.onStop(DefaultAgent.this);
+          behaviorWrapper.onStop(StandardAgent.this);
         }
       };
     }
@@ -145,17 +145,17 @@ class DefaultAgent implements Agent {
       restartRunnable = new Runnable() {
 
         public void run() {
-          final Thread runner = (DefaultAgent.this.runner = Thread.currentThread());
+          final Thread runner = (StandardAgent.this.runner = Thread.currentThread());
           try {
-            behaviorWrapper.onRestart(DefaultAgent.this);
+            behaviorWrapper.onRestart(StandardAgent.this);
 
           } finally {
-            DefaultAgent.this.runner = null;
+            StandardAgent.this.runner = null;
           }
 
           if (runner.isInterrupted()) {
             logger.wrn("[%s] thread has been interrupted!", actor);
-            behaviorWrapper.onStop(DefaultAgent.this);
+            behaviorWrapper.onStop(StandardAgent.this);
           }
         }
       };
@@ -380,7 +380,7 @@ class DefaultAgent implements Agent {
       if (isDismissed()) {
         return;
       }
-      final Behavior behavior = DefaultAgent.this.behavior;
+      final Behavior behavior = StandardAgent.this.behavior;
       try {
         behavior.onStop(agent);
         behavior.onStart(agent);

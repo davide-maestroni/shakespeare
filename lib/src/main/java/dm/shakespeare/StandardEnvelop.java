@@ -27,7 +27,7 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Default implementation of an {@code Envelop}.
  */
-abstract class DefaultEnvelop implements Envelop, Runnable {
+abstract class StandardEnvelop implements Envelop, Runnable {
 
   private final Headers headers;
   private final Actor sender;
@@ -42,7 +42,7 @@ abstract class DefaultEnvelop implements Envelop, Runnable {
    * @param sender  the sender actor.
    * @param headers the message headers.
    */
-  DefaultEnvelop(@NotNull final Actor sender, @Nullable final Headers headers) {
+  StandardEnvelop(@NotNull final Actor sender, @Nullable final Headers headers) {
     this.sender = ConstantConditions.notNull("sender", sender);
     this.headers = (headers != null) ? headers : Headers.EMPTY;
     sentAt = System.currentTimeMillis() - this.headers.getTimeOffset();
@@ -81,7 +81,7 @@ abstract class DefaultEnvelop implements Envelop, Runnable {
 
   @Override
   public String toString() {
-    return "DefaultEnvelop{" + "headers=" + headers + ", sender=" + sender + ", sentAt=" + sentAt
+    return "StandardEnvelop{" + "headers=" + headers + ", sender=" + sender + ", sentAt=" + sentAt
         + ", preventReceipt=" + preventReceipt + ", receivedAt=" + receivedAt + '}';
   }
 

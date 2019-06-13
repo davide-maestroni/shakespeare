@@ -51,7 +51,6 @@ import dm.shakespeare.util.ConstantConditions;
 public class Stage {
 
   // TODO: 2019-06-13 catch Exception vs Throwable
-  // TODO: 2019-06-13 Default vs Standard
 
   /**
    * Stand-in actor instance.<br>
@@ -127,7 +126,7 @@ public class Stage {
       final Logger logger = role.getLogger(id);
       final ExecutorService executorService = role.getExecutorService(id);
       final Behavior behavior = role.getBehavior(id);
-      final DefaultAgent agent = new DefaultAgent(behavior, executorService, logger);
+      final StandardAgent agent = new StandardAgent(behavior, executorService, logger);
       final StandardActor actor = new StandardActor(id, quota, agent);
       agent.setActor(actor);
       return actor;
