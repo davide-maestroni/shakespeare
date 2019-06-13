@@ -25,9 +25,12 @@ import dm.shakespeare.config.BuildConfig;
 
 /**
  * Object containing the message headers.<br>
- * The headers include a time offset (used to modify the send time), a thread ID (useful to
- * identify messages belonging to the same thread) and a receipt ID (indicating that the sender
- * wants to be notified of the message delivery).<br>
+ * The headers may include:
+ * <ul>
+ * <li>a time offset, used to modify the send time</li>
+ * <li>a thread ID, useful to identify messages belonging to the same thread</li>
+ * <li>a receipt ID, indicating that the sender wants to be notified of the message delivery</li>
+ * </ul>
  * The instances of this class are immutable and, inherently, thread safe.
  */
 public class Headers implements Serializable {

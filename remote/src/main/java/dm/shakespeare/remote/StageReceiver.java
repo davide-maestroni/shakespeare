@@ -616,7 +616,7 @@ public class StageReceiver {
           final Actor sender = envelop.getSender();
           final ActorID senderID =
               new ActorID().withActorId(sender.getId()).withInstanceId(getInstanceId(sender));
-          getSender().send(new MessageRequest().withActorID(SenderRole.this.actorID)
+          getSender().send(new MessageRequest().withActorID(actorID)
               .withSenderActorID(senderID)
               .withHeaders(envelop.getHeaders())
               .withMessageData(SerializableData.wrap(serializer.serialize(message)))

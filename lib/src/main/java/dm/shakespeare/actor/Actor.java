@@ -33,7 +33,7 @@ import dm.shakespeare.Stage;
  * An actor is uniquely identified within a {@link Stage} by its ID. Although, it might belong to
  * no stage at all.<br>
  * An actor ID may be any string and be formatted in any way useful to the client. For example, the
- * IDs might be hierarchically formatted as filesystem folders or files, and the queried through
+ * IDs might be hierarchically formatted as filesystem folders or files, and then queried through
  * regex patterns.
  */
 public interface Actor {
@@ -60,7 +60,7 @@ public interface Actor {
   void dismiss(boolean mayInterruptIfRunning);
 
   /**
-   * Returns tha actor ID.<br>
+   * Returns the actor ID.<br>
    * An actor has an ID even if not registered on any stage.
    *
    * @return the actor ID.
@@ -79,12 +79,15 @@ public interface Actor {
 
   /**
    * Tells to this actor the specified message.<br>
-   * The headers include a time offset (used to modify the send time), a thread ID (useful
-   * to identify messages belonging to the same thread) and a receipt ID (indicating that the sender
-   * wants to be notified of the message delivery). The actor will automatically employ the optional
-   * receipt ID to send back notifications (unless {@link Envelop#preventReceipt()} is called). All
-   * the replies to the sender should contain in the headers the same thread ID as the originating
-   * message.<br>
+   * The headers may include:
+   * <ul>
+   * <li>a time offset, used to modify the send time</li>
+   * <li>a thread ID, useful to identify messages belonging to the same thread</li>
+   * <li>a receipt ID, indicating that the sender wants to be notified of the message delivery</li>
+   * </ul>
+   * The actor will automatically employ the optional receipt ID to send back notifications
+   * (unless {@link Envelop#preventReceipt()} is called). All the replies to the sender should
+   * contain in the headers the same thread ID as the originating message.<br>
    * If the number of unprocessed messages still in the inbox exceeds the configured quota, the
    * message will be bounced (see {@link dm.shakespeare.message.Bounce Bounce}).<br>
    * In case no reply is expected or no actor is interested in receiving it, it is possible to
@@ -103,12 +106,15 @@ public interface Actor {
    * Tells to this actor the specified batch of messages.<br>
    * This method will delivered a single object containing all the messages to this actor. Then,
    * each of them will be processed separately with the same headers.<br>
-   * The headers include a time offset (used to modify the send time), a thread ID (useful
-   * to identify messages belonging to the same thread) and a receipt ID (indicating that the sender
-   * wants to be notified of the message delivery). The actor will automatically employ the optional
-   * receipt ID to send back notifications (unless {@link Envelop#preventReceipt()} is called). All
-   * the replies to the sender should contain in the headers the same thread ID as the originating
-   * message.<br>
+   * The headers may include:
+   * <ul>
+   * <li>a time offset, used to modify the send time</li>
+   * <li>a thread ID, useful to identify messages belonging to the same thread</li>
+   * <li>a receipt ID, indicating that the sender wants to be notified of the message delivery</li>
+   * </ul>
+   * The actor will automatically employ the optional receipt ID to send back notifications
+   * (unless {@link Envelop#preventReceipt()} is called). All the replies to the sender should
+   * contain in the headers the same thread ID as the originating message.<br>
    * If the number of unprocessed messages still in the inbox exceeds the configured quota, the
    * message will be bounced (see {@link dm.shakespeare.message.Bounce Bounce}).<br>
    * The batch object will count as one message in the inbox quota.<br>

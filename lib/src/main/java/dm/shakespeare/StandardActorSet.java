@@ -27,13 +27,12 @@ import java.util.Set;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.ActorSet;
 import dm.shakespeare.actor.Headers;
-import dm.shakespeare.actor.Headers;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Class implementing a local actor set.
+ * Class implementing an actor set.
  */
-class LocalActorSet extends AbstractSet<Actor> implements ActorSet {
+class StandardActorSet extends AbstractSet<Actor> implements ActorSet {
 
   private final Set<Actor> actors;
 
@@ -42,7 +41,7 @@ class LocalActorSet extends AbstractSet<Actor> implements ActorSet {
    *
    * @param actors the set of actors.
    */
-  LocalActorSet(@NotNull final Set<? extends Actor> actors) {
+  StandardActorSet(@NotNull final Set<? extends Actor> actors) {
     this.actors = Collections.unmodifiableSet(ConstantConditions.notNullElements("actors", actors));
   }
 

@@ -154,7 +154,7 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
     }
     final AbstractFuture<?> that = (AbstractFuture<?>) o;
     return timestamp.equals(that.timestamp) && (future != null ? future.equals(that.future)
-        : that.future == null) && (scheduledFuture != null ? scheduledFuture.equals(
+        : that.future == null) && ((scheduledFuture != null) ? scheduledFuture.equals(
         that.scheduledFuture) : that.scheduledFuture == null);
   }
 

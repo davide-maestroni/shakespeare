@@ -34,9 +34,12 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Base abstract implementation of a role object.<br>
  * A role is used to instruct an actor on how to behave. In fact, by implementing a {@code Role}
- * object it is possible to configure the {@link ExecutorService} on which the actor business logic
- * will be executed, the inbox message quota, the {@link Logger} instance and the initial actor
- * {@link Behavior}.<br>
+ * object it is possible to configure:<ul>
+ * <li>the initial actor {@link Behavior}</li>
+ * <li>the {@link ExecutorService} on which the actor business logic will be executed</li>
+ * <li>the inbox message quota</li>
+ * <li>the {@link Logger} instance</li>
+ * </ul>
  * The role methods are only called once at the actor instantiation, and thread safety is not
  * guaranteed. So, it's advisable to employ a new role instance for each new actor.
  */
@@ -94,10 +97,23 @@ public abstract class Role {
   }
 
   /**
-   * TODO
+   * Creates a default logger for the specified object.
    *
-   * @param mapper
-   * @return
+   * @param object the object.
+   * @return the logger instance.
+   */
+  @NotNull
+  public static Logger defaultLogger(@NotNull final Object object) {
+    return new Logger(LogPrinters.javaLoggingPrinter(object.getClass().getName()));
+  }
+
+  /**
+   * Creates a new role from the specified mapper.<br>
+   * The mapper will be called passing the actor ID as input parameter and must return a behavior
+   * instance.
+   *
+   * @param mapper the mapper function.
+   * @return the role instance.
    */
   @NotNull
   public static Role from(@NotNull final Mapper<? super String, ? extends Behavior> mapper) {
@@ -119,7 +135,7 @@ public abstract class Role {
    */
   @NotNull
   public static BehaviorBuilder newBehavior() {
-    return new DefaultBehaviorBuilder();
+    return new StandardBehaviorBuilder();
   }
 
   /**
@@ -155,7 +171,7 @@ public abstract class Role {
    */
   @NotNull
   public Logger getLogger(@NotNull final String id) throws Exception {
-    return new Logger(LogPrinters.javaLoggingPrinter(getClass().getName()));
+    return defaultLogger(this);
   }
 
   /**

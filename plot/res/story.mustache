@@ -1046,6 +1046,21 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
+  static class ActorStory<T> extends AbstractStory<T> {
+
+    private final List<Actor> actors;
+
+    ActorStory(@NotNull final Actor actor, @NotNull final Memory memory) {
+      super(INFINITE_LOOP, 1, memory);
+      actors = Collections.singletonList(actor);
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return actors;
+    }
+  }
+
   static class DefaultStoryObserver<T> extends DefaultEventObserver<T> implements StoryObserver<T> {
 
     private final Action endAction;

@@ -22,7 +22,6 @@ import org.jetbrains.annotations.Nullable;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Headers;
-import dm.shakespeare.actor.Headers;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -33,6 +32,7 @@ abstract class DefaultEnvelop implements Envelop, Runnable {
   private final Headers headers;
   private final Actor sender;
   private final long sentAt;
+
   private boolean preventReceipt;
   private long receivedAt = -1;
 

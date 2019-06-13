@@ -27,7 +27,8 @@
  * This package provides also implementations of utility classes, like: an
  * {@link dm.shakespeare.actor.AbstractBehavior}, providing empty implementation or
  * {@link dm.shakespeare.actor.Behavior#onStart(dm.shakespeare.actor.Behavior.Agent)} and
- * {@link dm.shakespeare.actor.Behavior#onStop(dm.shakespeare.actor.Behavior.Agent)} methods;
+ * {@link dm.shakespeare.actor.Behavior#onStop(dm.shakespeare.actor.Behavior.Agent)} methods
+ * (and its serializable version {@link dm.shakespeare.actor.SerializableAbstractBehavior});
  * an {@link dm.shakespeare.actor.AcceptHandler} and {@link dm.shakespeare.actor.ApplyHandler},
  * wrapping generic function into message handlers; and a
  * {@link dm.shakespeare.actor.SerializableRole}, defining a {@code Role} object which is also

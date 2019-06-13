@@ -468,6 +468,21 @@ public abstract class Event<T> {
     }
   }
 
+  static class ActorEvent<T> extends AbstractEvent<T> {
+
+    private final List<Actor> actors;
+
+    ActorEvent(@NotNull final Actor actor) {
+      super(1);
+      actors = Collections.singletonList(actor);
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return actors;
+    }
+  }
+
   static class DefaultEventObserver<T> implements EventObserver<T> {
 
     private final Observer<Object> effectObserver;

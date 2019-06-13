@@ -45,11 +45,19 @@ public class ActorScheduledExecutorService extends ActorExecutorService
     this.executorService = executorService;
   }
 
+  /**
+   * Executes the given command before any other pending one still in the queue.
+   *
+   * @param command the runnable task.
+   */
   @Override
   public void executeNext(@NotNull final Runnable command) {
     super.executeNext(command);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public ScheduledFuture<?> schedule(@NotNull final Runnable command, final long delay,
       @NotNull final TimeUnit unit) {
@@ -59,6 +67,9 @@ public class ActorScheduledExecutorService extends ActorExecutorService
     return future;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public <V> ScheduledFuture<V> schedule(@NotNull final Callable<V> callable, final long delay,
       @NotNull final TimeUnit unit) {
@@ -68,6 +79,9 @@ public class ActorScheduledExecutorService extends ActorExecutorService
     return future;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public ScheduledFuture<?> scheduleAtFixedRate(@NotNull final Runnable command,
       final long initialDelay, final long period, @NotNull final TimeUnit unit) {
@@ -78,6 +92,9 @@ public class ActorScheduledExecutorService extends ActorExecutorService
     return future;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public ScheduledFuture<?> scheduleWithFixedDelay(@NotNull final Runnable command,
       final long initialDelay, final long delay, @NotNull final TimeUnit unit) {

@@ -54,10 +54,12 @@ public abstract class SerializableRole extends Role implements Serializable {
   private RoleState state = RoleState.CREATED;
 
   /**
-   * TODO
+   * Creates a new role from the specified mapper.<br>
+   * The mapper will be called passing the actor ID as input parameter and must return a behavior
+   * instance.
    *
-   * @param mapper
-   * @return
+   * @param mapper the mapper function.
+   * @return the role instance.
    */
   @NotNull
   public static SerializableRole from(

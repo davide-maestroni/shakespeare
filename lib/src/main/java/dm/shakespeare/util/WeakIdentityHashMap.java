@@ -33,8 +33,8 @@ import java.util.Set;
  * {@link java.util.WeakHashMap}.<br>
  * Iterating through the map keys might produce one or more null values.
  *
- * @param <K> the key type.
- * @param <V> the value type.
+ * @param <K> the keys runtime type.
+ * @param <V> the values runtime type.
  */
 public class WeakIdentityHashMap<K, V> implements Map<K, V> {
 
@@ -87,11 +87,17 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
     putAll(map);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public int hashCode() {
     return map.hashCode();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public boolean equals(final Object o) {
     if (this == o) {

@@ -26,15 +26,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Headers;
-import dm.shakespeare.actor.Headers;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.message.QuotaExceeded;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Class implementing a local actor.
+ * Class implementing an actor.
  */
-class LocalActor implements Actor {
+class StandardActor implements Actor {
 
   private static final QuotaHandler DUMMY_HANDLER = new QuotaHandler() {
 
@@ -46,7 +45,7 @@ class LocalActor implements Actor {
     }
   };
 
-  private final LocalAgent agent;
+  private final DefaultAgent agent;
   private final String id;
   private final Logger logger;
   private final QuotaHandler quotaHandler;
@@ -58,12 +57,12 @@ class LocalActor implements Actor {
    * @param quota the actor inbox quota.
    * @param agent the agent instance.
    */
-  LocalActor(@NotNull final String id, final int quota, @NotNull final LocalAgent agent) {
+  StandardActor(@NotNull final String id, final int quota, @NotNull final DefaultAgent agent) {
     this.id = ConstantConditions.notNull("id", id);
     this.agent = ConstantConditions.notNull("agent", agent);
     quotaHandler = (quota < Integer.MAX_VALUE) ? new DefaultQuotaHandler(
         ConstantConditions.positive("quota", quota)) : DUMMY_HANDLER;
-    logger = this.agent.getLogger();
+    logger = agent.getLogger();
   }
 
   @NotNull

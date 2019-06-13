@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-import dm.shakespeare.actor.Role;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.util.CQueue;
@@ -51,10 +50,9 @@ class Setting {
 
   private ExecutorService localExecutor;
 
-  Setting(@Nullable final ExecutorService executor, @Nullable final Logger logger) {
-    this.executor = (executor != null) ? asActorExecutor(executor)
-        : asActorExecutor(Role.defaultExecutorService());
-    this.logger = logger;
+  Setting(@NotNull final ExecutorService executor, @NotNull final Logger logger) {
+    this.logger = ConstantConditions.notNull("logger", logger);
+    this.executor = asActorExecutor(executor);
   }
 
   @NotNull
@@ -91,7 +89,7 @@ class Setting {
     return cache;
   }
 
-  @Nullable
+  @NotNull
   ExecutorService getExecutor() {
     return executor;
   }
@@ -104,7 +102,7 @@ class Setting {
     return localExecutor;
   }
 
-  @Nullable
+  @NotNull
   Logger getLogger() {
     return logger;
   }

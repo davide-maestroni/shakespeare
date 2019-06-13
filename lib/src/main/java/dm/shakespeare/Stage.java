@@ -50,6 +50,9 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class Stage {
 
+  // TODO: 2019-06-13 catch Exception vs Throwable
+  // TODO: 2019-06-13 Default vs Standard
+
   /**
    * Stand-in actor instance.<br>
    * This actor methods will have no effect when invoked.
@@ -124,8 +127,8 @@ public class Stage {
       final Logger logger = role.getLogger(id);
       final ExecutorService executorService = role.getExecutorService(id);
       final Behavior behavior = role.getBehavior(id);
-      final LocalAgent agent = new LocalAgent(behavior, executorService, logger);
-      final LocalActor actor = new LocalActor(id, quota, agent);
+      final DefaultAgent agent = new DefaultAgent(behavior, executorService, logger);
+      final StandardActor actor = new StandardActor(id, quota, agent);
       agent.setActor(actor);
       return actor;
 
@@ -230,7 +233,7 @@ public class Stage {
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
-    return new LocalActorSet(actors);
+    return new StandardActorSet(actors);
   }
 
   /**
@@ -305,7 +308,7 @@ public class Stage {
       actors = new HashSet<Actor>(this.actors.values());
     }
     actors.remove(null);
-    return new LocalActorSet(actors);
+    return new StandardActorSet(actors);
   }
 
   /**

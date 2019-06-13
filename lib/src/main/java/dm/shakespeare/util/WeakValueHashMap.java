@@ -29,7 +29,13 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 /**
- * Created by davide-maestroni on 05/30/2019.
+ * Map implementation with <i>weak values</i>. An entry in a WeakValueHashMap will be automatically
+ * removed when its value is no longer in ordinary use (that is, when no more strong reference to
+ * the value object are present and it is ready to be garbage-collected).<br>
+ * Both null values and the null key are supported.
+ *
+ * @param <K> the keys runtime type.
+ * @param <V> the values runtime type.
  */
 public class WeakValueHashMap<K, V> implements Map<K, V> {
 
@@ -85,11 +91,17 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
     putAll(map);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public int hashCode() {
     return keys.hashCode();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -103,28 +115,46 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
     return keys.equals(that.keys);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public int size() {
     return keys.size();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public boolean isEmpty() {
     return keys.isEmpty();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public boolean containsKey(final Object key) {
     return keys.containsKey(wrapKey(key));
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @SuppressWarnings("SuspiciousMethodCalls")
   public boolean containsValue(final Object value) {
     return values.containsKey(value);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public V get(final Object key) {
-    final WeakReference<V> reference = keys.get(key);
+    final WeakReference<V> reference = keys.get(wrapKey(key));
     return (reference != null) ? reference.get() : null;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Nullable
   public V put(final K key, final V value) {
     if (value == null) {
@@ -164,6 +194,9 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
     return null;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public V remove(final Object key) {
     final KeyWrapper<K> wrapKey = wrapKey(key);
     final WeakReference<V> oldRef = keys.remove(wrapKey);
@@ -182,17 +215,26 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
     return null;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void putAll(@NotNull final Map<? extends K, ? extends V> map) {
     for (final Entry<? extends K, ? extends V> entry : map.entrySet()) {
       put(entry.getKey(), entry.getValue());
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void clear() {
     keys.clear();
     values.clear();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public Set<K> keySet() {
     if (keySet == null) {
@@ -213,6 +255,9 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
     return keySet;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public Collection<V> values() {
     if (valuesCollection == null) {
@@ -233,6 +278,9 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
     return valuesCollection;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public Set<Entry<K, V>> entrySet() {
     if (entrySet == null) {

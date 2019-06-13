@@ -30,9 +30,9 @@ import dm.shakespeare.function.Tester;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Default implementation of a {@code BehaviorBuilder}.
+ * Standard implementation of a {@code BehaviorBuilder}.
  */
-class DefaultBehaviorBuilder implements BehaviorBuilder {
+class StandardBehaviorBuilder implements BehaviorBuilder {
 
   private static final Observer<Agent> DEFAULT_AGENT_OBSERVER = new Observer<Agent>() {
 
@@ -151,7 +151,7 @@ class DefaultBehaviorBuilder implements BehaviorBuilder {
   }
 
   @NotNull
-  public <T> BehaviorBuilder onMessageEqualTo(final T message,
+  public <T> BehaviorBuilder onEqualTo(final T message,
       @NotNull final Handler<? super T> handler) {
     messageHandlers.add(
         new EqualToMessageHandler(message, ConstantConditions.notNull("handler", handler)));

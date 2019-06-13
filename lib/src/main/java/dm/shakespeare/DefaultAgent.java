@@ -30,7 +30,6 @@ import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Headers;
-import dm.shakespeare.actor.Headers;
 import dm.shakespeare.concurrent.ActorExecutorService;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.log.Logger;
@@ -41,9 +40,9 @@ import dm.shakespeare.message.Failure;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Class implementing a local behavior agent.
+ * Class implementing a behavior agent.
  */
-class LocalAgent implements Agent {
+class DefaultAgent implements Agent {
 
   private static final DeadLetter DEAD_LETTER = new DeadLetter();
 
@@ -69,7 +68,7 @@ class LocalAgent implements Agent {
    * @param executorService the backing executor service.
    * @param logger          the logger instance.
    */
-  LocalAgent(@NotNull final Behavior behavior, @NotNull final ExecutorService executorService,
+  DefaultAgent(@NotNull final Behavior behavior, @NotNull final ExecutorService executorService,
       @NotNull final Logger logger) {
     this.behavior = ConstantConditions.notNull("behavior", behavior);
     actorExecutorService =
@@ -86,7 +85,7 @@ class LocalAgent implements Agent {
       dismissRunnable = new Runnable() {
 
         public void run() {
-          behaviorWrapper.onStop(LocalAgent.this);
+          behaviorWrapper.onStop(DefaultAgent.this);
         }
       };
     }
@@ -146,17 +145,17 @@ class LocalAgent implements Agent {
       restartRunnable = new Runnable() {
 
         public void run() {
-          final Thread runner = (LocalAgent.this.runner = Thread.currentThread());
+          final Thread runner = (DefaultAgent.this.runner = Thread.currentThread());
           try {
-            behaviorWrapper.onRestart(LocalAgent.this);
+            behaviorWrapper.onRestart(DefaultAgent.this);
 
           } finally {
-            LocalAgent.this.runner = null;
+            DefaultAgent.this.runner = null;
           }
 
           if (runner.isInterrupted()) {
             logger.wrn("[%s] thread has been interrupted!", actor);
-            behaviorWrapper.onStop(LocalAgent.this);
+            behaviorWrapper.onStop(DefaultAgent.this);
           }
         }
       };
@@ -381,7 +380,7 @@ class LocalAgent implements Agent {
       if (isDismissed()) {
         return;
       }
-      final Behavior behavior = LocalAgent.this.behavior;
+      final Behavior behavior = DefaultAgent.this.behavior;
       try {
         behavior.onStop(agent);
         behavior.onStart(agent);

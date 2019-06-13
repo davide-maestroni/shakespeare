@@ -18,32 +18,27 @@ package dm.shakespeare.plot;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serializable;
 import java.util.concurrent.ExecutorService;
 
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.log.Logger;
-import dm.shakespeare.util.ConstantConditions;
+import dm.shakespeare.plot.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 01/25/2019.
+ * Created by davide-maestroni on 06/12/2019.
  */
-abstract class PlotRole extends Role {
+public class Script implements Serializable {
 
-  private final Setting setting;
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  PlotRole(@NotNull final Setting setting) {
-    this.setting = ConstantConditions.notNull("setting", setting);
+  @NotNull
+  public ExecutorService getExecutorService() throws Exception {
+    return Role.defaultExecutorService();
   }
 
   @NotNull
-  @Override
-  public ExecutorService getExecutorService(@NotNull final String id) {
-    return setting.getExecutor();
-  }
-
-  @NotNull
-  @Override
-  public Logger getLogger(@NotNull final String id) {
-    return setting.getLogger();
+  public Logger getLogger() throws Exception {
+    return Role.defaultLogger(this);
   }
 }

@@ -69,6 +69,18 @@ public interface BehaviorBuilder {
       @NotNull Handler<? super T> handler);
 
   /**
+   * Registers the specified handler so that it will be called upon reception of messages which
+   * are {@link Object#equals(Object)} to the specified one.
+   *
+   * @param message the message object to compare.
+   * @param handler the handler instance.
+   * @param <T>     the message type.
+   * @return this builder.
+   */
+  @NotNull
+  <T> BehaviorBuilder onEqualTo(T message, @NotNull Handler<? super T> handler);
+
+  /**
    * Registers the specified handler so that it will be called upon reception of messages matching
    * the conditions implemented by the specified matcher.
    *
@@ -119,18 +131,6 @@ public interface BehaviorBuilder {
   @NotNull
   <T> BehaviorBuilder onMessage(@NotNull Tester<? super T> tester,
       @NotNull Handler<? super T> handler);
-
-  /**
-   * Registers the specified handler so that it will be called upon reception of messages which
-   * are {@link Object#equals(Object)} to the specified one.
-   *
-   * @param message the message object to compare.
-   * @param handler the handler instance.
-   * @param <T>     the message type.
-   * @return this builder.
-   */
-  @NotNull
-  <T> BehaviorBuilder onMessageEqualTo(T message, @NotNull Handler<? super T> handler);
 
   /**
    * Registers the specified handler so that it will be called if no other registered handler

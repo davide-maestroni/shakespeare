@@ -35,6 +35,11 @@ public class ActorExecutorService extends ThrottledExecutorService {
     super(executorService, 1);
   }
 
+  /**
+   * Executes the given command before any other pending one still in the queue.
+   *
+   * @param command the runnable task.
+   */
   @Override
   public void executeNext(@NotNull final Runnable command) {
     super.executeNext(command);
