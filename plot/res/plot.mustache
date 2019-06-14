@@ -1,0 +1,523 @@
+/*
+ * Copyright 2019 Davide Maestroni
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package dm.shakespeare.plot;
+
+import org.jetbrains.annotations.NotNull;
+
+import java.io.ObjectStreamException;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.WeakHashMap;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+
+import dm.shakespeare.Stage;
+import dm.shakespeare.actor.Actor;
+import dm.shakespeare.actor.Behavior;
+import dm.shakespeare.actor.BehaviorBuilder.Handler;
+import dm.shakespeare.actor.Envelop;
+import dm.shakespeare.actor.Headers;
+import dm.shakespeare.actor.Role;
+import dm.shakespeare.actor.SerializableAbstractBehavior;
+import dm.shakespeare.actor.SerializableRole;
+import dm.shakespeare.concurrent.ExecutorServices;
+import dm.shakespeare.log.Logger;
+import dm.shakespeare.message.Bounce;
+import dm.shakespeare.plot.Event.ActorEvent;
+import dm.shakespeare.plot.Event.EventNarrator;
+import dm.shakespeare.plot.Story.ActorStory;
+import dm.shakespeare.plot.Story.StoryNarrator;
+import dm.shakespeare.plot.config.BuildConfig;
+import dm.shakespeare.plot.function.NullaryFunction;
+{{#arities}}
+import dm.shakespeare.plot.function.{{classPrefix}}Function;
+{{/arities}}
+import dm.shakespeare.plot.memory.ListMemory;
+import dm.shakespeare.plot.memory.Memory;
+import dm.shakespeare.util.ConstantConditions;
+import dm.shakespeare.util.WeakValueHashMap;
+
+/**
+ * Created by davide-maestroni on 01/25/2019.
+ */
+public class Plot {
+
+  private static final DefaultActorFactory DEFAULT_ACTOR_FACTORY = new DefaultActorFactory();
+
+  private final Actor actor;
+  private final Setting setting =
+      new Setting(ExecutorServices.localExecutor(), Role.defaultLogger(this));
+
+  public Plot(@NotNull final Script script) throws Exception {
+    this(script, DEFAULT_ACTOR_FACTORY);
+  }
+
+  public Plot(@NotNull final Script script,
+      @NotNull final UnaryFunction<? super Role, ? extends Actor> actorFactory) throws Exception {
+    actor = actorFactory.call(new PlotFactoryRole(script));
+  }
+
+  @NotNull
+  public <T> EventNarrator<T> event() {
+    return event(new LinkedBlockingQueue<Object>());
+  }
+
+  @NotNull
+  public <T> EventNarrator<T> event(@NotNull final BlockingQueue<Object> queue) {
+    Setting.set(setting);
+    try {
+      return new EventNarrator<T>(queue);
+
+    } finally {
+      Setting.unset();
+    }
+  }
+
+  @NotNull
+  public <T> Event<T> event(
+      @NotNull final NullaryFunction<? extends Event<? extends T>> eventCreator) {
+    final Actor actor = this.actor;
+    Setting.set(setting);
+    try {
+      final ActorEvent<T> event = new ActorEvent<T>(actor);
+      actor.tell(new CreateNullaryEvent(eventCreator), null, event.getActor());
+      return event;
+
+    } finally {
+      Setting.unset();
+    }
+  }
+{{#arities}}
+
+  @NotNull
+  public <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Event<R> event({{#paramTypes}}@NotNull final Event<? extends {{type}}> {{prefix}}Event, {{/paramTypes}}
+      @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super Event<? extends {{type}}>, {{/paramTypes}}? extends Event<? extends R>> eventCreator) {
+    final Actor actor = this.actor;
+    Setting.set(setting);
+    try {
+      final ActorEvent<R> event = new ActorEvent<R>(actor);
+      final Headers headers = new Headers().withThreadId(event.getActor().getId());
+      actor{{#paramTypes}}.tell(PlotSignal.CREATE_PARAM, headers, {{prefix}}Event.getActor()){{/paramTypes}}
+          .tell(new Create{{classPrefix}}Event<{{#paramTypes}}{{type}}{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>(eventCreator), headers, event.getActor());
+      return event;
+
+    } finally {
+      Setting.unset();
+    }
+  }
+{{/arities}}
+
+  @NotNull
+  public <T> StoryNarrator<T> story() {
+    return story(new LinkedBlockingQueue<Object>());
+  }
+
+  @NotNull
+  public <T> StoryNarrator<T> story(@NotNull final BlockingQueue<Object> queue) {
+    return story(queue, new ListMemory());
+  }
+
+  @NotNull
+  public <T> StoryNarrator<T> story(@NotNull final BlockingQueue<Object> queue,
+      @NotNull final Memory memory) {
+    Setting.set(setting);
+    try {
+      return new StoryNarrator<T>(queue, memory);
+
+    } finally {
+      Setting.unset();
+    }
+  }
+
+  @NotNull
+  public <T> StoryNarrator<T> story(@NotNull final Memory memory) {
+    return story(new LinkedBlockingQueue<Object>(), memory);
+  }
+
+  @NotNull
+  public <T> Story<T> story(
+      @NotNull final NullaryFunction<? extends Story<? extends T>> storyCreator) {
+    return story(storyCreator, new ListMemory());
+  }
+
+  @NotNull
+  public <T> Story<T> story(
+      @NotNull final NullaryFunction<? extends Story<? extends T>> storyCreator,
+      @NotNull final Memory memory) {
+    final Actor actor = this.actor;
+    Setting.set(setting);
+    try {
+      final ActorStory<T> story = new ActorStory<T>(actor, memory);
+      actor.tell(new CreateNullaryStory(storyCreator), null, story.getActor());
+      return story;
+
+    } finally {
+      Setting.unset();
+    }
+  }
+{{#arities}}
+
+  @NotNull
+  public <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Story<R> story({{#paramTypes}}@NotNull final Story<? extends {{type}}> {{prefix}}Story, {{/paramTypes}}
+      @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super Story<? extends {{type}}>, {{/paramTypes}}? extends Story<? extends R>> storyCreator) {
+      return story({{#paramTypes}}{{prefix}}Story, {{/paramTypes}}storyCreator, new ListMemory());
+  }
+
+  @NotNull
+  public <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Story<R> story({{#paramTypes}}@NotNull final Story<? extends {{type}}> {{prefix}}Story, {{/paramTypes}}
+      @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super Story<? extends {{type}}>, {{/paramTypes}}? extends Story<? extends R>> storyCreator,
+      @NotNull final Memory memory) {
+    final Actor actor = this.actor;
+    Setting.set(setting);
+    try {
+      final ActorStory<R> story = new ActorStory<R>(actor, memory);
+      final Headers headers = new Headers().withThreadId(story.getActor().getId());
+      actor{{#paramTypes}}.tell(PlotSignal.CREATE_PARAM, headers, {{prefix}}Story.getActor()){{/paramTypes}}
+          .tell(new Create{{classPrefix}}Story<{{#paramTypes}}{{type}}{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>(storyCreator), headers, story.getActor());
+      return story;
+
+    } finally {
+      Setting.unset();
+    }
+  }
+{{/arities}}
+
+  private static class CreateNullaryEvent implements NullaryFunction<Event<?>>, Serializable {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+    private final NullaryFunction<? extends Event<?>> creator;
+
+    private CreateNullaryEvent() {
+      creator = null;
+    }
+
+    private CreateNullaryEvent(@NotNull final NullaryFunction<? extends Event<?>> creator) {
+      this.creator = ConstantConditions.notNull("creator", creator);
+    }
+
+    public Event<?> call() throws Exception {
+      return creator.call();
+    }
+  }
+
+  private static class CreateNullaryStory implements NullaryFunction<Story<?>>, Serializable {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+    private final NullaryFunction<? extends Story<?>> creator;
+
+    private CreateNullaryStory() {
+      creator = null;
+    }
+
+    private CreateNullaryStory(@NotNull final NullaryFunction<? extends Story<?>> creator) {
+      this.creator = ConstantConditions.notNull("creator", creator);
+    }
+
+    public Story<?> call() throws Exception {
+      return creator.call();
+    }
+  }
+{{#arities}}
+
+  private static class Create{{classPrefix}}Event<{{#paramTypes}}{{type}}{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>
+      implements {{classPrefix}}Function<{{#paramTypes}}Event<? extends {{type}}>, {{/paramTypes}}Event<?>>, Serializable {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+    private final {{classPrefix}}Function<{{#paramTypes}}? super Event<? extends {{type}}>, {{/paramTypes}}? extends Event<?>> creator;
+
+    private Create{{classPrefix}}Event() {
+      creator = null;
+    }
+
+    private Create{{classPrefix}}Event(
+        @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super Event<? extends {{type}}>, {{/paramTypes}}? extends Event<?>> creator) {
+      this.creator = ConstantConditions.notNull("creator", creator);
+    }
+
+    public Event<?> call({{#paramTypes}}@NotNull final Event<? extends {{type}}> {{prefix}}Event{{#hasNext}}, {{/hasNext}}{{/paramTypes}}) throws Exception {
+      return creator.call({{#paramTypes}}{{prefix}}Event{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
+    }
+  }
+
+  private static class Create{{classPrefix}}Story<{{#paramTypes}}{{type}}{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>
+      implements {{classPrefix}}Function<{{#paramTypes}}Story<? extends {{type}}>, {{/paramTypes}}Story<?>>, Serializable {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+    private final {{classPrefix}}Function<{{#paramTypes}}? super Story<? extends {{type}}>, {{/paramTypes}}? extends Story<?>> creator;
+
+    private Create{{classPrefix}}Story() {
+      creator = null;
+    }
+
+    private Create{{classPrefix}}Story(
+        @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super Story<? extends {{type}}>, {{/paramTypes}}? extends Story<?>> creator) {
+      this.creator = ConstantConditions.notNull("creator", creator);
+    }
+
+    public Story<?> call({{#paramTypes}}@NotNull final Story<? extends {{type}}> {{prefix}}Story{{#hasNext}}, {{/hasNext}}{{/paramTypes}}) throws Exception {
+      return creator.call({{#paramTypes}}{{prefix}}Story{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
+    }
+  }
+{{/arities}}
+
+  private static class DefaultActorFactory implements UnaryFunction<Role, Actor>, Serializable {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+    public Actor call(final Role role) {
+      return Stage.newActor(role);
+    }
+
+    Object readResolve() throws ObjectStreamException {
+      return DEFAULT_ACTOR_FACTORY;
+    }
+  }
+
+  private static class EventWrapper<T> extends Event<T> {
+
+    private final Actor actor;
+
+    private EventWrapper(@NotNull final Actor actor) {
+      this.actor = actor;
+    }
+
+    @NotNull
+    Actor getActor() {
+      return actor;
+    }
+  }
+
+  private static class PlotFactoryRole extends SerializableRole {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+    private final Script script;
+
+    private transient Setting setting;
+
+    private PlotFactoryRole() {
+      this(new Script());
+    }
+
+    private PlotFactoryRole(@NotNull final Script script) {
+      this.script = ConstantConditions.notNull("script", script);
+    }
+
+    @NotNull
+    @Override
+    public ExecutorService getExecutorService(@NotNull final String id) throws Exception {
+      return getSetting().getExecutor();
+    }
+
+    @NotNull
+    @Override
+    public Logger getLogger(@NotNull final String id) throws Exception {
+      return getSetting().getLogger();
+    }
+
+    @NotNull
+    protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
+      final Setting setting = getSetting();
+      return new SerializableAbstractBehavior() {
+
+        private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+        private final WeakValueHashMap<Actor, Actor> actors = new WeakValueHashMap<Actor, Actor>();
+        private final HashMap<Class<?>, Handler<Object>> handlers =
+            new HashMap<Class<?>, Handler<Object>>() { {
+              put(CreateNullaryEvent.class, new Handler<Object>() {
+
+                public void handle(final Object message, @NotNull final Envelop envelop,
+                    @NotNull final Agent agent) throws Exception {
+                  Actor actor;
+                  Setting.set(setting);
+                  try {
+                    actor = ((CreateNullaryEvent) message).call().getActor();
+
+                  } catch (final Exception e) {
+                    actor = Event.ofIncident(e).getActor();
+
+                  } finally {
+                    Setting.unset();
+                  }
+                  final Actor sender = envelop.getSender();
+                  senders.put(sender, actor);
+                  actors.put(actor, sender);
+                }
+              });
+              put(CreateNullaryStory.class, new Handler<Object>() {
+
+                public void handle(final Object message, @NotNull final Envelop envelop,
+                    @NotNull final Agent agent) throws Exception {
+                  Actor actor;
+                  Setting.set(setting);
+                  try {
+                    actor = ((CreateNullaryStory) message).call().getActor();
+
+                  } catch (final Exception e) {
+                    actor = Story.ofSingleIncident(e).getActor();
+
+                  } finally {
+                    Setting.unset();
+                  }
+                  final Actor sender = envelop.getSender();
+                  senders.put(sender, actor);
+                  actors.put(actor, sender);
+                }
+              });
+{{#arities}}
+              put(Create{{classPrefix}}Event.class, new Handler<Object>() {
+
+                @SuppressWarnings("unchecked")
+                public void handle(final Object message, @NotNull final Envelop envelop,
+                    @NotNull final Agent agent) throws Exception {
+                  final String threadId = envelop.getHeaders().getThreadId();
+                  final ArrayList<Actor> paramList = params.remove(threadId);
+                  Actor actor;
+                  Setting.set(setting);
+                  try {
+                    if ((paramList == null) || (paramList.size() != {{paramNum}})) {
+                      actor = Event.ofIncident(new IllegalStateException()).getActor();
+
+                    } else {
+{{#paramTypes}}                      final EventWrapper<Object> {{prefix}}Event = new EventWrapper<Object>(paramList.get({{index}}));
+{{/paramTypes}}
+                      actor = ((Create{{classPrefix}}Event<{{#paramTypes}}Object{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>) message).call({{#paramTypes}}{{prefix}}Event{{#hasNext}}, {{/hasNext}}{{/paramTypes}}).getActor();
+                    }
+
+                  } catch (final Exception e) {
+                    actor = Event.ofIncident(e).getActor();
+
+                  } finally {
+                    Setting.unset();
+                  }
+                  final Actor sender = envelop.getSender();
+                  senders.put(sender, actor);
+                  actors.put(actor, sender);
+                }
+              });
+              put(Create{{classPrefix}}Story.class, new Handler<Object>() {
+
+                @SuppressWarnings("unchecked")
+                public void handle(final Object message, @NotNull final Envelop envelop,
+                    @NotNull final Agent agent) throws Exception {
+                  final String threadId = envelop.getHeaders().getThreadId();
+                  final ArrayList<Actor> paramList = params.remove(threadId);
+                  Actor actor;
+                  Setting.set(setting);
+                  try {
+                    if ((paramList == null) || (paramList.size() != {{paramNum}})) {
+                      actor = Story.ofSingleIncident(new IllegalStateException()).getActor();
+
+                    } else {
+{{#paramTypes}}                      final StoryWrapper<Object> {{prefix}}Story = new StoryWrapper<Object>(paramList.get({{index}}));
+{{/paramTypes}}
+                      actor = ((Create{{classPrefix}}Story<{{#paramTypes}}Object{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>) message).call({{#paramTypes}}{{prefix}}Story{{#hasNext}}, {{/hasNext}}{{/paramTypes}}).getActor();
+                    }
+
+                  } catch (final Exception e) {
+                    actor = Story.ofSingleIncident(e).getActor();
+
+                  } finally {
+                    Setting.unset();
+                  }
+                  final Actor sender = envelop.getSender();
+                  senders.put(sender, actor);
+                  actors.put(actor, sender);
+                }
+              });
+{{/arities}}
+            } };
+        private final HashMap<String, ArrayList<Actor>> params =
+            new HashMap<String, ArrayList<Actor>>();
+        private final WeakHashMap<Actor, Actor> senders = new WeakHashMap<Actor, Actor>();
+
+        @SuppressWarnings("unchecked")
+        public void onMessage(final Object message, @NotNull final Envelop envelop,
+            @NotNull final Agent agent) throws Exception {
+          if (message != null) {
+            final Handler<Object> handler = handlers.get(message.getClass());
+            if (handler != null) {
+              handler.handle(message, envelop, agent);
+              envelop.preventReceipt();
+              return;
+            }
+          }
+
+          if (message == PlotSignal.CREATE_PARAM) {
+            final String threadId = envelop.getHeaders().getThreadId();
+            final HashMap<String, ArrayList<Actor>> params = this.params;
+            ArrayList<Actor> actors = params.get(threadId);
+            if (actors == null) {
+              actors = new ArrayList<Actor>();
+              params.put(threadId, actors);
+            }
+            actors.add(envelop.getSender());
+
+          } else {
+            final Actor sender = envelop.getSender();
+            Actor actor = senders.get(sender);
+            if (actor == null) {
+              actor = actors.get(sender);
+            }
+            if (actor != null) {
+              actor.tell(message, envelop.getHeaders().asSentAt(envelop.getSentAt()),
+                  agent.getSelf());
+
+            } else {
+              sender.tell(new Bounce(), envelop.getHeaders().threadOnly(), agent.getSelf());
+            }
+            envelop.preventReceipt();
+          }
+        }
+      };
+    }
+
+    @NotNull
+    private Setting getSetting() throws Exception {
+      if (setting == null) {
+        final Script script = this.script;
+        setting = new Setting(script.getExecutorService(), script.getLogger());
+      }
+      return setting;
+    }
+  }
+
+  private enum PlotSignal {
+    CREATE_PARAM
+  }
+
+  private static class StoryWrapper<T> extends Story<T> {
+
+    private final Actor actor;
+
+    private StoryWrapper(@NotNull final Actor actor) {
+      this.actor = actor;
+    }
+
+    @NotNull
+    Actor getActor() {
+      return actor;
+    }
+  }
+}

@@ -122,6 +122,8 @@ task generateClasses(type: Task) {
       writer = factory.compile(file('res/function.mustache').path).execute(new StringWriter(), [scope])
       file("${functionPath}/${scope.classPrefix}Function.java").newWriter().withWriter({ w -> w << writer })
     })
+    writer = factory.compile(file('res/plot.mustache').path).execute(new StringWriter(), [arities: scopes])
+    file("${plotPath}/Plot.java").newWriter().withWriter({ w -> w << writer })
   }
   project.sourceSets.main.java.srcDir(mainPath)
 }

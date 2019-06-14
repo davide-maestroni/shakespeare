@@ -51,6 +51,7 @@ import dm.shakespeare.util.ConstantConditions;
 public class Stage {
 
   // TODO: 2019-06-13 catch Exception vs Throwable
+  // TODO: 2019-06-14 static case
 
   /**
    * Stand-in actor instance.<br>

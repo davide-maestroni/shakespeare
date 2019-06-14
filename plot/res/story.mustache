@@ -34,7 +34,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -68,10 +67,6 @@ import dm.shakespeare.util.Iterables;
  * Created by davide-maestroni on 01/22/2019.
  */
 public abstract class Story<T> extends Event<Iterable<T>> {
-
-  static final Object BREAK = new Object();
-  static final Object END = new Object();
-  static final Object NEXT = new Object();
 
   private static final NullaryFunction<? extends ByteBuffer> DEFAULT_BUFFER_CREATOR =
       new NullaryFunction<ByteBuffer>() {
@@ -148,27 +143,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       @NotNull final Memory memory) {
     return new EffectsStory<ByteBuffer>(
         new InputStreamIterable(inputStream, bufferCreator, memory));
-  }
-
-  @NotNull
-  public static <T> StoryNarrator<T> ofNarrations() {
-    return ofNarrations(new LinkedBlockingQueue<Object>());
-  }
-
-  @NotNull
-  public static <T> StoryNarrator<T> ofNarrations(@NotNull final BlockingQueue<Object> queue) {
-    return ofNarrations(queue, new ListMemory());
-  }
-
-  @NotNull
-  public static <T> StoryNarrator<T> ofNarrations(@NotNull final BlockingQueue<Object> queue,
-      @NotNull final Memory memory) {
-    return new StoryNarrator<T>(queue, memory);
-  }
-
-  @NotNull
-  public static <T> StoryNarrator<T> ofNarrations(@NotNull final Memory memory) {
-    return ofNarrations(new LinkedBlockingQueue<Object>(), memory);
   }
 
   @NotNull
@@ -325,7 +299,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
     for (final SenderIterator sender : nextSenders.values()) {
       if (sender.isWaitNext() && !sender.tellNext(self)) {
-        sender.getSender().tell(END, sender.getHeaders(), self);
+        sender.getSender().tell(StorySignal.END, sender.getHeaders(), self);
       }
     }
     agent.setBehavior(new DoneBehavior(effects, memory, nextSenders));
@@ -503,7 +477,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public Spectator playEach(@NotNull final StoryObserver<? super T> storyObserver) {
     final Actor actor = Stage.newActor(new StoryObserverRole<T>(getActor(), storyObserver));
     final String actorId = actor.getId();
-    getActor().tell(NEXT, new Headers().withReceiptId(actorId).withThreadId(actorId), actor);
+    getActor().tell(StorySignal.NEXT, new Headers().withReceiptId(actorId).withThreadId(actorId),
+        actor);
     return new Spectator(actor);
   }
 
@@ -866,7 +841,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private volatile Throwable exception;
 
-    private StoryNarrator(@NotNull final BlockingQueue<Object> queue,
+    StoryNarrator(@NotNull final BlockingQueue<Object> queue,
         @NotNull final Memory memory) {
       this.queue = ConstantConditions.notNull("queue", queue);
       this.memory = ConstantConditions.notNull("memory", memory);
@@ -886,7 +861,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           exception = new NarrationStoppedException();
         }
         if (queue.isEmpty()) {
-          actor.tell(AVAILABLE, null, Stage.STAND_IN);
+          actor.tell(NarratorSignal.AVAILABLE, null, Stage.STAND_IN);
         }
       }
     }
@@ -898,7 +873,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     public boolean tell(final T effect, final long timeout, @NotNull final TimeUnit unit) throws
         InterruptedException {
-      return enqueue((effect != null) ? effect : NULL, timeout, unit);
+      return enqueue((effect != null) ? effect : NarratorSignal.NULL, timeout, unit);
     }
 
     private void cancel(@NotNull final Throwable cause) {
@@ -927,7 +902,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       final boolean wasEmpty = queue.isEmpty();
       if (queue.offer(resolution, timeout, unit)) {
         if (wasEmpty) {
-          actor.tell(AVAILABLE, null, Stage.STAND_IN);
+          actor.tell(NarratorSignal.AVAILABLE, null, Stage.STAND_IN);
         }
         return true;
       }
@@ -940,7 +915,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       final Memory memory = this.memory;
       Object effect = queue.poll();
       if (effect != null) {
-        if (effect == NULL) {
+        if (effect == NarratorSignal.NULL) {
           effect = null;
         }
         memory.put(effect);
@@ -955,7 +930,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       if (!getSenders.isEmpty()) {
         while ((effect = queue.poll()) != null) {
-          if (effect == NULL) {
+          if (effect == NarratorSignal.NULL) {
             effect = null;
           }
           memory.put(effect);
@@ -968,14 +943,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
           if (next(agent)) {
             agent.setBehavior(new InputBehavior());
           }
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders().threadOnly();
           final SenderIterator sender = new SenderIterator(envelop.getSender(), headers);
           sender.setIterator(memory.iterator());
@@ -984,7 +959,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             agent.setBehavior(new InputBehavior());
           }
 
-        } else if (message == CANCEL) {
+        } else if (message == EventSignal.CANCEL) {
           final Conflict conflict = Conflict.ofCancel();
           cancel(conflict.getCause());
           agent.setBehavior(
@@ -998,7 +973,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final HashMap<String, Sender> getSenders = StoryNarrator.this.getSenders;
           final boolean wasEmpty = getSenders.isEmpty();
           final Headers headers = envelop.getHeaders().threadOnly();
@@ -1007,7 +982,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             next(agent);
           }
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = StoryNarrator.this.nextSenders;
@@ -1024,13 +999,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             next(agent);
           }
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == AVAILABLE) {
+        } else if (message == NarratorSignal.AVAILABLE) {
           next(agent);
 
-        } else if (message == CANCEL) {
+        } else if (message == EventSignal.CANCEL) {
           final Conflict conflict = Conflict.ofCancel();
           cancel(conflict.getCause());
           agent.setBehavior(
@@ -1095,6 +1070,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     public void onEnd() {
     }
+  }
+
+  enum StorySignal {
+    NEXT, BREAK, END
   }
 
   private abstract static class AbstractStory<T> extends Story<T> {
@@ -1187,7 +1166,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private void cancelInputActors(@NotNull final Agent agent) {
       final Actor self = agent.getSelf();
       for (final Actor actor : getInputActors()) {
-        actor.tell(CANCEL, null, self);
+        actor.tell(EventSignal.CANCEL, null, self);
       }
     }
 
@@ -1205,7 +1184,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       final Actor self = agent.getSelf();
       if (conflictActor != null) {
-        (outputActor = conflictActor).tell(GET, outputHeaders, self);
+        (outputActor = conflictActor).tell(EventSignal.GET, outputHeaders, self);
         agent.setBehavior(new OutputBehavior());
 
       } else {
@@ -1240,10 +1219,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
 
     private void fail(@NotNull Conflict conflict, @NotNull final Agent agent) {
-      tellInputActors(BREAK, agent);
+      tellInputActors(StorySignal.BREAK, agent);
       final Actor outputActor = this.outputActor;
       if (outputActor != null) {
-        outputActor.tell(BREAK, outputHeaders, agent.getSelf());
+        outputActor.tell(StorySignal.BREAK, outputHeaders, agent.getSelf());
       }
 
       try {
@@ -1275,12 +1254,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else if (Event.isTrue(event)) {
           setThreadIds(loopCount);
-          tellInputActors(NEXT, agent);
+          tellInputActors(StorySignal.NEXT, agent);
           agent.setBehavior(new InputBehavior());
 
         } else {
           setThreadIds(loopCount);
-          (continueActor = event.getActor()).tell(GET, continueHeaders, agent.getSelf());
+          (continueActor = event.getActor()).tell(EventSignal.GET, continueHeaders,
+              agent.getSelf());
           agent.setBehavior(new ContinueBehavior());
         }
 
@@ -1323,7 +1303,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Conflict conflict = getConflict;
           final Headers headers = envelop.getHeaders().threadOnly();
           if (conflict == null) {
@@ -1333,7 +1313,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             envelop.getSender().tell(conflict, headers, agent.getSelf());
           }
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = AbstractStory.this.nextSenders;
@@ -1348,13 +1328,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           sender.tellNext(agent.getSelf());
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else {
           final Headers outputHeaders = AbstractStory.this.outputHeaders;
           if (isSame(outputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
-            outputActor.tell(BREAK, outputHeaders, agent.getSelf());
+            outputActor.tell(StorySignal.BREAK, outputHeaders, agent.getSelf());
             fail(Conflict.ofCancel(), agent);
 
           } else {
@@ -1365,7 +1345,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 try {
                   final Actor conflictActor = getConflictActor(conflict, agent);
                   if (conflictActor != null) {
-                    conflictActor.tell(CANCEL, null, agent.getSelf());
+                    conflictActor.tell(EventSignal.CANCEL, null, agent.getSelf());
                   }
                   fail(conflict, agent);
 
@@ -1386,7 +1366,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Conflict conflict = getConflict;
           final Headers headers = envelop.getHeaders().threadOnly();
           if (conflict == null) {
@@ -1396,7 +1376,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             envelop.getSender().tell(conflict, headers, agent.getSelf());
           }
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = AbstractStory.this.nextSenders;
@@ -1411,11 +1391,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           sender.tellNext(agent.getSelf());
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
-          continueActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          continueActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           cancelInputActors(agent);
           agent.setBehavior(new CancelBehavior());
 
@@ -1430,7 +1410,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
             } else {
               if (Boolean.TRUE.equals(message)) {
-                tellInputActors(NEXT, agent);
+                tellInputActors(StorySignal.NEXT, agent);
                 agent.setBehavior(new InputBehavior());
 
               } else {
@@ -1447,19 +1427,19 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
           next(continueCount, agent);
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders().threadOnly();
           final SenderIterator sender = new SenderIterator(envelop.getSender(), headers);
           sender.setIterator(memory.iterator());
           nextSenders.put(headers.getThreadId(), sender);
           next(continueCount, agent);
 
-        } else if (message == CANCEL) {
+        } else if (message == EventSignal.CANCEL) {
           cancelInputActors(agent);
           fail(Conflict.ofCancel(), agent);
         }
@@ -1471,7 +1451,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Conflict conflict = getConflict;
           final Headers headers = envelop.getHeaders().threadOnly();
           if (conflict == null) {
@@ -1481,7 +1461,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             envelop.getSender().tell(conflict, headers, agent.getSelf());
           }
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = AbstractStory.this.nextSenders;
@@ -1496,10 +1476,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           sender.tellNext(agent.getSelf());
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
+        } else if (message == EventSignal.CANCEL) {
           cancelInputActors(agent);
           agent.setBehavior(new CancelBehavior());
 
@@ -1507,8 +1487,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           final String inputThread = AbstractStory.this.inputThread;
           final String threadId = envelop.getHeaders().getThreadId();
           if ((threadId != null) && threadId.startsWith(inputThread)) {
-            if (message == END) {
-              tellInputActors(BREAK, agent);
+            if (message == StorySignal.END) {
+              tellInputActors(StorySignal.BREAK, agent);
               done(agent);
 
             } else if (message instanceof Conflict) {
@@ -1550,7 +1530,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                     try {
                       Actor outputActor = getOutputActor(inputs, agent);
                       if (outputActor != null) {
-                        (AbstractStory.this.outputActor = outputActor).tell(NEXT, outputHeaders, agent.getSelf());
+                        (AbstractStory.this.outputActor = outputActor).tell(StorySignal.NEXT,
+                            outputHeaders, agent.getSelf());
                         agent.setBehavior(new OutputBehavior());
 
                       } else {
@@ -1582,7 +1563,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Conflict conflict = getConflict;
           final Headers headers = envelop.getHeaders().threadOnly();
           if (conflict == null) {
@@ -1593,7 +1574,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             envelop.getSender().tell(conflict, headers, agent.getSelf());
           }
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = AbstractStory.this.nextSenders;
@@ -1611,10 +1592,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             next(++continueCount, agent);
           }
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
+        } else if (message == EventSignal.CANCEL) {
           cancelInputActors(agent);
           fail(Conflict.ofCancel(), agent);
         }
@@ -1626,19 +1607,19 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Conflict conflict = getConflict;
           final Headers headers = envelop.getHeaders().threadOnly();
           if (conflict == null) {
             getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
-            outputActor.tell(NEXT, outputHeaders, agent.getSelf());
+            outputActor.tell(StorySignal.NEXT, outputHeaders, agent.getSelf());
             agent.setBehavior(new OutputBehavior());
 
           } else {
             envelop.getSender().tell(conflict, headers, agent.getSelf());
           }
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = AbstractStory.this.nextSenders;
@@ -1653,16 +1634,17 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           final Actor self = agent.getSelf();
           if (!sender.tellNext(self)) {
-            outputActor.tell(NEXT, outputHeaders, self);
+            outputActor.tell(StorySignal.NEXT, outputHeaders, self);
             agent.setBehavior(new OutputBehavior());
           }
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
+        } else if (message == EventSignal.CANCEL) {
           final Actor self = agent.getSelf();
-          outputActor.tell(BREAK, outputHeaders, self).tell(CANCEL, null, self);
+          outputActor.tell(StorySignal.BREAK, outputHeaders, self)
+              .tell(EventSignal.CANCEL, null, self);
           cancelInputActors(agent);
           fail(Conflict.ofCancel(), agent);
         }
@@ -1674,7 +1656,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Conflict conflict = getConflict;
           final Headers headers = envelop.getHeaders().threadOnly();
           if (conflict == null) {
@@ -1684,7 +1666,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             envelop.getSender().tell(conflict, headers, agent.getSelf());
           }
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = AbstractStory.this.nextSenders;
@@ -1699,19 +1681,19 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           sender.tellNext(agent.getSelf());
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
-          outputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          outputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           cancelInputActors(agent);
           agent.setBehavior(new CancelBehavior());
 
         } else {
           final Headers outputHeaders = AbstractStory.this.outputHeaders;
           if (isSame(outputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
-            if (message == END) {
-              outputActor.tell(BREAK, outputHeaders, agent.getSelf());
+            if (message == StorySignal.END) {
+              outputActor.tell(StorySignal.BREAK, outputHeaders, agent.getSelf());
               next(++continueCount, agent);
 
             } else if (message instanceof Bounce) {
@@ -1726,7 +1708,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               }
 
               if (!getSenders.isEmpty()) {
-                outputActor.tell(NEXT, outputHeaders, self);
+                outputActor.tell(StorySignal.NEXT, outputHeaders, self);
 
               } else {
                 agent.setBehavior(new NextOutputBehavior());
@@ -1808,7 +1790,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private void fail(@NotNull final Conflict conflict, @NotNull final Agent agent) {
       final Actor outputActor = this.outputActor;
       if (outputActor != null) {
-        outputActor.tell(BREAK, outputHeaders, agent.getSelf());
+        outputActor.tell(StorySignal.BREAK, outputHeaders, agent.getSelf());
       }
       fail(conflict, memory, getSenders, nextSenders, agent);
     }
@@ -1847,7 +1829,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         if (outputActor != null) {
           final String outputThreadId = outputThread + "#" + outputCount++;
           final Headers headers = (outputHeaders = this.headers.withThreadId(outputThreadId));
-          outputActor.tell(NEXT, headers, agent.getSelf());
+          outputActor.tell(StorySignal.NEXT, headers, agent.getSelf());
           agent.setBehavior(behavior);
 
         } else {
@@ -1866,7 +1848,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Conflict conflict = getConflict;
           final Headers headers = envelop.getHeaders().threadOnly();
           if (conflict == null) {
@@ -1876,7 +1858,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             envelop.getSender().tell(conflict, headers, agent.getSelf());
           }
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = AllStory.this.nextSenders;
@@ -1891,7 +1873,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           sender.tellNext(agent.getSelf());
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
@@ -1900,7 +1882,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else {
           final Headers outputHeaders = AllStory.this.outputHeaders;
           if (isSame(outputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
-            outputActor.tell(BREAK, AllStory.this.outputHeaders, agent.getSelf());
+            outputActor.tell(StorySignal.BREAK, AllStory.this.outputHeaders, agent.getSelf());
             fail(Conflict.ofCancel(), agent);
           }
         }
@@ -1912,22 +1894,22 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
-          inputActor.tell(GET, inputHeaders, agent.getSelf());
+          inputActor.tell(EventSignal.GET, inputHeaders, agent.getSelf());
           agent.setBehavior(new InputBehavior());
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders().threadOnly();
           final SenderIterator sender = new SenderIterator(envelop.getSender(), headers);
           sender.setIterator(memory.iterator());
           nextSenders.put(headers.getThreadId(), sender);
-          inputActor.tell(GET, inputHeaders, agent.getSelf());
+          inputActor.tell(EventSignal.GET, inputHeaders, agent.getSelf());
           agent.setBehavior(new InputBehavior());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -1938,7 +1920,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Conflict conflict = getConflict;
           final Headers headers = envelop.getHeaders().threadOnly();
           if (conflict == null) {
@@ -1948,7 +1930,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             envelop.getSender().tell(conflict, headers, agent.getSelf());
           }
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = AllStory.this.nextSenders;
@@ -1962,11 +1944,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             nextSenders.put(threadId, sender);
           }
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           agent.setBehavior(new CancelBehavior());
 
         } else if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
@@ -1989,7 +1971,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Conflict conflict = getConflict;
           final Headers headers = envelop.getHeaders().threadOnly();
           if (conflict == null) {
@@ -2000,7 +1982,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             envelop.getSender().tell(conflict, headers, agent.getSelf());
           }
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = AllStory.this.nextSenders;
@@ -2018,11 +2000,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             nextOutput(new OutputBehavior(), agent);
           }
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -2033,19 +2015,19 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Conflict conflict = getConflict;
           final Headers headers = envelop.getHeaders().threadOnly();
           if (conflict == null) {
             getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
-            outputActor.tell(NEXT, outputHeaders, agent.getSelf());
+            outputActor.tell(StorySignal.NEXT, outputHeaders, agent.getSelf());
             agent.setBehavior(new OutputBehavior());
 
           } else {
             envelop.getSender().tell(conflict, headers, agent.getSelf());
           }
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = AllStory.this.nextSenders;
@@ -2060,17 +2042,18 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           final Actor self = agent.getSelf();
           if (!sender.tellNext(self)) {
-            outputActor.tell(NEXT, outputHeaders, self);
+            outputActor.tell(StorySignal.NEXT, outputHeaders, self);
             agent.setBehavior(new OutputBehavior());
           }
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
+        } else if (message == EventSignal.CANCEL) {
           final Actor self = agent.getSelf();
-          outputActor.tell(BREAK, outputHeaders, self).tell(CANCEL, null, self);
-          inputActor.tell(CANCEL, null, self);
+          outputActor.tell(StorySignal.BREAK, outputHeaders, self)
+              .tell(EventSignal.CANCEL, null, self);
+          inputActor.tell(EventSignal.CANCEL, null, self);
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -2081,7 +2064,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Conflict conflict = getConflict;
           final Headers headers = envelop.getHeaders().threadOnly();
           if (conflict == null) {
@@ -2091,7 +2074,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             envelop.getSender().tell(conflict, headers, agent.getSelf());
           }
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = AllStory.this.nextSenders;
@@ -2106,21 +2089,21 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           sender.tellNext(agent.getSelf());
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
+        } else if (message == EventSignal.CANCEL) {
           final Actor self = agent.getSelf();
-          outputActor.tell(CANCEL, null, self);
-          inputActor.tell(CANCEL, null, self);
+          outputActor.tell(EventSignal.CANCEL, null, self);
+          inputActor.tell(EventSignal.CANCEL, null, self);
           agent.setBehavior(new CancelBehavior());
 
         } else {
           final Headers outputHeaders = AllStory.this.outputHeaders;
           if (isSame(outputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
-            if (message == END) {
+            if (message == StorySignal.END) {
               final Actor self = agent.getSelf();
-              outputActor.tell(BREAK, outputHeaders, self);
+              outputActor.tell(StorySignal.BREAK, outputHeaders, self);
               nextOutput(this, agent);
 
             } else if (message instanceof Bounce) {
@@ -2140,7 +2123,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               }
 
               if (!getSenders.isEmpty()) {
-                outputActor.tell(NEXT, outputHeaders, self);
+                outputActor.tell(StorySignal.NEXT, outputHeaders, self);
 
               } else {
                 agent.setBehavior(new NextOutputBehavior());
@@ -2256,7 +2239,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Conflict conflict = getConflict;
           final Headers headers = envelop.getHeaders().threadOnly();
           if (conflict == null) {
@@ -2266,7 +2249,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             envelop.getSender().tell(conflict, headers, agent.getSelf());
           }
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = AllTransformStory.this.nextSenders;
@@ -2281,7 +2264,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           sender.tellNext(agent.getSelf());
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
@@ -2295,22 +2278,22 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
-          inputActor.tell(GET, inputHeaders, agent.getSelf());
+          inputActor.tell(EventSignal.GET, inputHeaders, agent.getSelf());
           agent.setBehavior(new InputBehavior());
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders().threadOnly();
           final SenderIterator sender = new SenderIterator(envelop.getSender(), headers);
           sender.setIterator(memory.iterator());
           nextSenders.put(headers.getThreadId(), sender);
-          inputActor.tell(GET, inputHeaders, agent.getSelf());
+          inputActor.tell(EventSignal.GET, inputHeaders, agent.getSelf());
           agent.setBehavior(new InputBehavior());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -2321,7 +2304,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Conflict conflict = getConflict;
           final Headers headers = envelop.getHeaders().threadOnly();
           if (conflict == null) {
@@ -2331,7 +2314,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             envelop.getSender().tell(conflict, headers, agent.getSelf());
           }
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = AllTransformStory.this.nextSenders;
@@ -2345,11 +2328,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             nextSenders.put(threadId, sender);
           }
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           agent.setBehavior(new CancelBehavior());
 
         } else if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
@@ -2372,7 +2355,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Conflict conflict = getConflict;
           final Headers headers = envelop.getHeaders().threadOnly();
           if (conflict == null) {
@@ -2383,7 +2366,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             envelop.getSender().tell(conflict, headers, agent.getSelf());
           }
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = AllTransformStory.this.nextSenders;
@@ -2401,11 +2384,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             nextOutput(this, agent);
           }
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -2489,11 +2472,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = BlendStory.this.nextSenders;
@@ -2508,13 +2491,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           sender.tellNext(agent.getSelf());
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else {
           final Headers inputHeaders = BlendStory.this.inputHeaders;
           if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
-            inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+            inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
             inputsEnded = true;
             if (outputActors.isEmpty()) {
               fail(Conflict.ofCancel(), agent);
@@ -2525,7 +2508,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             if ((threadId != null) && threadId.startsWith(outputThread)) {
               final HashMap<Actor, Headers> outputActors = BlendStory.this.outputActors;
               final Actor sender = envelop.getSender();
-              sender.tell(BREAK, outputActors.get(sender), agent.getSelf());
+              sender.tell(StorySignal.BREAK, outputActors.get(sender), agent.getSelf());
               outputActors.remove(sender);
               if (outputActors.isEmpty() && inputsEnded) {
                 fail(Conflict.ofCancel(), agent);
@@ -2541,22 +2524,22 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
-          inputActor.tell(NEXT, inputHeaders, agent.getSelf());
+          inputActor.tell(StorySignal.NEXT, inputHeaders, agent.getSelf());
           agent.setBehavior(new InputBehavior());
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders().threadOnly();
           final SenderIterator sender = new SenderIterator(envelop.getSender(), headers);
           sender.setIterator(memory.iterator());
           nextSenders.put(headers.getThreadId(), sender);
-          inputActor.tell(NEXT, inputHeaders, agent.getSelf());
+          inputActor.tell(StorySignal.NEXT, inputHeaders, agent.getSelf());
           agent.setBehavior(new InputBehavior());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -2567,11 +2550,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = BlendStory.this.nextSenders;
@@ -2585,22 +2568,22 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             nextSenders.put(threadId, sender);
           }
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           agent.setBehavior(new CancelBehavior());
 
         } else {
           final Headers inputHeaders = BlendStory.this.inputHeaders;
           if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
-            if (message == END) {
-              inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+            if (message == StorySignal.END) {
+              inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
               done(agent);
 
             } else if (message instanceof Conflict) {
-              inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+              inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
               fail((Conflict) message, agent);
 
             } else if (message instanceof Bounce) {
@@ -2614,18 +2597,18 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                   final Headers headers = BlendStory.this.headers.withThreadId(outputThreadId);
                   final HashMap<Actor, Headers> outputActors = BlendStory.this.outputActors;
                   outputActors.put(outputActor, headers);
-                  outputActor.tell(NEXT, headers, agent.getSelf());
+                  outputActor.tell(StorySignal.NEXT, headers, agent.getSelf());
                   if ((inputsPending = outputActors.size() < maxConcurrency)) {
-                    inputActor.tell(NEXT, inputHeaders, agent.getSelf());
+                    inputActor.tell(StorySignal.NEXT, inputHeaders, agent.getSelf());
                   }
                   agent.setBehavior(new OutputBehavior());
 
                 } else if ((inputsPending = outputActors.size() < maxConcurrency)) {
-                  inputActor.tell(NEXT, inputHeaders, agent.getSelf());
+                  inputActor.tell(StorySignal.NEXT, inputHeaders, agent.getSelf());
                 }
 
               } catch (final Throwable t) {
-                inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+                inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
                 fail(new Conflict(t), agent);
                 if (t instanceof InterruptedException) {
                   Thread.currentThread().interrupt();
@@ -2642,17 +2625,17 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
           final HashMap<Actor, Headers> nextActors = BlendStory.this.nextActors;
           final Actor self = agent.getSelf();
           for (final Entry<Actor, Headers> entry : nextActors.entrySet()) {
-            entry.getKey().tell(NEXT, entry.getValue(), self);
+            entry.getKey().tell(StorySignal.NEXT, entry.getValue(), self);
           }
           nextActors.clear();
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = BlendStory.this.nextSenders;
@@ -2669,33 +2652,33 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           if (!sender.tellNext(agent.getSelf()) && (nextActors.size() == outputActors.size())) {
             final Actor self = agent.getSelf();
             for (final Entry<Actor, Headers> entry : outputActors.entrySet()) {
-              entry.getKey().tell(NEXT, entry.getValue(), self);
+              entry.getKey().tell(StorySignal.NEXT, entry.getValue(), self);
             }
           }
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
+        } else if (message == EventSignal.CANCEL) {
           final Actor self = agent.getSelf();
           for (final Actor outputActor : outputActors.keySet()) {
-            outputActor.tell(CANCEL, null, self);
+            outputActor.tell(EventSignal.CANCEL, null, self);
           }
-          inputActor.tell(CANCEL, null, self);
+          inputActor.tell(EventSignal.CANCEL, null, self);
           agent.setBehavior(new CancelBehavior());
 
         } else {
           final Headers inputHeaders = BlendStory.this.inputHeaders;
           if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
-            if (message == END) {
-              inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+            if (message == StorySignal.END) {
+              inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
               inputsEnded = true;
               if (outputActors.isEmpty()) {
                 done(agent);
               }
 
             } else if (message instanceof Conflict) {
-              inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+              inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
               inputsEnded = true;
               final Conflict conflict = (inputConflict = (Conflict) message);
               if (outputActors.isEmpty()) {
@@ -2717,13 +2700,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                   final Headers headers = BlendStory.this.headers.withThreadId(outputThreadId);
                   final HashMap<Actor, Headers> outputActors = BlendStory.this.outputActors;
                   outputActors.put(outputActor, headers);
-                  outputActor.tell(NEXT, headers, agent.getSelf());
+                  outputActor.tell(StorySignal.NEXT, headers, agent.getSelf());
                   if ((inputsPending = outputActors.size() < maxConcurrency)) {
-                    inputActor.tell(NEXT, inputHeaders, agent.getSelf());
+                    inputActor.tell(StorySignal.NEXT, inputHeaders, agent.getSelf());
                   }
 
                 } else if ((inputsPending = outputActors.size() < maxConcurrency)) {
-                  inputActor.tell(NEXT, inputHeaders, agent.getSelf());
+                  inputActor.tell(StorySignal.NEXT, inputHeaders, agent.getSelf());
                 }
 
               } catch (final Throwable t) {
@@ -2742,16 +2725,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           } else {
             final String threadId = envelop.getHeaders().getThreadId();
             if ((threadId != null) && threadId.startsWith(outputThread)) {
-              if (message == END) {
+              if (message == StorySignal.END) {
                 final Actor self = agent.getSelf();
                 final Actor sender = envelop.getSender();
-                sender.tell(BREAK, outputActors.get(sender), self);
+                sender.tell(StorySignal.BREAK, outputActors.get(sender), self);
                 final HashMap<Actor, Headers> outputActors = BlendStory.this.outputActors;
                 outputActors.remove(sender);
                 if (!inputsEnded) {
                   if (!inputsPending) {
                     inputsPending = true;
-                    inputActor.tell(NEXT, inputHeaders, self);
+                    inputActor.tell(StorySignal.NEXT, inputHeaders, self);
                   }
 
                 } else if (outputActors.isEmpty()) {
@@ -2776,7 +2759,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 if (!inputsEnded) {
                   if (!inputsPending) {
                     inputsPending = true;
-                    inputActor.tell(NEXT, inputHeaders, self);
+                    inputActor.tell(StorySignal.NEXT, inputHeaders, self);
                   }
 
                 } else if (outputActors.isEmpty()) {
@@ -2799,7 +2782,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
                 final Actor sender = envelop.getSender();
                 if (!getSenders.isEmpty()) {
-                  sender.tell(NEXT, outputActors.get(sender), self);
+                  sender.tell(StorySignal.NEXT, outputActors.get(sender), self);
 
                 } else {
                   nextActors.put(sender, outputActors.get(sender));
@@ -2833,10 +2816,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) {
-      if (message == GET) {
+      if (message == EventSignal.GET) {
         envelop.getSender().tell(effect, envelop.getHeaders().threadOnly(), agent.getSelf());
 
-      } else if (message == NEXT) {
+      } else if (message == StorySignal.NEXT) {
         final Actor self = agent.getSelf();
         final Headers headers = envelop.getHeaders().threadOnly();
         final String threadId = headers.getThreadId();
@@ -2852,10 +2835,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         }
 
         if (!sender.tellNext(self)) {
-          sender.getSender().tell(END, headers, self);
+          sender.getSender().tell(StorySignal.END, headers, self);
         }
 
-      } else if (message == BREAK) {
+      } else if (message == StorySignal.BREAK) {
         nextSenders.remove(envelop.getHeaders().getThreadId());
       }
       envelop.preventReceipt();
@@ -2878,11 +2861,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
             public void onMessage(final Object message, @NotNull final Envelop envelop,
                 @NotNull final Agent agent) {
-              if (message == GET) {
+              if (message == EventSignal.GET) {
                 envelop.getSender()
                     .tell(effect, envelop.getHeaders().threadOnly(), agent.getSelf());
 
-              } else if (message == NEXT) {
+              } else if (message == StorySignal.NEXT) {
                 final HashSet<String> threads = threadIds;
                 final Headers headers = envelop.getHeaders().threadOnly();
                 final String threadId = headers.getThreadId();
@@ -2893,10 +2876,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
                 } else {
                   envelop.getSender()
-                      .tell(END, envelop.getHeaders().threadOnly(), agent.getSelf());
+                      .tell(StorySignal.END, envelop.getHeaders().threadOnly(), agent.getSelf());
                 }
 
-              } else if (message == BREAK) {
+              } else if (message == StorySignal.BREAK) {
                 threadIds.remove(envelop.getHeaders().getThreadId());
               }
               envelop.preventReceipt();
@@ -2930,12 +2913,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
             public void onMessage(final Object message, @NotNull final Envelop envelop,
                 @NotNull final Agent agent) {
-              if (message == GET) {
+              if (message == EventSignal.GET) {
                 envelop.getSender()
                     .tell(Iterables.toList(effects), envelop.getHeaders().threadOnly(),
                         agent.getSelf());
 
-              } else if (message == NEXT) {
+              } else if (message == StorySignal.NEXT) {
                 final HashMap<String, Iterator<? extends T>> threads = threadIds;
                 final Headers headers = envelop.getHeaders().threadOnly();
                 final String threadId = headers.getThreadId();
@@ -2945,9 +2928,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                   threads.put(threadId, iterator);
                 }
                 envelop.getSender()
-                    .tell(iterator.hasNext() ? iterator.next() : END, headers, agent.getSelf());
+                    .tell(iterator.hasNext() ? iterator.next() : StorySignal.END, headers,
+                        agent.getSelf());
 
-              } else if (message == BREAK) {
+              } else if (message == StorySignal.BREAK) {
                 threadIds.remove(envelop.getHeaders().getThreadId());
               }
               envelop.preventReceipt();
@@ -2997,11 +2981,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders().threadOnly();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = EventStory.this.nextSenders;
@@ -3014,7 +2998,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             nextSenders.put(threadId, sender);
           }
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else {
@@ -3030,20 +3014,20 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
-          inputActor.tell(GET, EventStory.this.headers, agent.getSelf());
+          inputActor.tell(EventSignal.GET, EventStory.this.headers, agent.getSelf());
           agent.setBehavior(new InputBehavior());
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders().threadOnly();
           nextSenders.put(headers.getThreadId(), new SenderIterator(envelop.getSender(), headers));
-          inputActor.tell(GET, EventStory.this.headers, agent.getSelf());
+          inputActor.tell(EventSignal.GET, EventStory.this.headers, agent.getSelf());
           agent.setBehavior(new InputBehavior());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -3054,11 +3038,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders().threadOnly();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = EventStory.this.nextSenders;
@@ -3071,11 +3055,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             nextSenders.put(threadId, sender);
           }
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           agent.setBehavior(new CancelBehavior());
 
         } else {
@@ -3316,11 +3300,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
             public void onMessage(final Object message, @NotNull final Envelop envelop,
                 @NotNull final Agent agent) {
-              if (message == GET) {
+              if (message == EventSignal.GET) {
                 envelop.getSender()
                     .tell(conflict, envelop.getHeaders().threadOnly(), agent.getSelf());
 
-              } else if (message == NEXT) {
+              } else if (message == StorySignal.NEXT) {
                 final HashSet<String> threads = threadIds;
                 final Headers headers = envelop.getHeaders().threadOnly();
                 final String threadId = headers.getThreadId();
@@ -3330,10 +3314,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
                 } else {
                   envelop.getSender()
-                      .tell(END, envelop.getHeaders().threadOnly(), agent.getSelf());
+                      .tell(StorySignal.END, envelop.getHeaders().threadOnly(), agent.getSelf());
                 }
 
-              } else if (message == BREAK) {
+              } else if (message == StorySignal.BREAK) {
                 threadIds.remove(envelop.getHeaders().getThreadId());
               }
               envelop.preventReceipt();
@@ -3367,12 +3351,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
             public void onMessage(final Object message, @NotNull final Envelop envelop,
                 @NotNull final Agent agent) {
-              if (message == GET) {
+              if (message == EventSignal.GET) {
                 envelop.getSender()
                     .tell(new Conflict(Iterables.first(incidents)),
                         envelop.getHeaders().threadOnly(), agent.getSelf());
 
-              } else if (message == NEXT) {
+              } else if (message == StorySignal.NEXT) {
                 final HashMap<String, Iterator<? extends Throwable>> threads = threadIds;
                 final Headers headers = envelop.getHeaders().threadOnly();
                 final String threadId = headers.getThreadId();
@@ -3382,10 +3366,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                   threads.put(threadId, iterator);
                 }
                 envelop.getSender()
-                    .tell(iterator.hasNext() ? new Conflict(iterator.next()) : END, headers,
-                        agent.getSelf());
+                    .tell(iterator.hasNext() ? new Conflict(iterator.next()) : StorySignal.END,
+                        headers, agent.getSelf());
 
-              } else if (message == BREAK) {
+              } else if (message == StorySignal.BREAK) {
                 threadIds.remove(envelop.getHeaders().getThreadId());
               }
               envelop.preventReceipt();
@@ -3473,11 +3457,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = JoinStory.this.nextSenders;
@@ -3492,13 +3476,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           sender.tellNext(agent.getSelf());
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else {
           final Headers inputHeaders = JoinStory.this.inputHeaders;
           if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
-            inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+            inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
             inputsEnded = true;
             if (actorCount == 0) {
               fail(Conflict.ofCancel(), agent);
@@ -3508,7 +3492,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             final String threadId = envelop.getHeaders().getThreadId();
             if ((threadId != null) && threadId.startsWith(outputThread)) {
               final Actor sender = envelop.getSender();
-              sender.tell(BREAK, outputEffects.get(sender).getHeaders(), agent.getSelf());
+              sender.tell(StorySignal.BREAK, outputEffects.get(sender).getHeaders(),
+                  agent.getSelf());
               if ((--actorCount == 0) && inputsEnded) {
                 fail(Conflict.ofCancel(), agent);
               }
@@ -3523,22 +3508,22 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
-          inputActor.tell(NEXT, inputHeaders, agent.getSelf());
+          inputActor.tell(StorySignal.NEXT, inputHeaders, agent.getSelf());
           agent.setBehavior(new InputBehavior());
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders().threadOnly();
           final SenderIterator sender = new SenderIterator(envelop.getSender(), headers);
           sender.setIterator(memory.iterator());
           nextSenders.put(headers.getThreadId(), sender);
-          inputActor.tell(NEXT, inputHeaders, agent.getSelf());
+          inputActor.tell(StorySignal.NEXT, inputHeaders, agent.getSelf());
           agent.setBehavior(new InputBehavior());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -3549,11 +3534,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = JoinStory.this.nextSenders;
@@ -3567,22 +3552,22 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             nextSenders.put(threadId, sender);
           }
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           agent.setBehavior(new CancelBehavior());
 
         } else {
           final Headers inputHeaders = JoinStory.this.inputHeaders;
           if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
-            if (message == END) {
-              inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+            if (message == StorySignal.END) {
+              inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
               done(agent);
 
             } else if (message instanceof Conflict) {
-              inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+              inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
               fail((Conflict) message, agent);
 
             } else if (message instanceof Bounce) {
@@ -3596,15 +3581,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 final LinkedHashMap<Actor, OutputEffect> outputEffects =
                     JoinStory.this.outputEffects;
                 outputEffects.put(outputActor, new OutputEffect(headers));
-                outputActor.tell(GET, headers, agent.getSelf());
+                outputActor.tell(EventSignal.GET, headers, agent.getSelf());
                 if ((inputsPending = (++actorCount < maxConcurrency) && (outputEffects.size()
                     < maxEventWindow))) {
-                  inputActor.tell(NEXT, inputHeaders, agent.getSelf());
+                  inputActor.tell(StorySignal.NEXT, inputHeaders, agent.getSelf());
                 }
                 agent.setBehavior(new OutputBehavior());
 
               } catch (final Throwable t) {
-                inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+                inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
                 fail(new Conflict(t), agent);
                 if (t instanceof InterruptedException) {
                   Thread.currentThread().interrupt();
@@ -3621,11 +3606,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = JoinStory.this.nextSenders;
@@ -3640,32 +3625,32 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           sender.tellNext(agent.getSelf());
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
+        } else if (message == EventSignal.CANCEL) {
           final Actor self = agent.getSelf();
           for (final Entry<Actor, OutputEffect> entry : outputEffects.entrySet()) {
             final OutputEffect outputEffect = entry.getValue();
             if (!outputEffect.isSet()) {
-              entry.getKey().tell(CANCEL, null, self);
+              entry.getKey().tell(EventSignal.CANCEL, null, self);
             }
           }
-          inputActor.tell(CANCEL, null, self);
+          inputActor.tell(EventSignal.CANCEL, null, self);
           agent.setBehavior(new CancelBehavior());
 
         } else {
           final Headers inputHeaders = JoinStory.this.inputHeaders;
           if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
-            if (message == END) {
-              inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+            if (message == StorySignal.END) {
+              inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
               inputsEnded = true;
               if (actorCount == 0) {
                 done(agent);
               }
 
             } else if (message instanceof Conflict) {
-              inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+              inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
               inputsEnded = true;
               final Conflict conflict = (inputConflict = (Conflict) message);
               if (actorCount == 0) {
@@ -3687,10 +3672,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 final LinkedHashMap<Actor, OutputEffect> outputEffects =
                     JoinStory.this.outputEffects;
                 outputEffects.put(outputActor, new OutputEffect(headers));
-                outputActor.tell(GET, headers, agent.getSelf());
+                outputActor.tell(EventSignal.GET, headers, agent.getSelf());
                 if ((inputsPending = (++actorCount < maxConcurrency) && (outputEffects.size()
                     < maxEventWindow))) {
-                  inputActor.tell(NEXT, inputHeaders, agent.getSelf());
+                  inputActor.tell(StorySignal.NEXT, inputHeaders, agent.getSelf());
                 }
 
               } catch (final Throwable t) {
@@ -3709,6 +3694,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           } else {
             final String threadId = envelop.getHeaders().getThreadId();
             if ((threadId != null) && threadId.startsWith(outputThread)) {
+              --actorCount;
               final Object effect;
               if (message instanceof Bounce) {
                 effect = Conflict.ofBounce((Bounce) message);
@@ -3740,10 +3726,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 if (!inputsEnded) {
                   if (!inputsPending) {
                     inputsPending = true;
-                    inputActor.tell(NEXT, inputHeaders, self);
+                    inputActor.tell(StorySignal.NEXT, inputHeaders, self);
                   }
 
-                } else if (--actorCount == 0) {
+                } else if (actorCount == 0) {
                   final Conflict conflict = inputConflict;
                   if (conflict != null) {
                     fail(conflict, agent);
@@ -3941,7 +3927,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     public void run() {
       inputsPending = true;
-      inputActor.tell(NEXT, inputHeaders, actor);
+      inputActor.tell(StorySignal.NEXT, inputHeaders, actor);
     }
 
     private void done(@NotNull final Agent agent) {
@@ -3964,11 +3950,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders =
@@ -3984,13 +3970,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           sender.tellNext(agent.getSelf());
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else {
           final Headers inputHeaders = ScheduleAtFixedRateStory.this.inputHeaders;
           if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
-            inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+            inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
             fail(Conflict.ofCancel(), agent);
           }
         }
@@ -4002,14 +3988,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
           scheduledFuture = agent.getScheduledExecutorService()
               .scheduleAtFixedRate(ScheduleAtFixedRateStory.this, initialDelay, period, unit);
           agent.setBehavior(new InputBehavior());
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders().threadOnly();
           final SenderIterator sender = new SenderIterator(envelop.getSender(), headers);
           sender.setIterator(memory.iterator());
@@ -4018,8 +4004,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               .scheduleAtFixedRate(ScheduleAtFixedRateStory.this, initialDelay, period, unit);
           agent.setBehavior(new InputBehavior());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -4030,11 +4016,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders =
@@ -4050,11 +4036,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           sender.tellNext(agent.getSelf());
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           if (inputsPending) {
             agent.setBehavior(new CancelBehavior());
 
@@ -4065,12 +4051,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else {
           final Headers inputHeaders = ScheduleAtFixedRateStory.this.inputHeaders;
           if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
-            if (message == END) {
-              inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+            if (message == StorySignal.END) {
+              inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
               done(agent);
 
             } else if (message instanceof Conflict) {
-              inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+              inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
               fail((Conflict) message, agent);
 
             } else if (message instanceof Bounce) {
@@ -4150,11 +4136,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders =
@@ -4170,13 +4156,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           sender.tellNext(agent.getSelf());
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else {
           final Headers inputHeaders = ScheduleWithFixedDelayStory.this.inputHeaders;
           if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
-            inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+            inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
             fail(Conflict.ofCancel(), agent);
           }
         }
@@ -4188,14 +4174,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
           scheduledFuture = agent.getScheduledExecutorService()
               .schedule(ScheduleWithFixedDelayStory.this, initialDelay, unit);
           agent.setBehavior(new InputBehavior());
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders().threadOnly();
           final SenderIterator sender = new SenderIterator(envelop.getSender(), headers);
           sender.setIterator(memory.iterator());
@@ -4204,8 +4190,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               .schedule(ScheduleWithFixedDelayStory.this, initialDelay, unit);
           agent.setBehavior(new InputBehavior());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -4216,11 +4202,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders =
@@ -4236,11 +4222,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
           sender.tellNext(agent.getSelf());
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           if (inputsPending) {
             agent.setBehavior(new CancelBehavior());
 
@@ -4251,12 +4237,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else {
           final Headers inputHeaders = ScheduleWithFixedDelayStory.this.inputHeaders;
           if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
-            if (message == END) {
-              inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+            if (message == StorySignal.END) {
+              inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
               done(agent);
 
             } else if (message instanceof Conflict) {
-              inputActor.tell(BREAK, inputHeaders, agent.getSelf());
+              inputActor.tell(StorySignal.BREAK, inputHeaders, agent.getSelf());
               fail((Conflict) message, agent);
 
             } else if (message instanceof Bounce) {
@@ -4279,7 +4265,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     public void run() {
       inputsPending = true;
-      inputActor.tell(NEXT, inputHeaders, actor);
+      inputActor.tell(StorySignal.NEXT, inputHeaders, actor);
     }
 
     @NotNull
@@ -4371,23 +4357,23 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
             } else {
               storyObserver.onIncident(((Conflict) message).getCause());
-              envelop.getSender().tell(Story.NEXT, headers, self);
+              envelop.getSender().tell(Story.StorySignal.NEXT, headers, self);
             }
 
           } else if (message instanceof Bounce) {
             if (isPaused) {
               final ArrayList<Object> effects = this.effects;
               effects.add(new Conflict(PlotFailureException.getOrNew((Bounce) message)));
-              effects.add(Story.END);
+              effects.add(Story.StorySignal.END);
 
             } else {
               storyObserver.onIncident(PlotFailureException.getOrNew((Bounce) message));
               agent.dismissSelf();
             }
 
-          } else if (message == Story.END) {
+          } else if (message == Story.StorySignal.END) {
             if (isPaused) {
-              effects.add(Story.END);
+              effects.add(Story.StorySignal.END);
 
             } else {
               storyObserver.onEnd();
@@ -4405,7 +4391,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               if (effect instanceof Conflict) {
                 storyObserver.onIncident(((Conflict) effect).getCause());
 
-              } else if (effect == Story.END) {
+              } else if (effect == Story.StorySignal.END) {
                 storyObserver.onEnd();
                 isEnded = true;
 
@@ -4420,14 +4406,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             } else {
               isPaused = false;
               effects.clear();
-              envelop.getSender().tell(Story.NEXT, headers, self);
+              envelop.getSender().tell(Story.StorySignal.NEXT, headers, self);
             }
 
           } else if (message == Spectator.CANCEL) {
-            storyActor.tell(Story.CANCEL, headers, self);
+            storyActor.tell(EventSignal.CANCEL, headers, self);
 
           } else if (message == Spectator.CANCEL_AND_DISMISS) {
-            storyActor.tell(Story.CANCEL, headers, self);
+            storyActor.tell(EventSignal.CANCEL, headers, self);
             agent.dismissSelf();
 
           } else if (!(message instanceof Receipt)) {
@@ -4436,14 +4422,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
             } else {
               storyObserver.onEffect((T) message);
-              envelop.getSender().tell(Story.NEXT, headers, self);
+              envelop.getSender().tell(Story.StorySignal.NEXT, headers, self);
             }
           }
         }
 
         @Override
         public void onStop(@NotNull final Agent agent) {
-          storyActor.tell(Story.BREAK, headers, agent.getSelf());
+          storyActor.tell(Story.StorySignal.BREAK, headers, agent.getSelf());
         }
       };
     }
@@ -4597,11 +4583,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = UnfoldStory.this.nextSenders;
@@ -4614,7 +4600,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 new SenderIterator(envelop.getSender(), headers.threadOnly()));
           }
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else if (inputThreadId.equals(envelop.getHeaders().getThreadId())) {
@@ -4627,20 +4613,20 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
-          inputActor.tell(GET, inputHeaders, agent.getSelf());
+          inputActor.tell(EventSignal.GET, inputHeaders, agent.getSelf());
           agent.setBehavior(new InputBehavior());
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders().threadOnly();
           nextSenders.put(headers.getThreadId(), new SenderIterator(envelop.getSender(), headers));
-          inputActor.tell(GET, inputHeaders, agent.getSelf());
+          inputActor.tell(EventSignal.GET, inputHeaders, agent.getSelf());
           agent.setBehavior(new InputBehavior());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -4651,11 +4637,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
-        if (message == GET) {
+        if (message == EventSignal.GET) {
           final Headers headers = envelop.getHeaders().threadOnly();
           getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
-        } else if (message == NEXT) {
+        } else if (message == StorySignal.NEXT) {
           final Headers headers = envelop.getHeaders();
           final String threadId = headers.getThreadId();
           final HashMap<String, SenderIterator> nextSenders = UnfoldStory.this.nextSenders;
@@ -4668,11 +4654,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 new SenderIterator(envelop.getSender(), headers.threadOnly()));
           }
 
-        } else if (message == BREAK) {
+        } else if (message == StorySignal.BREAK) {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
-        } else if (message == CANCEL) {
-          inputActor.tell(CANCEL, null, agent.getSelf());
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
           agent.setBehavior(new CancelBehavior());
 
         } else if (inputThreadId.equals(envelop.getHeaders().getThreadId())) {
