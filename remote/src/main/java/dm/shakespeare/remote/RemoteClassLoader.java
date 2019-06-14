@@ -111,7 +111,7 @@ class RemoteClassLoader extends ClassLoader {
           try {
             inputStream.close();
 
-          } catch (IOException ignored) {
+          } catch (final IOException ignored) {
           }
         }
       }
@@ -217,7 +217,7 @@ class RemoteClassLoader extends ClassLoader {
             try {
               Class.forName(name, false, getParent());
 
-            } catch (ClassNotFoundException ignored) {
+            } catch (final ClassNotFoundException ignored) {
               // add only if not already in the path
               missingPaths.add(path);
             }
@@ -229,7 +229,7 @@ class RemoteClassLoader extends ClassLoader {
           try {
             inputStream.close();
 
-          } catch (IOException ignored) {
+          } catch (final IOException ignored) {
           }
         }
 

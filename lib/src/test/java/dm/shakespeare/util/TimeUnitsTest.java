@@ -442,7 +442,7 @@ public class TimeUnitsTest {
           assertThat(await()).isTrue();
           isCalled = true;
 
-        } catch (InterruptedException ignored) {
+        } catch (final InterruptedException ignored) {
         }
       }
     }
