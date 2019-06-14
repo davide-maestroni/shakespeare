@@ -325,6 +325,10 @@ class StandardAgent implements Agent {
           onStop(agent);
           if (t instanceof InterruptedException) {
             Thread.currentThread().interrupt();
+
+          } else if (t instanceof Error) {
+            // rethrow errors
+            throw (Error) t;
           }
         }
 
@@ -336,6 +340,10 @@ class StandardAgent implements Agent {
           onStop(agent);
           if (t instanceof InterruptedException) {
             Thread.currentThread().interrupt();
+
+          } else if (t instanceof Error) {
+            // rethrow errors
+            throw (Error) t;
           }
         }
       }
@@ -352,6 +360,10 @@ class StandardAgent implements Agent {
         logger.wrn(t, "[%s] ignoring exception", actor);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
+
+        } else if (t instanceof Error) {
+          // rethrow errors
+          throw (Error) t;
         }
       }
     }
@@ -369,6 +381,10 @@ class StandardAgent implements Agent {
         logger.wrn(t, "[%s] ignoring exception", actor);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
+
+        } else if (t instanceof Error) {
+          // rethrow errors
+          throw (Error) t;
         }
 
       } finally {
@@ -391,6 +407,10 @@ class StandardAgent implements Agent {
         logger.wrn(t, "[%s] ignoring exception", actor);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
+
+        } else if (t instanceof Error) {
+          // rethrow errors
+          throw (Error) t;
         }
       }
     }

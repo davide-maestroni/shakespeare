@@ -18,6 +18,9 @@ package dm.shakespeare.template.actor;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.SerializableBehavior;
@@ -33,7 +36,7 @@ public class PoisonableBehavior implements SerializableBehavior {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private transient AgentWrapper agent = new PoisonableAgentWrapper();
+  private transient PoisonableAgentWrapper agent = new PoisonableAgentWrapper();
 
   private Behavior behavior;
 
@@ -56,6 +59,11 @@ public class PoisonableBehavior implements SerializableBehavior {
 
   public void onStop(@NotNull final Agent agent) throws Exception {
     behavior.onStop(this.agent.withAgent(agent));
+  }
+
+  private void readObject(final ObjectInputStream in) throws IOException, ClassNotFoundException {
+    in.defaultReadObject();
+    agent = new PoisonableAgentWrapper();
   }
 
   private class PoisonableAgentWrapper extends AgentWrapper {

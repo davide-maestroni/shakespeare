@@ -50,8 +50,6 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class Stage {
 
-  // TODO: 2019-06-13 catch Exception vs Throwable
-  // TODO: 2019-06-14 static case
   // TODO: 28/02/2019 swagger converter
 
   /**

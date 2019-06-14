@@ -18,16 +18,18 @@ package dm.shakespeare.template.actor;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.UUID;
 import java.util.concurrent.RejectedExecutionException;
 
-import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.BehaviorBuilder.Handler;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Headers;
+import dm.shakespeare.actor.SerializableAbstractBehavior;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.DeadLetter;
 import dm.shakespeare.message.Failure;
@@ -40,36 +42,28 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 03/24/2019.
  */
-public class SupervisedBehavior extends AbstractBehavior {
+public class SupervisedBehavior extends SerializableAbstractBehavior {
 
-  // TODO: 2019-06-14 enum + serializable(?) 
-
+  public static final ReplaceSupervisor REPLACE = new ReplaceSupervisor();
   public static final Supervise SUPERVISE = new Supervise();
   public static final Unsupervise UNSUPERVISE = new Unsupervise();
 
-  private static final Object DUMMY_MESSAGE = new Object();
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private final AgentWrapper agent;
   private final String receiptId = toString();
 
+  private transient SupervisedAgentWrapper agent = new SupervisedAgentWrapper();
   private Behavior behavior;
   private CQueue<DelayedMessage> delayedMessages = new CQueue<DelayedMessage>();
   private Throwable failure;
   private String failureId;
   private DelayedMessage failureMessage;
-  private Handler<Object> handler = new DefaultHandler();
+  private transient Handler<Object> handler = new DefaultHandler();
   private Actor supervisor;
   private String supervisorThread;
 
   SupervisedBehavior(@NotNull final Behavior behavior) {
     this.behavior = ConstantConditions.notNull("behavior", behavior);
-    agent = new AgentWrapper() {
-
-      @Override
-      public void setBehavior(@NotNull final Behavior behavior) {
-        SupervisedBehavior.this.behavior = ConstantConditions.notNull("behavior", behavior);
-      }
-    };
   }
 
   public void onMessage(final Object message, @NotNull final Envelop envelop,
@@ -112,6 +106,12 @@ public class SupervisedBehavior extends AbstractBehavior {
     this.delayedMessages = new CQueue<DelayedMessage>();
   }
 
+  private void readObject(final ObjectInputStream in) throws IOException, ClassNotFoundException {
+    in.defaultReadObject();
+    agent = new SupervisedAgentWrapper();
+    handler = new DefaultHandler();
+  }
+
   private void resetFailure(@NotNull final Agent agent) {
     try {
       supervisor.removeObserver(agent.getSelf());
@@ -130,7 +130,20 @@ public class SupervisedBehavior extends AbstractBehavior {
     final Actor self = agent.getSelf();
     final int size = delayedMessages.size();
     for (int i = 0; i < size; ++i) {
-      self.tell(DUMMY_MESSAGE, null, self);
+      self.tell(SupervisedSignal.DUMMY_MESSAGE, null, self);
+    }
+  }
+
+  private enum SupervisedSignal {
+
+    DUMMY_MESSAGE
+  }
+
+  public static class ReplaceSupervisor implements Serializable {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+    private ReplaceSupervisor() {
     }
   }
 
@@ -230,7 +243,7 @@ public class SupervisedBehavior extends AbstractBehavior {
 
     public void handle(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) throws Exception {
-      if (message == DUMMY_MESSAGE) {
+      if (message == SupervisedSignal.DUMMY_MESSAGE) {
         return;
       }
       final Headers headers = envelop.getHeaders();
@@ -295,6 +308,11 @@ public class SupervisedBehavior extends AbstractBehavior {
           behavior.onMessage(message, envelop, SupervisedBehavior.this.agent.withAgent(agent));
 
         } catch (final Throwable t) {
+          if (t instanceof Error) {
+            // rethrow errors
+            throw (Error) t;
+          }
+
           if (!(t instanceof InterruptedException)) {
             final Actor supervisor = SupervisedBehavior.this.supervisor;
             if (supervisor != null) {
@@ -310,13 +328,7 @@ public class SupervisedBehavior extends AbstractBehavior {
               return;
             }
           }
-
-          if (t instanceof RuntimeException) {
-            throw (RuntimeException) t;
-
-          } else if (t instanceof Exception) {
-            throw (Exception) t;
-          }
+          throw (Exception) t;
         }
       }
     }
@@ -329,7 +341,7 @@ public class SupervisedBehavior extends AbstractBehavior {
       final CQueue<DelayedMessage> delayedMessages = SupervisedBehavior.this.delayedMessages;
       if (!delayedMessages.isEmpty()) {
         final DelayedMessage delayedMessage = delayedMessages.removeFirst();
-        if (message != DUMMY_MESSAGE) {
+        if (message != SupervisedSignal.DUMMY_MESSAGE) {
           delayedMessages.add(new DelayedMessage(message, envelop));
         }
         super.handle(delayedMessage.getMessage(), delayedMessage.getEnvelop(), agent);
@@ -345,7 +357,7 @@ public class SupervisedBehavior extends AbstractBehavior {
 
     public void handle(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) {
-      if (message == DUMMY_MESSAGE) {
+      if (message == SupervisedSignal.DUMMY_MESSAGE) {
         return;
       }
       final Headers headers = envelop.getHeaders();
@@ -354,7 +366,8 @@ public class SupervisedBehavior extends AbstractBehavior {
         final Actor sender = envelop.getSender();
         if (!sender.equals(self)) {
           if (!sender.equals(supervisor)) {
-            // TODO: 14/01/2019 notify old supervisor???
+            // notify old supervisor
+            supervisor.tell(REPLACE, null, self);
             supervisor = sender;
             supervisorThread = headers.getThreadId();
             sender.addObserver(self);
@@ -469,6 +482,14 @@ public class SupervisedBehavior extends AbstractBehavior {
         delayedMessages.add(new DelayedMessage(message, envelop));
         envelop.preventReceipt();
       }
+    }
+  }
+
+  private class SupervisedAgentWrapper extends AgentWrapper {
+
+    @Override
+    public void setBehavior(@NotNull final Behavior behavior) {
+      SupervisedBehavior.this.behavior = ConstantConditions.notNull("behavior", behavior);
     }
   }
 }

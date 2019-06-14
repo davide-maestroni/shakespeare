@@ -33,7 +33,7 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 03/21/2019.
  */
-public class RestartingRole extends Role implements Serializable {
+public class RespawningRole extends Role implements Serializable {
 
   private static final Object[] NO_ARGS = new Object[0];
 
@@ -44,12 +44,12 @@ public class RestartingRole extends Role implements Serializable {
 
   private transient Role role;
 
-  public RestartingRole(@NotNull final Class<? extends Role> roleClass) {
+  public RespawningRole(@NotNull final Class<? extends Role> roleClass) {
     this.roleClass = ConstantConditions.notNull("roleClass", roleClass);
     roleArgs = null;
   }
 
-  public RestartingRole(@NotNull final Class<? extends Role> roleClass,
+  public RespawningRole(@NotNull final Class<? extends Role> roleClass,
       @NotNull final Serializable... roleArgs) {
     this.roleClass = ConstantConditions.notNull("roleClass", roleClass);
     this.roleArgs = ConstantConditions.notNull("roleArgs", roleArgs).clone();

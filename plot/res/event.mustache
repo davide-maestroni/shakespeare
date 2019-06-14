@@ -581,34 +581,50 @@ public abstract class Event<T> {
         fail(new Conflict(t), agent);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
+
+        } else if (t instanceof Error) {
+          // rethrow errors
+          throw (Error) t;
         }
       }
     }
 
     private void done(Object message, @NotNull final Agent agent) {
+      Throwable error = null;
       try {
         endAction();
 
       } catch (final Throwable t) {
+        error = t;
         message = new Conflict(t);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }
       }
       done(message, senders, agent);
+      if (error instanceof Error) {
+        // rethrow errors
+        throw (Error) error;
+      }
     }
 
     private void fail(@NotNull Conflict conflict, @NotNull final Agent agent) {
+      Throwable error = null;
       try {
         endAction();
 
       } catch (final Throwable t) {
+        error = t;
         conflict = new Conflict(t);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }
       }
       done(conflict, senders, agent);
+      if (error instanceof Error) {
+        // rethrow errors
+        throw (Error) error;
+      }
     }
 
     private void getInputActors(@NotNull final Agent agent) {
@@ -659,6 +675,10 @@ public abstract class Event<T> {
                 fail(new Conflict(t), agent);
                 if (t instanceof InterruptedException) {
                   Thread.currentThread().interrupt();
+
+                } else if (t instanceof Error) {
+                  // rethrow errors
+                  throw (Error) t;
                 }
               }
             }
@@ -741,6 +761,10 @@ public abstract class Event<T> {
                       fail(new Conflict(t), agent);
                       if (t instanceof InterruptedException) {
                         Thread.currentThread().interrupt();
+
+                      } else if (t instanceof Error) {
+                        // rethrow errors
+                        throw (Error) t;
                       }
                     }
                   }
@@ -963,6 +987,10 @@ public abstract class Event<T> {
           event = ofIncident(t);
           if (t instanceof InterruptedException) {
             Thread.currentThread().interrupt();
+
+          } else if (t instanceof Error) {
+            // rethrow errors
+            throw (Error) t;
           }
 
         } finally {

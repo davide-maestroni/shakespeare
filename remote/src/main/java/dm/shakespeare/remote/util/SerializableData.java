@@ -134,7 +134,7 @@ public abstract class SerializableData implements Serializable {
       out.writeInt(0);
     }
 
-    Object writeReplace() throws ObjectStreamException {
+    private Object writeReplace() throws ObjectStreamException {
       return new SerializableWrapper(this);
     }
   }
@@ -210,7 +210,7 @@ public abstract class SerializableData implements Serializable {
       }
     }
 
-    Object writeReplace() throws ObjectStreamException {
+    private Object writeReplace() throws ObjectStreamException {
       return new SerializableWrapper(this);
     }
   }
@@ -389,7 +389,7 @@ public abstract class SerializableData implements Serializable {
       }
     }
 
-    Object writeReplace() throws ObjectStreamException {
+    private Object writeReplace() throws ObjectStreamException {
       return new SerializableWrapper(this);
     }
   }
@@ -532,7 +532,7 @@ public abstract class SerializableData implements Serializable {
       }
     }
 
-    Object writeReplace() throws ObjectStreamException {
+    private Object writeReplace() throws ObjectStreamException {
       return new SerializableWrapper(this);
     }
   }
@@ -723,7 +723,7 @@ public abstract class SerializableData implements Serializable {
       }
     }
 
-    Object writeReplace() throws ObjectStreamException {
+    private Object writeReplace() throws ObjectStreamException {
       return new SerializableWrapper(this);
     }
   }

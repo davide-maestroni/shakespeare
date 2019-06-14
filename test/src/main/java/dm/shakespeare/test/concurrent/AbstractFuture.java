@@ -136,6 +136,10 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
       mException = new ExecutionException(t);
       if (t instanceof InterruptedException) {
         Thread.currentThread().interrupt();
+
+      } else if (t instanceof Error) {
+        // rethrow errors
+        throw (Error) t;
       }
 
     } finally {

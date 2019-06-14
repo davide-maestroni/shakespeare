@@ -288,7 +288,7 @@ public class Plot {
       return Stage.newActor(role);
     }
 
-    Object readResolve() throws ObjectStreamException {
+    private Object readResolve() throws ObjectStreamException {
       return DEFAULT_ACTOR_FACTORY;
     }
   }
@@ -348,7 +348,7 @@ public class Plot {
               put(CreateNullaryEvent.class, new Handler<Object>() {
 
                 public void handle(final Object message, @NotNull final Envelop envelop,
-                    @NotNull final Agent agent) throws Exception {
+                    @NotNull final Agent agent) {
                   Actor actor;
                   Setting.set(setting);
                   try {
@@ -368,7 +368,7 @@ public class Plot {
               put(CreateNullaryStory.class, new Handler<Object>() {
 
                 public void handle(final Object message, @NotNull final Envelop envelop,
-                    @NotNull final Agent agent) throws Exception {
+                    @NotNull final Agent agent) {
                   Actor actor;
                   Setting.set(setting);
                   try {
@@ -390,7 +390,7 @@ public class Plot {
 
                 @SuppressWarnings("unchecked")
                 public void handle(final Object message, @NotNull final Envelop envelop,
-                    @NotNull final Agent agent) throws Exception {
+                    @NotNull final Agent agent) {
                   final String threadId = envelop.getHeaders().getThreadId();
                   final ArrayList<Actor> paramList = params.remove(threadId);
                   Actor actor;
@@ -420,7 +420,7 @@ public class Plot {
 
                 @SuppressWarnings("unchecked")
                 public void handle(final Object message, @NotNull final Envelop envelop,
-                    @NotNull final Agent agent) throws Exception {
+                    @NotNull final Agent agent) {
                   final String threadId = envelop.getHeaders().getThreadId();
                   final ArrayList<Actor> paramList = params.remove(threadId);
                   Actor actor;

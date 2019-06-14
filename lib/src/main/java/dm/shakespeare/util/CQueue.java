@@ -19,6 +19,7 @@ package dm.shakespeare.util;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.AbstractCollection;
 import java.util.Collection;
@@ -26,6 +27,8 @@ import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Queue;
+
+import dm.shakespeare.config.BuildConfig;
 
 /**
  * Class implementing a light-weight queue, storing elements into a dynamically increasing
@@ -36,10 +39,10 @@ import java.util.Queue;
  *
  * @param <E> the element type.
  */
-public class CQueue<E> extends AbstractCollection<E> implements Queue<E> {
+public class CQueue<E> extends AbstractCollection<E> implements Queue<E>, Serializable {
 
   private static final int DEFAULT_SIZE = 1 << 3;
-
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
   private Object[] data;
   private int first;
   private int last;

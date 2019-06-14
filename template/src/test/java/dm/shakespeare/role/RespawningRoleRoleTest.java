@@ -9,18 +9,18 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 import dm.shakespeare.template.role.ReflectionRole;
-import dm.shakespeare.template.role.RestartingRole;
+import dm.shakespeare.template.role.RespawningRole;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Created by davide-maestroni on 04/06/2019.
  */
-public class RestartingRoleTest {
+public class RespawningRoleRoleTest {
 
   @Test
   public void serialization() throws IOException, ClassNotFoundException {
-    final RestartingRole role = new RestartingRole(ReflectionRole.class, "");
+    final RespawningRole role = new RespawningRole(ReflectionRole.class, "");
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     final ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
     objectOutputStream.writeObject(role);
@@ -28,6 +28,6 @@ public class RestartingRoleTest {
     final ObjectInputStream objectInputStream =
         new ObjectInputStream(new ByteArrayInputStream(outputStream.toByteArray()));
     final Object o = objectInputStream.readObject();
-    assertThat(o).isExactlyInstanceOf(RestartingRole.class);
+    assertThat(o).isExactlyInstanceOf(RespawningRole.class);
   }
 }

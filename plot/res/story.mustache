@@ -1172,14 +1172,21 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
 
     private void conflict(@NotNull Conflict conflict, @NotNull final Agent agent) {
+      Throwable error = null;
       Actor conflictActor = null;
       try {
         conflictActor = getConflictActor(conflict, agent);
 
       } catch (final Throwable t) {
+        error = t;
         conflict = new Conflict(t);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
+
+        } else if (error instanceof Error) {
+          fail(conflict, agent);
+          // rethrow errors
+          throw (Error) error;
         }
       }
 
@@ -1206,17 +1213,23 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
 
     private void done(@NotNull final Agent agent) {
+      Throwable error = null;
       final Memory memory = this.memory;
       try {
         endAction();
 
       } catch (final Throwable t) {
+        error = t;
         memory.put(new Conflict(t));
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }
       }
       done(memory, getSenders, nextSenders, agent);
+      if (error instanceof Error) {
+        // rethrow errors
+        throw (Error) error;
+      }
     }
 
     private void fail(@NotNull Conflict conflict, @NotNull final Agent agent) {
@@ -1226,16 +1239,22 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         outputActor.tell(StorySignal.BREAK, outputHeaders, agent.getSelf());
       }
 
+      Throwable error = null;
       try {
         endAction();
 
       } catch (final Throwable t) {
+        error = t;
         conflict = new Conflict(t);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }
       }
       fail(conflict, memory, getSenders, nextSenders, agent);
+      if (error instanceof Error) {
+        // rethrow errors
+        throw (Error) error;
+      }
     }
 
     private void next(final int loopCount, @NotNull final Agent agent) {
@@ -1269,6 +1288,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         fail(new Conflict(t), agent);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
+
+        } else if (t instanceof Error) {
+          // rethrow errors
+          throw (Error) t;
         }
       }
     }
@@ -1354,6 +1377,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                   fail(new Conflict(t), agent);
                   if (t instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
+
+                  } else if (t instanceof Error) {
+                    // rethrow errors
+                    throw (Error) t;
                   }
                 }
               }
@@ -1545,6 +1572,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                       }
 
                     } catch (final Throwable t) {
+                      if (t instanceof Error) {
+                        fail(new Conflict(t), agent);
+                        // rethrow errors
+                        throw (Error) t;
+                      }
                       conflict(new Conflict(t), agent);
                       if (t instanceof InterruptedException) {
                         Thread.currentThread().interrupt();
@@ -1838,6 +1870,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         }
 
       } catch (final Throwable t) {
+        if (t instanceof Error) {
+          fail(new Conflict(t), agent);
+          // rethrow errors
+          throw (Error) t;
+        }
         conflict(new Conflict(t), agent);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
@@ -2229,6 +2266,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } while (hasGetSenders);
 
       } catch (final Throwable t) {
+        if (t instanceof Error) {
+          fail(new Conflict(t), agent);
+          // rethrow errors
+          throw (Error) t;
+        }
         conflict(new Conflict(t), agent);
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
@@ -2613,6 +2655,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 fail(new Conflict(t), agent);
                 if (t instanceof InterruptedException) {
                   Thread.currentThread().interrupt();
+
+                } else if (t instanceof Error) {
+                  // rethrow errors
+                  throw (Error) t;
                 }
               }
             }
@@ -2713,6 +2759,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               } catch (final Throwable t) {
                 inputsEnded = true;
                 final Conflict conflict = (inputConflict = new Conflict(t));
+                if (t instanceof Error) {
+                  fail(conflict, agent);
+                  // rethrow errors
+                  throw (Error) t;
+                }
+
                 if (outputActors.isEmpty()) {
                   fail(conflict, agent);
                 }
@@ -3179,6 +3231,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           story = ofSingleIncident(t);
           if (t instanceof InterruptedException) {
             Thread.currentThread().interrupt();
+
+          } else if (t instanceof Error) {
+            // rethrow errors
+            throw (Error) t;
           }
 
         } finally {
@@ -3594,6 +3650,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 fail(new Conflict(t), agent);
                 if (t instanceof InterruptedException) {
                   Thread.currentThread().interrupt();
+
+                } else if (t instanceof Error) {
+                  // rethrow errors
+                  throw (Error) t;
                 }
               }
             }
@@ -3682,6 +3742,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               } catch (final Throwable t) {
                 inputsEnded = true;
                 final Conflict conflict = (inputConflict = new Conflict(t));
+                if (t instanceof Error) {
+                  fail(conflict, agent);
+                  // rethrow errors
+                  throw (Error) t;
+                }
+
                 if (actorCount == 0) {
                   fail(conflict, agent);
                 }
