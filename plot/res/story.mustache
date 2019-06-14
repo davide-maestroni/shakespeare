@@ -51,6 +51,7 @@ import dm.shakespeare.function.Observer;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.Receipt;
 import dm.shakespeare.plot.Setting.Cache;
+import dm.shakespeare.plot.Spectator.SpectatorSignal;
 import dm.shakespeare.plot.function.Action;
 import dm.shakespeare.plot.function.NullaryFunction;
 {{#arities}}
@@ -4380,10 +4381,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               agent.dismissSelf();
             }
 
-          } else if (message == Spectator.PAUSE) {
+          } else if (message == SpectatorSignal.PAUSE) {
             isPaused = true;
 
-          } else if ((message == Spectator.RESUME) && isPaused) {
+          } else if ((message == SpectatorSignal.RESUME) && isPaused) {
             final StoryObserver<? super T> storyObserver = StoryObserverRole.this.storyObserver;
             final ArrayList<Object> effects = this.effects;
             boolean isEnded = false;
@@ -4409,10 +4410,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               envelop.getSender().tell(Story.StorySignal.NEXT, headers, self);
             }
 
-          } else if (message == Spectator.CANCEL) {
+          } else if (message == SpectatorSignal.CANCEL) {
             storyActor.tell(EventSignal.CANCEL, headers, self);
 
-          } else if (message == Spectator.CANCEL_AND_DISMISS) {
+          } else if (message == SpectatorSignal.CANCEL_AND_DISMISS) {
             storyActor.tell(EventSignal.CANCEL, headers, self);
             agent.dismissSelf();
 

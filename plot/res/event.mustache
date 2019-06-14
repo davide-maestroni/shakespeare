@@ -30,7 +30,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,6 +47,7 @@ import dm.shakespeare.function.Observer;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.Receipt;
 import dm.shakespeare.plot.Setting.Cache;
+import dm.shakespeare.plot.Spectator.SpectatorSignal;
 import dm.shakespeare.plot.function.Action;
 import dm.shakespeare.plot.function.NullaryFunction;
 {{#arities}}
@@ -868,10 +868,10 @@ public abstract class Event<T> {
               agent.dismissSelf();
             }
 
-          } else if (message == Spectator.PAUSE) {
+          } else if (message == SpectatorSignal.PAUSE) {
             isPaused = true;
 
-          } else if ((message == Spectator.RESUME) && isPaused) {
+          } else if ((message == SpectatorSignal.RESUME) && isPaused) {
             final Object effect = this.effect;
             if (effect instanceof Conflict) {
               eventObserver.onIncident(((Conflict) effect).getCause());
@@ -881,10 +881,10 @@ public abstract class Event<T> {
             }
             agent.dismissSelf();
 
-          } else if (message == Spectator.CANCEL) {
+          } else if (message == SpectatorSignal.CANCEL) {
             eventActor.tell(EventSignal.CANCEL, null, agent.getSelf());
 
-          } else if (message == Spectator.CANCEL_AND_DISMISS) {
+          } else if (message == SpectatorSignal.CANCEL_AND_DISMISS) {
             eventActor.tell(EventSignal.CANCEL, null, agent.getSelf());
             agent.dismissSelf();
 

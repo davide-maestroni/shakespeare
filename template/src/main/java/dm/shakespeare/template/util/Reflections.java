@@ -34,7 +34,7 @@ import dm.shakespeare.util.ConstantConditions;
 @SuppressWarnings("WeakerAccess")
 public class Reflections {
 
-  private static final HashMap<Class<?>, Class<?>> boxingClasses =
+  private static final HashMap<Class<?>, Class<?>> BOXING_CLASSES =
       new HashMap<Class<?>, Class<?>>(9) {{
         put(boolean.class, Boolean.class);
         put(byte.class, Byte.class);
@@ -93,7 +93,7 @@ public class Reflections {
     if (!type.isPrimitive()) {
       return type;
     }
-    return boxingClasses.get(type);
+    return BOXING_CLASSES.get(type);
   }
 
   /**

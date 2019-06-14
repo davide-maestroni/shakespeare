@@ -42,6 +42,8 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class SupervisedBehavior extends AbstractBehavior {
 
+  // TODO: 2019-06-14 enum + serializable(?) 
+
   public static final Supervise SUPERVISE = new Supervise();
   public static final Unsupervise UNSUPERVISE = new Unsupervise();
 

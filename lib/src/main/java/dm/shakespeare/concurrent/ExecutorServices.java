@@ -33,7 +33,7 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class ExecutorServices {
 
-  private static final WeakHashMap<ExecutorService, ScheduledExecutorService> sScheduledExecutors =
+  private static final WeakHashMap<ExecutorService, ScheduledExecutorService> scheduledExecutors =
       new WeakHashMap<ExecutorService, ScheduledExecutorService>();
 
   /**
@@ -93,8 +93,8 @@ public class ExecutorServices {
       return (ScheduledExecutorService) executorService;
     }
     ScheduledExecutorService scheduledExecutor;
-    synchronized (sScheduledExecutors) {
-      final WeakHashMap<ExecutorService, ScheduledExecutorService> executors = sScheduledExecutors;
+    synchronized (scheduledExecutors) {
+      final WeakHashMap<ExecutorService, ScheduledExecutorService> executors = scheduledExecutors;
       scheduledExecutor = executors.get(executorService);
       if (scheduledExecutor == null) {
         scheduledExecutor = new ScheduledThreadPoolWrapper(executorService);

@@ -29,7 +29,7 @@ public class Handlers {
 
   // TODO: 05/04/2019 skip(?)
 
-  private static final UnaryFunction<?, ?> identity = new UnaryFunction<Object, Object>() {
+  private static final UnaryFunction<?, ?> IDENTITY = new UnaryFunction<Object, Object>() {
 
     public Object call(final Object first) {
       return first;
@@ -43,7 +43,7 @@ public class Handlers {
   @NotNull
   @SuppressWarnings("unchecked")
   public static <T> UnaryFunction<T, T> identity() {
-    return (UnaryFunction<T, T>) identity;
+    return (UnaryFunction<T, T>) IDENTITY;
   }
 
   @NotNull

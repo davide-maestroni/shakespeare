@@ -44,17 +44,17 @@ import dm.shakespeare.template.config.BuildConfig;
  */
 public class AnnotationBehavior extends SerializableAbstractBehavior {
 
-  private static final HashMap<Class<? extends Annotation>, AnnotationHandler<?>>
-      annotationHandlers = new HashMap<Class<? extends Annotation>, AnnotationHandler<?>>() {{
-    put(OnStart.class, new OnStartHandler());
-    put(OnStop.class, new OnStopHandler());
-    put(OnParams.class, new OnParamsHandler());
-    put(OnAny.class, new OnAnyHandler());
-    put(OnMatch.class, new OnMatchHandler());
-    put(OnMessage.class, new OnMessageHandler());
-    put(OnEnvelop.class, new OnEnvelopHandler());
-    put(OnNoMatch.class, new OnNoMatchHandler());
-  }};
+  private static final HashMap<Class<? extends Annotation>, AnnotationHandler<?>> HANDLERS =
+      new HashMap<Class<? extends Annotation>, AnnotationHandler<?>>() {{
+        put(OnStart.class, new OnStartHandler());
+        put(OnStop.class, new OnStopHandler());
+        put(OnParams.class, new OnParamsHandler());
+        put(OnAny.class, new OnAnyHandler());
+        put(OnMatch.class, new OnMatchHandler());
+        put(OnMessage.class, new OnMessageHandler());
+        put(OnEnvelop.class, new OnEnvelopHandler());
+        put(OnNoMatch.class, new OnNoMatchHandler());
+      }};
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   private final Behavior behavior;
@@ -64,7 +64,7 @@ public class AnnotationBehavior extends SerializableAbstractBehavior {
     final Class<?> objectClass = object.getClass();
     final BehaviorBuilder builder = Role.newBehavior();
     final Set<Entry<Class<? extends Annotation>, AnnotationHandler<?>>> entries =
-        annotationHandlers.entrySet();
+        HANDLERS.entrySet();
     for (final Method method : objectClass.getMethods()) {
       for (final Entry<Class<? extends Annotation>, AnnotationHandler<?>> entry : entries) {
         final Annotation annotation = method.getAnnotation(entry.getKey());

@@ -30,9 +30,6 @@ import dm.shakespeare.plot.config.BuildConfig;
  */
 public class Script implements Serializable {
 
-  // TODO: 15/02/2019 serialization?
-  // TODO: 28/02/2019 swagger converter
-
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   @NotNull
