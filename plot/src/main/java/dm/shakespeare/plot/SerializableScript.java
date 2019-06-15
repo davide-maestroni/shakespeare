@@ -16,25 +16,14 @@
 
 package dm.shakespeare.plot;
 
-import org.jetbrains.annotations.NotNull;
+import java.io.Serializable;
 
-import java.util.concurrent.ExecutorService;
-
-import dm.shakespeare.actor.Role;
-import dm.shakespeare.log.Logger;
+import dm.shakespeare.plot.config.BuildConfig;
 
 /**
  * Created by davide-maestroni on 06/12/2019.
  */
-public class Script {
+public class SerializableScript extends Script implements Serializable {
 
-  @NotNull
-  public ExecutorService getExecutorService() throws Exception {
-    return Role.defaultExecutorService();
-  }
-
-  @NotNull
-  public Logger getLogger() throws Exception {
-    return Role.defaultLogger(this);
-  }
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 }

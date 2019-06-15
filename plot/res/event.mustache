@@ -115,7 +115,7 @@ public abstract class Event<T> {
 
   @NotNull
   public static <T, R> Event<R> when(@NotNull final Iterable<? extends Event<? extends T>> events,
-      @NotNull final UnaryFunction<? super List<T>, ? extends Event<? extends R>> effectHandler) {
+      @NotNull final UnaryFunction<? super List<? extends T>, ? extends Event<? extends R>> effectHandler) {
     return new GenericEvent<T, R>(events, effectHandler);
   }
 {{#arities}}
@@ -130,7 +130,7 @@ public abstract class Event<T> {
   @NotNull
   public static <T, R> Event<R> whenTransform(
       @NotNull final Iterable<? extends Event<? extends T>> events,
-      @NotNull final UnaryFunction<? super List<T>, ? extends R> effectHandler) {
+      @NotNull final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler) {
     return new GenericTransformEvent<T, R>(events, effectHandler);
   }
 
@@ -1005,10 +1005,10 @@ public abstract class Event<T> {
   private static class GenericEvent<T, R> extends AbstractEvent<R> {
 
     private final List<Actor> actors;
-    private final UnaryFunction<? super List<T>, ? extends Event<? extends R>> effectHandler;
+    private final UnaryFunction<? super List<? extends T>, ? extends Event<? extends R>> effectHandler;
 
     private GenericEvent(@NotNull final Iterable<? extends Event<? extends T>> events,
-        @NotNull final UnaryFunction<? super List<T>, ? extends Event<? extends R>> effectHandler) {
+        @NotNull final UnaryFunction<? super List<? extends T>, ? extends Event<? extends R>> effectHandler) {
       super(Iterables.size(events));
       final ArrayList<Actor> actors = new ArrayList<Actor>();
       for (final Event<? extends T> event : events) {
@@ -1046,10 +1046,10 @@ public abstract class Event<T> {
   private static class GenericTransformEvent<T, R> extends AbstractEvent<R> {
 
     private final List<Actor> actors;
-    private final UnaryFunction<? super List<T>, ? extends R> effectHandler;
+    private final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler;
 
     private GenericTransformEvent(@NotNull final Iterable<? extends Event<? extends T>> events,
-        @NotNull final UnaryFunction<? super List<T>, ? extends R> effectHandler) {
+        @NotNull final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler) {
       super(Iterables.size(events));
       final ArrayList<Actor> actors = new ArrayList<Actor>();
       for (final Event<? extends T> event : events) {

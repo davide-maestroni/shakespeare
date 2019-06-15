@@ -192,30 +192,30 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-      @NotNull final UnaryFunction<? super List<T>, ? extends Story<? extends R>> effectHandler) {
+      @NotNull final UnaryFunction<? super List<? extends T>, ? extends Story<? extends R>> effectHandler) {
     return when(stories, conditionHandler, effectHandler, new ListMemory());
   }
 
   @NotNull
   public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-      @NotNull final UnaryFunction<? super List<T>, ? extends Story<? extends R>> effectHandler,
+      @NotNull final UnaryFunction<? super List<? extends T>, ? extends Story<? extends R>> effectHandler,
       @NotNull final Memory memory) {
     return new GenericStory<T, R>(stories, conditionHandler, effectHandler, memory);
   }
 
   @NotNull
   public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
-      @NotNull final StoryEvolver<? super List<T>, ? extends R> storyEvolver) {
+      @NotNull final StoryEvolver<? super List<? extends T>, ? extends R> storyEvolver) {
     return when(stories, storyEvolver, new ListMemory());
   }
 
   @NotNull
   public static <T, R> Story<R> when(@NotNull final Iterable<? extends Story<? extends T>> stories,
-      @NotNull final StoryEvolver<? super List<T>, ? extends R> storyEvolver,
+      @NotNull final StoryEvolver<? super List<? extends T>, ? extends R> storyEvolver,
       @NotNull final Memory memory) {
     return when(stories, new EvolverConditionHandler(storyEvolver),
-        new EvolverEffectHandler<List<T>, R>(storyEvolver), memory);
+        new EvolverEffectHandler<List<? extends T>, R>(storyEvolver), memory);
   }
 {{#arities}}
 
@@ -239,7 +239,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public static <T, R> Story<R> whenTransform(
       @NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-      @NotNull final UnaryFunction<? super List<T>, ? extends R> effectHandler) {
+      @NotNull final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler) {
     return whenTransform(stories, conditionHandler, effectHandler, new ListMemory());
   }
 
@@ -247,7 +247,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   public static <T, R> Story<R> whenTransform(
       @NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-      @NotNull final UnaryFunction<? super List<T>, ? extends R> effectHandler,
+      @NotNull final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler,
       @NotNull final Memory memory) {
     return new GenericTransformStory<T, R>(stories, conditionHandler, effectHandler, memory);
   }
@@ -255,17 +255,17 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   public static <T, R> Story<R> whenTransform(
       @NotNull final Iterable<? extends Story<? extends T>> stories,
-      @NotNull final StoryTransformer<? super List<T>, ? extends R> storyTransformer) {
+      @NotNull final StoryTransformer<? super List<? extends T>, ? extends R> storyTransformer) {
     return whenTransform(stories, storyTransformer, new ListMemory());
   }
 
   @NotNull
   public static <T, R> Story<R> whenTransform(
       @NotNull final Iterable<? extends Story<? extends T>> stories,
-      @NotNull final StoryTransformer<? super List<T>, ? extends R> storyTransformer,
+      @NotNull final StoryTransformer<? super List<? extends T>, ? extends R> storyTransformer,
       @NotNull final Memory memory) {
     return whenTransform(stories, new TransformerConditionHandler(storyTransformer),
-        new TransformerEffectHandler<List<T>, R>(storyTransformer), memory);
+        new TransformerEffectHandler<List<? extends T>, R>(storyTransformer), memory);
   }
 {{#arities}}
 
@@ -3248,13 +3248,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   private static class GenericStory<T, R> extends AbstractStory<R> {
 
-    private final UnaryFunction<? super List<T>, ? extends Story<? extends R>> effectHandler;
+    private final UnaryFunction<? super List<? extends T>, ? extends Story<? extends R>> effectHandler;
     private final List<Actor> inputActors;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private GenericStory(@NotNull final Iterable<? extends Story<? extends T>> stories,
         @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-        @NotNull final UnaryFunction<? super List<T>, ? extends Story<? extends R>> effectHandler,
+        @NotNull final UnaryFunction<? super List<? extends T>, ? extends Story<? extends R>> effectHandler,
         @NotNull final Memory memory) {
       super(conditionHandler, Iterables.size(stories), memory);
       final ArrayList<Actor> inputActors = new ArrayList<Actor>();
@@ -3296,13 +3296,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   private static class GenericTransformStory<T, R> extends AbstractStory<R> {
 
-    private final UnaryFunction<? super List<T>, ? extends R> effectHandler;
+    private final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler;
     private final List<Actor> inputActors;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private GenericTransformStory(@NotNull final Iterable<? extends Story<? extends T>> stories,
         @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-        @NotNull final UnaryFunction<? super List<T>, ? extends R> effectHandler,
+        @NotNull final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler,
         @NotNull final Memory memory) {
       super(conditionHandler, Iterables.size(stories), memory);
       final ArrayList<Actor> inputActors = new ArrayList<Actor>();
