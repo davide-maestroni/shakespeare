@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
-import dm.shakespeare.remote.util.SerializableData;
+import dm.shakespeare.remote.util.RawData;
 
 /**
  * Created by davide-maestroni on 04/09/2019.
@@ -31,8 +31,8 @@ public class CreateActorRequest extends RemoteRequest {
   private static final long serialVersionUID = VERSION;
 
   private String actorId;
-  private Map<String, SerializableData> resources;
-  private SerializableData roleData;
+  private Map<String, RawData> resources;
+  private RawData roleData;
 
   public String getActorId() {
     return actorId;
@@ -42,36 +42,36 @@ public class CreateActorRequest extends RemoteRequest {
     this.actorId = actorId;
   }
 
-  public Map<String, SerializableData> getResources() {
+  public Map<String, RawData> getResources() {
     return resources;
   }
 
-  public void setResources(final Map<String, SerializableData> resources) {
+  public void setResources(final Map<String, RawData> resources) {
     this.resources = resources;
   }
 
-  public SerializableData getRoleData() {
+  public RawData getRoleData() {
     return roleData;
   }
 
-  public void setRoleData(final SerializableData roleData) {
+  public void setRoleData(final RawData roleData) {
     this.roleData = roleData;
   }
 
   @NotNull
   public CreateActorRequest putAllResources(
-      @NotNull final Map<? extends String, ? extends SerializableData> resources) {
+      @NotNull final Map<? extends String, ? extends RawData> resources) {
     if (this.resources == null) {
-      this.resources = new HashMap<String, SerializableData>();
+      this.resources = new HashMap<String, RawData>();
     }
     this.resources.putAll(resources);
     return this;
   }
 
   @NotNull
-  public CreateActorRequest putResource(final String path, final SerializableData data) {
+  public CreateActorRequest putResource(final String path, final RawData data) {
     if (resources == null) {
-      resources = new HashMap<String, SerializableData>();
+      resources = new HashMap<String, RawData>();
     }
     resources.put(path, data);
     return this;
@@ -84,13 +84,13 @@ public class CreateActorRequest extends RemoteRequest {
   }
 
   @NotNull
-  public CreateActorRequest withResources(final Map<String, SerializableData> resources) {
+  public CreateActorRequest withResources(final Map<String, RawData> resources) {
     this.resources = resources;
     return this;
   }
 
   @NotNull
-  public CreateActorRequest withRoleData(final SerializableData roleData) {
+  public CreateActorRequest withRoleData(final RawData roleData) {
     this.roleData = roleData;
     return this;
   }

@@ -43,7 +43,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import dm.shakespeare.remote.util.Classes;
-import dm.shakespeare.remote.util.SerializableData;
+import dm.shakespeare.remote.util.RawData;
 
 /**
  * Created by davide-maestroni on 04/09/2019.
@@ -168,34 +168,9 @@ class RemoteClassLoader extends ClassLoader {
   }
 
   @NotNull
-  File register(@NotNull final String path, @NotNull final SerializableData data) throws
-      IOException {
-    final String name = Integer.toHexString(path.hashCode());
-    final FileOutputStream outputStream = new FileOutputStream(new File(container, name + ".path"));
-    try {
-      outputStream.write(path.getBytes("UTF-8"));
-      final File file = new File(container, name + ".raw");
-      data.copyTo(file);
-      synchronized (mutex) {
-        paths.put(path, name);
-        resources.put(name, file);
-      }
-      return file;
-
-    } finally {
-      try {
-        outputStream.close();
-
-      } catch (final IOException e) {
-        // TODO: 18/04/2019 ??
-      }
-    }
-  }
-
-  @NotNull
-  Set<String> register(@NotNull final Map<String, SerializableData> resources) throws IOException {
+  Set<String> register(@NotNull final Map<String, RawData> resources) throws IOException {
     final HashSet<String> missingPaths = new HashSet<String>();
-    for (final Entry<String, SerializableData> entry : resources.entrySet()) {
+    for (final Entry<String, RawData> entry : resources.entrySet()) {
       final File file = register(entry.getKey(), entry.getValue());
       FileInputStream inputStream = null;
       try {
@@ -279,6 +254,31 @@ class RemoteClassLoader extends ClassLoader {
         }
       }
       resources.keySet().retainAll(names);
+    }
+  }
+
+  @NotNull
+  private File register(@NotNull final String path, @NotNull final RawData data) throws
+      IOException {
+    final String name = Integer.toHexString(path.hashCode());
+    final FileOutputStream outputStream = new FileOutputStream(new File(container, name + ".path"));
+    try {
+      outputStream.write(path.getBytes("UTF-8"));
+      final File file = new File(container, name + ".raw");
+      data.copyTo(file);
+      synchronized (mutex) {
+        paths.put(path, name);
+        resources.put(name, file);
+      }
+      return file;
+
+    } finally {
+      try {
+        outputStream.close();
+
+      } catch (final IOException e) {
+        // TODO: 18/04/2019 ??
+      }
     }
   }
 }

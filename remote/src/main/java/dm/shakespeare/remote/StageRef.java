@@ -71,7 +71,7 @@ import dm.shakespeare.remote.transport.RemoteRequest;
 import dm.shakespeare.remote.transport.RemoteResponse;
 import dm.shakespeare.remote.transport.UploadRequest;
 import dm.shakespeare.remote.transport.UploadResponse;
-import dm.shakespeare.remote.util.SerializableData;
+import dm.shakespeare.remote.util.RawData;
 import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -458,11 +458,11 @@ public class StageRef extends Stage {
   @NotNull
   @Override
   protected Actor buildActor(@NotNull final String id, @NotNull final Role role) throws Exception {
-    final HashMap<String, SerializableData> resources = new HashMap<String, SerializableData>();
+    final HashMap<String, RawData> resources = new HashMap<String, RawData>();
     final Map<String, File> resourceFiles = StageRef.resourceFiles;
     final byte[] data = serializer.serialize(role);
     RemoteResponse response = getSender().send(new CreateActorRequest().withActorId(id)
-        .withRoleData(SerializableData.wrap(data))
+        .withRoleData(RawData.wrap(data))
         .withResources(resources), remoteId);
     while (response instanceof CreateActorContinue) {
       resources.clear();
@@ -474,7 +474,7 @@ public class StageRef extends Stage {
       for (final String missingResource : missingResources) {
         final File resourceFile = resourceFiles.get(missingResource);
         if (resourceFile != null) {
-          resources.put(missingResource, SerializableData.wrap(resourceFile));
+          resources.put(missingResource, RawData.wrap(resourceFile));
         }
       }
 
@@ -483,7 +483,7 @@ public class StageRef extends Stage {
             "invalid response from remote stage: unknown resources: " + missingResources);
       }
       response = getSender().send(new CreateActorRequest().withActorId(id)
-          .withRoleData(SerializableData.wrap(data))
+          .withRoleData(RawData.wrap(data))
           .withResources(resources), remoteId);
     }
     final CreateActorResponse actorResponse = (CreateActorResponse) response;
@@ -501,12 +501,12 @@ public class StageRef extends Stage {
 
   public void uploadResources(@NotNull final String pathRegex) {
     final Pattern pattern = Pattern.compile(pathRegex);
-    final HashMap<String, SerializableData> resources = new HashMap<String, SerializableData>();
+    final HashMap<String, RawData> resources = new HashMap<String, RawData>();
     final Map<String, File> resourceFiles = StageRef.resourceFiles;
     for (final Entry<String, File> entry : resourceFiles.entrySet()) {
       final String path = entry.getKey();
       if (pattern.matcher(path).matches()) {
-        resources.put(path, SerializableData.wrap(entry.getValue()));
+        resources.put(path, RawData.wrap(entry.getValue()));
       }
     }
     if (!resources.isEmpty()) {
@@ -640,7 +640,7 @@ public class StageRef extends Stage {
             final String refreshInstanceId = ((RefreshInstanceId) message).getInstanceId();
             if ((refreshInstanceId != null) ? !refreshInstanceId.equals(instanceId)
                 : (instanceId != null)) {
-              agent.dismissSelf();
+              agent.getSelf().dismiss(false);
             }
 
           } else {
@@ -698,7 +698,7 @@ public class StageRef extends Stage {
         final String refreshInstanceId = senderActorID.getInstanceId();
         if ((refreshInstanceId != null) ? !refreshInstanceId.equals(instanceId)
             : (instanceId != null)) {
-          agent.dismissSelf();
+          agent.getSelf().dismiss(false);
           return false;
         }
 
@@ -717,7 +717,7 @@ public class StageRef extends Stage {
       senders.remove(senderActor);
       senders.add(senderActor);
       try {
-        final SerializableData messageData = request.getMessageData();
+        final RawData messageData = request.getMessageData();
         final Object object;
         if (messageData != null) {
           object = serializer.deserialize(messageData, StageRef.class.getClassLoader());
@@ -765,7 +765,7 @@ public class StageRef extends Stage {
       RemoteResponse response;
       try {
         final byte[] data = serializer.serialize(message);
-        final HashMap<String, SerializableData> resources = new HashMap<String, SerializableData>();
+        final HashMap<String, RawData> resources = new HashMap<String, RawData>();
         final Map<String, File> resourceFiles = StageRef.resourceFiles;
         final ActorID actorID =
             new ActorID().withActorId(agent.getSelf().getId()).withInstanceId(instanceId);
@@ -773,7 +773,7 @@ public class StageRef extends Stage {
             new ActorID().withActorId(sender.getId()).withInstanceId(senderInstanceId);
         final String remoteId = StageRef.this.remoteId;
         response = getSender().send(new MessageRequest().withActorID(actorID)
-            .withMessageData(SerializableData.wrap(data))
+            .withMessageData(RawData.wrap(data))
             .withHeaders(envelop.getHeaders())
             .withSenderActorID(senderID)
             .withResources(resources), remoteId);
@@ -788,7 +788,7 @@ public class StageRef extends Stage {
           for (final String missingResource : missingResources) {
             final File resourceFile = resourceFiles.get(missingResource);
             if (resourceFile != null) {
-              resources.put(missingResource, SerializableData.wrap(resourceFile));
+              resources.put(missingResource, RawData.wrap(resourceFile));
             }
           }
 
@@ -798,7 +798,7 @@ public class StageRef extends Stage {
             return false;
           }
           response = getSender().send(new MessageRequest().withActorID(actorID)
-              .withMessageData(SerializableData.wrap(data))
+              .withMessageData(RawData.wrap(data))
               .withHeaders(envelop.getHeaders())
               .withSenderActorID(senderID)
               .withResources(resources), remoteId);
@@ -827,7 +827,7 @@ public class StageRef extends Stage {
           getSender().send(new MessageRequest().withActorID(request.getSenderActorID())
               .withSenderActorID(request.getSenderActorID())
               .withMessageData(
-                  SerializableData.wrap(serializer.serialize(new Rejection(null, headers))))
+                  RawData.wrap(serializer.serialize(new Rejection(null, headers))))
               .withHeaders(headers.threadOnly()), remoteId);
 
         } catch (final Exception e) {

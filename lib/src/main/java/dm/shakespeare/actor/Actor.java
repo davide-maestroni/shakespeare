@@ -58,6 +58,15 @@ public interface Actor {
    *                              cause the behavior to never receive a stop notification.
    */
   void dismiss(boolean mayInterruptIfRunning);
+  // TODO: 2019-06-18 + dismissNow()??
+
+  /**
+   * Lazily dismiss this actor so that its behavior will be stopped and the actor removed from its
+   * stage.<br>
+   * Any pending message, at the moment this method is called, will be processed before initiating
+   * the actor teardown.
+   */
+  void dismissLazy();
 
   /**
    * Returns the actor ID.<br>

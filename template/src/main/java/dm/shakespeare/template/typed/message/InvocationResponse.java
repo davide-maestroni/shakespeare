@@ -14,28 +14,16 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.remote.io;
+package dm.shakespeare.template.typed.message;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import java.io.Serializable;
 
-import java.util.Collection;
-
-import dm.shakespeare.remote.util.RawData;
+import dm.shakespeare.template.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 04/16/2019.
+ * Created by davide-maestroni on 06/17/2019.
  */
-public interface Serializer {
+public class InvocationResponse implements Serializable {
 
-  void blacklist(@NotNull Collection<String> classNames);
-
-  @NotNull
-  Object deserialize(@NotNull RawData data, @NotNull ClassLoader classLoader) throws
-      Exception;
-
-  @NotNull
-  byte[] serialize(@Nullable Object o) throws Exception;
-
-  void whitelist(@NotNull Collection<String> classNames);
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 }

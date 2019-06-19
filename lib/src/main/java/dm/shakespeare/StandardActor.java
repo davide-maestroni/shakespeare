@@ -82,6 +82,11 @@ class StandardActor implements Actor {
     agent.dismiss(mayInterruptIfRunning);
   }
 
+  public void dismissLazy() {
+    logger.dbg("[%s] dismissing lazily", this);
+    agent.dismissLazy();
+  }
+
   @NotNull
   public String getId() {
     return id;

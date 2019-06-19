@@ -18,8 +18,6 @@ package dm.shakespeare.template.actor;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.UUID;
 import java.util.concurrent.RejectedExecutionException;
@@ -104,12 +102,6 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
       }
     }
     this.delayedMessages = new CQueue<DelayedMessage>();
-  }
-
-  private void readObject(final ObjectInputStream in) throws IOException, ClassNotFoundException {
-    in.defaultReadObject();
-    agent = new SupervisedAgentWrapper();
-    handler = new DefaultHandler();
   }
 
   private void resetFailure(@NotNull final Agent agent) {
@@ -385,7 +377,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
       } else if (message instanceof Unsupervise) {
         final Actor sender = envelop.getSender();
         if (sender.equals(supervisor)) {
-          agent.dismissSelf();
+          agent.getSelf().dismiss(false);
 
         } else if (headers.getReceiptId() != null) {
           sender.tell(new Failure(message, headers,
@@ -443,7 +435,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
               agent.restartSelf();
 
             } else {
-              agent.dismissSelf();
+              agent.getSelf().dismiss(false);
             }
 
           } else if (headers.getReceiptId() != null) {
@@ -467,7 +459,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
             final Actor sender = envelop.getSender();
             if (sender.equals(supervisor) && failureId.equals(
                 ((SupervisedFailure) bouncedMessage).getFailureId())) {
-              agent.dismissSelf();
+              agent.getSelf().dismiss(false);
             }
           }
         }
@@ -475,7 +467,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
       } else if (message instanceof DeadLetter) {
         final Actor sender = envelop.getSender();
         if (sender.equals(supervisor)) {
-          agent.dismissSelf();
+          agent.getSelf().dismiss(false);
         }
 
       } else {

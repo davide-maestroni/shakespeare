@@ -39,32 +39,32 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 04/13/2019.
  */
-public abstract class SerializableData implements Serializable {
+public abstract class RawData implements Serializable {
 
   private static final int DEFAULT_CHUNK_SIZE = 8192;
 
   @NotNull
-  public static SerializableData wrap(@NotNull final byte[] bytes) {
+  public static RawData wrap(@NotNull final byte[] bytes) {
     return new ByteArrayData(bytes);
   }
 
   @NotNull
-  public static SerializableData wrap(@NotNull final ByteBuffer buffer) {
+  public static RawData wrap(@NotNull final ByteBuffer buffer) {
     return new ByteBufferData(buffer);
   }
 
   @NotNull
-  public static SerializableData wrap(@NotNull final File file) {
+  public static RawData wrap(@NotNull final File file) {
     return new FileData(file);
   }
 
   @NotNull
-  public static SerializableData wrap(@NotNull final InputStream inputStream) {
+  public static RawData wrap(@NotNull final InputStream inputStream) {
     return new InputStreamData(inputStream);
   }
 
   @NotNull
-  public static SerializableData wrapOnce(@NotNull final InputStream inputStream) {
+  public static RawData wrapOnce(@NotNull final InputStream inputStream) {
     return new UncachedInputStreamData(inputStream);
   }
 
@@ -97,7 +97,7 @@ public abstract class SerializableData implements Serializable {
 
   abstract void serialize(@NotNull ObjectOutputStream out) throws IOException;
 
-  private static class ByteArrayData extends SerializableData {
+  private static class ByteArrayData extends RawData {
 
     private final byte[] data;
 
@@ -129,17 +129,29 @@ public abstract class SerializableData implements Serializable {
 
     void serialize(@NotNull final ObjectOutputStream out) throws IOException {
       final byte[] data = this.data;
-      out.writeInt(data.length);
-      out.write(data);
-      out.writeInt(0);
+      if (data.length <= DEFAULT_CHUNK_SIZE) {
+        out.writeInt(data.length);
+        out.write(data);
+        out.writeInt(0);
+
+      } else {
+        int offset = 0;
+        int length;
+        while ((length = Math.min(data.length - offset, DEFAULT_CHUNK_SIZE)) > 0) {
+          out.writeInt(length);
+          out.write(data, offset, length);
+          offset += length;
+        }
+        out.writeInt(0);
+      }
     }
 
     private Object writeReplace() throws ObjectStreamException {
-      return new SerializableWrapper(this);
+      return new RawDataWrapper(this);
     }
   }
 
-  private static class ByteBufferData extends SerializableData {
+  private static class ByteBufferData extends RawData {
 
     private final ByteBuffer buffer;
 
@@ -194,28 +206,15 @@ public abstract class SerializableData implements Serializable {
     }
 
     void serialize(@NotNull final ObjectOutputStream out) throws IOException {
-      final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-      final ByteBufferInputStream inputStream = new ByteBufferInputStream(buffer);
-      try {
-        int length;
-        while ((length = inputStream.read(chunk)) > 0) {
-          out.writeInt(length);
-          out.write(chunk, 0, length);
-        }
-        out.writeInt(0);
-        out.close();
-
-      } finally {
-        inputStream.close();
-      }
+      RawData.wrapOnce(new ByteBufferInputStream(buffer)).serialize(out);
     }
 
     private Object writeReplace() throws ObjectStreamException {
-      return new SerializableWrapper(this);
+      return new RawDataWrapper(this);
     }
   }
 
-  private static class FileData extends SerializableData {
+  private static class FileData extends RawData {
 
     private final File file;
 
@@ -362,39 +361,19 @@ public abstract class SerializableData implements Serializable {
     void serialize(@NotNull final ObjectOutputStream out) throws IOException {
       final byte[] data = this.data;
       if (data != null) {
-        out.write(data.length);
-        out.write(data);
-        out.writeInt(0);
+        RawData.wrap(data).serialize(out);
 
       } else {
-        final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-        final FileInputStream inputStream = new FileInputStream(file);
-        try {
-          int length;
-          while ((length = inputStream.read(chunk)) > 0) {
-            out.writeInt(length);
-            out.write(chunk, 0, length);
-          }
-          out.writeInt(0);
-          out.close();
-
-        } finally {
-          try {
-            inputStream.close();
-
-          } catch (final IOException e) {
-            // TODO: 18/04/2019 ???
-          }
-        }
+        RawData.wrapOnce(new FileInputStream(file)).serialize(out);
       }
     }
 
     private Object writeReplace() throws ObjectStreamException {
-      return new SerializableWrapper(this);
+      return new RawDataWrapper(this);
     }
   }
 
-  private static class InputStreamData extends SerializableData {
+  private static class InputStreamData extends RawData {
 
     private final InputStream input;
 
@@ -501,9 +480,7 @@ public abstract class SerializableData implements Serializable {
     void serialize(@NotNull final ObjectOutputStream out) throws IOException {
       final byte[] data = this.data;
       if (data != null) {
-        out.write(data.length);
-        out.write(data);
-        out.writeInt(0);
+        RawData.wrap(data).serialize(out);
 
       } else {
         final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
@@ -533,15 +510,15 @@ public abstract class SerializableData implements Serializable {
     }
 
     private Object writeReplace() throws ObjectStreamException {
-      return new SerializableWrapper(this);
+      return new RawDataWrapper(this);
     }
   }
 
-  private static class SerializableWrapper extends SerializableData {
+  private static class RawDataWrapper extends RawData {
 
-    private transient SerializableData data;
+    private transient RawData data;
 
-    private SerializableWrapper(@NotNull final SerializableData data) {
+    private RawDataWrapper(@NotNull final RawData data) {
       this.data = data;
     }
 
@@ -585,8 +562,9 @@ public abstract class SerializableData implements Serializable {
         long total = 0;
         int length;
         while ((length = in.readInt()) > 0) {
-          if (chunk.length < length) {
-            chunk = new byte[length];
+          // sanity check
+          if (length > DEFAULT_CHUNK_SIZE) {
+            throw new IOException();
           }
           in.readFully(chunk, 0, length);
           total += length;
@@ -623,7 +601,7 @@ public abstract class SerializableData implements Serializable {
     }
   }
 
-  private static class UncachedInputStreamData extends SerializableData {
+  private static class UncachedInputStreamData extends RawData {
 
     private final InputStream input;
 
@@ -724,7 +702,7 @@ public abstract class SerializableData implements Serializable {
     }
 
     private Object writeReplace() throws ObjectStreamException {
-      return new SerializableWrapper(this);
+      return new RawDataWrapper(this);
     }
   }
 }

@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import dm.shakespeare.actor.Headers;
-import dm.shakespeare.remote.util.SerializableData;
+import dm.shakespeare.remote.util.RawData;
 
 /**
  * Created by davide-maestroni on 04/09/2019.
@@ -33,8 +33,8 @@ public class MessageRequest extends RemoteRequest {
 
   private ActorID actorID;
   private Headers headers;
-  private SerializableData messageData;
-  private Map<String, SerializableData> resources;
+  private RawData messageData;
+  private Map<String, RawData> resources;
   private ActorID senderActorID;
   private long sentTimestamp = System.currentTimeMillis();
 
@@ -54,19 +54,19 @@ public class MessageRequest extends RemoteRequest {
     this.headers = headers;
   }
 
-  public SerializableData getMessageData() {
+  public RawData getMessageData() {
     return messageData;
   }
 
-  public void setMessageData(final SerializableData messageData) {
+  public void setMessageData(final RawData messageData) {
     this.messageData = messageData;
   }
 
-  public Map<String, SerializableData> getResources() {
+  public Map<String, RawData> getResources() {
     return resources;
   }
 
-  public void setResources(final Map<String, SerializableData> resources) {
+  public void setResources(final Map<String, RawData> resources) {
     this.resources = resources;
   }
 
@@ -88,18 +88,18 @@ public class MessageRequest extends RemoteRequest {
 
   @NotNull
   public MessageRequest putAllResources(
-      @NotNull final Map<? extends String, ? extends SerializableData> resources) {
+      @NotNull final Map<? extends String, ? extends RawData> resources) {
     if (this.resources == null) {
-      this.resources = new HashMap<String, SerializableData>();
+      this.resources = new HashMap<String, RawData>();
     }
     this.resources.putAll(resources);
     return this;
   }
 
   @NotNull
-  public MessageRequest putResource(final String path, final SerializableData data) {
+  public MessageRequest putResource(final String path, final RawData data) {
     if (resources == null) {
-      resources = new HashMap<String, SerializableData>();
+      resources = new HashMap<String, RawData>();
     }
     resources.put(path, data);
     return this;
@@ -118,13 +118,13 @@ public class MessageRequest extends RemoteRequest {
   }
 
   @NotNull
-  public MessageRequest withMessageData(final SerializableData messageData) {
+  public MessageRequest withMessageData(final RawData messageData) {
     this.messageData = messageData;
     return this;
   }
 
   @NotNull
-  public MessageRequest withResources(final Map<String, SerializableData> resources) {
+  public MessageRequest withResources(final Map<String, RawData> resources) {
     this.resources = resources;
     return this;
   }

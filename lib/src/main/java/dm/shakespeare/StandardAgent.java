@@ -78,20 +78,6 @@ class StandardAgent implements Agent {
     this.logger = ConstantConditions.notNull("logger", logger);
   }
 
-  public void dismissSelf() {
-    logger.dbg("[%s] dismissing self", actor);
-    dismissed = true;
-    if (dismissRunnable == null) {
-      dismissRunnable = new Runnable() {
-
-        public void run() {
-          behaviorWrapper.onStop(StandardAgent.this);
-        }
-      };
-    }
-    actorExecutorService.executeNext(dismissRunnable);
-  }
-
   @NotNull
   public ExecutorService getExecutorService() {
     if (agentExecutorService == null) {
@@ -184,7 +170,28 @@ class StandardAgent implements Agent {
         runner.interrupt();
       }
     }
-    dismissSelf();
+    dismissed = true;
+    if (dismissRunnable == null) {
+      dismissRunnable = new Runnable() {
+
+        public void run() {
+          behaviorWrapper.onStop(StandardAgent.this);
+        }
+      };
+    }
+    actorExecutorService.executeNext(dismissRunnable);
+  }
+
+  void dismissLazy() {
+    if (dismissRunnable == null) {
+      dismissRunnable = new Runnable() {
+
+        public void run() {
+          behaviorWrapper.onStop(StandardAgent.this);
+        }
+      };
+    }
+    actorExecutorService.execute(dismissRunnable);
   }
 
   @NotNull

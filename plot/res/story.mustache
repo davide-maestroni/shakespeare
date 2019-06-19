@@ -236,15 +236,15 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 {{/arities}}
 
   @NotNull
-  public static <T, R> Story<R> whenTransform(
+  public static <T, R> Story<R> whenXform(
       @NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler) {
-    return whenTransform(stories, conditionHandler, effectHandler, new ListMemory());
+    return whenXform(stories, conditionHandler, effectHandler, new ListMemory());
   }
 
   @NotNull
-  public static <T, R> Story<R> whenTransform(
+  public static <T, R> Story<R> whenXform(
       @NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler,
@@ -253,31 +253,31 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public static <T, R> Story<R> whenTransform(
+  public static <T, R> Story<R> whenXform(
       @NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final StoryTransformer<? super List<? extends T>, ? extends R> storyTransformer) {
-    return whenTransform(stories, storyTransformer, new ListMemory());
+    return whenXform(stories, storyTransformer, new ListMemory());
   }
 
   @NotNull
-  public static <T, R> Story<R> whenTransform(
+  public static <T, R> Story<R> whenXform(
       @NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final StoryTransformer<? super List<? extends T>, ? extends R> storyTransformer,
       @NotNull final Memory memory) {
-    return whenTransform(stories, new TransformerConditionHandler(storyTransformer),
+    return whenXform(stories, new TransformerConditionHandler(storyTransformer),
         new TransformerEffectHandler<List<? extends T>, R>(storyTransformer), memory);
   }
 {{#arities}}
 
   @NotNull
-  public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Story<R> whenTransform({{#paramTypes}}@NotNull final Story<? extends {{type}}> {{prefix}}Story, {{/paramTypes}}
+  public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Story<R> whenXform({{#paramTypes}}@NotNull final Story<? extends {{type}}> {{prefix}}Story, {{/paramTypes}}
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends R> effectHandler) {
-    return whenTransform({{#paramTypes}}{{prefix}}Story, {{/paramTypes}}conditionHandler, effectHandler, new ListMemory());
+    return whenXform({{#paramTypes}}{{prefix}}Story, {{/paramTypes}}conditionHandler, effectHandler, new ListMemory());
   }
 
   @NotNull
-  public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Story<R> whenTransform({{#paramTypes}}@NotNull final Story<? extends {{type}}> {{prefix}}Story, {{/paramTypes}}
+  public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Story<R> whenXform({{#paramTypes}}@NotNull final Story<? extends {{type}}> {{prefix}}Story, {{/paramTypes}}
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends R> effectHandler,
       @NotNull final Memory memory) {
@@ -368,13 +368,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <R> Story<R> forAllTransform(
+  public <R> Story<R> forAllXform(
       @NotNull final UnaryFunction<? super T, ? extends R> effectHandler) {
-    return forAllTransform(effectHandler, new ListMemory());
+    return forAllXform(effectHandler, new ListMemory());
   }
 
   @NotNull
-  public <R> Story<R> forAllTransform(
+  public <R> Story<R> forAllXform(
       @NotNull final UnaryFunction<? super T, ? extends R> effectHandler,
       @NotNull final Memory memory) {
     return new AllTransformStory<T, R>(this, effectHandler, memory);
@@ -421,31 +421,31 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <R> Story<R> forWhileTransform(
+  public <R> Story<R> forWhileXform(
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super T, ? extends R> effectHandler) {
-    return whenTransform(this, conditionHandler, effectHandler);
+    return whenXform(this, conditionHandler, effectHandler);
   }
 
   @NotNull
-  public <R> Story<R> forWhileTransform(
+  public <R> Story<R> forWhileXform(
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super T, ? extends R> effectHandler,
       @NotNull final Memory memory) {
-    return whenTransform(this, conditionHandler, effectHandler, memory);
+    return whenXform(this, conditionHandler, effectHandler, memory);
   }
 
   @NotNull
-  public <R> Story<R> forWhileTransform(
+  public <R> Story<R> forWhileXform(
       @NotNull final StoryTransformer<? super T, ? extends R> storyTransformer) {
-    return forWhileTransform(storyTransformer, new ListMemory());
+    return forWhileXform(storyTransformer, new ListMemory());
   }
 
   @NotNull
-  public <R> Story<R> forWhileTransform(
+  public <R> Story<R> forWhileXform(
       @NotNull final StoryTransformer<? super T, ? extends R> storyTransformer,
       @NotNull final Memory memory) {
-    return forWhileTransform(new TransformerConditionHandler(storyTransformer),
+    return forWhileXform(new TransformerConditionHandler(storyTransformer),
         new TransformerEffectHandler<T, R>(storyTransformer), memory);
   }
 
@@ -619,17 +619,17 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhileTransform(
+  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhileXform(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final Class<? extends E3> thirdType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler) {
-    return resolveWhileTransform(firstType, secondType, thirdType, conditionHandler,
+    return resolveWhileXform(firstType, secondType, thirdType, conditionHandler,
         incidentHandler, new ListMemory());
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhileTransform(
+  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhileXform(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final Class<? extends E3> thirdType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
@@ -643,36 +643,36 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhileTransform(
+  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhileXform(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final Class<? extends E3> thirdType,
       @NotNull final StoryTransformer<? super Throwable, ? extends T> storyTransformer) {
-    return resolveWhileTransform(firstType, secondType, thirdType, storyTransformer,
+    return resolveWhileXform(firstType, secondType, thirdType, storyTransformer,
         new ListMemory());
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhileTransform(
+  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhileXform(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final Class<? extends E3> thirdType,
       @NotNull final StoryTransformer<? super Throwable, ? extends T> storyTransformer,
       @NotNull final Memory memory) {
-    return resolveWhileTransform(firstType, secondType, thirdType,
+    return resolveWhileXform(firstType, secondType, thirdType,
         new TransformerConditionHandler(storyTransformer),
         new TransformerEffectHandler<Throwable, T>(storyTransformer), memory);
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhileTransform(
+  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhileXform(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler) {
-    return resolveWhileTransform(firstType, secondType, conditionHandler, incidentHandler,
+    return resolveWhileXform(firstType, secondType, conditionHandler, incidentHandler,
         new ListMemory());
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhileTransform(
+  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhileXform(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler,
@@ -684,32 +684,32 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhileTransform(
+  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhileXform(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final StoryTransformer<? super Throwable, ? extends T> storyTransformer) {
-    return resolveWhileTransform(firstType, secondType, storyTransformer, new ListMemory());
+    return resolveWhileXform(firstType, secondType, storyTransformer, new ListMemory());
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhileTransform(
+  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhileXform(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final StoryTransformer<? super Throwable, ? extends T> storyTransformer,
       @NotNull final Memory memory) {
-    return resolveWhileTransform(firstType, secondType,
+    return resolveWhileXform(firstType, secondType,
         new TransformerConditionHandler(storyTransformer),
         new TransformerEffectHandler<Throwable, T>(storyTransformer), memory);
   }
 
   @NotNull
-  public <E1 extends Throwable> Story<T> resolveWhileTransform(
+  public <E1 extends Throwable> Story<T> resolveWhileXform(
       @NotNull final Class<? extends E1> firstType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler) {
-    return resolveWhileTransform(firstType, conditionHandler, incidentHandler, new ListMemory());
+    return resolveWhileXform(firstType, conditionHandler, incidentHandler, new ListMemory());
   }
 
   @NotNull
-  public <E1 extends Throwable> Story<T> resolveWhileTransform(
+  public <E1 extends Throwable> Story<T> resolveWhileXform(
       @NotNull final Class<? extends E1> firstType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler,
@@ -720,32 +720,32 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <E1 extends Throwable> Story<T> resolveWhileTransform(
+  public <E1 extends Throwable> Story<T> resolveWhileXform(
       @NotNull final Class<? extends E1> firstType,
       @NotNull final StoryTransformer<? super Throwable, ? extends T> storyTransformer) {
-    return resolveWhileTransform(firstType, storyTransformer, new ListMemory());
+    return resolveWhileXform(firstType, storyTransformer, new ListMemory());
   }
 
   @NotNull
-  public <E1 extends Throwable> Story<T> resolveWhileTransform(
+  public <E1 extends Throwable> Story<T> resolveWhileXform(
       @NotNull final Class<? extends E1> firstType,
       @NotNull final StoryTransformer<? super Throwable, ? extends T> storyTransformer,
       @NotNull final Memory memory) {
-    return resolveWhileTransform(firstType, new TransformerConditionHandler(storyTransformer),
+    return resolveWhileXform(firstType, new TransformerConditionHandler(storyTransformer),
         new TransformerEffectHandler<Throwable, T>(storyTransformer), memory);
   }
 
   @NotNull
-  public <E extends Throwable> Story<T> resolveWhileTransform(
+  public <E extends Throwable> Story<T> resolveWhileXform(
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler) {
-    return resolveWhileTransform(incidentTypes, conditionHandler, incidentHandler,
+    return resolveWhileXform(incidentTypes, conditionHandler, incidentHandler,
         new ListMemory());
   }
 
   @NotNull
-  public <E extends Throwable> Story<T> resolveWhileTransform(
+  public <E extends Throwable> Story<T> resolveWhileXform(
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler,
@@ -787,7 +787,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   public Story<T> watchAll(@Nullable final Observer<? super T> effectObserver,
       @NotNull final Memory memory) {
-    return forAllTransform(new WatchAllFunction<T>(effectObserver), memory);
+    return forAllXform(new WatchAllFunction<T>(effectObserver), memory);
   }
 
   @NotNull
@@ -4435,7 +4435,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
             } else {
               storyObserver.onIncident(PlotFailureException.getOrNew((Bounce) message));
-              agent.dismissSelf();
+              self.dismiss(false);
             }
 
           } else if (message == Story.StorySignal.END) {
@@ -4444,7 +4444,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
             } else {
               storyObserver.onEnd();
-              agent.dismissSelf();
+              self.dismiss(false);
             }
 
           } else if (message == SpectatorSignal.PAUSE) {
@@ -4468,7 +4468,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             }
 
             if (isEnded) {
-              agent.dismissSelf();
+              self.dismiss(false);
 
             } else {
               isPaused = false;
@@ -4481,7 +4481,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
           } else if (message == SpectatorSignal.CANCEL_AND_DISMISS) {
             storyActor.tell(EventSignal.CANCEL, headers, self);
-            agent.dismissSelf();
+            self.dismiss(false);
 
           } else if (!(message instanceof Receipt)) {
             if (isPaused) {

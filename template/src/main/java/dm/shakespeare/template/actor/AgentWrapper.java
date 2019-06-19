@@ -33,10 +33,6 @@ public class AgentWrapper implements Agent {
 
   private Agent agent;
 
-  public void dismissSelf() {
-    agent.dismissSelf();
-  }
-
   @NotNull
   public ExecutorService getExecutorService() {
     return agent.getExecutorService();

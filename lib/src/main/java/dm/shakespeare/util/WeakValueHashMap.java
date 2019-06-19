@@ -19,14 +19,15 @@ package dm.shakespeare.util;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.util.AbstractCollection;
 import java.util.AbstractSet;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.WeakHashMap;
 
 /**
  * Map implementation with <i>weak values</i>. An entry in a WeakValueHashMap will be automatically
@@ -39,20 +40,18 @@ import java.util.WeakHashMap;
  */
 public class WeakValueHashMap<K, V> implements Map<K, V> {
 
-  private final WeakHashMap<KeyWrapper<K>, WeakReference<V>> keys;
-  private final WeakHashMap<V, HashSet<KeyWrapper<K>>> values;
+  private final HashMap<K, ValueWeakReference<K, V>> map;
+  private final ReferenceQueue<Object> queue = new ReferenceQueue<Object>();
 
-  private AbstractSet<Entry<K, V>> entrySet;
-  private AbstractSet<K> keySet;
-  private AbstractSet<V> valuesCollection;
+  private volatile AbstractSet<Entry<K, V>> entrySet;
+  private volatile AbstractCollection<V> valuesCollection;
 
   /**
    * Creates a new empty map with the default initial capacity (16) and the default load factor
    * (0.75).
    */
   public WeakValueHashMap() {
-    keys = new WeakHashMap<KeyWrapper<K>, WeakReference<V>>();
-    values = new WeakHashMap<V, HashSet<KeyWrapper<K>>>();
+    map = new HashMap<K, ValueWeakReference<K, V>>();
   }
 
   /**
@@ -62,8 +61,7 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
    * @throws IllegalArgumentException if the initial capacity is negative.
    */
   public WeakValueHashMap(final int initialCapacity) {
-    keys = new WeakHashMap<KeyWrapper<K>, WeakReference<V>>(initialCapacity);
-    values = new WeakHashMap<V, HashSet<KeyWrapper<K>>>(initialCapacity);
+    map = new HashMap<K, ValueWeakReference<K, V>>(initialCapacity);
   }
 
   /**
@@ -75,8 +73,7 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
    *                                  not positive.
    */
   public WeakValueHashMap(final int initialCapacity, final float loadFactor) {
-    keys = new WeakHashMap<KeyWrapper<K>, WeakReference<V>>(initialCapacity, loadFactor);
-    values = new WeakHashMap<V, HashSet<KeyWrapper<K>>>(initialCapacity, loadFactor);
+    map = new HashMap<K, ValueWeakReference<K, V>>(initialCapacity, loadFactor);
   }
 
   /**
@@ -96,7 +93,7 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
    */
   @Override
   public int hashCode() {
-    return keys.hashCode();
+    return map.hashCode();
   }
 
   /**
@@ -112,44 +109,65 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
       return (o instanceof Map) && o.equals(this);
     }
     final WeakValueHashMap<?, ?> that = (WeakValueHashMap<?, ?>) o;
-    return keys.equals(that.keys);
+    return map.equals(that.map);
+  }
+
+  /**
+   * Removes from this map all the entries whose key has no more strong references.
+   *
+   * @return this map.
+   */
+  @NotNull
+  @SuppressWarnings("unchecked")
+  public WeakValueHashMap<K, V> prune() {
+    final HashMap<K, ValueWeakReference<K, V>> map = this.map;
+    final ReferenceQueue<Object> queue = this.queue;
+    ValueWeakReference<K, V> reference = (ValueWeakReference<K, V>) queue.poll();
+    while (reference != null) {
+      final K key = reference.getKey();
+      final ValueWeakReference<K, V> oldReference = map.get(key);
+      if (oldReference == reference) {
+        map.remove(key);
+      }
+      reference = (ValueWeakReference<K, V>) queue.poll();
+    }
+    return this;
   }
 
   /**
    * {@inheritDoc}
    */
   public int size() {
-    return keys.size();
+    return map.size();
   }
 
   /**
    * {@inheritDoc}
    */
   public boolean isEmpty() {
-    return keys.isEmpty();
+    return map.isEmpty();
   }
 
   /**
    * {@inheritDoc}
    */
   public boolean containsKey(final Object key) {
-    return keys.containsKey(wrapKey(key));
+    return map.containsKey(key);
   }
 
   /**
    * {@inheritDoc}
    */
-  @SuppressWarnings("SuspiciousMethodCalls")
   public boolean containsValue(final Object value) {
-    return values.containsKey(value);
+    return map.containsValue(new ValueWeakReference<K, V>(value));
   }
 
   /**
    * {@inheritDoc}
    */
   public V get(final Object key) {
-    final WeakReference<V> reference = keys.get(wrapKey(key));
-    return (reference != null) ? reference.get() : null;
+    final ValueWeakReference<K, V> reference = map.get(key);
+    return (reference != null) ? reference.getValue() : null;
   }
 
   /**
@@ -157,70 +175,31 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
    */
   @Nullable
   public V put(final K key, final V value) {
-    if (value == null) {
-      return remove(key);
-    }
-    final KeyWrapper<K> wrapKey = wrapKey(key);
-    final WeakHashMap<V, HashSet<KeyWrapper<K>>> values = this.values;
-    HashSet<KeyWrapper<K>> keyWrappers = values.get(value);
-    if (keyWrappers == null) {
-      keyWrappers = new HashSet<KeyWrapper<K>>();
-      values.put(value, keyWrappers);
-    }
-    final WeakReference<V> oldRef = keys.put(wrapKey, new WeakReference<V>(value));
-    if (oldRef != null) {
-      final V oldValue = oldRef.get();
-      final HashSet<KeyWrapper<K>> oldKeyWrapper = values.get(oldValue);
-      if (oldKeyWrapper != null) {
-        final Iterator<KeyWrapper<K>> iterator = oldKeyWrapper.iterator();
-        while (iterator.hasNext()) {
-          final KeyWrapper<K> next = iterator.next();
-          if (wrapKey.equals(next)) {
-            keyWrappers.add(next);
-            iterator.remove();
-            if (oldKeyWrapper.isEmpty()) {
-              values.remove(oldValue);
-            }
-            return oldValue;
-          }
-        }
-        keyWrappers.add(wrapKey);
-      }
-      return oldValue;
-
-    } else {
-      keyWrappers.add(wrapKey);
-    }
-    return null;
+    prune();
+    final ValueWeakReference<K, V> oldReference =
+        map.put(key, new ValueWeakReference<K, V>(key, value, queue));
+    return (oldReference != null) ? oldReference.getValue() : null;
   }
 
   /**
    * {@inheritDoc}
    */
   public V remove(final Object key) {
-    final KeyWrapper<K> wrapKey = wrapKey(key);
-    final WeakReference<V> oldRef = keys.remove(wrapKey);
-    if (oldRef != null) {
-      final V oldValue = oldRef.get();
-      final WeakHashMap<V, HashSet<KeyWrapper<K>>> values = this.values;
-      final HashSet<KeyWrapper<K>> keyWrappers = values.get(oldValue);
-      if (keyWrappers != null) {
-        keyWrappers.remove(wrapKey);
-        if (keyWrappers.isEmpty()) {
-          values.remove(oldValue);
-        }
-      }
-      return oldValue;
-    }
-    return null;
+    prune();
+    final ValueWeakReference<K, V> oldReference = map.remove(key);
+    return (oldReference != null) ? oldReference.getValue() : null;
   }
 
   /**
    * {@inheritDoc}
    */
   public void putAll(@NotNull final Map<? extends K, ? extends V> map) {
+    prune();
+    final ReferenceQueue<Object> queue = this.queue;
+    final HashMap<K, ValueWeakReference<K, V>> referenceMap = this.map;
     for (final Entry<? extends K, ? extends V> entry : map.entrySet()) {
-      put(entry.getKey(), entry.getValue());
+      final K key = entry.getKey();
+      referenceMap.put(key, new ValueWeakReference<K, V>(key, entry.getValue(), queue));
     }
   }
 
@@ -228,8 +207,7 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
    * {@inheritDoc}
    */
   public void clear() {
-    keys.clear();
-    values.clear();
+    map.clear();
   }
 
   /**
@@ -237,22 +215,7 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
    */
   @NotNull
   public Set<K> keySet() {
-    if (keySet == null) {
-      keySet = new AbstractSet<K>() {
-
-        @NotNull
-        @Override
-        public Iterator<K> iterator() {
-          return new KeyIterator();
-        }
-
-        @Override
-        public int size() {
-          return keys.size();
-        }
-      };
-    }
-    return keySet;
+    return map.keySet();
   }
 
   /**
@@ -261,7 +224,7 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
   @NotNull
   public Collection<V> values() {
     if (valuesCollection == null) {
-      valuesCollection = new AbstractSet<V>() {
+      valuesCollection = new AbstractCollection<V>() {
 
         @NotNull
         @Override
@@ -271,7 +234,7 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
 
         @Override
         public int size() {
-          return keys.size();
+          return map.size();
         }
       };
     }
@@ -294,118 +257,136 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
 
         @Override
         public int size() {
-          return keys.size();
+          return map.size();
         }
       };
     }
     return entrySet;
   }
 
-  @NotNull
-  private KeyWrapper<K> wrapKey(final Object key) {
-    return new KeyWrapper<K>(key);
-  }
+  private static class ValueWeakReference<K, V> extends WeakReference<Object> {
 
-  private static class KeyWrapper<K> {
+    private final int hashCode;
+    private final boolean isNull;
+    private final K key;
 
-    private final Object key;
-
-    private KeyWrapper(final Object key) {
+    private ValueWeakReference(final K key, final Object referent,
+        final ReferenceQueue<? super Object> queue) {
+      super(referent, queue);
       this.key = key;
+      if (referent == null) {
+        isNull = true;
+        hashCode = 0;
+
+      } else {
+        isNull = false;
+        hashCode = referent.hashCode();
+      }
     }
 
-    @SuppressWarnings("unchecked")
-    public K getKey() {
-      return (K) key;
+    private ValueWeakReference(final Object referent) {
+      super(referent);
+      this.key = null;
+      if (referent == null) {
+        isNull = true;
+        hashCode = 0;
+
+      } else {
+        isNull = false;
+        hashCode = referent.hashCode();
+      }
     }
 
     @Override
     public int hashCode() {
-      return key != null ? key.hashCode() : 0;
+      return hashCode;
     }
 
     @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
+    public boolean equals(final Object obj) {
+      if (this == obj) {
         return true;
       }
 
-      if ((o == null) || getClass() != o.getClass()) {
+      if (!(obj instanceof ValueWeakReference)) {
         return false;
       }
-      final KeyWrapper<?> that = (KeyWrapper<?>) o;
-      return (key != null) ? key.equals(that.key) : that.key == null;
+      final ValueWeakReference<?, ?> that = (ValueWeakReference<?, ?>) obj;
+      if (isNull()) {
+        return that.isNull();
+      }
+
+      if (hashCode() != that.hashCode()) {
+        return false;
+      }
+      final Object referent = get();
+      return (referent != null) && (referent.equals(that.get()));
+    }
+
+    K getKey() {
+      return key;
+    }
+
+    @SuppressWarnings("unchecked")
+    V getValue() {
+      return (V) get();
+    }
+
+    boolean isNull() {
+      return isNull;
     }
   }
 
-  private abstract class AbstractIterator<T> implements Iterator<T> {
+  private class EntryIterator implements Iterator<Entry<K, V>> {
 
-    protected final Iterator<Entry<KeyWrapper<K>, WeakReference<V>>> iterator =
-        keys.entrySet().iterator();
-
-    private Entry<KeyWrapper<K>, WeakReference<V>> next;
+    private final Iterator<Entry<K, ValueWeakReference<K, V>>> iterator = map.entrySet().iterator();
 
     public boolean hasNext() {
       return iterator.hasNext();
     }
 
-    public T next() {
-      return getValue(this.next = iterator.next());
+    public Entry<K, V> next() {
+      return new WeakEntry(iterator.next());
     }
 
     public void remove() {
       iterator.remove();
-      final Entry<KeyWrapper<K>, WeakReference<V>> entry = this.next;
-      final V value = entry.getValue().get();
-      final WeakHashMap<V, HashSet<KeyWrapper<K>>> values = WeakValueHashMap.this.values;
-      final HashSet<KeyWrapper<K>> keyWrappers = values.get(value);
-      if (keyWrappers != null) {
-        final KeyWrapper<K> wrapKey = entry.getKey();
-        keyWrappers.remove(wrapKey);
-        if (keyWrappers.isEmpty()) {
-          values.remove(value);
-        }
-      }
-    }
-
-    protected abstract T getValue(final Entry<KeyWrapper<K>, WeakReference<V>> entry);
-  }
-
-  private class EntryIterator extends AbstractIterator<Entry<K, V>> {
-
-    protected Entry<K, V> getValue(final Entry<KeyWrapper<K>, WeakReference<V>> entry) {
-      return new WeakEntry(entry);
     }
   }
 
-  private class KeyIterator extends AbstractIterator<K> {
+  private class ValueIterator implements Iterator<V> {
 
-    protected K getValue(final Entry<KeyWrapper<K>, WeakReference<V>> entry) {
-      return entry.getKey().getKey();
+    private final Iterator<ValueWeakReference<K, V>> iterator = map.values().iterator();
+
+    public boolean hasNext() {
+      return iterator.hasNext();
     }
-  }
 
-  private class ValueIterator extends AbstractIterator<V> {
+    public V next() {
+      final ValueWeakReference<K, V> reference = iterator.next();
+      return (reference != null) ? reference.getValue() : null;
+    }
 
-    protected V getValue(final Entry<KeyWrapper<K>, WeakReference<V>> entry) {
-      return entry.getValue().get();
+    public void remove() {
+      iterator.remove();
     }
   }
 
   private class WeakEntry implements Entry<K, V> {
 
-    private final Entry<KeyWrapper<K>, WeakReference<V>> entry;
+    private final Entry<K, ValueWeakReference<K, V>> entry;
 
-    private WeakEntry(final Entry<KeyWrapper<K>, WeakReference<V>> entry) {
+    private WeakEntry(final Entry<K, ValueWeakReference<K, V>> entry) {
       this.entry = entry;
     }
 
     public K getKey() {
-      return entry.getKey().getKey();
+      return entry.getKey();
     }
 
     public V getValue() {
-      return entry.getValue().get();
+      final ValueWeakReference<K, V> reference = entry.getValue();
+      return (reference != null) ? reference.getValue() : null;
     }
 
     public V setValue(final V value) {

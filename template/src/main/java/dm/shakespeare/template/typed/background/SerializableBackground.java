@@ -14,29 +14,16 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.role;
+package dm.shakespeare.template.typed.background;
 
-import org.jetbrains.annotations.NotNull;
+import java.io.Serializable;
 
-import dm.shakespeare.actor.Behavior;
-import dm.shakespeare.actor.Role;
-import dm.shakespeare.template.actor.Behaviors;
 import dm.shakespeare.template.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 01/16/2019.
+ * Created by davide-maestroni on 06/17/2019.
  */
-public class PoisonableRole extends SerializableRoleWrapper {
+public class SerializableBackground extends Background implements Serializable {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
-
-  public PoisonableRole(@NotNull final Role role) {
-    super(role);
-  }
-
-  @NotNull
-  @Override
-  protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
-    return Behaviors.poisonable(super.getBehavior(id));
-  }
 }

@@ -14,36 +14,41 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.plot;
+package dm.shakespeare.template.typed.background;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.Method;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.log.Logger;
-import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 01/25/2019.
+ * Created by davide-maestroni on 06/17/2019.
  */
-abstract class LocalPlotRole extends Role {
+public class Background {
 
-  private final Setting setting;
+  private static final long DEFAULT_TIMEOUT = TimeUnit.SECONDS.toMillis(20);
 
-  LocalPlotRole(@NotNull final Setting setting) {
-    this.setting = ConstantConditions.notNull("setting", setting);
+  @NotNull
+  public ExecutorService getExecutorService(@NotNull final String id) throws Exception {
+    return Role.defaultExecutorService();
   }
 
   @NotNull
-  @Override
-  public ExecutorService getExecutorService(@NotNull final String id) {
-    return setting.getLocalExecutor();
-  }
-
-  @NotNull
-  @Override
   public Logger getLogger(@NotNull final String id) throws Exception {
-    return setting.getLogger();
+    return Role.defaultLogger(this);
+  }
+
+  public int getQuota(@NotNull final String id) throws Exception {
+    return Integer.MAX_VALUE;
+  }
+
+  public Long getTimeoutMillis(@NotNull final String id, @NotNull final Method method) throws
+      Exception {
+    final Class<?> returnType = method.getReturnType();
+    return ((returnType != void.class) && (returnType != Void.class)) ? DEFAULT_TIMEOUT : null;
   }
 }

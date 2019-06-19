@@ -64,7 +64,7 @@ import dm.shakespeare.remote.transport.RemoteRequest;
 import dm.shakespeare.remote.transport.RemoteResponse;
 import dm.shakespeare.remote.transport.UploadRequest;
 import dm.shakespeare.remote.transport.UploadResponse;
-import dm.shakespeare.remote.util.SerializableData;
+import dm.shakespeare.remote.util.RawData;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.WeakValueHashMap;
 
@@ -381,7 +381,7 @@ public class StageReceiver {
         return new CreateActorResponse().withError(new IllegalArgumentException());
       }
 
-      final SerializableData roleData = request.getRoleData();
+      final RawData roleData = request.getRoleData();
       try {
         final RemoteClassLoader classLoader = StageReceiver.this.classLoader;
         final Object role = serializer.deserialize(roleData, classLoader);
@@ -416,10 +416,10 @@ public class StageReceiver {
         return new CreateActorResponse().withError(new IllegalArgumentException());
       }
 
-      final SerializableData roleData = request.getRoleData();
+      final RawData roleData = request.getRoleData();
       try {
         final RemoteClassLoader classLoader = StageReceiver.this.classLoader;
-        final Map<String, SerializableData> resources = request.getResources();
+        final Map<String, RawData> resources = request.getResources();
         final Set<String> dependencies = classLoader.register(resources);
         if (!dependencies.isEmpty()) {
           return new CreateActorContinue().addAllResourcePaths(dependencies);
@@ -545,7 +545,7 @@ public class StageReceiver {
       try {
         final RemoteClassLoader classLoader = StageReceiver.this.classLoader;
         Set<String> dependencies = null;
-        final Map<String, SerializableData> resources = request.getResources();
+        final Map<String, RawData> resources = request.getResources();
         if (resources != null) {
           dependencies = classLoader.register(resources);
         }
@@ -619,7 +619,7 @@ public class StageReceiver {
           getSender().send(new MessageRequest().withActorID(actorID)
               .withSenderActorID(senderID)
               .withHeaders(envelop.getHeaders())
-              .withMessageData(SerializableData.wrap(serializer.serialize(message)))
+              .withMessageData(RawData.wrap(serializer.serialize(message)))
               .withSentTimestamp(envelop.getSentAt()), senderId);
         }
       };

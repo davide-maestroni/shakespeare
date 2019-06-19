@@ -98,11 +98,6 @@ public interface Behavior {
   interface Agent {
 
     /**
-     * Dismiss the actor and remove it from its stage.
-     */
-    void dismissSelf();
-
-    /**
      * Returns the agent executor service.<br>
      * The returned instance can be safely used to perform asynchronous operations, since it
      * employs the same synchronization mechanism as the actor executor service (see {@link Actor}),
@@ -145,7 +140,7 @@ public interface Behavior {
     /**
      * Verifies whether the actor has been dismissed.
      *
-     * @return {@code true} if {@link Agent#dismissSelf()} or {@link Actor#dismiss(boolean)} has
+     * @return {@code true} if {@link Actor#dismiss(boolean)} or {@link Actor#dismissLazy()} has
      * been called.
      */
     boolean isDismissed();

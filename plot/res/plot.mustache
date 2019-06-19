@@ -29,13 +29,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import dm.shakespeare.Stage;
+import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.BehaviorBuilder.Handler;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Headers;
 import dm.shakespeare.actor.Role;
-import dm.shakespeare.actor.SerializableAbstractBehavior;
 import dm.shakespeare.actor.SerializableRole;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.log.Logger;
@@ -405,6 +405,216 @@ public class Plot {
     }
   }
 
+  private static class PlotFactoryBehavior extends AbstractBehavior {
+
+    private final WeakValueHashMap<Actor, Actor> actors = new WeakValueHashMap<Actor, Actor>();
+    private final HashMap<Class<?>, Handler<Object>> handlers =
+        new HashMap<Class<?>, Handler<Object>>() { {
+          put(CreateEvent.class, new Handler<Object>() {
+
+            @SuppressWarnings("unchecked")
+            public void handle(final Object message, @NotNull final Envelop envelop,
+                @NotNull final Agent agent) {
+              final String threadId = envelop.getHeaders().getThreadId();
+              final ArrayList<Actor> paramList = params.remove(threadId);
+              Actor actor;
+              Setting.set(setting);
+              try {
+                final ArrayList<Event<?>> events = new ArrayList<Event<?>>();
+                for (final Actor param : paramList) {
+                  events.add(new EventWrapper<Object>(param));
+                }
+                actor = ((CreateEvent<Object>) message).call(events).getActor();
+
+              } catch (final Exception e) {
+                actor = Event.ofIncident(e).getActor();
+
+              } finally {
+                Setting.unset();
+              }
+              final Actor sender = envelop.getSender();
+              senders.put(sender, actor);
+              actors.put(actor, sender);
+            }
+          });
+          put(CreateNullaryEvent.class, new Handler<Object>() {
+
+            public void handle(final Object message, @NotNull final Envelop envelop,
+                @NotNull final Agent agent) {
+              Actor actor;
+              Setting.set(setting);
+              try {
+                actor = ((CreateNullaryEvent) message).call().getActor();
+
+              } catch (final Exception e) {
+                actor = Event.ofIncident(e).getActor();
+
+              } finally {
+                Setting.unset();
+              }
+              final Actor sender = envelop.getSender();
+              senders.put(sender, actor);
+              actors.put(actor, sender);
+            }
+          });
+          put(CreateNullaryStory.class, new Handler<Object>() {
+
+            public void handle(final Object message, @NotNull final Envelop envelop,
+                @NotNull final Agent agent) {
+              Actor actor;
+              Setting.set(setting);
+              try {
+                actor = ((CreateNullaryStory) message).call().getActor();
+
+              } catch (final Exception e) {
+                actor = Story.ofSingleIncident(e).getActor();
+
+              } finally {
+                Setting.unset();
+              }
+              final Actor sender = envelop.getSender();
+              senders.put(sender, actor);
+              actors.put(actor, sender);
+            }
+          });
+          put(CreateStory.class, new Handler<Object>() {
+
+            @SuppressWarnings("unchecked")
+            public void handle(final Object message, @NotNull final Envelop envelop,
+                @NotNull final Agent agent) {
+              final String threadId = envelop.getHeaders().getThreadId();
+              final ArrayList<Actor> paramList = params.remove(threadId);
+              Actor actor;
+              Setting.set(setting);
+              try {
+                final ArrayList<Story<?>> stories = new ArrayList<Story<?>>();
+                for (final Actor param : paramList) {
+                  stories.add(new StoryWrapper<Object>(param));
+                }
+                actor = ((CreateStory<Object>) message).call(stories).getActor();
+
+              } catch (final Exception e) {
+                actor = Story.ofSingleIncident(e).getActor();
+
+              } finally {
+                Setting.unset();
+              }
+              final Actor sender = envelop.getSender();
+              senders.put(sender, actor);
+              actors.put(actor, sender);
+            }
+          });
+{{#arities}}
+          put(Create{{classPrefix}}Event.class, new Handler<Object>() {
+
+            @SuppressWarnings("unchecked")
+            public void handle(final Object message, @NotNull final Envelop envelop,
+                @NotNull final Agent agent) {
+              final String threadId = envelop.getHeaders().getThreadId();
+              final ArrayList<Actor> paramList = params.remove(threadId);
+              Actor actor;
+              Setting.set(setting);
+              try {
+                if ((paramList == null) || (paramList.size() != {{paramNum}})) {
+                  actor = Event.ofIncident(new IllegalStateException()).getActor();
+
+                } else {
+{{#paramTypes}}                  final EventWrapper<Object> {{prefix}}Event = new EventWrapper<Object>(paramList.get({{index}}));
+{{/paramTypes}}
+                  actor = ((Create{{classPrefix}}Event<{{#paramTypes}}Event<?>{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>) message).call({{#paramTypes}}{{prefix}}Event{{#hasNext}}, {{/hasNext}}{{/paramTypes}}).getActor();
+                }
+
+              } catch (final Exception e) {
+                actor = Event.ofIncident(e).getActor();
+
+              } finally {
+                Setting.unset();
+              }
+              final Actor sender = envelop.getSender();
+              senders.put(sender, actor);
+              actors.put(actor, sender);
+            }
+          });
+          put(Create{{classPrefix}}Story.class, new Handler<Object>() {
+
+            @SuppressWarnings("unchecked")
+            public void handle(final Object message, @NotNull final Envelop envelop,
+                @NotNull final Agent agent) {
+              final String threadId = envelop.getHeaders().getThreadId();
+              final ArrayList<Actor> paramList = params.remove(threadId);
+              Actor actor;
+              Setting.set(setting);
+              try {
+                if ((paramList == null) || (paramList.size() != {{paramNum}})) {
+                  actor = Story.ofSingleIncident(new IllegalStateException()).getActor();
+
+                } else {
+{{#paramTypes}}                  final StoryWrapper<Object> {{prefix}}Story = new StoryWrapper<Object>(paramList.get({{index}}));
+{{/paramTypes}}
+                  actor = ((Create{{classPrefix}}Story<{{#paramTypes}}Story<?>{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>) message).call({{#paramTypes}}{{prefix}}Story{{#hasNext}}, {{/hasNext}}{{/paramTypes}}).getActor();
+                }
+
+              } catch (final Exception e) {
+                actor = Story.ofSingleIncident(e).getActor();
+
+              } finally {
+                Setting.unset();
+              }
+              final Actor sender = envelop.getSender();
+              senders.put(sender, actor);
+              actors.put(actor, sender);
+            }
+          });
+{{/arities}}
+        } };
+    private final HashMap<String, ArrayList<Actor>> params =
+        new HashMap<String, ArrayList<Actor>>();
+    private final WeakHashMap<Actor, Actor> senders = new WeakHashMap<Actor, Actor>();
+    private final Setting setting;
+
+    private PlotFactoryBehavior(@NotNull final Setting setting) {
+      this.setting = setting;
+    }
+
+    public void onMessage(final Object message, @NotNull final Envelop envelop,
+        @NotNull final Agent agent) throws Exception {
+      if (message != null) {
+        final Handler<Object> handler = handlers.get(message.getClass());
+        if (handler != null) {
+          handler.handle(message, envelop, agent);
+          envelop.preventReceipt();
+          return;
+        }
+      }
+
+      if (message == PlotSignal.CREATE_PARAM) {
+        final String threadId = envelop.getHeaders().getThreadId();
+        final HashMap<String, ArrayList<Actor>> params = this.params;
+        ArrayList<Actor> actors = params.get(threadId);
+        if (actors == null) {
+          actors = new ArrayList<Actor>();
+          params.put(threadId, actors);
+        }
+        actors.add(envelop.getSender());
+
+      } else {
+        final Actor sender = envelop.getSender();
+        Actor actor = senders.get(sender);
+        if (actor == null) {
+          actor = actors.get(sender);
+        }
+        if (actor != null) {
+          actor.tell(message, envelop.getHeaders().asSentAt(envelop.getSentAt()),
+              agent.getSelf());
+
+        } else {
+          sender.tell(new Bounce(), envelop.getHeaders().threadOnly(), agent.getSelf());
+        }
+        envelop.preventReceipt();
+      }
+    }
+  }
+
   private static class PlotFactoryRole extends SerializableRole {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
@@ -414,7 +624,7 @@ public class Plot {
     private transient Setting setting;
 
     private PlotFactoryRole() {
-      this(new Script());
+      this(DEFAULT_SCRIPT);
     }
 
     private PlotFactoryRole(@NotNull final Script script) {
@@ -435,213 +645,7 @@ public class Plot {
 
     @NotNull
     protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
-      final Setting setting = getSetting();
-      return new SerializableAbstractBehavior() {
-
-        private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
-
-        private final WeakValueHashMap<Actor, Actor> actors = new WeakValueHashMap<Actor, Actor>();
-        private final HashMap<Class<?>, Handler<Object>> handlers =
-            new HashMap<Class<?>, Handler<Object>>() { {
-              put(CreateEvent.class, new Handler<Object>() {
-
-                @SuppressWarnings("unchecked")
-                public void handle(final Object message, @NotNull final Envelop envelop,
-                    @NotNull final Agent agent) {
-                  final String threadId = envelop.getHeaders().getThreadId();
-                  final ArrayList<Actor> paramList = params.remove(threadId);
-                  Actor actor;
-                  Setting.set(setting);
-                  try {
-                    final ArrayList<Event<?>> events = new ArrayList<Event<?>>();
-                    for (final Actor param : paramList) {
-                      events.add(new EventWrapper<Object>(param));
-                    }
-                    actor = ((CreateEvent<Object>) message).call(events).getActor();
-
-                  } catch (final Exception e) {
-                    actor = Event.ofIncident(e).getActor();
-
-                  } finally {
-                    Setting.unset();
-                  }
-                  final Actor sender = envelop.getSender();
-                  senders.put(sender, actor);
-                  actors.put(actor, sender);
-                }
-              });
-              put(CreateNullaryEvent.class, new Handler<Object>() {
-
-                public void handle(final Object message, @NotNull final Envelop envelop,
-                    @NotNull final Agent agent) {
-                  Actor actor;
-                  Setting.set(setting);
-                  try {
-                    actor = ((CreateNullaryEvent) message).call().getActor();
-
-                  } catch (final Exception e) {
-                    actor = Event.ofIncident(e).getActor();
-
-                  } finally {
-                    Setting.unset();
-                  }
-                  final Actor sender = envelop.getSender();
-                  senders.put(sender, actor);
-                  actors.put(actor, sender);
-                }
-              });
-              put(CreateNullaryStory.class, new Handler<Object>() {
-
-                public void handle(final Object message, @NotNull final Envelop envelop,
-                    @NotNull final Agent agent) {
-                  Actor actor;
-                  Setting.set(setting);
-                  try {
-                    actor = ((CreateNullaryStory) message).call().getActor();
-
-                  } catch (final Exception e) {
-                    actor = Story.ofSingleIncident(e).getActor();
-
-                  } finally {
-                    Setting.unset();
-                  }
-                  final Actor sender = envelop.getSender();
-                  senders.put(sender, actor);
-                  actors.put(actor, sender);
-                }
-              });
-              put(CreateStory.class, new Handler<Object>() {
-
-                @SuppressWarnings("unchecked")
-                public void handle(final Object message, @NotNull final Envelop envelop,
-                    @NotNull final Agent agent) {
-                  final String threadId = envelop.getHeaders().getThreadId();
-                  final ArrayList<Actor> paramList = params.remove(threadId);
-                  Actor actor;
-                  Setting.set(setting);
-                  try {
-                    final ArrayList<Story<?>> stories = new ArrayList<Story<?>>();
-                    for (final Actor param : paramList) {
-                      stories.add(new StoryWrapper<Object>(param));
-                    }
-                    actor = ((CreateStory<Object>) message).call(stories).getActor();
-
-                  } catch (final Exception e) {
-                    actor = Story.ofSingleIncident(e).getActor();
-
-                  } finally {
-                    Setting.unset();
-                  }
-                  final Actor sender = envelop.getSender();
-                  senders.put(sender, actor);
-                  actors.put(actor, sender);
-                }
-              });
-{{#arities}}
-              put(Create{{classPrefix}}Event.class, new Handler<Object>() {
-
-                @SuppressWarnings("unchecked")
-                public void handle(final Object message, @NotNull final Envelop envelop,
-                    @NotNull final Agent agent) {
-                  final String threadId = envelop.getHeaders().getThreadId();
-                  final ArrayList<Actor> paramList = params.remove(threadId);
-                  Actor actor;
-                  Setting.set(setting);
-                  try {
-                    if ((paramList == null) || (paramList.size() != {{paramNum}})) {
-                      actor = Event.ofIncident(new IllegalStateException()).getActor();
-
-                    } else {
-{{#paramTypes}}                      final EventWrapper<Object> {{prefix}}Event = new EventWrapper<Object>(paramList.get({{index}}));
-{{/paramTypes}}
-                      actor = ((Create{{classPrefix}}Event<{{#paramTypes}}Event<?>{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>) message).call({{#paramTypes}}{{prefix}}Event{{#hasNext}}, {{/hasNext}}{{/paramTypes}}).getActor();
-                    }
-
-                  } catch (final Exception e) {
-                    actor = Event.ofIncident(e).getActor();
-
-                  } finally {
-                    Setting.unset();
-                  }
-                  final Actor sender = envelop.getSender();
-                  senders.put(sender, actor);
-                  actors.put(actor, sender);
-                }
-              });
-              put(Create{{classPrefix}}Story.class, new Handler<Object>() {
-
-                @SuppressWarnings("unchecked")
-                public void handle(final Object message, @NotNull final Envelop envelop,
-                    @NotNull final Agent agent) {
-                  final String threadId = envelop.getHeaders().getThreadId();
-                  final ArrayList<Actor> paramList = params.remove(threadId);
-                  Actor actor;
-                  Setting.set(setting);
-                  try {
-                    if ((paramList == null) || (paramList.size() != {{paramNum}})) {
-                      actor = Story.ofSingleIncident(new IllegalStateException()).getActor();
-
-                    } else {
-{{#paramTypes}}                      final StoryWrapper<Object> {{prefix}}Story = new StoryWrapper<Object>(paramList.get({{index}}));
-{{/paramTypes}}
-                      actor = ((Create{{classPrefix}}Story<{{#paramTypes}}Story<?>{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>) message).call({{#paramTypes}}{{prefix}}Story{{#hasNext}}, {{/hasNext}}{{/paramTypes}}).getActor();
-                    }
-
-                  } catch (final Exception e) {
-                    actor = Story.ofSingleIncident(e).getActor();
-
-                  } finally {
-                    Setting.unset();
-                  }
-                  final Actor sender = envelop.getSender();
-                  senders.put(sender, actor);
-                  actors.put(actor, sender);
-                }
-              });
-{{/arities}}
-            } };
-        private final HashMap<String, ArrayList<Actor>> params =
-            new HashMap<String, ArrayList<Actor>>();
-        private final WeakHashMap<Actor, Actor> senders = new WeakHashMap<Actor, Actor>();
-
-        public void onMessage(final Object message, @NotNull final Envelop envelop,
-            @NotNull final Agent agent) throws Exception {
-          if (message != null) {
-            final Handler<Object> handler = handlers.get(message.getClass());
-            if (handler != null) {
-              handler.handle(message, envelop, agent);
-              envelop.preventReceipt();
-              return;
-            }
-          }
-
-          if (message == PlotSignal.CREATE_PARAM) {
-            final String threadId = envelop.getHeaders().getThreadId();
-            final HashMap<String, ArrayList<Actor>> params = this.params;
-            ArrayList<Actor> actors = params.get(threadId);
-            if (actors == null) {
-              actors = new ArrayList<Actor>();
-              params.put(threadId, actors);
-            }
-            actors.add(envelop.getSender());
-
-          } else {
-            final Actor sender = envelop.getSender();
-            Actor actor = senders.get(sender);
-            if (actor == null) {
-              actor = actors.get(sender);
-            }
-            if (actor != null) {
-              actor.tell(message, envelop.getHeaders().asSentAt(envelop.getSentAt()),
-                  agent.getSelf());
-
-            } else {
-              sender.tell(new Bounce(), envelop.getHeaders().threadOnly(), agent.getSelf());
-            }
-            envelop.preventReceipt();
-          }
-        }
-      };
+      return new PlotFactoryBehavior(getSetting());
     }
 
     @NotNull

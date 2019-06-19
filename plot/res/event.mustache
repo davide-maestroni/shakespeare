@@ -121,14 +121,14 @@ public abstract class Event<T> {
 {{#arities}}
 
   @NotNull
-  public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Event<R> whenTransform({{#paramTypes}}@NotNull final Event<? extends {{type}}> {{prefix}}Event, {{/paramTypes}}
+  public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Event<R> whenXform({{#paramTypes}}@NotNull final Event<? extends {{type}}> {{prefix}}Event, {{/paramTypes}}
       @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends R> effectHandler) {
     return new {{classPrefix}}TransformEvent<{{#paramTypes}}{{type}}, {{/paramTypes}}R>({{#paramTypes}}{{prefix}}Event, {{/paramTypes}}effectHandler);
   }
 {{/arities}}
 
   @NotNull
-  public static <T, R> Event<R> whenTransform(
+  public static <T, R> Event<R> whenXform(
       @NotNull final Iterable<? extends Event<? extends T>> events,
       @NotNull final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler) {
     return new GenericTransformEvent<T, R>(events, effectHandler);
@@ -233,7 +233,7 @@ public abstract class Event<T> {
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Event<T> resolveTransform(
+  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Event<T> resolveXform(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final Class<? extends E3> thirdType,
       @NotNull final UnaryFunction<? super E1, ? extends T> incidentObserver) {
@@ -247,7 +247,7 @@ public abstract class Event<T> {
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E1 extends Throwable, E2 extends Throwable> Event<T> resolveTransform(
+  public <E1 extends Throwable, E2 extends Throwable> Event<T> resolveXform(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final UnaryFunction<? super E1, ? extends T> incidentObserver) {
     final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
@@ -259,7 +259,7 @@ public abstract class Event<T> {
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E1 extends Throwable> Event<T> resolveTransform(
+  public <E1 extends Throwable> Event<T> resolveXform(
       @NotNull final Class<? extends E1> firstType,
       @NotNull final UnaryFunction<? super E1, ? extends T> incidentObserver) {
     final Set<Class<? extends Throwable>> types =
@@ -270,7 +270,7 @@ public abstract class Event<T> {
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E extends Throwable> Event<T> resolveTransform(
+  public <E extends Throwable> Event<T> resolveXform(
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
       @NotNull final UnaryFunction<? super E, ? extends T> incidentObserver) {
     return new ResolveTransformEvent<T>(this, Iterables.<Class<? extends Throwable>>toSet(incidentTypes),
@@ -289,9 +289,9 @@ public abstract class Event<T> {
   }
 
   @NotNull
-  public <R> Event<R> thenTransform(
+  public <R> Event<R> thenXform(
       @NotNull final UnaryFunction<? super T, ? extends R> effectHandler) {
-    return whenTransform(this, effectHandler);
+    return whenXform(this, effectHandler);
   }
 
   @NotNull
@@ -880,7 +880,7 @@ public abstract class Event<T> {
 
             } else {
               eventObserver.onIncident(((Conflict) message).getCause());
-              agent.dismissSelf();
+              agent.getSelf().dismiss(false);
             }
 
           } else if (message instanceof Bounce) {
@@ -889,7 +889,7 @@ public abstract class Event<T> {
 
             } else {
               eventObserver.onIncident(PlotFailureException.getOrNew((Bounce) message));
-              agent.dismissSelf();
+              agent.getSelf().dismiss(false);
             }
 
           } else if (message == SpectatorSignal.PAUSE) {
@@ -903,14 +903,15 @@ public abstract class Event<T> {
             } else {
               eventObserver.onEffect((T) message);
             }
-            agent.dismissSelf();
+            agent.getSelf().dismiss(false);
 
           } else if (message == SpectatorSignal.CANCEL) {
             eventActor.tell(EventSignal.CANCEL, null, agent.getSelf());
 
           } else if (message == SpectatorSignal.CANCEL_AND_DISMISS) {
-            eventActor.tell(EventSignal.CANCEL, null, agent.getSelf());
-            agent.dismissSelf();
+            final Actor self = agent.getSelf();
+            eventActor.tell(EventSignal.CANCEL, null, self);
+            self.dismiss(false);
 
           } else if (!(message instanceof Receipt)) {
             if (isPaused) {
@@ -918,7 +919,7 @@ public abstract class Event<T> {
 
             } else {
               eventObserver.onEffect((T) message);
-              agent.dismissSelf();
+              agent.getSelf().dismiss(false);
             }
           }
         }

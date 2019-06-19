@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
-import dm.shakespeare.remote.util.SerializableData;
+import dm.shakespeare.remote.util.RawData;
 
 /**
  * Created by davide-maestroni on 04/09/2019.
@@ -30,37 +30,37 @@ public class UploadRequest extends RemoteRequest {
 
   private static final long serialVersionUID = VERSION;
 
-  private Map<String, SerializableData> resources;
+  private Map<String, RawData> resources;
 
-  public Map<String, SerializableData> getResources() {
+  public Map<String, RawData> getResources() {
     return resources;
   }
 
-  public void setResources(final Map<String, SerializableData> resources) {
+  public void setResources(final Map<String, RawData> resources) {
     this.resources = resources;
   }
 
   @NotNull
   public UploadRequest putAllResources(
-      @NotNull final Map<? extends String, ? extends SerializableData> resources) {
+      @NotNull final Map<? extends String, ? extends RawData> resources) {
     if (this.resources == null) {
-      this.resources = new HashMap<String, SerializableData>();
+      this.resources = new HashMap<String, RawData>();
     }
     this.resources.putAll(resources);
     return this;
   }
 
   @NotNull
-  public UploadRequest putResource(final String path, final SerializableData data) {
+  public UploadRequest putResource(final String path, final RawData data) {
     if (resources == null) {
-      resources = new HashMap<String, SerializableData>();
+      resources = new HashMap<String, RawData>();
     }
     resources.put(path, data);
     return this;
   }
 
   @NotNull
-  public UploadRequest withResources(final Map<String, SerializableData> resources) {
+  public UploadRequest withResources(final Map<String, RawData> resources) {
     this.resources = resources;
     return this;
   }

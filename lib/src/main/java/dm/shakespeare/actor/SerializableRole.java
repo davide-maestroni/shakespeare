@@ -197,10 +197,6 @@ public abstract class SerializableRole extends Role implements Serializable {
 
     private Agent agent;
 
-    public void dismissSelf() {
-      agent.dismissSelf();
-    }
-
     @NotNull
     public ExecutorService getExecutorService() {
       return agent.getExecutorService();

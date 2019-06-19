@@ -47,8 +47,10 @@ import dm.shakespeare.remote.config.RemoteConfig;
 import dm.shakespeare.remote.transport.Connector;
 import dm.shakespeare.remote.transport.RemoteRequest;
 import dm.shakespeare.remote.transport.RemoteResponse;
+import dm.shakespeare.remote.util.Base64;
 import dm.shakespeare.remote.util.Classes;
-import dm.shakespeare.remote.util.SerializableData;
+import dm.shakespeare.remote.util.PLZW;
+import dm.shakespeare.remote.util.RawData;
 
 /**
  * Created by davide-maestroni on 04/18/2019.
@@ -76,13 +78,13 @@ public class RemoteServerTest {
   @Test
   public void tes() throws Exception {
     {
-      final byte[] bytes = SerializableData.wrapOnce(
+      final byte[] bytes = RawData.wrapOnce(
           RemoteServerTest.class.getResourceAsStream("/TestRole.class")).toByteArray();
       final Set<String> dependencies = Classes.getDependencies(ByteBuffer.wrap(bytes));
       System.out.println(dependencies);
     }
     {
-      final byte[] bytes = SerializableData.wrapOnce(
+      final byte[] bytes = RawData.wrapOnce(
           RemoteServerTest.class.getResourceAsStream("/TestRole$1.class")).toByteArray();
       final Set<String> dependencies = Classes.getDependencies(ByteBuffer.wrap(bytes));
       System.out.println(dependencies);
@@ -119,16 +121,35 @@ public class RemoteServerTest {
     final JavaSerializer javaSerializer = new JavaSerializer();
     //    connector.send(new CreateActorRequest().putResource("/dm/shakespeare/sample/TestRole
     //    .class",
-    //        SerializableData.wrap(RemoteServerTest.class.getResourceAsStream("/TestRole.class")))
+    //        RawData.wrap(RemoteServerTest.class.getResourceAsStream("/TestRole.class")))
     //        .putResource("/dm/shakespeare/sample/TestRole$1.class",
-    //            SerializableData.wrap(RemoteServerTest.class.getResourceAsStream("/TestRole$1
+    //            RawData.wrap(RemoteServerTest.class.getResourceAsStream("/TestRole$1
     //            .class")))
     //        .withRoleData(
-    //            SerializableData.wrap(RemoteServerTest.class.getResourceAsStream("/TestRole
+    //            RawData.wrap(RemoteServerTest.class.getResourceAsStream("/TestRole
     //            .ser")))
     //        .withRecipientRef(actorRef)
     //        .withSenderId("senderId"));
     Thread.sleep(2000);
+  }
+
+  @Test
+  public void zip() throws Exception {
+    String encoded = PLZW.getEncoder().encode("This is a test!".getBytes("US-ASCII"));
+    System.out.println(Base64.encodeBytes("This is a test!".getBytes("US-ASCII"), Base64.GZIP).length());
+    byte[] decoded = PLZW.getDecoder().decode(encoded);
+    System.out.println(new String(decoded, "US-ASCII"));
+
+    PLZW.getEncoder().encode("TOBEORNOTTOBEORTOBEORNOT#".getBytes("US-ASCII"));
+    System.out.println(Base64.encodeBytes("TOBEORNOTTOBEORTOBEORNOT#".getBytes("US-ASCII"), Base64.GZIP).length());
+
+    JavaSerializer javaSerializer = new JavaSerializer();
+    javaSerializer.whitelist(Collections.singleton("**"));
+    encoded = PLZW.getEncoder().encode(javaSerializer.serialize(new PrintRole()));
+    final Object deserialize = javaSerializer.deserialize(RawData.wrap(PLZW.getDecoder().decode(encoded)),
+        PrintRole.class.getClassLoader());
+    assert deserialize instanceof PrintRole;
+    System.out.println(Base64.encodeBytes(javaSerializer.serialize(new PrintRole()), Base64.GZIP).length());
   }
 
   private static class DirectConnector implements Connector {

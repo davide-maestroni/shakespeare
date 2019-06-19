@@ -27,7 +27,7 @@ import java.io.ObjectStreamClass;
 
 import dm.shakespeare.remote.io.AbstractSerializer;
 import dm.shakespeare.remote.util.ClassLoaderObjectInputStream;
-import dm.shakespeare.remote.util.SerializableData;
+import dm.shakespeare.remote.util.RawData;
 
 /**
  * Created by davide-maestroni on 04/16/2019.
@@ -35,7 +35,7 @@ import dm.shakespeare.remote.util.SerializableData;
 class JavaSerializer extends AbstractSerializer {
 
   @NotNull
-  public Object deserialize(@NotNull final SerializableData data,
+  public Object deserialize(@NotNull final RawData data,
       @NotNull final ClassLoader classLoader) throws Exception {
     final JavaObjectInputStream objectInputStream =
         new JavaObjectInputStream(classLoader, data.toInputStream());

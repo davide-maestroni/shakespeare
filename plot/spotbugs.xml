@@ -22,4 +22,8 @@
   <Match>
     <Class name="dm.shakespeare.plot.MainTest"/>
   </Match>
+  <Match>
+    <Class name="~dm\.shakespeare\.plot\.Plot\$.*"/>
+    <Bug pattern="SE_BAD_FIELD"/>
+  </Match>
 </FindBugsFilter>

@@ -39,11 +39,6 @@ public class Behaviors {
   }
 
   @NotNull
-  public static PoisonableBehavior poisonable(@NotNull final Behavior behavior) {
-    return new PoisonableBehavior(behavior);
-  }
-
-  @NotNull
   public static ProxyBehavior proxy(@NotNull final Actor actor) {
     return new ProxyBehavior(new WeakReference<Actor>(ConstantConditions.notNull("actor", actor)));
   }

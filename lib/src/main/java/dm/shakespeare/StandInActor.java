@@ -21,7 +21,6 @@ import org.jetbrains.annotations.Nullable;
 
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Headers;
-import dm.shakespeare.actor.Headers;
 import dm.shakespeare.message.Delivery;
 
 /**
@@ -35,6 +34,9 @@ class StandInActor implements Actor {
   }
 
   public void dismiss(final boolean mayInterruptIfRunning) {
+  }
+
+  public void dismissLazy() {
   }
 
   @NotNull
