@@ -33,7 +33,7 @@ import dm.shakespeare.actor.SerializableAbstractBehavior;
 import dm.shakespeare.actor.SerializableRole;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.template.config.BuildConfig;
-import dm.shakespeare.template.typed.background.Background;
+import dm.shakespeare.template.typed.actor.Background;
 import dm.shakespeare.template.typed.message.InvocationException;
 import dm.shakespeare.template.typed.message.InvocationResult;
 import dm.shakespeare.template.util.Reflections;
@@ -188,13 +188,11 @@ class TypedRole extends SerializableRole {
             args = arguments;
           }
           final Object result = method.invoke(instance, args);
-          // TODO: 2019-06-17 @ReplyTo
           envelop.getSender().tell(new InvocationResult(result), headers, self);
 
         } catch (final Throwable t) {
           if (t instanceof InvocationTargetException) {
             final Throwable exception = ((InvocationTargetException) t).getTargetException();
-            // TODO: 2019-06-17 @ReplyTo
             envelop.getSender().tell(new InvocationException(exception), headers, self);
             if (exception instanceof InterruptedException) {
               Thread.currentThread().interrupt();

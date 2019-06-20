@@ -14,19 +14,16 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.actor;
+package dm.shakespeare.template.typed.actor;
+
+import java.io.Serializable;
+
+import dm.shakespeare.template.config.BuildConfig;
 
 /**
- * Exception indicating that the recipient of the sent message was invalid.
+ * Created by davide-maestroni on 06/17/2019.
  */
-public class IllegalRecipientException extends RuntimeException {
+public class SerializableBackground extends Background implements Serializable {
 
-  /**
-   * Creates a new exception instance.
-   *
-   * @param message the error message.
-   */
-  public IllegalRecipientException(final String message) {
-    super(message);
-  }
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.actor;
+package dm.shakespeare.template.behavior;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -34,12 +34,13 @@ public class Behaviors {
   }
 
   @NotNull
-  public static AnnotationBehavior annotated(@NotNull final Object object) throws Exception {
+  public static dm.shakespeare.template.behavior.AnnotationBehavior annotated(
+      @NotNull final Object object) throws Exception {
     return new AnnotationBehavior(object);
   }
 
   @NotNull
-  public static ProxyBehavior proxy(@NotNull final Actor actor) {
+  public static dm.shakespeare.template.behavior.ProxyBehavior proxy(@NotNull final Actor actor) {
     return new ProxyBehavior(new WeakReference<Actor>(ConstantConditions.notNull("actor", actor)));
   }
 

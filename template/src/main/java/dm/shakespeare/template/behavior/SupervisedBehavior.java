@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.actor;
+package dm.shakespeare.template.behavior;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -32,7 +32,7 @@ import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.DeadLetter;
 import dm.shakespeare.message.Failure;
 import dm.shakespeare.message.Receipt;
-import dm.shakespeare.template.actor.SupervisedBehavior.SupervisedRecovery.RecoveryType;
+import dm.shakespeare.template.behavior.SupervisedBehavior.SupervisedRecovery.RecoveryType;
 import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
@@ -249,8 +249,8 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
 
         } else if (headers.getReceiptId() != null) {
           sender.tell(new Failure(message, headers,
-                  new IllegalRecipientException("an actor can't supervise itself")),
-              headers.threadOnly(), self);
+              new dm.shakespeare.template.behavior.IllegalRecipientException(
+                  "an actor can't supervise itself")), headers.threadOnly(), self);
           envelop.preventReceipt();
         }
 

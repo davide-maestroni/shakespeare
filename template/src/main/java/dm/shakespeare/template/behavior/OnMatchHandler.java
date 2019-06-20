@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.actor;
+package dm.shakespeare.template.behavior;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -82,7 +82,8 @@ class OnMatchHandler implements AnnotationHandler<OnMatch> {
         }
       }
     }
-    builder.onMatch((Matcher<? super Object>) matcher, new MethodHandler(object, method));
+    builder.onMatch((Matcher<? super Object>) matcher,
+        new dm.shakespeare.template.behavior.MethodHandler(object, method));
   }
 
   private static class MessageMatcher implements Matcher<Object>, Serializable {

@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.actor;
+package dm.shakespeare.template.behavior;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
-import java.util.Collections;
+import java.util.ArrayList;
 
 import dm.shakespeare.actor.Behavior.Agent;
-import dm.shakespeare.function.Observer;
+import dm.shakespeare.actor.BehaviorBuilder.Handler;
+import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;
@@ -31,36 +32,50 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Created by davide-maestroni on 09/12/2018.
  */
-class MethodObserver implements Observer<Agent>, Serializable {
-
-  private static final Object[] EMPTY_ARGS = new Object[0];
+class MethodHandler implements Handler<Object>, Serializable {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   private final Method method;
   private final Object object;
 
-  MethodObserver(@NotNull final Object object, @NotNull final Method method) {
+  MethodHandler(@NotNull final Object object, @NotNull final Method method) {
     this.object = ConstantConditions.notNull("object", object);
     this.method = Reflections.makeAccessible(method);
   }
 
-  public void accept(final Agent agent) throws Exception {
+  static void handleReturnValue(@NotNull final Method method, final Object value,
+      @NotNull final Envelop envelop, @NotNull final Agent agent) {
+    final Class<?> returnType = method.getReturnType();
+    if ((returnType != void.class) && (returnType != Void.class)) {
+      // TODO: 31/08/2018 specific message?
+      envelop.getSender().tell(value, envelop.getHeaders().threadOnly(), agent.getSelf());
+    }
+  }
+
+  public void handle(final Object message, @NotNull final Envelop envelop,
+      @NotNull final Agent agent) throws Exception {
     final Method method = this.method;
     final Class<?>[] parameterTypes = method.getParameterTypes();
     final int length = parameterTypes.length;
     final Object[] args;
-    if (length > 0) {
-      if (length == 1) {
-        args = new Object[]{agent};
+    if (length > 1) {
+      final ArrayList<Object> parameters = new ArrayList<Object>(length);
+      parameters.add(message);
+      for (int i = 1; i < length; ++i) {
+        if (parameterTypes[i] == Envelop.class) {
+          parameters.add(envelop);
 
-      } else {
-        args = Collections.nCopies(length, agent).toArray();
+        } else if (parameterTypes[i] == Agent.class) {
+          parameters.add(agent);
+        }
       }
+      args = parameters.toArray();
 
     } else {
-      args = EMPTY_ARGS;
+      args = new Object[]{message};
     }
-    method.invoke(object, args);
+    final Object result = method.invoke(object, args);
+    handleReturnValue(method, result, envelop, agent);
   }
 }

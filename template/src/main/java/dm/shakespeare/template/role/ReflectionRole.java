@@ -28,8 +28,8 @@ import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Headers;
 import dm.shakespeare.actor.SerializableRole;
-import dm.shakespeare.template.actor.Behaviors;
-import dm.shakespeare.template.actor.ReflectionBehavior;
+import dm.shakespeare.template.behavior.Behaviors;
+import dm.shakespeare.template.behavior.ReflectionBehavior;
 import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 

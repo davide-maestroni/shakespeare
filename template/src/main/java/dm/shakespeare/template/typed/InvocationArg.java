@@ -19,7 +19,7 @@ package dm.shakespeare.template.typed;
 import java.io.Serializable;
 
 import dm.shakespeare.template.config.BuildConfig;
-import dm.shakespeare.template.typed.background.Background;
+import dm.shakespeare.template.typed.actor.Background;
 import dm.shakespeare.util.ConstantConditions;
 
 /**

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.actor;
+package dm.shakespeare.template.behavior;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -95,7 +95,8 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
         }
       }
     }
-    builder.onMessage((Tester<? super Object>) tester, new MethodHandler(object, method));
+    builder.onMessage((Tester<? super Object>) tester,
+        new dm.shakespeare.template.behavior.MethodHandler(object, method));
   }
 
   private static class ClassTester implements Tester<Object>, Serializable {

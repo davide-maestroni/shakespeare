@@ -25,7 +25,7 @@ import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.log.Logger;
-import dm.shakespeare.template.actor.AgentWrapper;
+import dm.shakespeare.template.behavior.AgentWrapper;
 import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;

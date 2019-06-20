@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.typed.background;
+package dm.shakespeare.template.typed.actor;
 
 import org.jetbrains.annotations.NotNull;
 

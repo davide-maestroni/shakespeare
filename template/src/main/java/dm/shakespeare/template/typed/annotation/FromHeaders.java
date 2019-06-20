@@ -14,26 +14,18 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.role;
+package dm.shakespeare.template.typed.annotation;
 
-import org.jetbrains.annotations.NotNull;
-
-import dm.shakespeare.actor.Behavior;
-import dm.shakespeare.actor.Role;
-import dm.shakespeare.template.behavior.Behaviors;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Created by davide-maestroni on 01/16/2019.
+ * Created by davide-maestroni on 06/20/2019.
  */
-public class SupervisedRole extends RoleWrapper {
+@Target(ElementType.PARAMETER)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface FromHeaders {
 
-  public SupervisedRole(@NotNull final Role role) {
-    super(role);
-  }
-
-  @NotNull
-  @Override
-  public Behavior getBehavior(@NotNull final String id) throws Exception {
-    return Behaviors.supervised(super.getBehavior(id));
-  }
 }

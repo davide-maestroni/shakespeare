@@ -18,6 +18,7 @@ package dm.shakespeare.template.typed;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -42,7 +43,9 @@ import dm.shakespeare.actor.Role;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.Failure;
 import dm.shakespeare.template.typed.TypedRole.TypedRoleSignal;
-import dm.shakespeare.template.typed.background.Background;
+import dm.shakespeare.template.typed.actor.Background;
+import dm.shakespeare.template.typed.annotation.FromActor;
+import dm.shakespeare.template.typed.annotation.FromHeaders;
 import dm.shakespeare.template.typed.message.InvocationException;
 import dm.shakespeare.template.typed.message.InvocationResponse;
 import dm.shakespeare.template.typed.message.InvocationResult;
@@ -65,6 +68,7 @@ class ActorHandler implements InvocationHandler {
         put(float.class, (float) 0);
         put(double.class, (double) 0);
       }};
+  private static final Class<?>[] EMPTY_CLASSES = new Class<?>[0];
 
   private static final Map<Object, ActorHandler> actorHandlers =
       Collections.synchronizedMap(new WeakHashMap<Object, ActorHandler>());
@@ -95,9 +99,44 @@ class ActorHandler implements InvocationHandler {
 
   public Object invoke(final Object o, final Method method, final Object[] objects) throws
       Throwable {
+    // validate annotations
+    int fromActor = -1;
+    int fromHeaders = -1;
+    final Class<?>[] parameterTypes = method.getParameterTypes();
+    final ArrayList<Class<?>> paramClasses = new ArrayList<Class<?>>();
+    final Annotation[][] parameterAnnotations = method.getParameterAnnotations();
+    for (int i = 0; i < parameterAnnotations.length; ++i) {
+      boolean isFrom = false;
+      final Annotation[] annotations = parameterAnnotations[i];
+      for (final Annotation annotation : annotations) {
+        final Class<? extends Annotation> type = annotation.annotationType();
+        if (type == FromActor.class) {
+          if ((fromActor >= 0) || !Actor.class.isAssignableFrom(parameterTypes[i])) {
+            throw new IllegalStateException();
+          }
+          fromActor = i;
+          isFrom = true;
+
+        } else if (type == FromHeaders.class) {
+          if ((fromHeaders >= 0) || !Headers.class.isAssignableFrom(parameterTypes[i])) {
+            throw new IllegalStateException();
+          }
+          fromHeaders = i;
+          isFrom = true;
+        }
+      }
+      if (!isFrom) {
+        paramClasses.add(parameterTypes[i]);
+      }
+    }
     final ArrayList<Object> arguments = new ArrayList<Object>();
     final ArrayList<Actor> actors = new ArrayList<Actor>();
-    for (final Object object : objects) {
+    for (int i = 0; i < objects.length; ++i) {
+      if ((fromActor == i) || (fromHeaders == i)) {
+        continue;
+      }
+
+      final Object object = objects[i];
       if (object != null) {
         if (List.class.isAssignableFrom(object.getClass())) {
           final ArrayList<Object> list = new ArrayList<Object>();
@@ -136,23 +175,31 @@ class ActorHandler implements InvocationHandler {
         arguments.add(null);
       }
     }
-
+    final Long timeoutMillis = background.getTimeoutMillis(actor.getId(), method);
+    if ((timeoutMillis != null) && ((fromActor >= 0) || (fromHeaders >= 0))) {
+      throw new IllegalStateException();
+    }
     final Actor actor = this.actor;
-    final Headers headers = new Headers().withThreadId(UUID.randomUUID().toString());
+    Headers headers = (fromHeaders >= 0) ? (Headers) objects[fromHeaders] : new Headers();
+    if (headers.getThreadId() == null) {
+      headers = headers.withThreadId(UUID.randomUUID().toString());
+    }
+    final Headers actorHeaders = headers.threadOnly();
     for (final Actor sender : actors) {
-      actor.tell(TypedRoleSignal.TYPED_ARG, headers, sender);
+      actor.tell(TypedRoleSignal.TYPED_ARG, actorHeaders, sender);
     }
     final Invocation invocation =
-        new Invocation(method.getName(), method.getParameterTypes(), arguments.toArray());
-    final Long timeoutMillis = background.getTimeoutMillis(actor.getId(), method);
+        new Invocation(method.getName(), paramClasses.toArray(EMPTY_CLASSES), arguments.toArray());
     if (timeoutMillis != null) {
       final Actor invocationActor = this.invocationActor;
       final InvocationLatch latch = new InvocationLatch();
-      invocationActor.tell(latch, headers, actor);
-      actor.tell(invocation, headers.withReceiptId(headers.getThreadId()), invocationActor);
+      invocationActor.tell(latch, actorHeaders, actor);
+      actor.tell(invocation, actorHeaders.withReceiptId(actorHeaders.getThreadId()),
+          invocationActor);
       return latch.awaitResult(timeoutMillis, TimeUnit.MILLISECONDS);
     }
-    actor.tell(invocation, headers, Stage.STAND_IN);
+    final Actor sender = (fromActor >= 0) ? (Actor) objects[fromActor] : Stage.STAND_IN;
+    actor.tell(invocation, headers, sender);
     return DEFAULT_RETURN_VALUES.get(method.getReturnType());
   }
 

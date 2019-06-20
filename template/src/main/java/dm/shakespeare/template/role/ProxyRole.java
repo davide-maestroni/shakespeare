@@ -25,7 +25,7 @@ import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.Headers;
 import dm.shakespeare.actor.Role;
-import dm.shakespeare.template.actor.ProxyBehavior;
+import dm.shakespeare.template.behavior.ProxyBehavior;
 import dm.shakespeare.util.ConstantConditions;
 
 /**

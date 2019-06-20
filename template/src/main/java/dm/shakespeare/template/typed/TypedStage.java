@@ -26,7 +26,7 @@ import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.ActorSet;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.function.Tester;
-import dm.shakespeare.template.typed.background.Background;
+import dm.shakespeare.template.typed.actor.Background;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
