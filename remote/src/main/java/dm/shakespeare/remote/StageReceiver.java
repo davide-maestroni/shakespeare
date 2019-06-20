@@ -44,6 +44,7 @@ import dm.shakespeare.log.LogPrinters;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.remote.config.RemoteConfig;
 import dm.shakespeare.remote.config.StageConfig;
+import dm.shakespeare.remote.io.RawData;
 import dm.shakespeare.remote.io.Serializer;
 import dm.shakespeare.remote.transport.ActorID;
 import dm.shakespeare.remote.transport.Connector;
@@ -64,7 +65,6 @@ import dm.shakespeare.remote.transport.RemoteRequest;
 import dm.shakespeare.remote.transport.RemoteResponse;
 import dm.shakespeare.remote.transport.UploadRequest;
 import dm.shakespeare.remote.transport.UploadResponse;
-import dm.shakespeare.remote.util.RawData;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.WeakValueHashMap;
 

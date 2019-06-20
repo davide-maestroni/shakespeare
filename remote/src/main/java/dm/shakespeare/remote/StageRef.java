@@ -51,6 +51,7 @@ import dm.shakespeare.log.LogPrinters;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.remote.config.LocalConfig;
 import dm.shakespeare.remote.config.StageConfig;
+import dm.shakespeare.remote.io.RawData;
 import dm.shakespeare.remote.io.Serializer;
 import dm.shakespeare.remote.message.Rejection;
 import dm.shakespeare.remote.transport.ActorID;
@@ -71,7 +72,6 @@ import dm.shakespeare.remote.transport.RemoteRequest;
 import dm.shakespeare.remote.transport.RemoteResponse;
 import dm.shakespeare.remote.transport.UploadRequest;
 import dm.shakespeare.remote.transport.UploadResponse;
-import dm.shakespeare.remote.util.RawData;
 import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -826,8 +826,7 @@ public class StageRef extends Stage {
         try {
           getSender().send(new MessageRequest().withActorID(request.getSenderActorID())
               .withSenderActorID(request.getSenderActorID())
-              .withMessageData(
-                  RawData.wrap(serializer.serialize(new Rejection(null, headers))))
+              .withMessageData(RawData.wrap(serializer.serialize(new Rejection(null, headers))))
               .withHeaders(headers.threadOnly()), remoteId);
 
         } catch (final Exception e) {

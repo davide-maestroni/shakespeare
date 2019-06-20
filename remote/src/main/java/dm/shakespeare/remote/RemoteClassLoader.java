@@ -42,8 +42,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import dm.shakespeare.remote.io.RawData;
 import dm.shakespeare.remote.util.Classes;
-import dm.shakespeare.remote.util.RawData;
 
 /**
  * Created by davide-maestroni on 04/09/2019.

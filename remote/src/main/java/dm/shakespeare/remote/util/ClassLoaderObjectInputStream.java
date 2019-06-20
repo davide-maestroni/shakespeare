@@ -46,7 +46,7 @@ public class ClassLoaderObjectInputStream extends ObjectInputStream {
   }
 
   @Override
-  protected Class<?> resolveProxyClass(@NotNull final String[] interfaces) throws IOException,
+  protected Class<?> resolveProxyClass(@NotNull final String[] interfaces) throws
       ClassNotFoundException {
     final ClassLoader classLoader = this.classLoader;
     final int length = interfaces.length;

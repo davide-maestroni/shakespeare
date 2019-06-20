@@ -21,6 +21,10 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.FilePermission;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.security.CodeSource;
 import java.security.Permission;
@@ -34,6 +38,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import dm.shakespeare.Stage;
 import dm.shakespeare.actor.AbstractBehavior;
@@ -50,7 +56,7 @@ import dm.shakespeare.remote.transport.RemoteResponse;
 import dm.shakespeare.remote.util.Base64;
 import dm.shakespeare.remote.util.Classes;
 import dm.shakespeare.remote.util.PLZW;
-import dm.shakespeare.remote.util.RawData;
+import dm.shakespeare.remote.io.RawData;
 
 /**
  * Created by davide-maestroni on 04/18/2019.
@@ -145,11 +151,24 @@ public class RemoteServerTest {
 
     JavaSerializer javaSerializer = new JavaSerializer();
     javaSerializer.whitelist(Collections.singleton("**"));
-    encoded = PLZW.getEncoder().encode(javaSerializer.serialize(new PrintRole()));
-    final Object deserialize = javaSerializer.deserialize(RawData.wrap(PLZW.getDecoder().decode(encoded)),
+    final byte[] bytes = javaSerializer.serialize(new PrintRole());
+    encoded = PLZW.getEncoder().encode(bytes);
+    Object deserialize = javaSerializer.deserialize(RawData.wrap(PLZW.getDecoder().decode(encoded)),
         PrintRole.class.getClassLoader());
     assert deserialize instanceof PrintRole;
-    System.out.println(Base64.encodeBytes(javaSerializer.serialize(new PrintRole()), Base64.GZIP).length());
+    System.out.println(Base64.encodeBytes(bytes, Base64.GZIP).length());
+
+    StringWriter writer = new StringWriter();
+    OutputStream encoder = PLZW.newEncoder(writer);
+    GZIPOutputStream gzip = new GZIPOutputStream(encoder);
+    gzip.write(bytes);
+    gzip.close();
+    System.out.println(writer.toString().length());
+
+    InputStream decoder = PLZW.newDecoder(new StringReader(writer.toString()));
+    deserialize = javaSerializer.deserialize(RawData.wrap(new GZIPInputStream(decoder)),
+        PrintRole.class.getClassLoader());
+    assert deserialize instanceof PrintRole;
   }
 
   private static class DirectConnector implements Connector {

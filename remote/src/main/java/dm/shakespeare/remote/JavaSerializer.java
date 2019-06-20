@@ -26,8 +26,8 @@ import java.io.ObjectOutputStream;
 import java.io.ObjectStreamClass;
 
 import dm.shakespeare.remote.io.AbstractSerializer;
+import dm.shakespeare.remote.io.RawData;
 import dm.shakespeare.remote.util.ClassLoaderObjectInputStream;
-import dm.shakespeare.remote.util.RawData;
 
 /**
  * Created by davide-maestroni on 04/16/2019.

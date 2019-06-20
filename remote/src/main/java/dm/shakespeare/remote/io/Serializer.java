@@ -21,8 +21,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
-import dm.shakespeare.remote.util.RawData;
-
 /**
  * Created by davide-maestroni on 04/16/2019.
  */
@@ -31,8 +29,7 @@ public interface Serializer {
   void blacklist(@NotNull Collection<String> classNames);
 
   @NotNull
-  Object deserialize(@NotNull RawData data, @NotNull ClassLoader classLoader) throws
-      Exception;
+  Object deserialize(@NotNull RawData data, @NotNull ClassLoader classLoader) throws Exception;
 
   @NotNull
   byte[] serialize(@Nullable Object o) throws Exception;

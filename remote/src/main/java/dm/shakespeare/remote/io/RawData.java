@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.remote.util;
+package dm.shakespeare.remote.io;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -34,6 +34,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel.MapMode;
 
+import dm.shakespeare.remote.util.ByteBufferInputStream;
 import dm.shakespeare.util.ConstantConditions;
 
 /**

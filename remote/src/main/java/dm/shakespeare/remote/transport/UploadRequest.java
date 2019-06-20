@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
-import dm.shakespeare.remote.util.RawData;
+import dm.shakespeare.remote.io.RawData;
 
 /**
  * Created by davide-maestroni on 04/09/2019.
