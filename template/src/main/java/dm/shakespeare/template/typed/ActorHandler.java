@@ -180,22 +180,21 @@ class ActorHandler implements InvocationHandler {
       throw new IllegalStateException();
     }
     final Actor actor = this.actor;
-    Headers headers = (fromHeaders >= 0) ? (Headers) objects[fromHeaders] : new Headers();
-    if (headers.getThreadId() == null) {
-      headers = headers.withThreadId(UUID.randomUUID().toString());
-    }
-    final Headers actorHeaders = headers.threadOnly();
+    final Headers headers = (fromHeaders >= 0) ? (Headers) objects[fromHeaders] : Headers.EMPTY;
+    final InvocationId invocationId = new InvocationId(UUID.randomUUID().toString());
     for (final Actor sender : actors) {
-      actor.tell(TypedRoleSignal.TYPED_ARG, actorHeaders, sender);
+      actor.tell(invocationId, null, sender);
     }
     final Invocation invocation =
-        new Invocation(method.getName(), paramClasses.toArray(EMPTY_CLASSES), arguments.toArray());
+        new Invocation(invocationId.getId(), method.getName(), paramClasses.toArray(EMPTY_CLASSES),
+            arguments.toArray());
     if (timeoutMillis != null) {
       final Actor invocationActor = this.invocationActor;
       final InvocationLatch latch = new InvocationLatch();
-      invocationActor.tell(latch, actorHeaders, actor);
-      actor.tell(invocation, actorHeaders.withReceiptId(actorHeaders.getThreadId()),
-          invocationActor);
+      final Headers invocationHeaders =
+          headers.withThreadId(invocationId.getId()).withReceiptId(invocationId.getId());
+      invocationActor.tell(latch, invocationHeaders, actor);
+      actor.tell(invocation, invocationHeaders, invocationActor);
       return latch.awaitResult(timeoutMillis, TimeUnit.MILLISECONDS);
     }
     final Actor sender = (fromActor >= 0) ? (Actor) objects[fromActor] : Stage.STAND_IN;

@@ -59,6 +59,7 @@ public interface Actor {
    */
   void dismiss(boolean mayInterruptIfRunning);
   // TODO: 2019-06-18 + dismissNow()??
+  // TODO: 2019-06-20 messages => getField (jackson)
 
   /**
    * Lazily dismiss this actor so that its behavior will be stopped and the actor removed from its

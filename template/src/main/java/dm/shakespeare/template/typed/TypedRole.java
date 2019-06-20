@@ -22,8 +22,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
@@ -100,15 +102,24 @@ class TypedRole extends SerializableRole {
   }
 
   enum TypedRoleSignal {
-    TYPED_ARG, ACTOR_ARG
+    ACTOR_ARG
+  }
+
+  private static class ActorArg {
+
+    private final CQueue<Actor> actors = new CQueue<Actor>();
+
+    private long timeoutMillis;
   }
 
   private static class TypedBehavior extends SerializableAbstractBehavior {
 
+    private static final long EXPIRATION_MILLIS = TimeUnit.MINUTES.toMillis(15);
+
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
+    private final HashMap<String, ActorArg> actorArgs = new HashMap<String, ActorArg>();
     private final Object instance;
-    private final HashMap<String, CQueue<Actor>> typedArgs = new HashMap<String, CQueue<Actor>>();
 
     private TypedBehavior(@NotNull final Object instance) {
       this.instance = instance;
@@ -116,15 +127,23 @@ class TypedRole extends SerializableRole {
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) {
-      if (message == TypedRoleSignal.TYPED_ARG) {
-        final String threadId = envelop.getHeaders().getThreadId();
-        final HashMap<String, CQueue<Actor>> typedArgs = this.typedArgs;
-        CQueue<Actor> actors = typedArgs.get(threadId);
-        if (actors == null) {
-          actors = new CQueue<Actor>();
-          typedArgs.put(threadId, actors);
+      if (message instanceof InvocationId) {
+        final String invocationId = ((InvocationId) message).getId();
+        final HashMap<String, ActorArg> actorArgs = this.actorArgs;
+        ActorArg actorArg = actorArgs.get(invocationId);
+        if (actorArg == null) {
+          actorArg = new ActorArg();
+          actorArgs.put(invocationId, actorArg);
         }
-        actors.add(envelop.getSender());
+        final long now = System.currentTimeMillis();
+        actorArg.actors.add(envelop.getSender());
+        actorArg.timeoutMillis = now + EXPIRATION_MILLIS;
+        final Iterator<ActorArg> iterator = actorArgs.values().iterator();
+        while (iterator.hasNext()) {
+          if (iterator.next().timeoutMillis < now) {
+            iterator.remove();
+          }
+        }
 
       } else if ((message != null) && (message.getClass() == Invocation.class)) {
         final Object instance = this.instance;
@@ -145,10 +164,10 @@ class TypedRole extends SerializableRole {
         final Actor self = agent.getSelf();
         final Headers headers = envelop.getHeaders().threadOnly();
         try {
-          final CQueue<Actor> actors = typedArgs.remove(envelop.getHeaders().getThreadId());
+          final ActorArg actorArg = actorArgs.remove(invocation.getId());
           final Object[] args;
           final Object[] arguments = invocation.getArguments();
-          if (actors != null) {
+          if (actorArg != null) {
             args = new Object[parameterTypes.length];
             for (int i = 0; i < arguments.length; ++i) {
               final Object argument = arguments[i];
@@ -156,10 +175,10 @@ class TypedRole extends SerializableRole {
                 final InvocationArg invocationArg = (InvocationArg) argument;
                 final Class<?> type = invocationArg.getType();
                 args[i] = ActorHandler.createProxy(type, invocationArg.getBackground(),
-                    actors.removeFirst());
+                    actorArg.actors.removeFirst());
 
               } else if (argument == TypedRoleSignal.ACTOR_ARG) {
-                args[i] = actors.removeFirst();
+                args[i] = actorArg.actors.removeFirst();
 
               } else if (argument instanceof List) {
                 final ArrayList<Object> list = new ArrayList<Object>();
@@ -168,10 +187,10 @@ class TypedRole extends SerializableRole {
                     final InvocationArg invocationArg = (InvocationArg) element;
                     final Class<?> type = invocationArg.getType();
                     list.add(ActorHandler.createProxy(type, invocationArg.getBackground(),
-                        actors.removeFirst()));
+                        actorArg.actors.removeFirst()));
 
                   } else if (element == TypedRoleSignal.ACTOR_ARG) {
-                    list.add(actors.removeFirst());
+                    list.add(actorArg.actors.removeFirst());
 
                   } else {
                     list.add(element);

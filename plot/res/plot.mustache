@@ -22,11 +22,13 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.WeakHashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import dm.shakespeare.Stage;
 import dm.shakespeare.actor.AbstractBehavior;
@@ -63,20 +65,35 @@ public class Plot {
   private static final DefaultScript DEFAULT_SCRIPT = new DefaultScript();
 
   private final Actor actor;
-  private final Setting setting =
-      new Setting(ExecutorServices.localExecutor(), Role.defaultLogger(this));
+  private final Setting setting;
 
   public Plot() throws Exception {
     this(DEFAULT_SCRIPT);
+  }
+
+  public Plot(@NotNull final Logger logger) throws Exception {
+    this(DEFAULT_SCRIPT, logger);
   }
 
   public Plot(@NotNull final Script script) throws Exception {
     this(script, DEFAULT_ACTOR_FACTORY);
   }
 
+  public Plot(@NotNull final Script script, @NotNull final Logger logger) throws Exception {
+    this(script, DEFAULT_ACTOR_FACTORY, logger);
+  }
+
   public Plot(@NotNull final Script script,
       @NotNull final UnaryFunction<? super Role, ? extends Actor> actorFactory) throws Exception {
     actor = actorFactory.call(new PlotFactoryRole(script));
+    setting = new Setting(ExecutorServices.localExecutor(), Role.defaultLogger(this));
+  }
+
+  public Plot(@NotNull final Script script,
+      @NotNull final UnaryFunction<? super Role, ? extends Actor> actorFactory,
+      @NotNull final Logger logger) throws Exception {
+    actor = actorFactory.call(new PlotFactoryRole(script));
+    setting = new Setting(ExecutorServices.localExecutor(), logger);
   }
 
   @NotNull
@@ -121,7 +138,7 @@ public class Plot {
       for (final Event<? extends T> anEvent : events) {
         actor.tell(PlotSignal.CREATE_PARAM, headers, anEvent.getActor());
       }
-      actor.tell(new CreateEvent<T>(eventCreator), null, event.getActor());
+      actor.tell(new CreateEvent<T>(eventCreator), headers, event.getActor());
       return event;
 
     } finally {
@@ -215,7 +232,7 @@ public class Plot {
       for (final Story<? extends T> aStory : stories) {
         actor.tell(PlotSignal.CREATE_PARAM, headers, aStory.getActor());
       }
-      actor.tell(new CreateStory<T>(storyCreator), null, story.getActor());
+      actor.tell(new CreateStory<T>(storyCreator), headers, story.getActor());
       return story;
 
     } finally {
@@ -248,6 +265,13 @@ public class Plot {
     }
   }
 {{/arities}}
+
+  private static class ActorParam {
+
+    private final ArrayList<Actor> actors = new ArrayList<Actor>();
+
+    private long timeoutMillis;
+  }
 
   private static class CreateEvent<T> implements UnaryFunction<List<Event<? extends T>>, Event<?>>, Serializable {
 
@@ -407,6 +431,8 @@ public class Plot {
 
   private static class PlotFactoryBehavior extends AbstractBehavior {
 
+    private static final long EXPIRATION_MILLIS = TimeUnit.MINUTES.toMillis(15);
+
     private final WeakValueHashMap<Actor, Actor> actors = new WeakValueHashMap<Actor, Actor>();
     private final HashMap<Class<?>, Handler<Object>> handlers =
         new HashMap<Class<?>, Handler<Object>>() { {
@@ -415,14 +441,14 @@ public class Plot {
             @SuppressWarnings("unchecked")
             public void handle(final Object message, @NotNull final Envelop envelop,
                 @NotNull final Agent agent) {
-              final String threadId = envelop.getHeaders().getThreadId();
-              final ArrayList<Actor> paramList = params.remove(threadId);
               Actor actor;
               Setting.set(setting);
               try {
+                final String threadId = envelop.getHeaders().getThreadId();
+                final ArrayList<Actor> actorParams = params.remove(threadId).actors;
                 final ArrayList<Event<?>> events = new ArrayList<Event<?>>();
-                for (final Actor param : paramList) {
-                  events.add(new EventWrapper<Object>(param));
+                for (final Actor actorParam : actorParams) {
+                  events.add(new EventWrapper<Object>(actorParam));
                 }
                 actor = ((CreateEvent<Object>) message).call(events).getActor();
 
@@ -482,14 +508,14 @@ public class Plot {
             @SuppressWarnings("unchecked")
             public void handle(final Object message, @NotNull final Envelop envelop,
                 @NotNull final Agent agent) {
-              final String threadId = envelop.getHeaders().getThreadId();
-              final ArrayList<Actor> paramList = params.remove(threadId);
               Actor actor;
               Setting.set(setting);
               try {
+                final String threadId = envelop.getHeaders().getThreadId();
+                final ArrayList<Actor> actorParams = params.remove(threadId).actors;
                 final ArrayList<Story<?>> stories = new ArrayList<Story<?>>();
-                for (final Actor param : paramList) {
-                  stories.add(new StoryWrapper<Object>(param));
+                for (final Actor actorParam : actorParams) {
+                  stories.add(new StoryWrapper<Object>(actorParam));
                 }
                 actor = ((CreateStory<Object>) message).call(stories).getActor();
 
@@ -510,16 +536,16 @@ public class Plot {
             @SuppressWarnings("unchecked")
             public void handle(final Object message, @NotNull final Envelop envelop,
                 @NotNull final Agent agent) {
-              final String threadId = envelop.getHeaders().getThreadId();
-              final ArrayList<Actor> paramList = params.remove(threadId);
               Actor actor;
               Setting.set(setting);
               try {
-                if ((paramList == null) || (paramList.size() != {{paramNum}})) {
+                final String threadId = envelop.getHeaders().getThreadId();
+                final ArrayList<Actor> actorParams = params.remove(threadId).actors;
+                if (actorParams.size() != {{paramNum}}) {
                   actor = Event.ofIncident(new IllegalStateException()).getActor();
 
                 } else {
-{{#paramTypes}}                  final EventWrapper<Object> {{prefix}}Event = new EventWrapper<Object>(paramList.get({{index}}));
+{{#paramTypes}}                  final EventWrapper<Object> {{prefix}}Event = new EventWrapper<Object>(actorParams.get({{index}}));
 {{/paramTypes}}
                   actor = ((Create{{classPrefix}}Event<{{#paramTypes}}Event<?>{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>) message).call({{#paramTypes}}{{prefix}}Event{{#hasNext}}, {{/hasNext}}{{/paramTypes}}).getActor();
                 }
@@ -540,16 +566,16 @@ public class Plot {
             @SuppressWarnings("unchecked")
             public void handle(final Object message, @NotNull final Envelop envelop,
                 @NotNull final Agent agent) {
-              final String threadId = envelop.getHeaders().getThreadId();
-              final ArrayList<Actor> paramList = params.remove(threadId);
               Actor actor;
               Setting.set(setting);
               try {
-                if ((paramList == null) || (paramList.size() != {{paramNum}})) {
+                final String threadId = envelop.getHeaders().getThreadId();
+                final ArrayList<Actor> actorParams = params.remove(threadId).actors;
+                if (actorParams.size() != {{paramNum}}) {
                   actor = Story.ofSingleIncident(new IllegalStateException()).getActor();
 
                 } else {
-{{#paramTypes}}                  final StoryWrapper<Object> {{prefix}}Story = new StoryWrapper<Object>(paramList.get({{index}}));
+{{#paramTypes}}                  final StoryWrapper<Object> {{prefix}}Story = new StoryWrapper<Object>(actorParams.get({{index}}));
 {{/paramTypes}}
                   actor = ((Create{{classPrefix}}Story<{{#paramTypes}}Story<?>{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>) message).call({{#paramTypes}}{{prefix}}Story{{#hasNext}}, {{/hasNext}}{{/paramTypes}}).getActor();
                 }
@@ -567,8 +593,7 @@ public class Plot {
           });
 {{/arities}}
         } };
-    private final HashMap<String, ArrayList<Actor>> params =
-        new HashMap<String, ArrayList<Actor>>();
+    private final HashMap<String, ActorParam> params = new HashMap<String, ActorParam>();
     private final WeakHashMap<Actor, Actor> senders = new WeakHashMap<Actor, Actor>();
     private final Setting setting;
 
@@ -589,13 +614,21 @@ public class Plot {
 
       if (message == PlotSignal.CREATE_PARAM) {
         final String threadId = envelop.getHeaders().getThreadId();
-        final HashMap<String, ArrayList<Actor>> params = this.params;
-        ArrayList<Actor> actors = params.get(threadId);
-        if (actors == null) {
-          actors = new ArrayList<Actor>();
-          params.put(threadId, actors);
+        final HashMap<String, ActorParam> params = this.params;
+        ActorParam param = params.get(threadId);
+        if (param == null) {
+          param = new ActorParam();
+          params.put(threadId, param);
         }
-        actors.add(envelop.getSender());
+        final long now = System.currentTimeMillis();
+        param.actors.add(envelop.getSender());
+        param.timeoutMillis = now + EXPIRATION_MILLIS;
+        final Iterator<ActorParam> iterator = params.values().iterator();
+        while (iterator.hasNext()) {
+          if (iterator.next().timeoutMillis < now) {
+            iterator.remove();
+          }
+        }
 
       } else {
         final Actor sender = envelop.getSender();

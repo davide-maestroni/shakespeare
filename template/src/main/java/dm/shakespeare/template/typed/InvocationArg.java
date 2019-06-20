@@ -37,11 +37,11 @@ class InvocationArg implements Serializable {
     this.background = ConstantConditions.notNull("background", background);
   }
 
-  public Background getBackground() {
+  Background getBackground() {
     return background;
   }
 
-  public Class<?> getType() {
+  Class<?> getType() {
     return type;
   }
 }

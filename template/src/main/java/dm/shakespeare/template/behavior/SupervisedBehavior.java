@@ -127,7 +127,6 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
   }
 
   private enum SupervisedSignal {
-
     DUMMY_MESSAGE
   }
 

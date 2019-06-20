@@ -30,34 +30,41 @@ class Invocation implements Serializable {
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   private final Object[] arguments;
+  private final String id;
   private final String methodName;
   private final Class<?>[] parameterTypes;
 
   Invocation() {
+    this.id = null;
     methodName = "toString";
     parameterTypes = new Class[0];
     arguments = new Object[0];
   }
 
-  Invocation(@NotNull final String methodName, @NotNull final Class<?>[] parameterTypes,
-      @NotNull final Object... arguments) {
+  Invocation(@NotNull final String id, @NotNull final String methodName,
+      @NotNull final Class<?>[] parameterTypes, @NotNull final Object... arguments) {
+    this.id = id;
     this.methodName = methodName;
     this.parameterTypes = parameterTypes;
     this.arguments = arguments;
   }
 
   @NotNull
-  public Object[] getArguments() {
+  Object[] getArguments() {
     return arguments;
   }
 
+  String getId() {
+    return id;
+  }
+
   @NotNull
-  public String getMethodName() {
+  String getMethodName() {
     return methodName;
   }
 
   @NotNull
-  public Class<?>[] getParameterTypes() {
+  Class<?>[] getParameterTypes() {
     return parameterTypes;
   }
 }
