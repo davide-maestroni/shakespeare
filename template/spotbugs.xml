@@ -32,10 +32,6 @@
     <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED"/>
   </Match>
   <Match>
-    <Class name="dm.shakespeare.template.role.SerializableRoleWrapper"/>
-    <Bug pattern="SE_BAD_FIELD"/>
-  </Match>
-  <Match>
     <Class name="~dm\.shakespeare\.template\.typed\.(InvocationArg|TypedRole|TypedRole\$TypedBehavior)"/>
     <Bug pattern="SE_BAD_FIELD"/>
   </Match>

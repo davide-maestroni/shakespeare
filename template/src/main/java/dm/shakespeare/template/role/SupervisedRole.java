@@ -27,6 +27,8 @@ import dm.shakespeare.template.behavior.Behaviors;
  */
 public class SupervisedRole extends RoleWrapper {
 
+  // TODO: 2019-06-22 Serializable, remove RoleWrapper
+
   public SupervisedRole(@NotNull final Role role) {
     super(role);
   }
