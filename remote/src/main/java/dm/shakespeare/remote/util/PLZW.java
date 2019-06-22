@@ -37,8 +37,6 @@ import dm.shakespeare.util.WeakValueHashMap;
  */
 public class PLZW {
 
-  // TODO: 2019-06-22 cache luts??
-
   private static final String DEFAULT_ALPHABET = buildAsciiAlphabet();
   private static final char[] DEFAULT_ENCODER_LUT = DEFAULT_ALPHABET.toCharArray();
   private static final HashMap<Character, Byte> DEFAULT_DECODER_LUT =
@@ -50,8 +48,12 @@ public class PLZW {
   private static final Decoder DEFAULT_DECODER = new Decoder(DEFAULT_DECODER_LUT);
   private static final Encoder DEFAULT_ENCODER = new Encoder(DEFAULT_ENCODER_LUT);
 
+  private static final Map<CharSequence, Map<Character, Byte>> decoderLuts =
+      Collections.synchronizedMap(new WeakValueHashMap<CharSequence, Map<Character, Byte>>());
   private static final Map<CharSequence, Decoder> decoders =
       Collections.synchronizedMap(new WeakValueHashMap<CharSequence, Decoder>());
+  private static final Map<CharSequence, char[]> encoderLuts =
+      Collections.synchronizedMap(new WeakValueHashMap<CharSequence, char[]>());
   private static final Map<CharSequence, Encoder> encoders =
       Collections.synchronizedMap(new WeakValueHashMap<CharSequence, Encoder>());
 
@@ -149,13 +151,17 @@ public class PLZW {
 
   @NotNull
   private static Map<Character, Byte> buildDecoderLut(@NotNull final CharSequence alphabet) {
-    final int length = alphabet.length();
-    if (length < 16) {
-      throw new IllegalArgumentException();
-    }
-    final HashMap<Character, Byte> lut = new HashMap<Character, Byte>();
-    for (int i = 0; i < length; ++i) {
-      lut.put(alphabet.charAt(i), (byte) i);
+    Map<Character, Byte> lut = decoderLuts.get(alphabet);
+    if (lut == null) {
+      final int length = alphabet.length();
+      if (length < 16) {
+        throw new IllegalArgumentException();
+      }
+      lut = new HashMap<Character, Byte>();
+      for (int i = 0; i < length; ++i) {
+        lut.put(alphabet.charAt(i), (byte) i);
+      }
+      decoderLuts.put(alphabet, lut);
     }
     return lut;
   }
@@ -171,15 +177,19 @@ public class PLZW {
 
   @NotNull
   private static char[] buildEncoderLut(@NotNull final CharSequence alphabet) {
-    final int length = alphabet.length();
-    if (length < 16) {
-      throw new IllegalArgumentException();
+    char[] lut = encoderLuts.get(alphabet);
+    if (lut == null) {
+      final int length = alphabet.length();
+      if (length < 16) {
+        throw new IllegalArgumentException();
+      }
+      lut = new char[length];
+      for (int i = 0; i < length; ++i) {
+        lut[i] = alphabet.charAt(i);
+      }
+      encoderLuts.put(alphabet, lut);
     }
-    final char[] chars = new char[length];
-    for (int i = 0; i < length; ++i) {
-      chars[i] = alphabet.charAt(i);
-    }
-    return chars;
+    return lut;
   }
 
   private static int decodeNext(final byte code, @NotNull final DecoderContext context,
