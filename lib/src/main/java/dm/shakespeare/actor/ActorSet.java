@@ -40,13 +40,23 @@ public interface ActorSet extends Set<Actor> {
   /**
    * Dismiss all the actors in this set.
    *
-   * @param mayInterruptIfRunning whether the currently running thread (if any) can be interrupted
-   *                              to stop the processing of messages. Be aware that, based on the
-   *                              actor executor service, interrupting the running thread might
-   *                              cause the behavior to never receive a stop notification.
-   * @see Actor#dismiss(boolean)
+   * @see Actor#dismiss()
    */
-  void dismiss(boolean mayInterruptIfRunning);
+  void dismiss();
+
+  /**
+   * Lazily dismiss all the actors in this set.
+   *
+   * @see Actor#dismissLazy()
+   */
+  void dismissLazy();
+
+  /**
+   * Immediately dismiss all the actors in this set.
+   *
+   * @see Actor#dismissNow()
+   */
+  void dismissNow();
 
   /**
    * Removes an observer which should be notified of the dismissal of an actor in this set.

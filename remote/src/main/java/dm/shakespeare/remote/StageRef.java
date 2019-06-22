@@ -554,7 +554,7 @@ public class StageRef extends Stage {
         actor.tell(new RefreshInstanceId(actorID.getInstanceId()), null, Stage.STAND_IN);
 
       } else if (retainAll) {
-        actor.dismiss(false);
+        actor.dismiss();
       }
     }
   }
@@ -640,7 +640,7 @@ public class StageRef extends Stage {
             final String refreshInstanceId = ((RefreshInstanceId) message).getInstanceId();
             if ((refreshInstanceId != null) ? !refreshInstanceId.equals(instanceId)
                 : (instanceId != null)) {
-              agent.getSelf().dismiss(false);
+              agent.getSelf().dismiss();
             }
 
           } else {
@@ -698,7 +698,7 @@ public class StageRef extends Stage {
         final String refreshInstanceId = senderActorID.getInstanceId();
         if ((refreshInstanceId != null) ? !refreshInstanceId.equals(instanceId)
             : (instanceId != null)) {
-          agent.getSelf().dismiss(false);
+          agent.getSelf().dismiss();
           return false;
         }
 

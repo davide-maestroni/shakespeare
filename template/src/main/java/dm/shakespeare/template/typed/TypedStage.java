@@ -26,7 +26,7 @@ import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.ActorSet;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.function.Tester;
-import dm.shakespeare.template.typed.actor.Background;
+import dm.shakespeare.template.typed.actor.Script;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -42,11 +42,11 @@ public class TypedStage extends Stage {
 
   @NotNull
   public static <T> T newActor(@NotNull final Class<? extends T> type,
-      @NotNull final Background background, @NotNull final Class<?> roleType,
+      @NotNull final Script script, @NotNull final Class<?> roleType,
       @NotNull final Object... roleArgs) {
     try {
-      final Actor actor = Stage.newActor(new TypedRole(background, roleType, roleArgs));
-      return ActorHandler.createProxy(type, background, actor);
+      final Actor actor = Stage.newActor(new TypedRole(script, roleType, roleArgs));
+      return ActorHandler.createProxy(type, script, actor);
 
     } catch (final RuntimeException e) {
       throw e;
@@ -58,10 +58,10 @@ public class TypedStage extends Stage {
 
   @NotNull
   public static <T> T newActor(@NotNull final Class<? extends T> type,
-      @NotNull final Background background, @NotNull final Object role) {
+      @NotNull final Script script, @NotNull final Object role) {
     try {
-      final Actor actor = Stage.newActor(new TypedRole(background, role));
-      return ActorHandler.createProxy(type, background, actor);
+      final Actor actor = Stage.newActor(new TypedRole(script, role));
+      return ActorHandler.createProxy(type, script, actor);
 
     } catch (final RuntimeException e) {
       throw e;
@@ -73,11 +73,11 @@ public class TypedStage extends Stage {
 
   @NotNull
   public static <T> T newActor(@NotNull final String id, @NotNull final Class<? extends T> type,
-      @NotNull final Background background, @NotNull final Class<?> roleType,
+      @NotNull final Script script, @NotNull final Class<?> roleType,
       @NotNull final Object... roleArgs) {
     try {
-      final Actor actor = Stage.newActor(id, new TypedRole(background, roleType, roleArgs));
-      return ActorHandler.createProxy(type, background, actor);
+      final Actor actor = Stage.newActor(id, new TypedRole(script, roleType, roleArgs));
+      return ActorHandler.createProxy(type, script, actor);
 
     } catch (final RuntimeException e) {
       throw e;
@@ -89,10 +89,10 @@ public class TypedStage extends Stage {
 
   @NotNull
   public static <T> T newActor(@NotNull final String id, @NotNull final Class<? extends T> type,
-      @NotNull final Background background, @NotNull final Object role) {
+      @NotNull final Script script, @NotNull final Object role) {
     try {
-      final Actor actor = Stage.newActor(id, new TypedRole(background, role));
-      return ActorHandler.createProxy(type, background, actor);
+      final Actor actor = Stage.newActor(id, new TypedRole(script, role));
+      return ActorHandler.createProxy(type, script, actor);
 
     } catch (final RuntimeException e) {
       throw e;
@@ -163,10 +163,10 @@ public class TypedStage extends Stage {
   @NotNull
   @SuppressWarnings("unchecked")
   public <T> T createActor(@NotNull final Class<? extends T> type,
-      @NotNull final Background background, @NotNull final Object role) {
+      @NotNull final Script script, @NotNull final Object role) {
     try {
-      final Actor actor = stage.createActor(new TypedRole(background, role));
-      return ActorHandler.createProxy(type, background, actor);
+      final Actor actor = stage.createActor(new TypedRole(script, role));
+      return ActorHandler.createProxy(type, script, actor);
 
     } catch (final RuntimeException e) {
       throw e;
@@ -178,11 +178,11 @@ public class TypedStage extends Stage {
 
   @NotNull
   public <T> T createActor(@NotNull final String id, @NotNull final Class<? extends T> type,
-      @NotNull final Background background, @NotNull final Class<?> roleType,
+      @NotNull final Script script, @NotNull final Class<?> roleType,
       @NotNull final Object... roleArgs) {
     try {
-      final Actor actor = stage.createActor(id, new TypedRole(background, roleType, roleArgs));
-      return ActorHandler.createProxy(type, background, actor);
+      final Actor actor = stage.createActor(id, new TypedRole(script, roleType, roleArgs));
+      return ActorHandler.createProxy(type, script, actor);
 
     } catch (final RuntimeException e) {
       throw e;
@@ -194,10 +194,10 @@ public class TypedStage extends Stage {
 
   @NotNull
   public <T> T createActor(@NotNull final String id, @NotNull final Class<? extends T> type,
-      @NotNull final Background background, @NotNull final Object role) {
+      @NotNull final Script script, @NotNull final Object role) {
     try {
-      final Actor actor = stage.createActor(id, new TypedRole(background, role));
-      return ActorHandler.createProxy(type, background, actor);
+      final Actor actor = stage.createActor(id, new TypedRole(script, role));
+      return ActorHandler.createProxy(type, script, actor);
 
     } catch (final RuntimeException e) {
       throw e;
@@ -209,11 +209,11 @@ public class TypedStage extends Stage {
 
   @NotNull
   public <T> T createActor(@NotNull final Class<? extends T> type,
-      @NotNull final Background background, @NotNull final Class<?> roleType,
+      @NotNull final Script script, @NotNull final Class<?> roleType,
       @NotNull final Object... roleArgs) {
     try {
-      final Actor actor = stage.createActor(new TypedRole(background, roleType, roleArgs));
-      return ActorHandler.createProxy(type, background, actor);
+      final Actor actor = stage.createActor(new TypedRole(script, roleType, roleArgs));
+      return ActorHandler.createProxy(type, script, actor);
 
     } catch (final RuntimeException e) {
       throw e;

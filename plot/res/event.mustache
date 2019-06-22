@@ -46,7 +46,7 @@ import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.function.Observer;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.Receipt;
-import dm.shakespeare.plot.Setting.Cache;
+import dm.shakespeare.plot.SettingInfo.Cache;
 import dm.shakespeare.plot.Spectator.SpectatorSignal;
 import dm.shakespeare.plot.function.Action;
 import dm.shakespeare.plot.function.NullaryFunction;
@@ -70,7 +70,7 @@ public abstract class Event<T> {
 
   @NotNull
   public static <T> Event<T> ofEffect(final T effect) {
-    final Cache cache = Setting.get().getCache(Event.class);
+    final Cache cache = SettingInfo.get().getCache(Event.class);
     Event<T> event = cache.get(effect);
     if (event == null) {
       event = new EffectEvent<T>(effect);
@@ -144,17 +144,17 @@ public abstract class Event<T> {
   }
 
   static boolean isFalse(@Nullable final Event<?> event) {
-    final Cache cache = Setting.get().getCache(Event.class);
+    final Cache cache = SettingInfo.get().getCache(Event.class);
     return cache.get(Boolean.FALSE) == event;
   }
 
   static boolean isNull(@Nullable final Event<?> event) {
-    final Cache cache = Setting.get().getCache(Event.class);
+    final Cache cache = SettingInfo.get().getCache(Event.class);
     return cache.get(null) == event;
   }
 
   static boolean isTrue(@Nullable final Event<?> event) {
-    final Cache cache = Setting.get().getCache(Event.class);
+    final Cache cache = SettingInfo.get().getCache(Event.class);
     return cache.get(Boolean.TRUE) == event;
   }
 
@@ -319,7 +319,7 @@ public abstract class Event<T> {
 
     EventNarrator(@NotNull final BlockingQueue<Object> queue) {
       this.queue = ConstantConditions.notNull("queue", queue);
-      actor = Stage.newActor(new PlotRole(Setting.get()) {
+      actor = Stage.newActor(new PlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override
@@ -508,15 +508,15 @@ public abstract class Event<T> {
     private final Object[] inputs;
     private final Headers outputHeaders;
     private final HashMap<String, Sender> senders = new HashMap<String, Sender>();
-    private final Setting setting;
+    private final SettingInfo settingInfo;
 
     private Conflict conflict;
     private int inputCount;
 
     private AbstractEvent(final int numInputs) {
       inputs = new Object[numInputs];
-      final Setting setting = (this.setting = Setting.get());
-      final String actorId = (actor = Stage.newActor(new PlotRole(setting) {
+      final SettingInfo settingInfo = (this.settingInfo = SettingInfo.get());
+      final String actorId = (actor = Stage.newActor(new PlotRole(settingInfo) {
 
         @NotNull
         @Override
@@ -550,8 +550,8 @@ public abstract class Event<T> {
     }
 
     @NotNull
-    Setting getSetting() {
-      return setting;
+    SettingInfo getSettingInfo() {
+      return settingInfo;
     }
 
     void putConflict(@NotNull final Conflict conflict, @NotNull final Agent agent) {
@@ -837,7 +837,7 @@ public abstract class Event<T> {
     private final Actor actor;
 
     private EffectEvent(final T effect) {
-      actor = Stage.newActor(new LocalPlotRole(Setting.get()) {
+      actor = Stage.newActor(new LocalPlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override
@@ -880,7 +880,7 @@ public abstract class Event<T> {
 
             } else {
               eventObserver.onIncident(((Conflict) message).getCause());
-              agent.getSelf().dismiss(false);
+              agent.getSelf().dismiss();
             }
 
           } else if (message instanceof Bounce) {
@@ -889,7 +889,7 @@ public abstract class Event<T> {
 
             } else {
               eventObserver.onIncident(PlotFailureException.getOrNew((Bounce) message));
-              agent.getSelf().dismiss(false);
+              agent.getSelf().dismiss();
             }
 
           } else if (message == SpectatorSignal.PAUSE) {
@@ -903,7 +903,7 @@ public abstract class Event<T> {
             } else {
               eventObserver.onEffect((T) message);
             }
-            agent.getSelf().dismiss(false);
+            agent.getSelf().dismiss();
 
           } else if (message == SpectatorSignal.CANCEL) {
             eventActor.tell(EventSignal.CANCEL, null, agent.getSelf());
@@ -911,7 +911,7 @@ public abstract class Event<T> {
           } else if (message == SpectatorSignal.CANCEL_AND_DISMISS) {
             final Actor self = agent.getSelf();
             eventActor.tell(EventSignal.CANCEL, null, self);
-            self.dismiss(false);
+            self.dismiss();
 
           } else if (!(message instanceof Receipt)) {
             if (isPaused) {
@@ -919,7 +919,7 @@ public abstract class Event<T> {
 
             } else {
               eventObserver.onEffect((T) message);
-              agent.getSelf().dismiss(false);
+              agent.getSelf().dismiss();
             }
           }
         }
@@ -946,12 +946,12 @@ public abstract class Event<T> {
 
     @Override
     void endAction() throws Exception {
-      Setting.set(getSetting());
+      SettingInfo.set(getSettingInfo());
       try {
         eventualAction.run();
 
       } finally {
-        Setting.unset();
+        SettingInfo.unset();
       }
     }
 
@@ -976,8 +976,8 @@ public abstract class Event<T> {
     @NotNull
     List<Actor> getInputActors() {
       if (actors == null) {
-        Setting.set(getSetting());
         Event<? extends T> event;
+        SettingInfo.set(getSettingInfo());
         try {
           event = eventCreator.call();
           if (event == null) {
@@ -995,7 +995,7 @@ public abstract class Event<T> {
           }
 
         } finally {
-          Setting.unset();
+          SettingInfo.unset();
         }
         actors = Collections.singletonList(event.getActor());
       }
@@ -1029,7 +1029,7 @@ public abstract class Event<T> {
     @SuppressWarnings("unchecked")
     Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
         Exception {
-      Setting.set(getSetting());
+      SettingInfo.set(getSettingInfo());
       try {
         final ArrayList<T> inputList = new ArrayList<T>();
         for (final Object input : inputs) {
@@ -1039,7 +1039,7 @@ public abstract class Event<T> {
         return ((event != null) ? event : ofNull()).getActor();
 
       } finally {
-        Setting.unset();
+        SettingInfo.unset();
       }
     }
   }
@@ -1070,7 +1070,7 @@ public abstract class Event<T> {
     @SuppressWarnings("unchecked")
     Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
         Exception {
-      Setting.set(getSetting());
+      SettingInfo.set(getSettingInfo());
       try {
         final ArrayList<T> inputList = new ArrayList<T>();
         for (final Object input : inputs) {
@@ -1081,7 +1081,7 @@ public abstract class Event<T> {
         return null;
 
       } finally {
-        Setting.unset();
+        SettingInfo.unset();
       }
     }
   }
@@ -1092,7 +1092,7 @@ public abstract class Event<T> {
 
     private IncidentEvent(@NotNull final Throwable incident) {
       final Conflict conflict = new Conflict(incident);
-      actor = Stage.newActor(new LocalPlotRole(Setting.get()) {
+      actor = Stage.newActor(new LocalPlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override
@@ -1130,13 +1130,13 @@ public abstract class Event<T> {
       final Throwable incident = conflict.getCause();
       for (final Class<? extends Throwable> incidentType : incidentTypes) {
         if (incidentType.isInstance(incident)) {
-          Setting.set(getSetting());
+          SettingInfo.set(getSettingInfo());
           try {
             final Event<T> event = incidentHandler.call(incident);
             return ((event != null) ? event : ofNull()).getActor();
 
           } finally {
-            Setting.unset();
+            SettingInfo.unset();
           }
         }
       }
@@ -1171,14 +1171,14 @@ public abstract class Event<T> {
       final Throwable incident = conflict.getCause();
       for (final Class<? extends Throwable> incidentType : incidentTypes) {
         if (incidentType.isInstance(incident)) {
-          Setting.set(getSetting());
+          SettingInfo.set(getSettingInfo());
           try {
             final T effect = incidentHandler.call(incident);
             putEffect(effect, agent);
             return null;
 
           } finally {
-            Setting.unset();
+            SettingInfo.unset();
           }
         }
       }
@@ -1208,7 +1208,7 @@ public abstract class Event<T> {
       inputActor = event.getActor();
       this.delay = ConstantConditions.positive("delay", delay);
       this.unit = ConstantConditions.notNull("unit", unit);
-      final String actorId = (actor = Stage.newActor(new PlotRole(Setting.get()) {
+      final String actorId = (actor = Stage.newActor(new PlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override
@@ -1356,13 +1356,13 @@ public abstract class Event<T> {
     @SuppressWarnings("unchecked")
     Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
         Exception {
-      Setting.set(getSetting());
+      SettingInfo.set(getSettingInfo());
       try {
         final Event<? extends R> event = effectHandler.call({{#paramTypes}}({{type}}) inputs[{{index}}]{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
         return ((event != null) ? event : ofNull()).getActor();
 
       } finally {
-        Setting.unset();
+        SettingInfo.unset();
       }
     }
   }
@@ -1390,14 +1390,14 @@ public abstract class Event<T> {
     @SuppressWarnings("unchecked")
     Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
         Exception {
-      Setting.set(getSetting());
+      SettingInfo.set(getSettingInfo());
       try {
         final R effect = effectHandler.call({{#paramTypes}}({{type}}) inputs[{{index}}]{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
         putEffect(effect, agent);
         return null;
 
       } finally {
-        Setting.unset();
+        SettingInfo.unset();
       }
     }
   }
@@ -1420,12 +1420,12 @@ public abstract class Event<T> {
     @SuppressWarnings("unchecked")
     Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
         Exception {
-      Setting.set(getSetting());
+      SettingInfo.set(getSettingInfo());
       try {
         eventObserver.onEffect((T) inputs[0]);
 
       } finally {
-        Setting.unset();
+        SettingInfo.unset();
       }
       return super.getOutputActor(inputs, agent);
     }
@@ -1434,12 +1434,12 @@ public abstract class Event<T> {
     @Override
     Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Agent agent) throws
         Exception {
-      Setting.set(getSetting());
+      SettingInfo.set(getSettingInfo());
       try {
         eventObserver.onIncident(conflict.getCause());
 
       } finally {
-        Setting.unset();
+        SettingInfo.unset();
       }
       return super.getConflictActor(conflict, agent);
     }

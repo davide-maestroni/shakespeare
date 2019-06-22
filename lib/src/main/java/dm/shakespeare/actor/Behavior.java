@@ -140,8 +140,8 @@ public interface Behavior {
     /**
      * Verifies whether the actor has been dismissed.
      *
-     * @return {@code true} if {@link Actor#dismiss(boolean)} or {@link Actor#dismissLazy()} has
-     * been called.
+     * @return {@code true} if {@link Actor#dismiss()}, {@link Actor#dismissLazy()} or
+     * {@link Actor#dismissNow()} has been called.
      */
     boolean isDismissed();
 

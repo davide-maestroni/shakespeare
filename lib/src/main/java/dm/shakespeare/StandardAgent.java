@@ -163,13 +163,7 @@ class StandardAgent implements Agent {
     }
   }
 
-  void dismiss(final boolean mayInterruptIfRunning) {
-    if (mayInterruptIfRunning) {
-      final Thread runner = this.runner;
-      if (runner != null) {
-        runner.interrupt();
-      }
-    }
+  void dismiss() {
     dismissed = true;
     if (dismissRunnable == null) {
       dismissRunnable = new Runnable() {
@@ -192,6 +186,14 @@ class StandardAgent implements Agent {
       };
     }
     actorExecutorService.execute(dismissRunnable);
+  }
+
+  void dismissNow() {
+    final Thread runner = this.runner;
+    if (runner != null) {
+      runner.interrupt();
+    }
+    dismiss();
   }
 
   @NotNull

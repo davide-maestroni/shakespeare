@@ -376,7 +376,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
       } else if (message instanceof Unsupervise) {
         final Actor sender = envelop.getSender();
         if (sender.equals(supervisor)) {
-          agent.getSelf().dismiss(false);
+          agent.getSelf().dismiss();
 
         } else if (headers.getReceiptId() != null) {
           sender.tell(new Failure(message, headers,
@@ -434,7 +434,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
               agent.restartSelf();
 
             } else {
-              agent.getSelf().dismiss(false);
+              agent.getSelf().dismiss();
             }
 
           } else if (headers.getReceiptId() != null) {
@@ -458,7 +458,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
             final Actor sender = envelop.getSender();
             if (sender.equals(supervisor) && failureId.equals(
                 ((SupervisedFailure) bouncedMessage).getFailureId())) {
-              agent.getSelf().dismiss(false);
+              agent.getSelf().dismiss();
             }
           }
         }
@@ -466,7 +466,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
       } else if (message instanceof DeadLetter) {
         final Actor sender = envelop.getSender();
         if (sender.equals(supervisor)) {
-          agent.getSelf().dismiss(false);
+          agent.getSelf().dismiss();
         }
 
       } else {

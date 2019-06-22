@@ -465,7 +465,13 @@ public class StageReceiver {
           return new DismissActorResponse().withError(new IllegalArgumentException());
         }
       }
-      actor.dismiss(request.getMayInterruptIfRunning());
+
+      if (request.getMayInterruptIfRunning()) {
+        actor.dismissNow();
+
+      } else {
+        actor.dismiss();
+      }
       return new DismissActorResponse();
     }
   }

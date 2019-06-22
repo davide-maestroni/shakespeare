@@ -77,14 +77,19 @@ class StandardActor implements Actor {
     return this;
   }
 
-  public void dismiss(final boolean mayInterruptIfRunning) {
-    logger.dbg("[%s] dismissing: mayInterruptIfRunning=%s", this, mayInterruptIfRunning);
-    agent.dismiss(mayInterruptIfRunning);
+  public void dismiss() {
+    logger.dbg("[%s] dismissing", this);
+    agent.dismiss();
   }
 
   public void dismissLazy() {
     logger.dbg("[%s] dismissing lazily", this);
     agent.dismissLazy();
+  }
+
+  public void dismissNow() {
+    logger.dbg("[%s] dismissing immediately", this);
+    agent.dismissNow();
   }
 
   @NotNull

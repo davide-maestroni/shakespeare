@@ -62,9 +62,9 @@ public class ProxyBehavior extends AbstractBehavior {
       }
 
       for (final Actor proxy : senderToProxyMap.values()) {
-        proxy.dismiss(false);
+        proxy.dismiss();
       }
-      agent.getSelf().dismiss(false);
+      agent.getSelf().dismiss();
 
     } else if (actor.equals(sender)) {
       if (headers.getReceiptId() != null) {
@@ -80,7 +80,7 @@ public class ProxyBehavior extends AbstractBehavior {
           sender.tell(new Bounce(message, headers), headers.threadOnly(), agent.getSelf());
 
         } else {
-          sender.dismiss(false);
+          sender.dismiss();
         }
 
       } else {
@@ -135,7 +135,7 @@ public class ProxyBehavior extends AbstractBehavior {
           if (proxy.equals(envelop.getSender())) {
             final Actor self = agent.getSelf();
             proxied.tell(message, envelop.getHeaders().asSentAt(envelop.getSentAt()), self);
-            self.dismiss(false);
+            self.dismiss();
 
           } else {
             proxy.tell(message, envelop.getHeaders().asSentAt(envelop.getSentAt()),

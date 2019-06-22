@@ -19,7 +19,7 @@ package dm.shakespeare.template.typed;
 import java.io.Serializable;
 
 import dm.shakespeare.template.config.BuildConfig;
-import dm.shakespeare.template.typed.actor.Background;
+import dm.shakespeare.template.typed.actor.Script;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -29,16 +29,16 @@ class InvocationArg implements Serializable {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private final Background background;
+  private final Script script;
   private final Class<?> type;
 
-  InvocationArg(final Class<?> type, final Background background) {
+  InvocationArg(final Class<?> type, final Script script) {
     this.type = ConstantConditions.notNull("type", type);
-    this.background = ConstantConditions.notNull("background", background);
+    this.script = ConstantConditions.notNull("script", script);
   }
 
-  Background getBackground() {
-    return background;
+  Script getScript() {
+    return script;
   }
 
   Class<?> getType() {

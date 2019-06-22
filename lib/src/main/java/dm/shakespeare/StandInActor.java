@@ -33,10 +33,13 @@ class StandInActor implements Actor {
     return this;
   }
 
-  public void dismiss(final boolean mayInterruptIfRunning) {
+  public void dismiss() {
   }
 
   public void dismissLazy() {
+  }
+
+  public void dismissNow() {
   }
 
   @NotNull

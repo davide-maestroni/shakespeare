@@ -39,7 +39,7 @@ public class Spectator {
   }
 
   void dismiss() {
-    actor.dismiss(false);
+    actor.dismiss();
   }
 
   void pause() {

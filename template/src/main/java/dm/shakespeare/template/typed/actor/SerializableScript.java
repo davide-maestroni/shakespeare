@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.plot;
+package dm.shakespeare.template.typed.actor;
 
 import java.io.Serializable;
 
-import dm.shakespeare.plot.config.BuildConfig;
+import dm.shakespeare.template.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 06/12/2019.
+ * Created by davide-maestroni on 06/17/2019.
  */
 public class SerializableScript extends Script implements Serializable {
 

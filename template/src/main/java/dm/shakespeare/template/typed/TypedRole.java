@@ -35,7 +35,7 @@ import dm.shakespeare.actor.SerializableAbstractBehavior;
 import dm.shakespeare.actor.SerializableRole;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.template.config.BuildConfig;
-import dm.shakespeare.template.typed.actor.Background;
+import dm.shakespeare.template.typed.actor.Script;
 import dm.shakespeare.template.typed.message.InvocationException;
 import dm.shakespeare.template.typed.message.InvocationResult;
 import dm.shakespeare.template.util.Reflections;
@@ -49,21 +49,21 @@ class TypedRole extends SerializableRole {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private final Background background;
+  private final Script script;
   private final Object object;
   private final Object[] objectArgs;
   private final Class<?> objectClass;
 
-  TypedRole(@NotNull final Background background, @NotNull final Object object) {
-    this.background = ConstantConditions.notNull("background", background);
+  TypedRole(@NotNull final Script script, @NotNull final Object object) {
+    this.script = ConstantConditions.notNull("script", script);
     this.object = ConstantConditions.notNull("object", object);
     this.objectClass = object.getClass();
     this.objectArgs = null;
   }
 
-  TypedRole(@NotNull final Background background, @NotNull final Class<?> type,
+  TypedRole(@NotNull final Script script, @NotNull final Class<?> type,
       @NotNull final Object... args) {
-    this.background = ConstantConditions.notNull("background", background);
+    this.script = ConstantConditions.notNull("script", script);
     this.object = null;
     this.objectClass = ConstantConditions.notNull("type", type);
     this.objectArgs = ConstantConditions.notNull("args", args);
@@ -72,18 +72,18 @@ class TypedRole extends SerializableRole {
   @NotNull
   @Override
   public ExecutorService getExecutorService(@NotNull final String id) throws Exception {
-    return background.getExecutorService(id);
+    return script.getExecutorService(id);
   }
 
   @NotNull
   @Override
   public Logger getLogger(@NotNull final String id) throws Exception {
-    return background.getLogger(id);
+    return script.getLogger(id);
   }
 
   @Override
   public int getQuota(@NotNull final String id) throws Exception {
-    return background.getQuota(id);
+    return script.getQuota(id);
   }
 
   @NotNull
@@ -174,7 +174,7 @@ class TypedRole extends SerializableRole {
               if (argument instanceof InvocationArg) {
                 final InvocationArg invocationArg = (InvocationArg) argument;
                 final Class<?> type = invocationArg.getType();
-                args[i] = ActorHandler.createProxy(type, invocationArg.getBackground(),
+                args[i] = ActorHandler.createProxy(type, invocationArg.getScript(),
                     actorArg.actors.removeFirst());
 
               } else if (argument == TypedRoleSignal.ACTOR_ARG) {
@@ -186,7 +186,7 @@ class TypedRole extends SerializableRole {
                   if (element instanceof InvocationArg) {
                     final InvocationArg invocationArg = (InvocationArg) element;
                     final Class<?> type = invocationArg.getType();
-                    list.add(ActorHandler.createProxy(type, invocationArg.getBackground(),
+                    list.add(ActorHandler.createProxy(type, invocationArg.getScript(),
                         actorArg.actors.removeFirst()));
 
                   } else if (element == TypedRoleSignal.ACTOR_ARG) {

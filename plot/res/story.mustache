@@ -50,7 +50,7 @@ import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.function.Observer;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.Receipt;
-import dm.shakespeare.plot.Setting.Cache;
+import dm.shakespeare.plot.SettingInfo.Cache;
 import dm.shakespeare.plot.Spectator.SpectatorSignal;
 import dm.shakespeare.plot.function.Action;
 import dm.shakespeare.plot.function.NullaryFunction;
@@ -91,7 +91,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public static <T> Story<T> ofEffects(@NotNull final Iterable<? extends T> effects) {
-    final Cache cache = Setting.get().getCache(Story.class);
+    final Cache cache = SettingInfo.get().getCache(Story.class);
     Story<T> story = cache.get(effects);
     if (story == null) {
       story = new EffectsStory<T>(effects);
@@ -148,7 +148,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public static <T> Story<T> ofSingleEffect(final T effect) {
-    final Cache cache = Setting.get().getCache(Story.class);
+    final Cache cache = SettingInfo.get().getCache(Story.class);
     Story<T> story = cache.get(effect);
     if (story == null) {
       story = new EffectStory<T>(effect);
@@ -321,7 +321,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   private static boolean isEmpty(@Nullable final Story<?> story) {
-    final Cache cache = Setting.get().getCache(Story.class);
+    final Cache cache = SettingInfo.get().getCache(Story.class);
     return (cache.get(Collections.EMPTY_LIST) == story) || (cache.get(Collections.EMPTY_SET)
         == story);
   }
@@ -846,7 +846,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         @NotNull final Memory memory) {
       this.queue = ConstantConditions.notNull("queue", queue);
       this.memory = ConstantConditions.notNull("memory", memory);
-      actor = Stage.newActor(new PlotRole(Setting.get()) {
+      actor = Stage.newActor(new PlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override
@@ -1090,7 +1090,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final HashMap<String, SenderIterator> nextSenders =
         new HashMap<String, SenderIterator>();
     private final String outputThread;
-    private final Setting setting;
+    private final SettingInfo settingInfo;
 
     private Conflict conflict;
     private Actor continueActor;
@@ -1108,8 +1108,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       this.conditionHandler = ConstantConditions.notNull("conditionHandler", conditionHandler);
       inputs = new Object[numInputs];
       this.memory = ConstantConditions.notNull("memory", memory);
-      final Setting setting = (this.setting = Setting.get());
-      final String actorId = (actor = Stage.newActor(new PlotRole(setting) {
+      final SettingInfo settingInfo = (this.settingInfo = SettingInfo.get());
+      final String actorId = (actor = Stage.newActor(new PlotRole(settingInfo) {
 
         @NotNull
         @Override
@@ -1144,8 +1144,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
 
     @NotNull
-    Setting getSetting() {
-      return setting;
+    SettingInfo getSettingInfo() {
+      return settingInfo;
     }
 
     void putConflict(@NotNull final Conflict conflict, @NotNull final Agent agent) {
@@ -1258,15 +1258,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
 
     private void next(final int loopCount, @NotNull final Agent agent) {
-      Setting.set(getSetting());
       try {
         final Event<? extends Boolean> event;
-        Setting.set(getSetting());
+        SettingInfo.set(getSettingInfo());
         try {
           event = conditionHandler.call();
 
         } finally {
-          Setting.unset();
+          SettingInfo.unset();
         }
 
         if ((event == null) || Event.isFalse(event) || Event.isNull(event)) {
@@ -1771,7 +1770,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final HashMap<String, SenderIterator> nextSenders =
         new HashMap<String, SenderIterator>();
     private final String outputThread;
-    private final Setting setting;
+    private final SettingInfo settingInfo;
 
     private Conflict getConflict;
     private Iterator<?> inputIterator;
@@ -1785,8 +1784,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       inputActor = story.getActor();
       this.effectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
       this.memory = ConstantConditions.notNull("memory", memory);
-      final Setting setting = (this.setting = Setting.get());
-      final String actorId = (actor = Stage.newActor(new PlotRole(setting) {
+      final SettingInfo settingInfo = (this.settingInfo = SettingInfo.get());
+      final String actorId = (actor = Stage.newActor(new PlotRole(settingInfo) {
 
         @NotNull
         @Override
@@ -1836,7 +1835,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         return null;
       }
       Actor actor;
-      Setting.set(setting);
+      SettingInfo.set(settingInfo);
       try {
         do {
           final Object input = inputIterator.next();
@@ -1852,7 +1851,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         return actor;
 
       } finally {
-        Setting.unset();
+        SettingInfo.unset();
       }
     }
 
@@ -2189,7 +2188,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final Memory memory;
     private final HashMap<String, SenderIterator> nextSenders =
         new HashMap<String, SenderIterator>();
-    private final Setting setting;
+    private final SettingInfo settingInfo;
 
     private Conflict getConflict;
     private Iterator<?> inputIterator;
@@ -2200,8 +2199,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       inputActor = story.getActor();
       this.effectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
       this.memory = ConstantConditions.notNull("memory", memory);
-      final Setting setting = (this.setting = Setting.get());
-      final String actorId = (actor = Stage.newActor(new PlotRole(setting) {
+      final SettingInfo settingInfo = (this.settingInfo = SettingInfo.get());
+      final String actorId = (actor = Stage.newActor(new PlotRole(settingInfo) {
 
         @NotNull
         @Override
@@ -2244,7 +2243,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         final boolean hasGetSenders = !getSenders.isEmpty();
         do {
           if (inputIterator.hasNext()) {
-            Setting.set(setting);
+            SettingInfo.set(settingInfo);
             try {
               final R effect = effectHandler.call((T) inputIterator.next());
               memory.put(effect);
@@ -2254,7 +2253,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               }
 
             } finally {
-              Setting.unset();
+              SettingInfo.unset();
             }
             agent.setBehavior(behavior);
 
@@ -2459,7 +2458,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         new HashMap<String, SenderIterator>();
     private final HashMap<Actor, Headers> outputActors = new HashMap<Actor, Headers>();
     private final String outputThread;
-    private final Setting setting;
+    private final SettingInfo settingInfo;
 
     private Conflict inputConflict;
     private boolean inputsEnded;
@@ -2473,8 +2472,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       this.maxConcurrency = ConstantConditions.positive("maxConcurrency", maxConcurrency);
       this.effectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
       this.memory = ConstantConditions.notNull("memory", memory);
-      final Setting setting = (this.setting = Setting.get());
-      final String actorId = (actor = Stage.newActor(new PlotRole(setting) {
+      final SettingInfo settingInfo = (this.settingInfo = SettingInfo.get());
+      final String actorId = (actor = Stage.newActor(new PlotRole(settingInfo) {
 
         @NotNull
         @Override
@@ -2498,7 +2497,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @Nullable
     @SuppressWarnings("unchecked")
     private Actor getOutputActor(@NotNull final Object input) throws Exception {
-      Setting.set(setting);
+      SettingInfo.set(settingInfo);
       try {
         final Story<? extends R> story = effectHandler.call((T) input);
         if ((story == null) || isEmpty(story)) {
@@ -2507,7 +2506,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         return story.getActor();
 
       } finally {
-        Setting.unset();
+        SettingInfo.unset();
       }
     }
 
@@ -2903,7 +2902,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final Actor actor;
 
     private EffectStory(final T effect) {
-      actor = Stage.newActor(new LocalPlotRole(Setting.get()) {
+      actor = Stage.newActor(new LocalPlotRole(SettingInfo.get()) {
 
         private final HashSet<String> threadIds = new HashSet<String>();
 
@@ -2954,7 +2953,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private EffectsStory(@NotNull final Iterable<? extends T> effects) {
       ConstantConditions.notNull("effects", effects);
-      actor = Stage.newActor(new LocalPlotRole(Setting.get()) {
+      actor = Stage.newActor(new LocalPlotRole(SettingInfo.get()) {
 
         private final HashMap<String, Iterator<? extends T>> threadIds =
             new HashMap<String, Iterator<? extends T>>();
@@ -3011,7 +3010,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private EventStory(@NotNull final Event<? extends T> event) {
       inputActor = event.getActor();
-      final String actorId = (actor = Stage.newActor(new LocalPlotRole(Setting.get()) {
+      final String actorId = (actor = Stage.newActor(new LocalPlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override
@@ -3161,12 +3160,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     @Override
     void endAction() throws Exception {
-      Setting.set(getSetting());
+      SettingInfo.set(getSettingInfo());
       try {
         eventualAction.run();
 
       } finally {
-        Setting.unset();
+        SettingInfo.unset();
       }
     }
 
@@ -3219,8 +3218,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @NotNull
     List<Actor> getInputActors() {
       if (actors == null) {
-        Setting.set(getSetting());
         Story<? extends T> story;
+        SettingInfo.set(getSettingInfo());
         try {
           story = storyCreator.call();
           if (story == null) {
@@ -3238,7 +3237,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           }
 
         } finally {
-          Setting.unset();
+          SettingInfo.unset();
         }
         actors = Collections.singletonList(story.getActor());
       }
@@ -3271,7 +3270,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @SuppressWarnings("unchecked")
     Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
         Exception {
-      Setting.set(getSetting());
+      SettingInfo.set(getSettingInfo());
       try {
         final ArrayList<T> inputList = new ArrayList<T>();
         for (final Object input : inputs) {
@@ -3284,7 +3283,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         return story.getActor();
 
       } finally {
-        Setting.unset();
+        SettingInfo.unset();
       }
     }
 
@@ -3319,7 +3318,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @SuppressWarnings("unchecked")
     Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
         Exception {
-      Setting.set(getSetting());
+      SettingInfo.set(getSettingInfo());
       try {
         final ArrayList<T> inputList = new ArrayList<T>();
         for (final Object input : inputs) {
@@ -3330,7 +3329,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         return null;
 
       } finally {
-        Setting.unset();
+        SettingInfo.unset();
       }
     }
 
@@ -3346,7 +3345,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private IncidentStory(@NotNull final Throwable incident) {
       final Conflict conflict = new Conflict(incident);
-      actor = Stage.newActor(new LocalPlotRole(Setting.get()) {
+      actor = Stage.newActor(new LocalPlotRole(SettingInfo.get()) {
 
         private final HashSet<String> threadIds = new HashSet<String>();
 
@@ -3396,7 +3395,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private IncidentsStory(@NotNull final Iterable<? extends Throwable> incidents) {
       ConstantConditions.notNull("incidents", incidents);
-      actor = Stage.newActor(new LocalPlotRole(Setting.get()) {
+      actor = Stage.newActor(new LocalPlotRole(SettingInfo.get()) {
 
         private final HashMap<String, Iterator<? extends Throwable>> threadIds =
             new HashMap<String, Iterator<? extends Throwable>>();
@@ -3458,7 +3457,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final LinkedHashMap<Actor, OutputEffect> outputEffects =
         new LinkedHashMap<Actor, OutputEffect>();
     private final String outputThread;
-    private final Setting setting;
+    private final SettingInfo settingInfo;
 
     private int actorCount;
     private Conflict inputConflict;
@@ -3475,8 +3474,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       this.maxEventWindow = ConstantConditions.positive("maxEventWindow", maxEventWindow);
       this.effectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
       this.memory = ConstantConditions.notNull("memory", memory);
-      final Setting setting = (this.setting = Setting.get());
-      final String actorId = (actor = Stage.newActor(new PlotRole(setting) {
+      final SettingInfo settingInfo = (this.settingInfo = SettingInfo.get());
+      final String actorId = (actor = Stage.newActor(new PlotRole(settingInfo) {
 
         @NotNull
         @Override
@@ -3500,13 +3499,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @NotNull
     @SuppressWarnings("unchecked")
     private Actor getOutputActor(@NotNull final Object input) throws Exception {
-      Setting.set(setting);
+      SettingInfo.set(settingInfo);
       try {
         final Event<? extends R> event = effectHandler.call((T) input);
         return ((event != null) ? event : Event.ofNull()).getActor();
 
       } finally {
-        Setting.unset();
+        SettingInfo.unset();
       }
     }
 
@@ -3892,13 +3891,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       final Throwable incident = conflict.getCause();
       for (final Class<? extends Throwable> incidentType : incidentTypes) {
         if (incidentType.isInstance(incident)) {
-          Setting.set(getSetting());
+          SettingInfo.set(getSettingInfo());
           try {
             final Story<T> story = incidentHandler.call(incident);
             return ((story != null) ? story : ofEmpty()).getActor();
 
           } finally {
-            Setting.unset();
+            SettingInfo.unset();
           }
         }
       }
@@ -3937,14 +3936,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       final Throwable incident = conflict.getCause();
       for (final Class<? extends Throwable> incidentType : incidentTypes) {
         if (incidentType.isInstance(incident)) {
-          Setting.set(getSetting());
+          SettingInfo.set(getSettingInfo());
           try {
             final T effect = incidentHandler.call(incident);
             putEffect(effect, agent);
             return null;
 
           } finally {
-            Setting.unset();
+            SettingInfo.unset();
           }
         }
       }
@@ -3981,7 +3980,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       this.period = ConstantConditions.positive("period", period);
       this.unit = ConstantConditions.notNull("unit", unit);
       this.memory = ConstantConditions.notNull("memory", memory);
-      final String actorId = (actor = Stage.newActor(new PlotRole(Setting.get()) {
+      final String actorId = (actor = Stage.newActor(new PlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override
@@ -4172,7 +4171,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       this.delay = ConstantConditions.positive("delay", delay);
       this.unit = ConstantConditions.notNull("unit", unit);
       this.memory = ConstantConditions.notNull("memory", memory);
-      final String actorId = (actor = Stage.newActor(new PlotRole(Setting.get()) {
+      final String actorId = (actor = Stage.newActor(new PlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override
@@ -4435,7 +4434,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
             } else {
               storyObserver.onIncident(PlotFailureException.getOrNew((Bounce) message));
-              self.dismiss(false);
+              self.dismiss();
             }
 
           } else if (message == Story.StorySignal.END) {
@@ -4444,7 +4443,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
             } else {
               storyObserver.onEnd();
-              self.dismiss(false);
+              self.dismiss();
             }
 
           } else if (message == SpectatorSignal.PAUSE) {
@@ -4468,7 +4467,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             }
 
             if (isEnded) {
-              self.dismiss(false);
+              self.dismiss();
 
             } else {
               isPaused = false;
@@ -4481,7 +4480,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
           } else if (message == SpectatorSignal.CANCEL_AND_DISMISS) {
             storyActor.tell(EventSignal.CANCEL, headers, self);
-            self.dismiss(false);
+            self.dismiss();
 
           } else if (!(message instanceof Receipt)) {
             if (isPaused) {
@@ -4529,7 +4528,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @SuppressWarnings("unchecked")
     Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
         Exception {
-      Setting.set(getSetting());
+      SettingInfo.set(getSettingInfo());
       try {
         final Story<? extends R> story = effectHandler.call({{#paramTypes}}({{type}}) inputs[{{index}}]{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
         if ((story == null) || isEmpty(story)) {
@@ -4538,7 +4537,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         return story.getActor();
 
       } finally {
-        Setting.unset();
+        SettingInfo.unset();
       }
     }
 
@@ -4568,14 +4567,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @SuppressWarnings("unchecked")
     Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
         Exception {
-      Setting.set(getSetting());
+      SettingInfo.set(getSettingInfo());
       try {
         final R effect = effectHandler.call({{#paramTypes}}({{type}}) inputs[{{index}}]{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
         putEffect(effect, agent);
         return null;
 
       } finally {
-        Setting.unset();
+        SettingInfo.unset();
       }
     }
 
@@ -4626,7 +4625,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private UnfoldStory(@NotNull final Event<? extends Iterable<? extends T>> event) {
       inputActor = event.getActor();
-      final String actorId = (actor = Stage.newActor(new LocalPlotRole(Setting.get()) {
+      final String actorId = (actor = Stage.newActor(new LocalPlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override
@@ -4789,12 +4788,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @Override
     Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Agent agent) throws
         Exception {
-      Setting.set(getSetting());
+      SettingInfo.set(getSettingInfo());
       try {
         eventObserver.onIncident(conflict.getCause());
 
       } finally {
-        Setting.unset();
+        SettingInfo.unset();
       }
       return super.getConflictActor(conflict, agent);
     }
@@ -4804,12 +4803,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @SuppressWarnings("unchecked")
     Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
         Exception {
-      Setting.set(getSetting());
+      SettingInfo.set(getSettingInfo());
       try {
         eventObserver.onEffect((T) inputs[0]);
 
       } finally {
-        Setting.unset();
+        SettingInfo.unset();
       }
       return super.getOutputActor(inputs, agent);
     }

@@ -37,6 +37,8 @@ import dm.shakespeare.util.WeakValueHashMap;
  */
 public class PLZW {
 
+  // TODO: 2019-06-22 cache luts??
+
   private static final String DEFAULT_ALPHABET = buildAsciiAlphabet();
   private static final char[] DEFAULT_ENCODER_LUT = DEFAULT_ALPHABET.toCharArray();
   private static final HashMap<Character, Byte> DEFAULT_DECODER_LUT =

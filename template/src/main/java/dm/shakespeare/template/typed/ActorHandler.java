@@ -43,7 +43,7 @@ import dm.shakespeare.actor.Role;
 import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.Failure;
 import dm.shakespeare.template.typed.TypedRole.TypedRoleSignal;
-import dm.shakespeare.template.typed.actor.Background;
+import dm.shakespeare.template.typed.actor.Script;
 import dm.shakespeare.template.typed.annotation.FromActor;
 import dm.shakespeare.template.typed.annotation.FromHeaders;
 import dm.shakespeare.template.typed.message.InvocationException;
@@ -74,23 +74,23 @@ class ActorHandler implements InvocationHandler {
       Collections.synchronizedMap(new WeakHashMap<Object, ActorHandler>());
 
   private final Actor actor;
-  private final Background background;
+  private final Script script;
   private final Actor invocationActor;
   private final Class<?> type;
 
-  private ActorHandler(@NotNull final Class<?> type, @NotNull final Background background,
+  private ActorHandler(@NotNull final Class<?> type, @NotNull final Script script,
       @NotNull final Actor actor) {
     this.type = ConstantConditions.notNull("type", type);
-    this.background = ConstantConditions.notNull("background", background);
+    this.script = ConstantConditions.notNull("script", script);
     this.actor = ConstantConditions.notNull("actor", actor);
     invocationActor = Stage.newActor(new InvocationRole());
   }
 
   @NotNull
   @SuppressWarnings("unchecked")
-  static <T> T createProxy(@NotNull final Class<?> type, @NotNull final Background background,
+  static <T> T createProxy(@NotNull final Class<?> type, @NotNull final Script script,
       @NotNull final Actor actor) {
-    final ActorHandler handler = new ActorHandler(type, background, actor);
+    final ActorHandler handler = new ActorHandler(type, script, actor);
     final Object proxy =
         Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type}, handler);
     actorHandlers.put(proxy, handler);
@@ -143,7 +143,7 @@ class ActorHandler implements InvocationHandler {
           for (final Object element : (List<?>) object) {
             final ActorHandler handler = actorHandlers.get(element);
             if (handler != null) {
-              list.add(new InvocationArg(handler.type, handler.background));
+              list.add(new InvocationArg(handler.type, handler.script));
               actors.add(handler.actor);
 
             } else if (element instanceof Actor) {
@@ -159,7 +159,7 @@ class ActorHandler implements InvocationHandler {
         } else {
           final ActorHandler handler = actorHandlers.get(object);
           if (handler != null) {
-            arguments.add(new InvocationArg(handler.type, handler.background));
+            arguments.add(new InvocationArg(handler.type, handler.script));
             actors.add(handler.actor);
 
           } else if (object instanceof Actor) {
@@ -175,7 +175,7 @@ class ActorHandler implements InvocationHandler {
         arguments.add(null);
       }
     }
-    final Long timeoutMillis = background.getTimeoutMillis(actor.getId(), method);
+    final Long timeoutMillis = script.getTimeoutMillis(actor.getId(), method);
     if ((timeoutMillis != null) && ((fromActor >= 0) || (fromHeaders >= 0))) {
       throw new IllegalStateException();
     }
@@ -218,7 +218,7 @@ class ActorHandler implements InvocationHandler {
           if (message instanceof InvocationResult) {
             latch.setResult(((InvocationResult) message).getResult());
 
-          } else {
+          } else if (message instanceof InvocationException) {
             latch.setException(((InvocationException) message).getException());
           }
         }

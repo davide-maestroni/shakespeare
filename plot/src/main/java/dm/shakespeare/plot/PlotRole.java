@@ -29,21 +29,21 @@ import dm.shakespeare.util.ConstantConditions;
  */
 abstract class PlotRole extends Role {
 
-  private final Setting setting;
+  private final SettingInfo settingInfo;
 
-  PlotRole(@NotNull final Setting setting) {
-    this.setting = ConstantConditions.notNull("setting", setting);
+  PlotRole(@NotNull final SettingInfo settingInfo) {
+    this.settingInfo = ConstantConditions.notNull("settingInfo", settingInfo);
   }
 
   @NotNull
   @Override
   public ExecutorService getExecutorService(@NotNull final String id) {
-    return setting.getExecutor();
+    return settingInfo.getExecutor();
   }
 
   @NotNull
   @Override
   public Logger getLogger(@NotNull final String id) {
-    return setting.getLogger();
+    return settingInfo.getLogger();
   }
 }

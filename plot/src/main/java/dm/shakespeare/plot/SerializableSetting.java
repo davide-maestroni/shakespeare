@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.typed.actor;
+package dm.shakespeare.plot;
 
 import java.io.Serializable;
 
-import dm.shakespeare.template.config.BuildConfig;
+import dm.shakespeare.plot.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 06/17/2019.
+ * Created by davide-maestroni on 06/12/2019.
  */
-public class SerializableBackground extends Background implements Serializable {
+public class SerializableSetting extends Setting implements Serializable {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 }

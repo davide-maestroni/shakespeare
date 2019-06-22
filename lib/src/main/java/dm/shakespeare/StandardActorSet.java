@@ -53,9 +53,21 @@ class StandardActorSet extends AbstractSet<Actor> implements ActorSet {
     return this;
   }
 
-  public void dismiss(final boolean mayInterruptIfRunning) {
+  public void dismiss() {
     for (final Actor actor : actors) {
-      actor.dismiss(mayInterruptIfRunning);
+      actor.dismiss();
+    }
+  }
+
+  public void dismissLazy() {
+    for (final Actor actor : actors) {
+      actor.dismissLazy();
+    }
+  }
+
+  public void dismissNow() {
+    for (final Actor actor : actors) {
+      actor.dismissNow();
     }
   }
 

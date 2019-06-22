@@ -51,15 +51,10 @@ public interface Actor {
 
   /**
    * Dismiss this actor so that its behavior will be stopped and the actor removed from its stage.
-   *
-   * @param mayInterruptIfRunning whether the currently running thread (if any) can be interrupted
-   *                              to stop the processing of messages. Be aware that, based on the
-   *                              actor executor service, interrupting the running thread might
-   *                              cause the behavior to never receive a stop notification.
+   * <br>
+   * All the messages still pending in the inbox will be bounced.
    */
-  void dismiss(boolean mayInterruptIfRunning);
-  // TODO: 2019-06-18 + dismissNow()??
-  // TODO: 2019-06-20 messages => getField (jackson)
+  void dismiss();
 
   /**
    * Lazily dismiss this actor so that its behavior will be stopped and the actor removed from its
@@ -68,6 +63,17 @@ public interface Actor {
    * the actor teardown.
    */
   void dismissLazy();
+  // TODO: 2019-06-20 messages => public getField (jackson)
+
+  /**
+   * Immediately dismiss this actor so that its behavior will be stopped and the actor removed from
+   * its stage.<br>
+   * The thread currently processing the actor messages might be interrupted as a result of the call
+   * to this method. Be aware that, based on the actor executor service, interrupting the running
+   * thread might cause the behavior to never receive a stop notification.<br>
+   * All the messages still pending in the inbox will be bounced.
+   */
+  void dismissNow();
 
   /**
    * Returns the actor ID.<br>
