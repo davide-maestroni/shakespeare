@@ -48,6 +48,8 @@ public interface Actor {
    */
   @NotNull
   Actor addObserver(@NotNull Actor observer);
+  // TODO: 2019-06-22 RejectedExecution
+  // TODO: 2019-06-20 messages => public getField (jackson)
 
   /**
    * Dismiss this actor so that its behavior will be stopped and the actor removed from its stage.
@@ -63,7 +65,6 @@ public interface Actor {
    * the actor teardown.
    */
   void dismissLazy();
-  // TODO: 2019-06-20 messages => public getField (jackson)
 
   /**
    * Immediately dismiss this actor so that its behavior will be stopped and the actor removed from

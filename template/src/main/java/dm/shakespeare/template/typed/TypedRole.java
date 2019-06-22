@@ -48,11 +48,10 @@ import dm.shakespeare.util.ConstantConditions;
 class TypedRole extends SerializableRole {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
-
-  private final Script script;
   private final Object object;
   private final Object[] objectArgs;
   private final Class<?> objectClass;
+  private final Script script;
 
   TypedRole(@NotNull final Script script, @NotNull final Object object) {
     this.script = ConstantConditions.notNull("script", script);
@@ -84,6 +83,28 @@ class TypedRole extends SerializableRole {
   @Override
   public int getQuota(@NotNull final String id) throws Exception {
     return script.getQuota(id);
+  }
+
+  // json
+  public Object getObject() {
+    return object;
+  }
+
+  // json
+  public Object[] getObjectArgs() {
+    return objectArgs;
+  }
+
+  // json
+  @NotNull
+  public Class<?> getObjectClass() {
+    return objectClass;
+  }
+
+  // json
+  @NotNull
+  public Script getScript() {
+    return script;
   }
 
   @NotNull
@@ -123,6 +144,18 @@ class TypedRole extends SerializableRole {
 
     private TypedBehavior(@NotNull final Object instance) {
       this.instance = instance;
+    }
+
+    // json
+    @NotNull
+    public HashMap<String, ActorArg> getActorArgs() {
+      return actorArgs;
+    }
+
+    // json
+    @NotNull
+    public Object getInstance() {
+      return instance;
     }
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,

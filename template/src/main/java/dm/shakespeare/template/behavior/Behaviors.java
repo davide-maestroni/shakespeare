@@ -34,19 +34,13 @@ public class Behaviors {
   }
 
   @NotNull
-  public static dm.shakespeare.template.behavior.AnnotationBehavior annotated(
-      @NotNull final Object object) throws Exception {
+  public static Behavior annotated(@NotNull final Object object) throws Exception {
     return new AnnotationBehavior(object);
   }
 
   @NotNull
-  public static dm.shakespeare.template.behavior.ProxyBehavior proxy(@NotNull final Actor actor) {
+  public static ProxyBehavior proxy(@NotNull final Actor actor) {
     return new ProxyBehavior(new WeakReference<Actor>(ConstantConditions.notNull("actor", actor)));
-  }
-
-  @NotNull
-  public static ReflectionBehavior reflection(@NotNull final Object object) {
-    return new ReflectionBehavior(object);
   }
 
   @NotNull

@@ -18,6 +18,8 @@ package dm.shakespeare.template.behavior;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.UUID;
 import java.util.concurrent.RejectedExecutionException;
@@ -52,16 +54,22 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
 
   private transient SupervisedAgentWrapper agent = new SupervisedAgentWrapper();
   private Behavior behavior;
-  private CQueue<DelayedMessage> delayedMessages = new CQueue<DelayedMessage>();
-  private Throwable failure;
-  private String failureId;
-  private DelayedMessage failureMessage;
+  private transient CQueue<DelayedMessage> delayedMessages = new CQueue<DelayedMessage>();
+  private transient Throwable failure;
+  private transient String failureId;
+  private transient DelayedMessage failureMessage;
   private transient Handler<Object> handler = new DefaultHandler();
-  private Actor supervisor;
-  private String supervisorThread;
+  private transient Actor supervisor;
+  private transient String supervisorThread;
 
   SupervisedBehavior(@NotNull final Behavior behavior) {
     this.behavior = ConstantConditions.notNull("behavior", behavior);
+  }
+
+  // json
+  @NotNull
+  public Behavior getBehavior() {
+    return behavior;
   }
 
   public void onMessage(final Object message, @NotNull final Envelop envelop,
@@ -124,6 +132,13 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
     for (int i = 0; i < size; ++i) {
       self.tell(SupervisedSignal.DUMMY_MESSAGE, null, self);
     }
+  }
+
+  private void writeObject(final ObjectOutputStream out) throws IOException {
+    if ((supervisor != null) || (failureMessage != null) || !delayedMessages.isEmpty()) {
+      throw new IOException("cannot serialize object");
+    }
+    out.defaultWriteObject();
   }
 
   private enum SupervisedSignal {
@@ -248,8 +263,8 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
 
         } else if (headers.getReceiptId() != null) {
           sender.tell(new Failure(message, headers,
-              new dm.shakespeare.template.behavior.IllegalRecipientException(
-                  "an actor can't supervise itself")), headers.threadOnly(), self);
+                  new IllegalRecipientException("an actor can't supervise itself")),
+              headers.threadOnly(), self);
           envelop.preventReceipt();
         }
 

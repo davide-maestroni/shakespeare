@@ -109,6 +109,12 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
       this.messageClass = messageClass;
     }
 
+    // json
+    @NotNull
+    public Class<?> getMessageClass() {
+      return messageClass;
+    }
+
     public boolean test(final Object message) {
       return messageClass.isInstance(message);
     }
@@ -122,6 +128,12 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
 
     private ClassesTester(@NotNull final Class<?>[] messageClasses) {
       this.messageClasses = messageClasses;
+    }
+
+    // json
+    @NotNull
+    public Class<?>[] getMessageClasses() {
+      return messageClasses;
     }
 
     public boolean test(final Object message) {
@@ -144,6 +156,18 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
     private MessageTester(@NotNull final Object object, @NotNull final Method method) {
       this.object = object;
       this.method = Reflections.makeAccessible(method);
+    }
+
+    // json
+    @NotNull
+    public Method getMethod() {
+      return method;
+    }
+
+    // json
+    @NotNull
+    public Object getObject() {
+      return object;
     }
 
     public boolean test(final Object message) throws Exception {

@@ -39,18 +39,18 @@ public class RespawningRole extends Role implements Serializable {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private final Serializable[] roleArgs;
+  private final Object[] roleArgs;
   private final Class<? extends Role> roleClass;
 
   private transient Role role;
 
   public RespawningRole(@NotNull final Class<? extends Role> roleClass) {
     this.roleClass = ConstantConditions.notNull("roleClass", roleClass);
-    roleArgs = null;
+    roleArgs = NO_ARGS;
   }
 
   public RespawningRole(@NotNull final Class<? extends Role> roleClass,
-      @NotNull final Serializable... roleArgs) {
+      @NotNull final Object... roleArgs) {
     this.roleClass = ConstantConditions.notNull("roleClass", roleClass);
     this.roleArgs = ConstantConditions.notNull("roleArgs", roleArgs).clone();
   }
@@ -77,6 +77,17 @@ public class RespawningRole extends Role implements Serializable {
     return getRoleInstance().getQuota(id);
   }
 
+  // json
+  public Object[] getRoleArgs() {
+    return roleArgs.clone();
+  }
+
+  // json
+  @NotNull
+  public Class<? extends Role> getRoleClass() {
+    return roleClass;
+  }
+
   @NotNull
   private Role getRoleInstance() {
     if (role == null) {
@@ -87,9 +98,7 @@ public class RespawningRole extends Role implements Serializable {
 
   @NotNull
   private Role newRoleInstance() {
-    final Serializable[] roleArgs = this.roleArgs;
-    return Reflections.newInstance(roleClass,
-        ((roleArgs != null) && (roleArgs.length > 0)) ? roleArgs : NO_ARGS);
+    return Reflections.newInstance(roleClass, roleArgs);
   }
 
   private class RestartingBehavior implements Behavior {

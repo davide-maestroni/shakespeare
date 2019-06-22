@@ -57,6 +57,12 @@ public class SerializableRoleWrapper extends SerializableRole {
     return role.getQuota(id);
   }
 
+  // json
+  @NotNull
+  public Role getRole() {
+    return role;
+  }
+
   @NotNull
   protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
     return role.getBehavior(id);

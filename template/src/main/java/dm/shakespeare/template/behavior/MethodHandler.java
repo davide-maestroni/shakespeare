@@ -53,6 +53,18 @@ class MethodHandler implements Handler<Object>, Serializable {
     }
   }
 
+  // json
+  @NotNull
+  public Method getMethod() {
+    return method;
+  }
+
+  // json
+  @NotNull
+  public Object getObject() {
+    return object;
+  }
+
   public void handle(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
     final Method method = this.method;

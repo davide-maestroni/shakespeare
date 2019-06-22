@@ -63,4 +63,16 @@ class MethodObserver implements Observer<Agent>, Serializable {
     }
     method.invoke(object, args);
   }
+
+  // json
+  @NotNull
+  public Method getMethod() {
+    return method;
+  }
+
+  // json
+  @NotNull
+  public Object getObject() {
+    return object;
+  }
 }

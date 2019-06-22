@@ -273,7 +273,7 @@ public class Plot {
     private long timeoutMillis;
   }
 
-  private static class CreateEvent<T> implements UnaryFunction<List<Event<? extends T>>, Event<?>>, Serializable {
+  private static class CreateEvent<T> implements Serializable {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
@@ -287,12 +287,12 @@ public class Plot {
       this.creator = ConstantConditions.notNull("creator", creator);
     }
 
-    public Event<?> call(final List<Event<? extends T>> events) throws Exception {
-      return creator.call(events);
+    public UnaryFunction<? super List<? extends Event<? extends T>>, ? extends Event<?>> getCreator() {
+      return creator;
     }
   }
 
-  private static class CreateNullaryEvent implements NullaryFunction<Event<?>>, Serializable {
+  private static class CreateNullaryEvent implements Serializable {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
@@ -306,12 +306,12 @@ public class Plot {
       this.creator = ConstantConditions.notNull("creator", creator);
     }
 
-    public Event<?> call() throws Exception {
-      return creator.call();
+    public NullaryFunction<? extends Event<?>> getCreator() {
+      return creator;
     }
   }
 
-  private static class CreateNullaryStory implements NullaryFunction<Story<?>>, Serializable {
+  private static class CreateNullaryStory implements Serializable {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
@@ -325,12 +325,12 @@ public class Plot {
       this.creator = ConstantConditions.notNull("creator", creator);
     }
 
-    public Story<?> call() throws Exception {
-      return creator.call();
+    public NullaryFunction<? extends Story<?>> getCreator() {
+      return creator;
     }
   }
 
-  private static class CreateStory<T> implements UnaryFunction<List<Story<? extends T>>, Story<?>>, Serializable {
+  private static class CreateStory<T> implements Serializable {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
@@ -344,14 +344,14 @@ public class Plot {
       this.creator = ConstantConditions.notNull("creator", creator);
     }
 
-    public Story<?> call(final List<Story<? extends T>> stories) throws Exception {
-      return creator.call(stories);
+    public UnaryFunction<? super List<? extends Story<? extends T>>, ? extends Story<?>> getCreator() {
+      return creator;
     }
   }
 {{#arities}}
 
   private static class Create{{classPrefix}}Event<{{#paramTypes}}{{type}} extends Event<?>{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>
-      implements {{classPrefix}}Function<{{#paramTypes}}{{type}}, {{/paramTypes}}Event<?>>, Serializable {
+      implements Serializable {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
@@ -366,13 +366,13 @@ public class Plot {
       this.creator = ConstantConditions.notNull("creator", creator);
     }
 
-    public Event<?> call({{#paramTypes}}@NotNull final {{type}} {{prefix}}Event{{#hasNext}}, {{/hasNext}}{{/paramTypes}}) throws Exception {
-      return creator.call({{#paramTypes}}{{prefix}}Event{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
+    public {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends Event<?>> getCreator() {
+      return creator;
     }
   }
 
   private static class Create{{classPrefix}}Story<{{#paramTypes}}{{type}} extends Story<?>{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>
-      implements {{classPrefix}}Function<{{#paramTypes}}{{type}}, {{/paramTypes}}Story<?>>, Serializable {
+      implements Serializable {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
@@ -387,8 +387,8 @@ public class Plot {
       this.creator = ConstantConditions.notNull("creator", creator);
     }
 
-    public Story<?> call({{#paramTypes}}@NotNull final {{type}} {{prefix}}Story{{#hasNext}}, {{/hasNext}}{{/paramTypes}}) throws Exception {
-      return creator.call({{#paramTypes}}{{prefix}}Story{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
+    public {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends Story<?>> getCreator() {
+      return creator;
     }
   }
 {{/arities}}
@@ -450,7 +450,7 @@ public class Plot {
                 for (final Actor actorParam : actorParams) {
                   events.add(new EventWrapper<Object>(actorParam));
                 }
-                actor = ((CreateEvent<Object>) message).call(events).getActor();
+                actor = ((CreateEvent<Object>) message).getCreator().call(events).getActor();
 
               } catch (final Exception e) {
                 actor = Event.ofIncident(e).getActor();
@@ -470,7 +470,7 @@ public class Plot {
               Actor actor;
               SettingInfo.set(settingInfo);
               try {
-                actor = ((CreateNullaryEvent) message).call().getActor();
+                actor = ((CreateNullaryEvent) message).getCreator().call().getActor();
 
               } catch (final Exception e) {
                 actor = Event.ofIncident(e).getActor();
@@ -490,7 +490,7 @@ public class Plot {
               Actor actor;
               SettingInfo.set(settingInfo);
               try {
-                actor = ((CreateNullaryStory) message).call().getActor();
+                actor = ((CreateNullaryStory) message).getCreator().call().getActor();
 
               } catch (final Exception e) {
                 actor = Story.ofSingleIncident(e).getActor();
@@ -517,7 +517,7 @@ public class Plot {
                 for (final Actor actorParam : actorParams) {
                   stories.add(new StoryWrapper<Object>(actorParam));
                 }
-                actor = ((CreateStory<Object>) message).call(stories).getActor();
+                actor = ((CreateStory<Object>) message).getCreator().call(stories).getActor();
 
               } catch (final Exception e) {
                 actor = Story.ofSingleIncident(e).getActor();
@@ -547,7 +547,7 @@ public class Plot {
                 } else {
 {{#paramTypes}}                  final EventWrapper<Object> {{prefix}}Event = new EventWrapper<Object>(actorParams.get({{index}}));
 {{/paramTypes}}
-                  actor = ((Create{{classPrefix}}Event<{{#paramTypes}}Event<?>{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>) message).call({{#paramTypes}}{{prefix}}Event{{#hasNext}}, {{/hasNext}}{{/paramTypes}}).getActor();
+                  actor = ((Create{{classPrefix}}Event<{{#paramTypes}}Event<?>{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>) message).getCreator().call({{#paramTypes}}{{prefix}}Event{{#hasNext}}, {{/hasNext}}{{/paramTypes}}).getActor();
                 }
 
               } catch (final Exception e) {
@@ -577,7 +577,7 @@ public class Plot {
                 } else {
 {{#paramTypes}}                  final StoryWrapper<Object> {{prefix}}Story = new StoryWrapper<Object>(actorParams.get({{index}}));
 {{/paramTypes}}
-                  actor = ((Create{{classPrefix}}Story<{{#paramTypes}}Story<?>{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>) message).call({{#paramTypes}}{{prefix}}Story{{#hasNext}}, {{/hasNext}}{{/paramTypes}}).getActor();
+                  actor = ((Create{{classPrefix}}Story<{{#paramTypes}}Story<?>{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>) message).getCreator().call({{#paramTypes}}{{prefix}}Story{{#hasNext}}, {{/hasNext}}{{/paramTypes}}).getActor();
                 }
 
               } catch (final Exception e) {
@@ -674,6 +674,11 @@ public class Plot {
     @Override
     public Logger getLogger(@NotNull final String id) throws Exception {
       return getSettingInfo().getLogger();
+    }
+
+    @NotNull
+    public Setting getSetting() {
+      return setting;
     }
 
     @NotNull

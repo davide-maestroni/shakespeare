@@ -98,6 +98,18 @@ class OnMatchHandler implements AnnotationHandler<OnMatch> {
       this.method = Reflections.makeAccessible(method);
     }
 
+    // json
+    @NotNull
+    public Method getMethod() {
+      return method;
+    }
+
+    // json
+    @NotNull
+    public Object getObject() {
+      return object;
+    }
+
     public boolean match(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) throws Exception {
       return (Boolean) method.invoke(object, message, envelop, agent);

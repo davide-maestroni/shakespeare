@@ -47,6 +47,12 @@ class AcceptHandler<T> implements Handler<T>, Serializable {
     this.observer = ConstantConditions.notNull("observer", observer);
   }
 
+  // json
+  @NotNull
+  public Observer<T> getObserver() {
+    return observer;
+  }
+
   /**
    * {@inheritDoc}
    */

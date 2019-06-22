@@ -57,6 +57,18 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
       this.method = Reflections.makeAccessible(method);
     }
 
+    // json
+    @NotNull
+    public Method getMethod() {
+      return method;
+    }
+
+    // json
+    @NotNull
+    public Object getObject() {
+      return object;
+    }
+
     public void handle(final Iterable<?> params, @NotNull final Envelop envelop,
         @NotNull final Agent agent) throws Exception {
       final Method method = this.method;
@@ -93,6 +105,12 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
 
     private MessageTester(@NotNull final Method method) {
       parameterTypes = method.getParameterTypes();
+    }
+
+    // json
+    @NotNull
+    public Class<?>[] getParameterTypes() {
+      return parameterTypes;
     }
 
     public boolean test(final Object message) {

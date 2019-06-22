@@ -84,6 +84,16 @@ public abstract class SerializableRole extends Role implements Serializable {
     return new BehaviorWrapper((behavior != null) ? behavior : getSerializableBehavior(id));
   }
 
+  // json
+  public Behavior getBehavior() {
+    return behavior;
+  }
+
+  // json
+  public RoleState getState() {
+    return state;
+  }
+
   /**
    * Returns the initial actor behavior.<br>
    * The returned instance should be serializable according to the specific serializer which is

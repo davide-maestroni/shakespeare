@@ -41,6 +41,12 @@ public class AnnotatedRole extends SerializableRole {
     this.object = ConstantConditions.notNull("object", object);
   }
 
+  // json
+  @NotNull
+  public Object getObject() {
+    return object;
+  }
+
   @NotNull
   protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
     return Behaviors.annotated(object);

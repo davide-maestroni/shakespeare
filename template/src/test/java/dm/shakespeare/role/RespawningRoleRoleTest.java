@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import dm.shakespeare.template.role.ReflectionRole;
+import dm.shakespeare.actor.Role;
 import dm.shakespeare.template.role.RespawningRole;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,7 +20,7 @@ public class RespawningRoleRoleTest {
 
   @Test
   public void serialization() throws IOException, ClassNotFoundException {
-    final RespawningRole role = new RespawningRole(ReflectionRole.class, "");
+    final RespawningRole role = new RespawningRole(Role.class);
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     final ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
     objectOutputStream.writeObject(role);

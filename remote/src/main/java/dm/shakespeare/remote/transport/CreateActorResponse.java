@@ -28,10 +28,6 @@ public class CreateActorResponse extends RemoteResponse {
   private ActorID actorID;
   private Throwable error;
 
-  public static long getSerialVersionUID() {
-    return serialVersionUID;
-  }
-
   public ActorID getActorID() {
     return actorID;
   }

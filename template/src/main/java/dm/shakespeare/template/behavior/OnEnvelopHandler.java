@@ -95,6 +95,18 @@ class OnEnvelopHandler implements AnnotationHandler<OnEnvelop> {
       this.method = Reflections.makeAccessible(method);
     }
 
+    // json
+    @NotNull
+    public Method getMethod() {
+      return method;
+    }
+
+    // json
+    @NotNull
+    public Object getObject() {
+      return object;
+    }
+
     public boolean test(final Envelop envelop) throws Exception {
       return (Boolean) method.invoke(object, envelop);
     }

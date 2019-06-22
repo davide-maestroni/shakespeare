@@ -47,6 +47,12 @@ class ApplyHandler<T> implements Handler<T>, Serializable {
     this.mapper = ConstantConditions.notNull("mapper", mapper);
   }
 
+  // json
+  @NotNull
+  public Mapper<T, ?> getMapper() {
+    return mapper;
+  }
+
   /**
    * {@inheritDoc}
    */

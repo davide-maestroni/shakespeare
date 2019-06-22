@@ -37,11 +37,11 @@ class InvocationArg implements Serializable {
     this.script = ConstantConditions.notNull("script", script);
   }
 
-  Script getScript() {
+  public Script getScript() {
     return script;
   }
 
-  Class<?> getType() {
+  public Class<?> getType() {
     return type;
   }
 }

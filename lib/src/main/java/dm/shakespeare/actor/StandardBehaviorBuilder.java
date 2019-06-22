@@ -116,6 +116,13 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
   }
 
   @NotNull
+  public <T> BehaviorBuilder onEqualTo(final T message, @NotNull final Handler<? super T> handler) {
+    messageHandlers.add(
+        new EqualToMessageHandler(message, ConstantConditions.notNull("handler", handler)));
+    return this;
+  }
+
+  @NotNull
   public <T> BehaviorBuilder onMatch(@NotNull final Matcher<? super T> matcher,
       @NotNull final Handler<? super T> handler) {
     messageHandlers.add(new MatcherMessageHandler(ConstantConditions.notNull("matcher", matcher),
@@ -147,14 +154,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       @NotNull final Handler<? super T> handler) {
     messageHandlers.add(new TesterMessageHandler(ConstantConditions.notNull("tester", tester),
         ConstantConditions.notNull("handler", handler)));
-    return this;
-  }
-
-  @NotNull
-  public <T> BehaviorBuilder onEqualTo(final T message,
-      @NotNull final Handler<? super T> handler) {
-    messageHandlers.add(
-        new EqualToMessageHandler(message, ConstantConditions.notNull("handler", handler)));
     return this;
   }
 
@@ -202,6 +201,12 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.messageClass = messageClass;
     }
 
+    // json
+    @NotNull
+    public Class<?> getMessageClass() {
+      return messageClass;
+    }
+
     boolean matches(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) {
       return messageClass.isInstance(message);
@@ -218,6 +223,12 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
         @NotNull final Handler<?> handler) {
       super(handler);
       this.messageClasses = messageClasses;
+    }
+
+    // json
+    @NotNull
+    public Collection<? extends Class<?>> getMessageClasses() {
+      return messageClasses;
     }
 
     boolean matches(final Object message, @NotNull final Envelop envelop,
@@ -248,6 +259,24 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.stopObserver = stopObserver;
     }
 
+    // json
+    @NotNull
+    public Handler<Object> getMessageHandler() {
+      return messageHandler;
+    }
+
+    // json
+    @NotNull
+    public Observer<? super Agent> getStartObserver() {
+      return startObserver;
+    }
+
+    // json
+    @NotNull
+    public Observer<? super Agent> getStopObserver() {
+      return stopObserver;
+    }
+
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) throws Exception {
       messageHandler.handle(message, envelop, agent);
@@ -273,6 +302,11 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.message = message;
     }
 
+    // json
+    public Object getMessage() {
+      return message;
+    }
+
     boolean matches(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) {
       final Object other = this.message;
@@ -293,6 +327,12 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.matcher = (Matcher<Object>) matcher;
     }
 
+    // json
+    @NotNull
+    public Matcher<Object> getMatcher() {
+      return matcher;
+    }
+
     boolean matches(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) throws Exception {
       return matcher.match(message, envelop, agent);
@@ -308,6 +348,12 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
     @SuppressWarnings("unchecked")
     private MatchingHandler(@NotNull final Handler<?> handler) {
       this.handler = (Handler<Object>) handler;
+    }
+
+    // json
+    @NotNull
+    public Handler<Object> getHandler() {
+      return handler;
     }
 
     public void handle(final Object message, @NotNull final Envelop envelop,
@@ -336,6 +382,12 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
         handler.accept(agent);
       }
     }
+
+    // json
+    @NotNull
+    public List<Observer<? super Agent>> getObservers() {
+      return observers;
+    }
   }
 
   private static class MultipleMessageHandler implements Handler, Serializable {
@@ -349,6 +401,18 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
         @NotNull final List<Handler<?>> fallbacks) {
       this.handlers = handlers;
       this.fallbacks = fallbacks;
+    }
+
+    // json
+    @NotNull
+    public List<Handler<?>> getFallbacks() {
+      return fallbacks;
+    }
+
+    // json
+    @NotNull
+    public List<MatchingHandler> getHandlers() {
+      return handlers;
     }
 
     @SuppressWarnings("unchecked")
@@ -382,6 +446,12 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.tester = tester;
     }
 
+    // json
+    @NotNull
+    public Tester<? super Envelop> getTester() {
+      return tester;
+    }
+
     boolean matches(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) throws Exception {
       return tester.test(envelop);
@@ -399,6 +469,12 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
         @NotNull final Handler<?> handler) {
       super(handler);
       this.tester = (Tester<Object>) tester;
+    }
+
+    // json
+    @NotNull
+    public Tester<Object> getTester() {
+      return tester;
     }
 
     boolean matches(final Object message, @NotNull final Envelop envelop,

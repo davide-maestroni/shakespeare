@@ -35,7 +35,7 @@ class Invocation implements Serializable {
   private final Class<?>[] parameterTypes;
 
   Invocation() {
-    this.id = null;
+    this.id = "";
     methodName = "toString";
     parameterTypes = new Class[0];
     arguments = new Object[0];
@@ -50,21 +50,22 @@ class Invocation implements Serializable {
   }
 
   @NotNull
-  Object[] getArguments() {
+  public Object[] getArguments() {
     return arguments;
   }
 
-  String getId() {
+  @NotNull
+  public String getId() {
     return id;
   }
 
   @NotNull
-  String getMethodName() {
+  public String getMethodName() {
     return methodName;
   }
 
   @NotNull
-  Class<?>[] getParameterTypes() {
+  public Class<?>[] getParameterTypes() {
     return parameterTypes;
   }
 }

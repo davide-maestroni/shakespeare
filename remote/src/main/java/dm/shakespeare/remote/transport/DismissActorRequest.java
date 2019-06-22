@@ -28,10 +28,6 @@ public class DismissActorRequest extends RemoteRequest {
   private ActorID actorID;
   private boolean mayInterruptIfRunning;
 
-  public static long getSerialVersionUID() {
-    return serialVersionUID;
-  }
-
   public ActorID getActorID() {
     return actorID;
   }
