@@ -1263,24 +1263,23 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         SettingInfo.set(getSettingInfo());
         try {
           event = conditionHandler.call();
+          if ((event == null) || Event.isFalse(event) || Event.isNull(event)) {
+            done(agent);
+
+          } else if (Event.isTrue(event)) {
+            setThreadIds(loopCount);
+            tellInputActors(StorySignal.NEXT, agent);
+            agent.setBehavior(new InputBehavior());
+
+          } else {
+            setThreadIds(loopCount);
+            (continueActor = event.getActor()).tell(EventSignal.GET, continueHeaders,
+                agent.getSelf());
+            agent.setBehavior(new ContinueBehavior());
+          }
 
         } finally {
           SettingInfo.unset();
-        }
-
-        if ((event == null) || Event.isFalse(event) || Event.isNull(event)) {
-          done(agent);
-
-        } else if (Event.isTrue(event)) {
-          setThreadIds(loopCount);
-          tellInputActors(StorySignal.NEXT, agent);
-          agent.setBehavior(new InputBehavior());
-
-        } else {
-          setThreadIds(loopCount);
-          (continueActor = event.getActor()).tell(EventSignal.GET, continueHeaders,
-              agent.getSelf());
-          agent.setBehavior(new ContinueBehavior());
         }
 
       } catch (final Throwable t) {

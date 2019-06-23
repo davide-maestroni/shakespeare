@@ -90,6 +90,11 @@ class OnEnvelopHandler implements AnnotationHandler<OnEnvelop> {
     private final Method method;
     private final Object object;
 
+    private MessageTester() {
+      object = null;
+      method = null;
+    }
+
     private MessageTester(@NotNull final Object object, @NotNull final Method method) {
       this.object = object;
       this.method = Reflections.makeAccessible(method);

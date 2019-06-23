@@ -93,6 +93,11 @@ class OnMatchHandler implements AnnotationHandler<OnMatch> {
     private final Method method;
     private final Object object;
 
+    private MessageMatcher() {
+      object = null;
+      method = null;
+    }
+
     private MessageMatcher(@NotNull final Object object, @NotNull final Method method) {
       this.object = object;
       this.method = Reflections.makeAccessible(method);

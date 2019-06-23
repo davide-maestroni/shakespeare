@@ -59,6 +59,10 @@ class AnnotationBehavior extends SerializableAbstractBehavior {
 
   private final Behavior behavior;
 
+  AnnotationBehavior() {
+    behavior = null;
+  }
+
   @SuppressWarnings("unchecked")
   AnnotationBehavior(@NotNull final Object object) throws Exception {
     final Class<?> objectClass = object.getClass();

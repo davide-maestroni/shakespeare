@@ -32,6 +32,11 @@ class InvocationArg implements Serializable {
   private final Script script;
   private final Class<?> type;
 
+  InvocationArg() {
+    type = null;
+    script = null;
+  }
+
   InvocationArg(final Class<?> type, final Script script) {
     this.type = ConstantConditions.notNull("type", type);
     this.script = ConstantConditions.notNull("script", script);

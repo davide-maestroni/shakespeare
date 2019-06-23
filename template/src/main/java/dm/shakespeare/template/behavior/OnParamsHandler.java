@@ -52,6 +52,11 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
     private final Method method;
     private final Object object;
 
+    private MessageHandler() {
+      object = null;
+      method = null;
+    }
+
     private MessageHandler(@NotNull final Object object, @NotNull final Method method) {
       this.object = object;
       this.method = Reflections.makeAccessible(method);
@@ -102,6 +107,10 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private final Class<?>[] parameterTypes;
+
+    private MessageTester() {
+      parameterTypes = new Class<?>[0];
+    }
 
     private MessageTester(@NotNull final Method method) {
       parameterTypes = method.getParameterTypes();

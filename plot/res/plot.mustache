@@ -667,13 +667,13 @@ public class Plot {
     @NotNull
     @Override
     public ExecutorService getExecutorService(@NotNull final String id) throws Exception {
-      return getSettingInfo().getExecutor();
+      return getSettingInfo(id).getExecutor();
     }
 
     @NotNull
     @Override
     public Logger getLogger(@NotNull final String id) throws Exception {
-      return getSettingInfo().getLogger();
+      return getSettingInfo(id).getLogger();
     }
 
     @NotNull
@@ -683,14 +683,14 @@ public class Plot {
 
     @NotNull
     protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
-      return new PlotFactoryBehavior(getSettingInfo());
+      return new PlotFactoryBehavior(getSettingInfo(id));
     }
 
     @NotNull
-    private SettingInfo getSettingInfo() throws Exception {
+    private SettingInfo getSettingInfo(@NotNull final String id) throws Exception {
       if (settingInfo == null) {
         final Setting setting = this.setting;
-        settingInfo = new SettingInfo(setting.getExecutorService(), setting.getLogger());
+        settingInfo = new SettingInfo(setting.getExecutorService(id), setting.getLogger(id));
       }
       return settingInfo;
     }

@@ -48,8 +48,8 @@ public interface Actor {
    */
   @NotNull
   Actor addObserver(@NotNull Actor observer);
-  // TODO: 2019-06-22 RejectedExecution
-  // TODO: 2019-06-20 messages => public getField (jackson)
+  // TODO: 2019-06-22 RejectedExecution => return false
+  // TODO: 2019-06-20 messages => public getField (jackson) => avoid getters!!!
 
   /**
    * Dismiss this actor so that its behavior will be stopped and the actor removed from its stage.
@@ -57,6 +57,7 @@ public interface Actor {
    * All the messages still pending in the inbox will be bounced.
    */
   void dismiss();
+  // TODO: 2019-06-23 return boolean
 
   /**
    * Lazily dismiss this actor so that its behavior will be stopped and the actor removed from its
@@ -118,6 +119,7 @@ public interface Actor {
    */
   @NotNull
   Actor tell(Object message, @Nullable Headers headers, @NotNull Actor sender);
+  // TODO: 2019-06-23 return void
 
   /**
    * Tells to this actor the specified batch of messages.<br>

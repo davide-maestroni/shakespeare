@@ -53,7 +53,6 @@ import dm.shakespeare.remote.config.RemoteConfig;
 import dm.shakespeare.remote.transport.Connector;
 import dm.shakespeare.remote.transport.RemoteRequest;
 import dm.shakespeare.remote.transport.RemoteResponse;
-import dm.shakespeare.remote.util.Base64;
 import dm.shakespeare.remote.util.Classes;
 import dm.shakespeare.remote.util.PLZW;
 import dm.shakespeare.remote.io.RawData;
@@ -142,12 +141,12 @@ public class RemoteServerTest {
   @Test
   public void zip() throws Exception {
     String encoded = PLZW.getEncoder().encode("This is a test!".getBytes("US-ASCII"));
-    System.out.println(Base64.encodeBytes("This is a test!".getBytes("US-ASCII"), Base64.GZIP).length());
+//    System.out.println(Base64.encodeBytes("This is a test!".getBytes("US-ASCII"), Base64.GZIP).length());
     byte[] decoded = PLZW.getDecoder().decode(encoded);
     System.out.println(new String(decoded, "US-ASCII"));
 
     PLZW.getEncoder().encode("TOBEORNOTTOBEORTOBEORNOT#".getBytes("US-ASCII"));
-    System.out.println(Base64.encodeBytes("TOBEORNOTTOBEORTOBEORNOT#".getBytes("US-ASCII"), Base64.GZIP).length());
+//    System.out.println(Base64.encodeBytes("TOBEORNOTTOBEORTOBEORNOT#".getBytes("US-ASCII"), Base64.GZIP).length());
 
     JavaSerializer javaSerializer = new JavaSerializer();
     javaSerializer.whitelist(Collections.singleton("**"));
@@ -156,7 +155,7 @@ public class RemoteServerTest {
     Object deserialize = javaSerializer.deserialize(RawData.wrap(PLZW.getDecoder().decode(encoded)),
         PrintRole.class.getClassLoader());
     assert deserialize instanceof PrintRole;
-    System.out.println(Base64.encodeBytes(bytes, Base64.GZIP).length());
+//    System.out.println(Base64.encodeBytes(bytes, Base64.GZIP).length());
 
     StringWriter writer = new StringWriter();
     OutputStream encoder = PLZW.newEncoder(writer);

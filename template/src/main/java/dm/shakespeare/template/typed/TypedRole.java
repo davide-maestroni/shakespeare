@@ -53,6 +53,13 @@ class TypedRole extends SerializableRole {
   private final Class<?> objectClass;
   private final Script script;
 
+  TypedRole() {
+    script = null;
+    object = null;
+    objectClass = null;
+    objectArgs = null;
+  }
+
   TypedRole(@NotNull final Script script, @NotNull final Object object) {
     this.script = ConstantConditions.notNull("script", script);
     this.object = ConstantConditions.notNull("object", object);
@@ -141,6 +148,10 @@ class TypedRole extends SerializableRole {
 
     private final HashMap<String, ActorArg> actorArgs = new HashMap<String, ActorArg>();
     private final Object instance;
+
+    private TypedBehavior() {
+      instance = this;
+    }
 
     private TypedBehavior(@NotNull final Object instance) {
       this.instance = instance;

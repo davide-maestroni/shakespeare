@@ -62,6 +62,10 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
   private transient Actor supervisor;
   private transient String supervisorThread;
 
+  SupervisedBehavior() {
+    behavior = null;
+  }
+
   SupervisedBehavior(@NotNull final Behavior behavior) {
     this.behavior = ConstantConditions.notNull("behavior", behavior);
   }
@@ -168,6 +172,11 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
     private final Throwable cause;
     private final String failureId;
 
+    private SupervisedFailure() {
+      failureId = "";
+      cause = new UnsupportedOperationException();
+    }
+
     private SupervisedFailure(@NotNull final String failureId, @NotNull final Throwable cause) {
       this.failureId = failureId;
       this.cause = cause;
@@ -195,6 +204,11 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
 
     private final String failureId;
     private final RecoveryType recoveryType;
+
+    private SupervisedRecovery() {
+      failureId = "";
+      recoveryType = RecoveryType.DISMISS;
+    }
 
     private SupervisedRecovery(@NotNull final String failureId,
         @NotNull final RecoveryType recoveryType) {

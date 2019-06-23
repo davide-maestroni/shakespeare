@@ -31,10 +31,6 @@ public class FindResponse extends RemoteResponse {
 
   private Set<ActorID> actorIDs;
 
-  public static long getSerialVersionUID() {
-    return serialVersionUID;
-  }
-
   @NotNull
   public FindResponse addActorID(final ActorID actorID) {
     if (this.actorIDs == null) {

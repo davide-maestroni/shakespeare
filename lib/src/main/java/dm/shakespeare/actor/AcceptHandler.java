@@ -37,6 +37,10 @@ class AcceptHandler<T> implements Handler<T>, Serializable {
 
   private final Observer<T> observer;
 
+  AcceptHandler() {
+    observer = null;
+  }
+
   /**
    * Creates a new handler wrapping the specified observer instance.<br>
    * The returned instance will be serializable only if the observer instance effectively is.

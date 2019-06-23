@@ -44,6 +44,11 @@ public class RespawningRole extends Role implements Serializable {
 
   private transient Role role;
 
+  public RespawningRole() {
+    roleClass = RespawningRole.class;
+    roleArgs = NO_ARGS;
+  }
+
   public RespawningRole(@NotNull final Class<? extends Role> roleClass) {
     this.roleClass = ConstantConditions.notNull("roleClass", roleClass);
     roleArgs = NO_ARGS;

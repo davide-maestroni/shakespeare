@@ -39,6 +39,11 @@ class MethodHandler implements Handler<Object>, Serializable {
   private final Method method;
   private final Object object;
 
+  MethodHandler() {
+    object = null;
+    method = null;
+  }
+
   MethodHandler(@NotNull final Object object, @NotNull final Method method) {
     this.object = ConstantConditions.notNull("object", object);
     this.method = Reflections.makeAccessible(method);

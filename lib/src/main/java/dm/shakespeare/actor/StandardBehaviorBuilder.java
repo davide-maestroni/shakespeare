@@ -18,9 +18,11 @@ package dm.shakespeare.actor;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import dm.shakespeare.actor.Behavior.Agent;
@@ -34,15 +36,19 @@ import dm.shakespeare.util.ConstantConditions;
  */
 class StandardBehaviorBuilder implements BehaviorBuilder {
 
-  private static final Observer<Agent> DEFAULT_AGENT_OBSERVER = new Observer<Agent>() {
+  private static final DefaultAgentObserver DEFAULT_AGENT_OBSERVER = new DefaultAgentObserver();
+  private static final Matcher<?> DEFAULT_MATCHER = new Matcher<Object>() {
 
-    public void accept(@NotNull final Agent agent) {
+    public boolean match(final Object message, @NotNull final Envelop envelop,
+        @NotNull final Agent agent) {
+      return false;
     }
   };
-  private static final Handler<?> DEFAULT_MESSAGE_HANDLER = new Handler<Object>() {
+  private static final DefaultMessageHandler DEFAULT_MESSAGE_HANDLER = new DefaultMessageHandler();
+  private static final Tester<?> DEFAULT_TESTER = new Tester<Object>() {
 
-    public void handle(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Agent agent) {
+    public boolean test(final Object value) {
+      return false;
     }
   };
 
@@ -179,6 +185,9 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
+    private AnyMessageHandler() {
+    }
+
     private AnyMessageHandler(@NotNull final Handler<?> handler) {
       super(handler);
     }
@@ -194,6 +203,10 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private final Class<?> messageClass;
+
+    private ClassMessageHandler() {
+      messageClass = getClass();
+    }
 
     private ClassMessageHandler(@NotNull final Class<?> messageClass,
         @NotNull final Handler<?> handler) {
@@ -219,6 +232,10 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
 
     private final Collection<? extends Class<?>> messageClasses;
 
+    private ClassesMessageHandler() {
+      messageClasses = Collections.emptyList();
+    }
+
     private ClassesMessageHandler(@NotNull final Collection<? extends Class<?>> messageClasses,
         @NotNull final Handler<?> handler) {
       super(handler);
@@ -242,6 +259,18 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
     }
   }
 
+  private static class DefaultAgentObserver implements Observer<Agent>, Serializable {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+    public void accept(@NotNull final Agent agent) {
+    }
+
+    private Object readResolve() throws ObjectStreamException {
+      return DEFAULT_AGENT_OBSERVER;
+    }
+  }
+
   private static class DefaultBehavior implements Behavior, Serializable {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
@@ -249,6 +278,10 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
     private final Handler<Object> messageHandler;
     private final Observer<? super Agent> startObserver;
     private final Observer<? super Agent> stopObserver;
+
+    private DefaultBehavior() {
+      this(DEFAULT_MESSAGE_HANDLER, DEFAULT_AGENT_OBSERVER, DEFAULT_AGENT_OBSERVER);
+    }
 
     @SuppressWarnings("unchecked")
     private DefaultBehavior(@NotNull final Handler<?> messageHandler,
@@ -291,11 +324,28 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
     }
   }
 
+  private static class DefaultMessageHandler implements Handler<Object>, Serializable {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+    public void handle(final Object message, @NotNull final Envelop envelop,
+        @NotNull final Agent agent) {
+    }
+
+    private Object readResolve() throws ObjectStreamException {
+      return DEFAULT_MESSAGE_HANDLER;
+    }
+  }
+
   private static class EqualToMessageHandler extends MatchingHandler {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private final Object message;
+
+    private EqualToMessageHandler() {
+      message = null;
+    }
 
     private EqualToMessageHandler(final Object message, @NotNull final Handler<?> handler) {
       super(handler);
@@ -321,6 +371,11 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
     private final Matcher<Object> matcher;
 
     @SuppressWarnings("unchecked")
+    private MatcherMessageHandler() {
+      matcher = (Matcher<Object>) DEFAULT_MATCHER;
+    }
+
+    @SuppressWarnings("unchecked")
     private MatcherMessageHandler(@NotNull final Matcher<?> matcher,
         @NotNull final Handler<?> handler) {
       super(handler);
@@ -344,6 +399,10 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private final Handler<Object> handler;
+
+    private MatchingHandler() {
+      this(DEFAULT_MESSAGE_HANDLER);
+    }
 
     @SuppressWarnings("unchecked")
     private MatchingHandler(@NotNull final Handler<?> handler) {
@@ -373,6 +432,10 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
 
     private final List<Observer<? super Agent>> observers;
 
+    private MultipleAgentObserver() {
+      observers = Collections.emptyList();
+    }
+
     private MultipleAgentObserver(@NotNull final List<Observer<? super Agent>> observers) {
       this.observers = observers;
     }
@@ -396,6 +459,11 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
 
     private final List<Handler<?>> fallbacks;
     private final List<MatchingHandler> handlers;
+
+    private MultipleMessageHandler() {
+      handlers = Collections.emptyList();
+      fallbacks = Collections.emptyList();
+    }
 
     private MultipleMessageHandler(@NotNull final List<MatchingHandler> handlers,
         @NotNull final List<Handler<?>> fallbacks) {
@@ -440,6 +508,11 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
 
     private final Tester<? super Envelop> tester;
 
+    @SuppressWarnings("unchecked")
+    private SenderTesterMessageHandler() {
+      tester = (Tester<? super Envelop>) DEFAULT_TESTER;
+    }
+
     private SenderTesterMessageHandler(@NotNull final Tester<? super Envelop> tester,
         @NotNull final Handler<?> handler) {
       super(handler);
@@ -463,6 +536,11 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private final Tester<Object> tester;
+
+    @SuppressWarnings("unchecked")
+    private TesterMessageHandler() {
+      tester = (Tester<Object>) DEFAULT_TESTER;
+    }
 
     @SuppressWarnings("unchecked")
     private TesterMessageHandler(@NotNull final Tester<?> tester,

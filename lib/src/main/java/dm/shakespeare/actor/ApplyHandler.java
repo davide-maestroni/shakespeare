@@ -37,6 +37,10 @@ class ApplyHandler<T> implements Handler<T>, Serializable {
 
   private final Mapper<T, ?> mapper;
 
+  ApplyHandler() {
+    mapper = null;
+  }
+
   /**
    * Creates a new handler wrapping the specified mapper instance.<br>
    * The returned instance will be serializable only if the mapper instance effectively is.

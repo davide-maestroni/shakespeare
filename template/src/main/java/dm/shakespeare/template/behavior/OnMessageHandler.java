@@ -105,6 +105,10 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
 
     private final Class<?> messageClass;
 
+    private ClassTester() {
+      messageClass = ClassTester.class;
+    }
+
     private ClassTester(@NotNull final Class<?> messageClass) {
       this.messageClass = messageClass;
     }
@@ -125,6 +129,10 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private final Class<?>[] messageClasses;
+
+    private ClassesTester() {
+      messageClasses = new Class<?>[0];
+    }
 
     private ClassesTester(@NotNull final Class<?>[] messageClasses) {
       this.messageClasses = messageClasses;
@@ -152,6 +160,11 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
 
     private final Method method;
     private final Object object;
+
+    private MessageTester() {
+      object = null;
+      method = null;
+    }
 
     private MessageTester(@NotNull final Object object, @NotNull final Method method) {
       this.object = object;

@@ -28,15 +28,13 @@ import dm.shakespeare.log.Logger;
  */
 public class Setting {
 
-  // TODO: 2019-06-21 avoid getters!!!
-
   @NotNull
-  public ExecutorService getExecutorService() throws Exception {
+  public ExecutorService getExecutorService(@NotNull final String id) throws Exception {
     return Role.defaultExecutorService();
   }
 
   @NotNull
-  public Logger getLogger() throws Exception {
+  public Logger getLogger(@NotNull final String id) throws Exception {
     return Role.defaultLogger(this);
   }
 }

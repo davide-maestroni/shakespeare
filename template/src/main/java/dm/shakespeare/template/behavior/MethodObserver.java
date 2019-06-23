@@ -40,6 +40,11 @@ class MethodObserver implements Observer<Agent>, Serializable {
   private final Method method;
   private final Object object;
 
+  MethodObserver() {
+    object = null;
+    method = null;
+  }
+
   MethodObserver(@NotNull final Object object, @NotNull final Method method) {
     this.object = ConstantConditions.notNull("object", object);
     this.method = Reflections.makeAccessible(method);
