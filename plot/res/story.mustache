@@ -88,6 +88,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     public void run() {
     }
   };
+  private static final Observer<Object> NO_OP_OBSERVER = new Observer<Object>() {
+
+    public void accept(final Object value) {
+    }
+  };
+  private static final SpectatorObserver<Object> NO_OP_SPECTATOR = new SpectatorObserver<Object>() {
+
+    public void accept(@NotNull final Spectator spectator, final Object value) {
+    }
+  };
 
   @NotNull
   public static <T> Story<T> ofEffects(@NotNull final Iterable<? extends T> effects) {
@@ -236,52 +246,52 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 {{/arities}}
 
   @NotNull
-  public static <T, R> Story<R> whenXform(
+  public static <T, R> Story<R> whenMap(
       @NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler) {
-    return whenXform(stories, conditionHandler, effectHandler, new ListMemory());
+    return whenMap(stories, conditionHandler, effectHandler, new ListMemory());
   }
 
   @NotNull
-  public static <T, R> Story<R> whenXform(
+  public static <T, R> Story<R> whenMap(
       @NotNull final Iterable<? extends Story<? extends T>> stories,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler,
       @NotNull final Memory memory) {
-    return new GenericTransformStory<T, R>(stories, conditionHandler, effectHandler, memory);
+    return new GenericMapStory<T, R>(stories, conditionHandler, effectHandler, memory);
   }
 
   @NotNull
-  public static <T, R> Story<R> whenXform(
+  public static <T, R> Story<R> whenMap(
       @NotNull final Iterable<? extends Story<? extends T>> stories,
-      @NotNull final StoryTransformer<? super List<? extends T>, ? extends R> storyTransformer) {
-    return whenXform(stories, storyTransformer, new ListMemory());
+      @NotNull final StoryMapper<? super List<? extends T>, ? extends R> storyMapper) {
+    return whenMap(stories, storyMapper, new ListMemory());
   }
 
   @NotNull
-  public static <T, R> Story<R> whenXform(
+  public static <T, R> Story<R> whenMap(
       @NotNull final Iterable<? extends Story<? extends T>> stories,
-      @NotNull final StoryTransformer<? super List<? extends T>, ? extends R> storyTransformer,
+      @NotNull final StoryMapper<? super List<? extends T>, ? extends R> storyMapper,
       @NotNull final Memory memory) {
-    return whenXform(stories, new TransformerConditionHandler(storyTransformer),
-        new TransformerEffectHandler<List<? extends T>, R>(storyTransformer), memory);
+    return whenMap(stories, new MapperConditionHandler(storyMapper),
+        new MapperEffectHandler<List<? extends T>, R>(storyMapper), memory);
   }
 {{#arities}}
 
   @NotNull
-  public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Story<R> whenXform({{#paramTypes}}@NotNull final Story<? extends {{type}}> {{prefix}}Story, {{/paramTypes}}
+  public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Story<R> whenMap({{#paramTypes}}@NotNull final Story<? extends {{type}}> {{prefix}}Story, {{/paramTypes}}
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends R> effectHandler) {
-    return whenXform({{#paramTypes}}{{prefix}}Story, {{/paramTypes}}conditionHandler, effectHandler, new ListMemory());
+    return whenMap({{#paramTypes}}{{prefix}}Story, {{/paramTypes}}conditionHandler, effectHandler, new ListMemory());
   }
 
   @NotNull
-  public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Story<R> whenXform({{#paramTypes}}@NotNull final Story<? extends {{type}}> {{prefix}}Story, {{/paramTypes}}
+  public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Story<R> whenMap({{#paramTypes}}@NotNull final Story<? extends {{type}}> {{prefix}}Story, {{/paramTypes}}
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends R> effectHandler,
       @NotNull final Memory memory) {
-    return new {{classPrefix}}TransformStory<{{#paramTypes}}{{type}}, {{/paramTypes}}R>({{#paramTypes}}{{prefix}}Story, {{/paramTypes}}conditionHandler, effectHandler, memory);
+    return new {{classPrefix}}MapStory<{{#paramTypes}}{{type}}, {{/paramTypes}}R>({{#paramTypes}}{{prefix}}Story, {{/paramTypes}}conditionHandler, effectHandler, memory);
   }
 {{/arities}}
 
@@ -368,16 +378,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <R> Story<R> forAllXform(
+  public <R> Story<R> forAllMap(
       @NotNull final UnaryFunction<? super T, ? extends R> effectHandler) {
-    return forAllXform(effectHandler, new ListMemory());
+    return forAllMap(effectHandler, new ListMemory());
   }
 
   @NotNull
-  public <R> Story<R> forAllXform(
+  public <R> Story<R> forAllMap(
       @NotNull final UnaryFunction<? super T, ? extends R> effectHandler,
       @NotNull final Memory memory) {
-    return new AllTransformStory<T, R>(this, effectHandler, memory);
+    return new AllMapStory<T, R>(this, effectHandler, memory);
   }
 
   @NotNull
@@ -421,32 +431,31 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <R> Story<R> forWhileXform(
+  public <R> Story<R> forWhileMap(
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super T, ? extends R> effectHandler) {
-    return whenXform(this, conditionHandler, effectHandler);
+    return whenMap(this, conditionHandler, effectHandler);
   }
 
   @NotNull
-  public <R> Story<R> forWhileXform(
+  public <R> Story<R> forWhileMap(
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super T, ? extends R> effectHandler,
       @NotNull final Memory memory) {
-    return whenXform(this, conditionHandler, effectHandler, memory);
+    return whenMap(this, conditionHandler, effectHandler, memory);
   }
 
   @NotNull
-  public <R> Story<R> forWhileXform(
-      @NotNull final StoryTransformer<? super T, ? extends R> storyTransformer) {
-    return forWhileXform(storyTransformer, new ListMemory());
+  public <R> Story<R> forWhileMap(@NotNull final StoryMapper<? super T, ? extends R> storyMapper) {
+    return forWhileMap(storyMapper, new ListMemory());
   }
 
   @NotNull
-  public <R> Story<R> forWhileXform(
-      @NotNull final StoryTransformer<? super T, ? extends R> storyTransformer,
+  public <R> Story<R> forWhileMap(
+      @NotNull final StoryMapper<? super T, ? extends R> storyMapper,
       @NotNull final Memory memory) {
-    return forWhileXform(new TransformerConditionHandler(storyTransformer),
-        new TransformerEffectHandler<T, R>(storyTransformer), memory);
+    return forWhileMap(new MapperConditionHandler(storyMapper),
+        new MapperEffectHandler<T, R>(storyMapper), memory);
   }
 
   @NotNull
@@ -476,6 +485,19 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public Spectator playEach(@NotNull final StoryObserver<? super T> storyObserver) {
+    return playEachObserved(new SpectatorStoryObserver<T>(storyObserver));
+  }
+
+  @NotNull
+  public Spectator playEachObserved(@Nullable final SpectatorObserver<? super T> effectObserver,
+      @Nullable final SpectatorObserver<? super Throwable> incidentObserver,
+      @Nullable final Observer<? super Spectator> endObserver) {
+    return playEachObserved(new DefaultStorySpectatorObserver<T>(effectObserver, incidentObserver,
+        endObserver));
+  }
+
+  @NotNull
+  public Spectator playEachObserved(@NotNull final StorySpectatorObserver<? super T> storyObserver) {
     final Actor actor = Stage.newActor(new StoryObserverRole<T>(getActor(), storyObserver));
     final String actorId = actor.getId();
     getActor().tell(StorySignal.NEXT, new Headers().withReceiptId(actorId).withThreadId(actorId),
@@ -619,17 +641,17 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhileXform(
+  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhileMap(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final Class<? extends E3> thirdType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler) {
-    return resolveWhileXform(firstType, secondType, thirdType, conditionHandler,
+    return resolveWhileMap(firstType, secondType, thirdType, conditionHandler,
         incidentHandler, new ListMemory());
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhileXform(
+  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhileMap(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final Class<? extends E3> thirdType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
@@ -639,40 +661,39 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     types.add(firstType);
     types.add(secondType);
     types.add(thirdType);
-    return new ResolveTransformStory<T>(this, types, conditionHandler, incidentHandler, memory);
+    return new ResolveMapStory<T>(this, types, conditionHandler, incidentHandler, memory);
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhileXform(
+  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhileMap(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final Class<? extends E3> thirdType,
-      @NotNull final StoryTransformer<? super Throwable, ? extends T> storyTransformer) {
-    return resolveWhileXform(firstType, secondType, thirdType, storyTransformer,
-        new ListMemory());
+      @NotNull final StoryMapper<? super Throwable, ? extends T> storyMapper) {
+    return resolveWhileMap(firstType, secondType, thirdType, storyMapper, new ListMemory());
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhileXform(
+  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Story<T> resolveWhileMap(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final Class<? extends E3> thirdType,
-      @NotNull final StoryTransformer<? super Throwable, ? extends T> storyTransformer,
+      @NotNull final StoryMapper<? super Throwable, ? extends T> storyMapper,
       @NotNull final Memory memory) {
-    return resolveWhileXform(firstType, secondType, thirdType,
-        new TransformerConditionHandler(storyTransformer),
-        new TransformerEffectHandler<Throwable, T>(storyTransformer), memory);
+    return resolveWhileMap(firstType, secondType, thirdType,
+        new MapperConditionHandler(storyMapper),
+        new MapperEffectHandler<Throwable, T>(storyMapper), memory);
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhileXform(
+  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhileMap(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler) {
-    return resolveWhileXform(firstType, secondType, conditionHandler, incidentHandler,
+    return resolveWhileMap(firstType, secondType, conditionHandler, incidentHandler,
         new ListMemory());
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhileXform(
+  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhileMap(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler,
@@ -680,79 +701,76 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
     types.add(firstType);
     types.add(secondType);
-    return new ResolveTransformStory<T>(this, types, conditionHandler, incidentHandler, memory);
+    return new ResolveMapStory<T>(this, types, conditionHandler, incidentHandler, memory);
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhileXform(
+  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhileMap(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
-      @NotNull final StoryTransformer<? super Throwable, ? extends T> storyTransformer) {
-    return resolveWhileXform(firstType, secondType, storyTransformer, new ListMemory());
+      @NotNull final StoryMapper<? super Throwable, ? extends T> storyMapper) {
+    return resolveWhileMap(firstType, secondType, storyMapper, new ListMemory());
   }
 
   @NotNull
-  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhileXform(
+  public <E1 extends Throwable, E2 extends Throwable> Story<T> resolveWhileMap(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
-      @NotNull final StoryTransformer<? super Throwable, ? extends T> storyTransformer,
+      @NotNull final StoryMapper<? super Throwable, ? extends T> storyMapper,
       @NotNull final Memory memory) {
-    return resolveWhileXform(firstType, secondType,
-        new TransformerConditionHandler(storyTransformer),
-        new TransformerEffectHandler<Throwable, T>(storyTransformer), memory);
+    return resolveWhileMap(firstType, secondType, new MapperConditionHandler(storyMapper),
+        new MapperEffectHandler<Throwable, T>(storyMapper), memory);
   }
 
   @NotNull
-  public <E1 extends Throwable> Story<T> resolveWhileXform(
+  public <E1 extends Throwable> Story<T> resolveWhileMap(
       @NotNull final Class<? extends E1> firstType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler) {
-    return resolveWhileXform(firstType, conditionHandler, incidentHandler, new ListMemory());
+    return resolveWhileMap(firstType, conditionHandler, incidentHandler, new ListMemory());
   }
 
   @NotNull
-  public <E1 extends Throwable> Story<T> resolveWhileXform(
+  public <E1 extends Throwable> Story<T> resolveWhileMap(
       @NotNull final Class<? extends E1> firstType,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler,
       @NotNull final Memory memory) {
     final Set<Class<? extends Throwable>> types =
         Collections.<Class<? extends Throwable>>singleton(firstType);
-    return new ResolveTransformStory<T>(this, types, conditionHandler, incidentHandler, memory);
+    return new ResolveMapStory<T>(this, types, conditionHandler, incidentHandler, memory);
   }
 
   @NotNull
-  public <E1 extends Throwable> Story<T> resolveWhileXform(
+  public <E1 extends Throwable> Story<T> resolveWhileMap(
       @NotNull final Class<? extends E1> firstType,
-      @NotNull final StoryTransformer<? super Throwable, ? extends T> storyTransformer) {
-    return resolveWhileXform(firstType, storyTransformer, new ListMemory());
+      @NotNull final StoryMapper<? super Throwable, ? extends T> storyMapper) {
+    return resolveWhileMap(firstType, storyMapper, new ListMemory());
   }
 
   @NotNull
-  public <E1 extends Throwable> Story<T> resolveWhileXform(
+  public <E1 extends Throwable> Story<T> resolveWhileMap(
       @NotNull final Class<? extends E1> firstType,
-      @NotNull final StoryTransformer<? super Throwable, ? extends T> storyTransformer,
+      @NotNull final StoryMapper<? super Throwable, ? extends T> storyMapper,
       @NotNull final Memory memory) {
-    return resolveWhileXform(firstType, new TransformerConditionHandler(storyTransformer),
-        new TransformerEffectHandler<Throwable, T>(storyTransformer), memory);
+    return resolveWhileMap(firstType, new MapperConditionHandler(storyMapper),
+        new MapperEffectHandler<Throwable, T>(storyMapper), memory);
   }
 
   @NotNull
-  public <E extends Throwable> Story<T> resolveWhileXform(
+  public <E extends Throwable> Story<T> resolveWhileMap(
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler) {
-    return resolveWhileXform(incidentTypes, conditionHandler, incidentHandler,
-        new ListMemory());
+    return resolveWhileMap(incidentTypes, conditionHandler, incidentHandler, new ListMemory());
   }
 
   @NotNull
-  public <E extends Throwable> Story<T> resolveWhileXform(
+  public <E extends Throwable> Story<T> resolveWhileMap(
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
       @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
       @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler,
       @NotNull final Memory memory) {
-    return new ResolveTransformStory<T>(this,
-        Iterables.<Class<? extends Throwable>>toSet(incidentTypes), conditionHandler,
-        incidentHandler, memory);
+    return new ResolveMapStory<T>(this, Iterables.<Class<? extends Throwable>>toSet(incidentTypes),
+        conditionHandler, incidentHandler, memory);
   }
 
   @NotNull
@@ -787,7 +805,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   @NotNull
   public Story<T> watchAll(@Nullable final Observer<? super T> effectObserver,
       @NotNull final Memory memory) {
-    return forAllXform(new WatchAllFunction<T>(effectObserver), memory);
+    return forAllMap(new WatchAllFunction<T>(effectObserver), memory);
   }
 
   @NotNull
@@ -822,12 +840,12 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     Story<R> evolve(T effect) throws Exception;
   }
 
-  public interface StoryTransformer<T, R> {
+  public interface StoryMapper<T, R> {
 
     @Nullable
     Event<? extends Boolean> canContinue() throws Exception;
 
-    R transform(T effect) throws Exception;
+    R map(T effect) throws Exception;
   }
 
   public static class StoryNarrator<T> extends Story<T> implements Narrator<T> {
@@ -1053,6 +1071,37 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
+  static class DefaultStorySpectatorObserver<T> implements StorySpectatorObserver<T> {
+
+    private final SpectatorObserver<Object> effectObserver;
+    private final Observer<Object> endObserver;
+    private final SpectatorObserver<Object> incidentObserver;
+
+    @SuppressWarnings("unchecked")
+    DefaultStorySpectatorObserver(@Nullable final SpectatorObserver<? super T> effectObserver,
+        @Nullable final SpectatorObserver<? super Throwable> incidentObserver,
+        @Nullable final Observer<? super Spectator> endObserver) {
+      this.effectObserver =
+          (SpectatorObserver<Object>) ((effectObserver != null) ? effectObserver : NO_OP_SPECTATOR);
+      this.incidentObserver =
+          (SpectatorObserver<Object>) ((incidentObserver != null) ? incidentObserver : NO_OP_SPECTATOR);
+      this.endObserver = (Observer<Object>) ((endObserver != null) ? endObserver : NO_OP_OBSERVER);
+    }
+
+    public void onEffect(@NotNull final Spectator spectator, final T effect) throws Exception {
+      effectObserver.accept(spectator, effect);
+    }
+
+    public void onEnd(@NotNull final Spectator spectator) throws Exception {
+      endObserver.accept(spectator);
+    }
+
+    public void onIncident(@NotNull final Spectator spectator,
+        @NotNull final Throwable incident) throws Exception {
+      incidentObserver.accept(spectator, incident);
+    }
+  }
+
   static class EventStoryObserver<T> implements StoryObserver<T> {
 
     private final EventObserver<? super T> eventObserver;
@@ -1070,6 +1119,28 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
 
     public void onEnd() {
+    }
+  }
+
+  static class SpectatorStoryObserver<T> implements StorySpectatorObserver<T> {
+
+    private final StoryObserver<? super T> storyObserver;
+
+    SpectatorStoryObserver(@NotNull final StoryObserver<? super T> storyObserver) {
+      this.storyObserver = ConstantConditions.notNull("storyObserver", storyObserver);
+    }
+
+    public void onEffect(@NotNull final Spectator spectator, final T effect) throws Exception {
+      storyObserver.onEffect(effect);
+    }
+
+    public void onEnd(@NotNull final Spectator spectator) throws Exception {
+      storyObserver.onEnd();
+    }
+
+    public void onIncident(@NotNull final Spectator spectator,
+        @NotNull final Throwable incident) throws Exception {
+      storyObserver.onIncident(incident);
     }
   }
 
@@ -1757,6 +1828,271 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
+  private static class AllMapStory<T, R> extends Story<R> {
+
+    private final Actor actor;
+    private final UnaryFunction<? super T, ? extends R> effectHandler;
+    private final HashMap<String, Sender> getSenders = new HashMap<String, Sender>();
+    private final Actor inputActor;
+    private final Headers inputHeaders;
+    private final Memory memory;
+    private final HashMap<String, SenderIterator> nextSenders =
+        new HashMap<String, SenderIterator>();
+    private final SettingInfo settingInfo;
+
+    private Conflict getConflict;
+    private Iterator<?> inputIterator;
+
+    private AllMapStory(@NotNull final Story<? extends T> story,
+        @NotNull final UnaryFunction<? super T, ? extends R> effectHandler,
+        @NotNull final Memory memory) {
+      inputActor = story.getActor();
+      this.effectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
+      this.memory = ConstantConditions.notNull("memory", memory);
+      final SettingInfo settingInfo = (this.settingInfo = SettingInfo.get());
+      final String actorId = (actor = Stage.newActor(new PlotRole(settingInfo) {
+
+        @NotNull
+        @Override
+        public Behavior getBehavior(@NotNull final String id) {
+          return new InitBehavior();
+        }
+      })).getId();
+      inputHeaders = new Headers().withReceiptId(actorId).withThreadId(actorId + ":input");
+    }
+
+    private void conflict(@NotNull final Conflict conflict, @NotNull final Agent agent) {
+      final Actor self = agent.getSelf();
+      memory.put(conflict);
+      for (final SenderIterator sender : nextSenders.values()) {
+        sender.tellNext(self);
+      }
+
+      if (!getSenders.isEmpty()) {
+        getConflict = conflict;
+        for (final Sender sender : getSenders.values()) {
+          sender.getSender().tell(conflict, sender.getHeaders(), self);
+        }
+        getSenders.clear();
+      }
+      agent.setBehavior(new NextBehavior());
+    }
+
+    private void done(@NotNull final Agent agent) {
+      done(memory, getSenders, nextSenders, agent);
+    }
+
+    private void fail(@NotNull final Conflict conflict, @NotNull final Agent agent) {
+      fail(conflict, memory, getSenders, nextSenders, agent);
+    }
+
+    @SuppressWarnings({"unchecked", "LoopConditionNotUpdatedInsideLoop"})
+    private void nextOutput(@NotNull final Behavior behavior, @NotNull final Agent agent) {
+      try {
+        final Iterator<?> inputIterator = this.inputIterator;
+        final boolean hasGetSenders = !getSenders.isEmpty();
+        do {
+          if (inputIterator.hasNext()) {
+            SettingInfo.set(settingInfo);
+            try {
+              final R effect = effectHandler.call((T) inputIterator.next());
+              memory.put(effect);
+              final Actor self = agent.getSelf();
+              for (final SenderIterator sender : nextSenders.values()) {
+                sender.tellNext(self);
+              }
+
+            } finally {
+              SettingInfo.unset();
+            }
+            agent.setBehavior(behavior);
+
+          } else {
+            done(agent);
+            break;
+          }
+
+        } while (hasGetSenders);
+
+      } catch (final Throwable t) {
+        if (t instanceof Error) {
+          fail(new Conflict(t), agent);
+          // rethrow errors
+          throw (Error) t;
+        }
+        conflict(new Conflict(t), agent);
+        if (t instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
+      }
+    }
+
+    private class CancelBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Agent agent) {
+        if (message == EventSignal.GET) {
+          final Conflict conflict = getConflict;
+          final Headers headers = envelop.getHeaders().threadOnly();
+          if (conflict == null) {
+            getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
+
+          } else {
+            envelop.getSender().tell(conflict, headers, agent.getSelf());
+          }
+
+        } else if (message == StorySignal.NEXT) {
+          final Headers headers = envelop.getHeaders();
+          final String threadId = headers.getThreadId();
+          final HashMap<String, SenderIterator> nextSenders = AllMapStory.this.nextSenders;
+          SenderIterator sender = nextSenders.get(threadId);
+          if (sender != null) {
+            sender.waitNext();
+
+          } else {
+            sender = new SenderIterator(envelop.getSender(), headers.threadOnly());
+            sender.setIterator(memory.iterator());
+            nextSenders.put(threadId, sender);
+          }
+          sender.tellNext(agent.getSelf());
+
+        } else if (message == StorySignal.BREAK) {
+          nextSenders.remove(envelop.getHeaders().getThreadId());
+
+        } else if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
+          fail(Conflict.ofCancel(), agent);
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    private class InitBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Agent agent) {
+        if (message == EventSignal.GET) {
+          final Headers headers = envelop.getHeaders().threadOnly();
+          getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
+          inputActor.tell(EventSignal.GET, inputHeaders, agent.getSelf());
+          agent.setBehavior(new InputBehavior());
+
+        } else if (message == StorySignal.NEXT) {
+          final Headers headers = envelop.getHeaders().threadOnly();
+          final SenderIterator sender = new SenderIterator(envelop.getSender(), headers);
+          sender.setIterator(memory.iterator());
+          nextSenders.put(headers.getThreadId(), sender);
+          inputActor.tell(EventSignal.GET, inputHeaders, agent.getSelf());
+          agent.setBehavior(new InputBehavior());
+
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          fail(Conflict.ofCancel(), agent);
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    private class InputBehavior extends AbstractBehavior {
+
+      public void onMessage(Object message, @NotNull final Envelop envelop,
+          @NotNull final Agent agent) {
+        if (message == EventSignal.GET) {
+          final Conflict conflict = getConflict;
+          final Headers headers = envelop.getHeaders().threadOnly();
+          if (conflict == null) {
+            getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
+
+          } else {
+            envelop.getSender().tell(conflict, headers, agent.getSelf());
+          }
+
+        } else if (message == StorySignal.NEXT) {
+          final Headers headers = envelop.getHeaders();
+          final String threadId = headers.getThreadId();
+          final HashMap<String, SenderIterator> nextSenders = AllMapStory.this.nextSenders;
+          SenderIterator sender = nextSenders.get(threadId);
+          if (sender != null) {
+            sender.waitNext();
+
+          } else {
+            sender = new SenderIterator(envelop.getSender(), headers.threadOnly());
+            sender.setIterator(memory.iterator());
+            nextSenders.put(threadId, sender);
+          }
+
+        } else if (message == StorySignal.BREAK) {
+          nextSenders.remove(envelop.getHeaders().getThreadId());
+
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          agent.setBehavior(new CancelBehavior());
+
+        } else if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
+          if (message instanceof Conflict) {
+            fail((Conflict) message, agent);
+
+          } else if (message instanceof Bounce) {
+            fail(Conflict.ofBounce((Bounce) message), agent);
+
+          } else {
+            inputIterator = ((Iterable<?>) message).iterator();
+            nextOutput(new NextBehavior(), agent);
+          }
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    private class NextBehavior extends AbstractBehavior {
+
+      public void onMessage(final Object message, @NotNull final Envelop envelop,
+          @NotNull final Agent agent) {
+        if (message == EventSignal.GET) {
+          final Conflict conflict = getConflict;
+          final Headers headers = envelop.getHeaders().threadOnly();
+          if (conflict == null) {
+            getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
+            nextOutput(this, agent);
+
+          } else {
+            envelop.getSender().tell(conflict, headers, agent.getSelf());
+          }
+
+        } else if (message == StorySignal.NEXT) {
+          final Headers headers = envelop.getHeaders();
+          final String threadId = headers.getThreadId();
+          final HashMap<String, SenderIterator> nextSenders = AllMapStory.this.nextSenders;
+          SenderIterator sender = nextSenders.get(threadId);
+          if (sender != null) {
+            sender.waitNext();
+
+          } else {
+            sender = new SenderIterator(envelop.getSender(), headers.threadOnly());
+            sender.setIterator(memory.iterator());
+            nextSenders.put(threadId, sender);
+          }
+          final Actor self = agent.getSelf();
+          if (!sender.tellNext(self)) {
+            nextOutput(this, agent);
+          }
+
+        } else if (message == StorySignal.BREAK) {
+          nextSenders.remove(envelop.getHeaders().getThreadId());
+
+        } else if (message == EventSignal.CANCEL) {
+          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          fail(Conflict.ofCancel(), agent);
+        }
+        envelop.preventReceipt();
+      }
+    }
+
+    @NotNull
+    Actor getActor() {
+      return actor;
+    }
+  }
+
   private static class AllStory<T, R> extends Story<R> {
 
     private final Actor actor;
@@ -2166,271 +2502,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               }
             }
           }
-        }
-        envelop.preventReceipt();
-      }
-    }
-
-    @NotNull
-    Actor getActor() {
-      return actor;
-    }
-  }
-
-  private static class AllTransformStory<T, R> extends Story<R> {
-
-    private final Actor actor;
-    private final UnaryFunction<? super T, ? extends R> effectHandler;
-    private final HashMap<String, Sender> getSenders = new HashMap<String, Sender>();
-    private final Actor inputActor;
-    private final Headers inputHeaders;
-    private final Memory memory;
-    private final HashMap<String, SenderIterator> nextSenders =
-        new HashMap<String, SenderIterator>();
-    private final SettingInfo settingInfo;
-
-    private Conflict getConflict;
-    private Iterator<?> inputIterator;
-
-    private AllTransformStory(@NotNull final Story<? extends T> story,
-        @NotNull final UnaryFunction<? super T, ? extends R> effectHandler,
-        @NotNull final Memory memory) {
-      inputActor = story.getActor();
-      this.effectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
-      this.memory = ConstantConditions.notNull("memory", memory);
-      final SettingInfo settingInfo = (this.settingInfo = SettingInfo.get());
-      final String actorId = (actor = Stage.newActor(new PlotRole(settingInfo) {
-
-        @NotNull
-        @Override
-        public Behavior getBehavior(@NotNull final String id) {
-          return new InitBehavior();
-        }
-      })).getId();
-      inputHeaders = new Headers().withReceiptId(actorId).withThreadId(actorId + ":input");
-    }
-
-    private void conflict(@NotNull final Conflict conflict, @NotNull final Agent agent) {
-      final Actor self = agent.getSelf();
-      memory.put(conflict);
-      for (final SenderIterator sender : nextSenders.values()) {
-        sender.tellNext(self);
-      }
-
-      if (!getSenders.isEmpty()) {
-        getConflict = conflict;
-        for (final Sender sender : getSenders.values()) {
-          sender.getSender().tell(conflict, sender.getHeaders(), self);
-        }
-        getSenders.clear();
-      }
-      agent.setBehavior(new NextBehavior());
-    }
-
-    private void done(@NotNull final Agent agent) {
-      done(memory, getSenders, nextSenders, agent);
-    }
-
-    private void fail(@NotNull final Conflict conflict, @NotNull final Agent agent) {
-      fail(conflict, memory, getSenders, nextSenders, agent);
-    }
-
-    @SuppressWarnings({"unchecked", "LoopConditionNotUpdatedInsideLoop"})
-    private void nextOutput(@NotNull final Behavior behavior, @NotNull final Agent agent) {
-      try {
-        final Iterator<?> inputIterator = this.inputIterator;
-        final boolean hasGetSenders = !getSenders.isEmpty();
-        do {
-          if (inputIterator.hasNext()) {
-            SettingInfo.set(settingInfo);
-            try {
-              final R effect = effectHandler.call((T) inputIterator.next());
-              memory.put(effect);
-              final Actor self = agent.getSelf();
-              for (final SenderIterator sender : nextSenders.values()) {
-                sender.tellNext(self);
-              }
-
-            } finally {
-              SettingInfo.unset();
-            }
-            agent.setBehavior(behavior);
-
-          } else {
-            done(agent);
-            break;
-          }
-
-        } while (hasGetSenders);
-
-      } catch (final Throwable t) {
-        if (t instanceof Error) {
-          fail(new Conflict(t), agent);
-          // rethrow errors
-          throw (Error) t;
-        }
-        conflict(new Conflict(t), agent);
-        if (t instanceof InterruptedException) {
-          Thread.currentThread().interrupt();
-        }
-      }
-    }
-
-    private class CancelBehavior extends AbstractBehavior {
-
-      public void onMessage(final Object message, @NotNull final Envelop envelop,
-          @NotNull final Agent agent) {
-        if (message == EventSignal.GET) {
-          final Conflict conflict = getConflict;
-          final Headers headers = envelop.getHeaders().threadOnly();
-          if (conflict == null) {
-            getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
-
-          } else {
-            envelop.getSender().tell(conflict, headers, agent.getSelf());
-          }
-
-        } else if (message == StorySignal.NEXT) {
-          final Headers headers = envelop.getHeaders();
-          final String threadId = headers.getThreadId();
-          final HashMap<String, SenderIterator> nextSenders = AllTransformStory.this.nextSenders;
-          SenderIterator sender = nextSenders.get(threadId);
-          if (sender != null) {
-            sender.waitNext();
-
-          } else {
-            sender = new SenderIterator(envelop.getSender(), headers.threadOnly());
-            sender.setIterator(memory.iterator());
-            nextSenders.put(threadId, sender);
-          }
-          sender.tellNext(agent.getSelf());
-
-        } else if (message == StorySignal.BREAK) {
-          nextSenders.remove(envelop.getHeaders().getThreadId());
-
-        } else if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
-          fail(Conflict.ofCancel(), agent);
-        }
-        envelop.preventReceipt();
-      }
-    }
-
-    private class InitBehavior extends AbstractBehavior {
-
-      public void onMessage(final Object message, @NotNull final Envelop envelop,
-          @NotNull final Agent agent) {
-        if (message == EventSignal.GET) {
-          final Headers headers = envelop.getHeaders().threadOnly();
-          getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
-          inputActor.tell(EventSignal.GET, inputHeaders, agent.getSelf());
-          agent.setBehavior(new InputBehavior());
-
-        } else if (message == StorySignal.NEXT) {
-          final Headers headers = envelop.getHeaders().threadOnly();
-          final SenderIterator sender = new SenderIterator(envelop.getSender(), headers);
-          sender.setIterator(memory.iterator());
-          nextSenders.put(headers.getThreadId(), sender);
-          inputActor.tell(EventSignal.GET, inputHeaders, agent.getSelf());
-          agent.setBehavior(new InputBehavior());
-
-        } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
-          fail(Conflict.ofCancel(), agent);
-        }
-        envelop.preventReceipt();
-      }
-    }
-
-    private class InputBehavior extends AbstractBehavior {
-
-      public void onMessage(Object message, @NotNull final Envelop envelop,
-          @NotNull final Agent agent) {
-        if (message == EventSignal.GET) {
-          final Conflict conflict = getConflict;
-          final Headers headers = envelop.getHeaders().threadOnly();
-          if (conflict == null) {
-            getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
-
-          } else {
-            envelop.getSender().tell(conflict, headers, agent.getSelf());
-          }
-
-        } else if (message == StorySignal.NEXT) {
-          final Headers headers = envelop.getHeaders();
-          final String threadId = headers.getThreadId();
-          final HashMap<String, SenderIterator> nextSenders = AllTransformStory.this.nextSenders;
-          SenderIterator sender = nextSenders.get(threadId);
-          if (sender != null) {
-            sender.waitNext();
-
-          } else {
-            sender = new SenderIterator(envelop.getSender(), headers.threadOnly());
-            sender.setIterator(memory.iterator());
-            nextSenders.put(threadId, sender);
-          }
-
-        } else if (message == StorySignal.BREAK) {
-          nextSenders.remove(envelop.getHeaders().getThreadId());
-
-        } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
-          agent.setBehavior(new CancelBehavior());
-
-        } else if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
-          if (message instanceof Conflict) {
-            fail((Conflict) message, agent);
-
-          } else if (message instanceof Bounce) {
-            fail(Conflict.ofBounce((Bounce) message), agent);
-
-          } else {
-            inputIterator = ((Iterable<?>) message).iterator();
-            nextOutput(new NextBehavior(), agent);
-          }
-        }
-        envelop.preventReceipt();
-      }
-    }
-
-    private class NextBehavior extends AbstractBehavior {
-
-      public void onMessage(final Object message, @NotNull final Envelop envelop,
-          @NotNull final Agent agent) {
-        if (message == EventSignal.GET) {
-          final Conflict conflict = getConflict;
-          final Headers headers = envelop.getHeaders().threadOnly();
-          if (conflict == null) {
-            getSenders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
-            nextOutput(this, agent);
-
-          } else {
-            envelop.getSender().tell(conflict, headers, agent.getSelf());
-          }
-
-        } else if (message == StorySignal.NEXT) {
-          final Headers headers = envelop.getHeaders();
-          final String threadId = headers.getThreadId();
-          final HashMap<String, SenderIterator> nextSenders = AllTransformStory.this.nextSenders;
-          SenderIterator sender = nextSenders.get(threadId);
-          if (sender != null) {
-            sender.waitNext();
-
-          } else {
-            sender = new SenderIterator(envelop.getSender(), headers.threadOnly());
-            sender.setIterator(memory.iterator());
-            nextSenders.put(threadId, sender);
-          }
-          final Actor self = agent.getSelf();
-          if (!sender.tellNext(self)) {
-            nextOutput(this, agent);
-          }
-
-        } else if (message == StorySignal.BREAK) {
-          nextSenders.remove(envelop.getHeaders().getThreadId());
-
-        } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
-          fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
       }
@@ -3244,6 +3315,52 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
+  private static class GenericMapStory<T, R> extends AbstractStory<R> {
+
+    private final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler;
+    private final List<Actor> inputActors;
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    private GenericMapStory(@NotNull final Iterable<? extends Story<? extends T>> stories,
+        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
+        @NotNull final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler,
+        @NotNull final Memory memory) {
+      super(conditionHandler, Iterables.size(stories), memory);
+      final ArrayList<Actor> inputActors = new ArrayList<Actor>();
+      for (final Story<? extends T> story : stories) {
+        inputActors.add(story.getActor());
+      }
+      ConstantConditions.positive("stories size", inputActors.size());
+      this.inputActors = inputActors;
+      this.effectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
+    }
+
+    @Nullable
+    @Override
+    @SuppressWarnings("unchecked")
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
+        Exception {
+      SettingInfo.set(getSettingInfo());
+      try {
+        final ArrayList<T> inputList = new ArrayList<T>();
+        for (final Object input : inputs) {
+          inputList.add((T) input);
+        }
+        final R effect = effectHandler.call(inputList);
+        putEffect(effect, agent);
+        return null;
+
+      } finally {
+        SettingInfo.unset();
+      }
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return inputActors;
+    }
+  }
+
   private static class GenericStory<T, R> extends AbstractStory<R> {
 
     private final UnaryFunction<? super List<? extends T>, ? extends Story<? extends R>> effectHandler;
@@ -3280,52 +3397,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           return null;
         }
         return story.getActor();
-
-      } finally {
-        SettingInfo.unset();
-      }
-    }
-
-    @NotNull
-    List<Actor> getInputActors() {
-      return inputActors;
-    }
-  }
-
-  private static class GenericTransformStory<T, R> extends AbstractStory<R> {
-
-    private final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler;
-    private final List<Actor> inputActors;
-
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    private GenericTransformStory(@NotNull final Iterable<? extends Story<? extends T>> stories,
-        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-        @NotNull final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler,
-        @NotNull final Memory memory) {
-      super(conditionHandler, Iterables.size(stories), memory);
-      final ArrayList<Actor> inputActors = new ArrayList<Actor>();
-      for (final Story<? extends T> story : stories) {
-        inputActors.add(story.getActor());
-      }
-      ConstantConditions.positive("stories size", inputActors.size());
-      this.inputActors = inputActors;
-      this.effectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
-    }
-
-    @Nullable
-    @Override
-    @SuppressWarnings("unchecked")
-    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
-        Exception {
-      SettingInfo.set(getSettingInfo());
-      try {
-        final ArrayList<T> inputList = new ArrayList<T>();
-        for (final Object input : inputs) {
-          inputList.add((T) input);
-        }
-        final R effect = effectHandler.call(inputList);
-        putEffect(effect, agent);
-        return null;
 
       } finally {
         SettingInfo.unset();
@@ -3817,6 +3888,33 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
+  private static class MapperConditionHandler implements NullaryFunction<Event<? extends Boolean>> {
+
+    private final StoryMapper<?, ?> storyMapper;
+
+    MapperConditionHandler(@NotNull final StoryMapper<?, ?> storyMapper) {
+      this.storyMapper = ConstantConditions.notNull("storyMapper", storyMapper);
+    }
+
+    public Event<? extends Boolean> call() throws Exception {
+      return storyMapper.canContinue();
+    }
+  }
+
+  private static class MapperEffectHandler<T, R> implements UnaryFunction<T, R> {
+
+    private final StoryMapper<? super T, ? extends R> storyMapper;
+
+    MapperEffectHandler(
+        @NotNull final StoryMapper<? super T, ? extends R> storyMapper) {
+      this.storyMapper = ConstantConditions.notNull("storyMapper", storyMapper);
+    }
+
+    public R call(final T effect) throws Exception {
+      return storyMapper.map(effect);
+    }
+  }
+
   private static class NullaryStory<T> extends AbstractStory<T> {
 
     private final List<Actor> inputActors;
@@ -3864,6 +3962,52 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 
+  private static class ResolveMapStory<T> extends AbstractStory<T> {
+
+    private final UnaryFunction<? super Throwable, ? extends T> incidentHandler;
+    private final Set<Class<? extends Throwable>> incidentTypes;
+    private final List<Actor> inputActors;
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    private ResolveMapStory(@NotNull final Story<? extends T> story,
+        @NotNull final Set<Class<? extends Throwable>> incidentTypes,
+        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
+        @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler,
+        @NotNull final Memory memory) {
+      super(conditionHandler, 1, memory);
+      inputActors = Collections.singletonList(story.getActor());
+      ConstantConditions.positive("incidentTypes size", incidentTypes.size());
+      this.incidentTypes = ConstantConditions.notNullElements("incidentTypes", incidentTypes);
+      this.incidentHandler = ConstantConditions.notNull("incidentHandler", incidentHandler);
+    }
+
+    @Nullable
+    @Override
+    Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Agent agent) throws
+        Exception {
+      final Throwable incident = conflict.getCause();
+      for (final Class<? extends Throwable> incidentType : incidentTypes) {
+        if (incidentType.isInstance(incident)) {
+          SettingInfo.set(getSettingInfo());
+          try {
+            final T effect = incidentHandler.call(incident);
+            putEffect(effect, agent);
+            return null;
+
+          } finally {
+            SettingInfo.unset();
+          }
+        }
+      }
+      return super.getConflictActor(conflict, agent);
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return inputActors;
+    }
+  }
+
   private static class ResolveStory<T> extends AbstractStory<T> {
 
     private final UnaryFunction<? super Throwable, ? extends Story<T>> incidentHandler;
@@ -3894,52 +4038,6 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           try {
             final Story<T> story = incidentHandler.call(incident);
             return ((story != null) ? story : ofEmpty()).getActor();
-
-          } finally {
-            SettingInfo.unset();
-          }
-        }
-      }
-      return super.getConflictActor(conflict, agent);
-    }
-
-    @NotNull
-    List<Actor> getInputActors() {
-      return inputActors;
-    }
-  }
-
-  private static class ResolveTransformStory<T> extends AbstractStory<T> {
-
-    private final UnaryFunction<? super Throwable, ? extends T> incidentHandler;
-    private final Set<Class<? extends Throwable>> incidentTypes;
-    private final List<Actor> inputActors;
-
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    private ResolveTransformStory(@NotNull final Story<? extends T> story,
-        @NotNull final Set<Class<? extends Throwable>> incidentTypes,
-        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-        @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler,
-        @NotNull final Memory memory) {
-      super(conditionHandler, 1, memory);
-      inputActors = Collections.singletonList(story.getActor());
-      ConstantConditions.positive("incidentTypes size", incidentTypes.size());
-      this.incidentTypes = ConstantConditions.notNullElements("incidentTypes", incidentTypes);
-      this.incidentHandler = ConstantConditions.notNull("incidentHandler", incidentHandler);
-    }
-
-    @Nullable
-    @Override
-    Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Agent agent) throws
-        Exception {
-      final Throwable incident = conflict.getCause();
-      for (final Class<? extends Throwable> incidentType : incidentTypes) {
-        if (incidentType.isInstance(incident)) {
-          SettingInfo.set(getSettingInfo());
-          try {
-            final T effect = incidentHandler.call(incident);
-            putEffect(effect, agent);
-            return null;
 
           } finally {
             SettingInfo.unset();
@@ -4395,10 +4493,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
   private static class StoryObserverRole<T> extends Role {
 
     private final Actor storyActor;
-    private final StoryObserver<? super T> storyObserver;
+    private final StorySpectatorObserver<? super T> storyObserver;
 
     private StoryObserverRole(@NotNull final Actor storyActor,
-        @NotNull final StoryObserver<? super T> storyObserver) {
+        @NotNull final StorySpectatorObserver<? super T> storyObserver) {
       this.storyActor = ConstantConditions.notNull("storyActor", storyActor);
       this.storyObserver = ConstantConditions.notNull("storyObserver", storyObserver);
     }
@@ -4406,10 +4504,11 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @NotNull
     public Behavior getBehavior(@NotNull final String id) {
       final Headers headers = new Headers().withReceiptId(id).withThreadId(id);
-      return new AbstractBehavior() {
+      return new Behavior() {
 
         private final ArrayList<Object> effects = new ArrayList<Object>();
 
+        private Spectator spectator;
         private boolean isPaused;
 
         @SuppressWarnings("unchecked")
@@ -4421,7 +4520,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               effects.add(message);
 
             } else {
-              storyObserver.onIncident(((Conflict) message).getCause());
+              storyObserver.onIncident(spectator, ((Conflict) message).getCause());
               envelop.getSender().tell(StorySignal.NEXT, headers, self);
             }
 
@@ -4432,7 +4531,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               effects.add(StorySignal.END);
 
             } else {
-              storyObserver.onIncident(PlotFailureException.getOrNew((Bounce) message));
+              storyObserver.onIncident(spectator, PlotFailureException.getOrNew((Bounce) message));
               self.dismiss();
             }
 
@@ -4441,7 +4540,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               effects.add(StorySignal.END);
 
             } else {
-              storyObserver.onEnd();
+              storyObserver.onEnd(spectator);
               self.dismiss();
             }
 
@@ -4449,19 +4548,20 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             isPaused = true;
 
           } else if ((message == SpectatorSignal.RESUME) && isPaused) {
-            final StoryObserver<? super T> storyObserver = StoryObserverRole.this.storyObserver;
+            final StorySpectatorObserver<? super T> storyObserver =
+                StoryObserverRole.this.storyObserver;
             final ArrayList<Object> effects = this.effects;
             boolean isEnded = false;
             for (final Object effect : effects) {
               if (effect instanceof Conflict) {
-                storyObserver.onIncident(((Conflict) effect).getCause());
+                storyObserver.onIncident(spectator, ((Conflict) effect).getCause());
 
               } else if (effect == StorySignal.END) {
-                storyObserver.onEnd();
+                storyObserver.onEnd(spectator);
                 isEnded = true;
 
               } else {
-                storyObserver.onEffect((T) message);
+                storyObserver.onEffect(spectator, (T) message);
               }
             }
 
@@ -4486,13 +4586,16 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               effects.add(message);
 
             } else {
-              storyObserver.onEffect((T) message);
+              storyObserver.onEffect(spectator, (T) message);
               envelop.getSender().tell(StorySignal.NEXT, headers, self);
             }
           }
         }
 
-        @Override
+        public void onStart(@NotNull final Agent agent) {
+          spectator = new Spectator(agent.getSelf());
+        }
+
         public void onStop(@NotNull final Agent agent) {
           storyActor.tell(StorySignal.BREAK, headers, agent.getSelf());
         }
@@ -4506,6 +4609,43 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     }
   }
 {{#arities}}
+
+  private static class {{classPrefix}}MapStory<{{#paramTypes}}{{type}}, {{/paramTypes}}R> extends AbstractStory<R> {
+
+    private final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends R> effectHandler;
+    private final List<Actor> inputActors;
+
+    @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
+    private {{classPrefix}}MapStory({{#paramTypes}}@NotNull final Story<? extends {{type}}> {{prefix}}Story, {{/paramTypes}}
+        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
+        @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends R> effectHandler,
+        @NotNull final Memory memory) {
+      super(conditionHandler, {{paramNum}}, memory);
+      inputActors = Arrays.asList({{#paramTypes}}{{prefix}}Story.getActor(){{#hasNext}}, {{/hasNext}}{{/paramTypes}});
+      this.effectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
+    }
+
+    @Nullable
+    @Override
+    @SuppressWarnings("unchecked")
+    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
+        Exception {
+      SettingInfo.set(getSettingInfo());
+      try {
+        final R effect = effectHandler.call({{#paramTypes}}({{type}}) inputs[{{index}}]{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
+        putEffect(effect, agent);
+        return null;
+
+      } finally {
+        SettingInfo.unset();
+      }
+    }
+
+    @NotNull
+    List<Actor> getInputActors() {
+      return inputActors;
+    }
+  }
 
   private static class {{classPrefix}}Story<{{#paramTypes}}{{type}}, {{/paramTypes}}R> extends AbstractStory<R> {
 
@@ -4545,72 +4685,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       return inputActors;
     }
   }
-
-  private static class {{classPrefix}}TransformStory<{{#paramTypes}}{{type}}, {{/paramTypes}}R> extends AbstractStory<R> {
-
-    private final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends R> effectHandler;
-    private final List<Actor> inputActors;
-
-    @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
-    private {{classPrefix}}TransformStory({{#paramTypes}}@NotNull final Story<? extends {{type}}> {{prefix}}Story, {{/paramTypes}}
-        @NotNull final NullaryFunction<? extends Event<? extends Boolean>> conditionHandler,
-        @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends R> effectHandler,
-        @NotNull final Memory memory) {
-      super(conditionHandler, {{paramNum}}, memory);
-      inputActors = Arrays.asList({{#paramTypes}}{{prefix}}Story.getActor(){{#hasNext}}, {{/hasNext}}{{/paramTypes}});
-      this.effectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
-    }
-
-    @Nullable
-    @Override
-    @SuppressWarnings("unchecked")
-    Actor getOutputActor(@NotNull final Object[] inputs, @NotNull final Agent agent) throws
-        Exception {
-      SettingInfo.set(getSettingInfo());
-      try {
-        final R effect = effectHandler.call({{#paramTypes}}({{type}}) inputs[{{index}}]{{#hasNext}}, {{/hasNext}}{{/paramTypes}});
-        putEffect(effect, agent);
-        return null;
-
-      } finally {
-        SettingInfo.unset();
-      }
-    }
-
-    @NotNull
-    List<Actor> getInputActors() {
-      return inputActors;
-    }
-  }
 {{/arities}}
-
-  private static class TransformerConditionHandler
-      implements NullaryFunction<Event<? extends Boolean>> {
-
-    private final StoryTransformer<?, ?> storyTransformer;
-
-    TransformerConditionHandler(@NotNull final StoryTransformer<?, ?> storyTransformer) {
-      this.storyTransformer = ConstantConditions.notNull("storyTransformer", storyTransformer);
-    }
-
-    public Event<? extends Boolean> call() throws Exception {
-      return storyTransformer.canContinue();
-    }
-  }
-
-  private static class TransformerEffectHandler<T, R> implements UnaryFunction<T, R> {
-
-    private final StoryTransformer<? super T, ? extends R> storyTransformer;
-
-    TransformerEffectHandler(
-        @NotNull final StoryTransformer<? super T, ? extends R> storyTransformer) {
-      this.storyTransformer = ConstantConditions.notNull("storyTransformer", storyTransformer);
-    }
-
-    public R call(final T effect) throws Exception {
-      return storyTransformer.transform(effect);
-    }
-  }
 
   private static class UnfoldStory<T> extends Story<T> {
 

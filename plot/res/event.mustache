@@ -121,17 +121,17 @@ public abstract class Event<T> {
 {{#arities}}
 
   @NotNull
-  public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Event<R> whenXform({{#paramTypes}}@NotNull final Event<? extends {{type}}> {{prefix}}Event, {{/paramTypes}}
+  public static <{{#paramTypes}}{{type}}, {{/paramTypes}}R> Event<R> whenMap({{#paramTypes}}@NotNull final Event<? extends {{type}}> {{prefix}}Event, {{/paramTypes}}
       @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends R> effectHandler) {
-    return new {{classPrefix}}TransformEvent<{{#paramTypes}}{{type}}, {{/paramTypes}}R>({{#paramTypes}}{{prefix}}Event, {{/paramTypes}}effectHandler);
+    return new {{classPrefix}}MapEvent<{{#paramTypes}}{{type}}, {{/paramTypes}}R>({{#paramTypes}}{{prefix}}Event, {{/paramTypes}}effectHandler);
   }
 {{/arities}}
 
   @NotNull
-  public static <T, R> Event<R> whenXform(
+  public static <T, R> Event<R> whenMap(
       @NotNull final Iterable<? extends Event<? extends T>> events,
       @NotNull final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler) {
-    return new GenericTransformEvent<T, R>(events, effectHandler);
+    return new GenericMapEvent<T, R>(events, effectHandler);
   }
 
   static void done(final Object message, @NotNull final Map<String, Sender> senders,
@@ -233,7 +233,7 @@ public abstract class Event<T> {
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Event<T> resolveXform(
+  public <E1 extends Throwable, E2 extends Throwable, E3 extends Throwable> Event<T> resolveMap(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final Class<? extends E3> thirdType,
       @NotNull final UnaryFunction<? super E1, ? extends T> incidentObserver) {
@@ -241,39 +241,39 @@ public abstract class Event<T> {
     types.add(firstType);
     types.add(secondType);
     types.add(thirdType);
-    return new ResolveTransformEvent<T>(this, types,
+    return new ResolveMapEvent<T>(this, types,
         (UnaryFunction<? super Throwable, ? extends T>) incidentObserver);
   }
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E1 extends Throwable, E2 extends Throwable> Event<T> resolveXform(
+  public <E1 extends Throwable, E2 extends Throwable> Event<T> resolveMap(
       @NotNull final Class<? extends E1> firstType, @NotNull final Class<? extends E2> secondType,
       @NotNull final UnaryFunction<? super E1, ? extends T> incidentObserver) {
     final HashSet<Class<? extends Throwable>> types = new HashSet<Class<? extends Throwable>>();
     types.add(firstType);
     types.add(secondType);
-    return new ResolveTransformEvent<T>(this, types,
+    return new ResolveMapEvent<T>(this, types,
         (UnaryFunction<? super Throwable, ? extends T>) incidentObserver);
   }
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E1 extends Throwable> Event<T> resolveXform(
+  public <E1 extends Throwable> Event<T> resolveMap(
       @NotNull final Class<? extends E1> firstType,
       @NotNull final UnaryFunction<? super E1, ? extends T> incidentObserver) {
     final Set<Class<? extends Throwable>> types =
         Collections.<Class<? extends Throwable>>singleton(firstType);
-    return new ResolveTransformEvent<T>(this, types,
+    return new ResolveMapEvent<T>(this, types,
         (UnaryFunction<? super Throwable, ? extends T>) incidentObserver);
   }
 
   @NotNull
   @SuppressWarnings("unchecked")
-  public <E extends Throwable> Event<T> resolveXform(
+  public <E extends Throwable> Event<T> resolveMap(
       @NotNull final Iterable<? extends Class<? extends E>> incidentTypes,
       @NotNull final UnaryFunction<? super E, ? extends T> incidentObserver) {
-    return new ResolveTransformEvent<T>(this, Iterables.<Class<? extends Throwable>>toSet(incidentTypes),
+    return new ResolveMapEvent<T>(this, Iterables.<Class<? extends Throwable>>toSet(incidentTypes),
         (UnaryFunction<? super Throwable, ? extends T>) incidentObserver);
   }
 
@@ -289,9 +289,9 @@ public abstract class Event<T> {
   }
 
   @NotNull
-  public <R> Event<R> thenXform(
+  public <R> Event<R> thenMap(
       @NotNull final UnaryFunction<? super T, ? extends R> effectHandler) {
-    return whenXform(this, effectHandler);
+    return whenMap(this, effectHandler);
   }
 
   @NotNull
@@ -1044,12 +1044,12 @@ public abstract class Event<T> {
     }
   }
 
-  private static class GenericTransformEvent<T, R> extends AbstractEvent<R> {
+  private static class GenericMapEvent<T, R> extends AbstractEvent<R> {
 
     private final List<Actor> actors;
     private final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler;
 
-    private GenericTransformEvent(@NotNull final Iterable<? extends Event<? extends T>> events,
+    private GenericMapEvent(@NotNull final Iterable<? extends Event<? extends T>> events,
         @NotNull final UnaryFunction<? super List<? extends T>, ? extends R> effectHandler) {
       super(Iterables.size(events));
       final ArrayList<Actor> actors = new ArrayList<Actor>();
@@ -1149,13 +1149,13 @@ public abstract class Event<T> {
     }
   }
 
-  private static class ResolveTransformEvent<T> extends AbstractEvent<T> {
+  private static class ResolveMapEvent<T> extends AbstractEvent<T> {
 
     private final List<Actor> actors;
     private final UnaryFunction<? super Throwable, ? extends T> incidentHandler;
     private final Set<Class<? extends Throwable>> incidentTypes;
 
-    private ResolveTransformEvent(@NotNull final Event<? extends T> event,
+    private ResolveMapEvent(@NotNull final Event<? extends T> event,
         @NotNull final Set<Class<? extends Throwable>> incidentTypes,
         @NotNull final UnaryFunction<? super Throwable, ? extends T> incidentHandler) {
       super(1);
@@ -1367,13 +1367,13 @@ public abstract class Event<T> {
     }
   }
 
-  private static class {{classPrefix}}TransformEvent<{{#paramTypes}}{{type}}, {{/paramTypes}}R> extends AbstractEvent<R> {
+  private static class {{classPrefix}}MapEvent<{{#paramTypes}}{{type}}, {{/paramTypes}}R> extends AbstractEvent<R> {
 
     private final List<Actor> actors;
     private final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends R> effectHandler;
 
     @SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
-    private {{classPrefix}}TransformEvent({{#paramTypes}}@NotNull final Event<? extends {{type}}> {{prefix}}Event, {{/paramTypes}}
+    private {{classPrefix}}MapEvent({{#paramTypes}}@NotNull final Event<? extends {{type}}> {{prefix}}Event, {{/paramTypes}}
         @NotNull final {{classPrefix}}Function<{{#paramTypes}}? super {{type}}, {{/paramTypes}}? extends R> effectHandler) {
       super({{paramNum}});
       actors = Arrays.asList({{#paramTypes}}{{prefix}}Event.getActor(){{#hasNext}}, {{/hasNext}}{{/paramTypes}});
