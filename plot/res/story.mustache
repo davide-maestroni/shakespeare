@@ -1674,8 +1674,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else if (message == EventSignal.CANCEL) {
           final Actor self = agent.getSelf();
-          outputActor.tell(StorySignal.BREAK, outputHeaders, self)
-              .tell(EventSignal.CANCEL, null, self);
+          outputActor.tell(StorySignal.BREAK, outputHeaders, self);
+          outputActor.tell(EventSignal.CANCEL, null, self);
           cancelInputActors(agent);
           fail(Conflict.ofCancel(), agent);
         }
@@ -2087,8 +2087,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else if (message == EventSignal.CANCEL) {
           final Actor self = agent.getSelf();
-          outputActor.tell(StorySignal.BREAK, outputHeaders, self)
-              .tell(EventSignal.CANCEL, null, self);
+          outputActor.tell(StorySignal.BREAK, outputHeaders, self);
+          outputActor.tell(EventSignal.CANCEL, null, self);
           inputActor.tell(EventSignal.CANCEL, null, self);
           fail(Conflict.ofCancel(), agent);
         }
@@ -4422,23 +4422,23 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
             } else {
               storyObserver.onIncident(((Conflict) message).getCause());
-              envelop.getSender().tell(Story.StorySignal.NEXT, headers, self);
+              envelop.getSender().tell(StorySignal.NEXT, headers, self);
             }
 
           } else if (message instanceof Bounce) {
             if (isPaused) {
               final ArrayList<Object> effects = this.effects;
               effects.add(new Conflict(PlotFailureException.getOrNew((Bounce) message)));
-              effects.add(Story.StorySignal.END);
+              effects.add(StorySignal.END);
 
             } else {
               storyObserver.onIncident(PlotFailureException.getOrNew((Bounce) message));
               self.dismiss();
             }
 
-          } else if (message == Story.StorySignal.END) {
+          } else if (message == StorySignal.END) {
             if (isPaused) {
-              effects.add(Story.StorySignal.END);
+              effects.add(StorySignal.END);
 
             } else {
               storyObserver.onEnd();
@@ -4456,7 +4456,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               if (effect instanceof Conflict) {
                 storyObserver.onIncident(((Conflict) effect).getCause());
 
-              } else if (effect == Story.StorySignal.END) {
+              } else if (effect == StorySignal.END) {
                 storyObserver.onEnd();
                 isEnded = true;
 
@@ -4471,7 +4471,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             } else {
               isPaused = false;
               effects.clear();
-              envelop.getSender().tell(Story.StorySignal.NEXT, headers, self);
+              envelop.getSender().tell(StorySignal.NEXT, headers, self);
             }
 
           } else if (message == SpectatorSignal.CANCEL) {
@@ -4487,14 +4487,14 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
             } else {
               storyObserver.onEffect((T) message);
-              envelop.getSender().tell(Story.StorySignal.NEXT, headers, self);
+              envelop.getSender().tell(StorySignal.NEXT, headers, self);
             }
           }
         }
 
         @Override
         public void onStop(@NotNull final Agent agent) {
-          storyActor.tell(Story.StorySignal.BREAK, headers, agent.getSelf());
+          storyActor.tell(StorySignal.BREAK, headers, agent.getSelf());
         }
       };
     }

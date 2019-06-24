@@ -28,18 +28,20 @@ import dm.shakespeare.message.Delivery;
  */
 class StandInActor implements Actor {
 
-  @NotNull
-  public Actor addObserver(@NotNull final Actor observer) {
-    return this;
+  public boolean addObserver(@NotNull final Actor observer) {
+    return true;
   }
 
-  public void dismiss() {
+  public boolean dismiss() {
+    return true;
   }
 
-  public void dismissLazy() {
+  public boolean dismissLazy() {
+    return true;
   }
 
-  public void dismissNow() {
+  public boolean dismissNow() {
+    return true;
   }
 
   @NotNull
@@ -47,26 +49,21 @@ class StandInActor implements Actor {
     return getClass().getName();
   }
 
-  @NotNull
-  public Actor removeObserver(@NotNull final Actor observer) {
-    return this;
+  public boolean removeObserver(@NotNull final Actor observer) {
+    return true;
   }
 
-  @NotNull
-  public Actor tell(final Object message, @Nullable final Headers headers,
+  public void tell(final Object message, @Nullable final Headers headers,
       @NotNull final Actor sender) {
     if ((headers != null) && (headers.getReceiptId() != null)) {
       sender.tell(new Delivery(message, headers), headers.threadOnly(), this);
     }
-    return this;
   }
 
-  @NotNull
-  public Actor tellAll(@NotNull final Iterable<?> messages, @Nullable final Headers headers,
+  public void tellAll(@NotNull final Iterable<?> messages, @Nullable final Headers headers,
       @NotNull final Actor sender) {
     for (final Object message : messages) {
       tell(message, headers, sender);
     }
-    return this;
   }
 }

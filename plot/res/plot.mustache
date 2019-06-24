@@ -155,8 +155,9 @@ public class Plot {
     try {
       final ActorEvent<R> event = new ActorEvent<R>(actor);
       final Headers headers = new Headers().withThreadId(event.getActor().getId());
-      actor{{#paramTypes}}.tell(PlotSignal.CREATE_PARAM, headers, {{prefix}}Event.getActor()){{/paramTypes}}
-          .tell(new Create{{classPrefix}}Event<{{#paramTypes}}{{type}}{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>(eventCreator), headers, event.getActor());
+{{#paramTypes}}      actor.tell(PlotSignal.CREATE_PARAM, headers, {{prefix}}Event.getActor());
+{{/paramTypes}}
+      actor.tell(new Create{{classPrefix}}Event<{{#paramTypes}}{{type}}{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>(eventCreator), headers, event.getActor());
       return event;
 
     } finally {
@@ -256,8 +257,9 @@ public class Plot {
     try {
       final ActorStory<R> story = new ActorStory<R>(actor, memory);
       final Headers headers = new Headers().withThreadId(story.getActor().getId());
-      actor{{#paramTypes}}.tell(PlotSignal.CREATE_PARAM, headers, {{prefix}}Story.getActor()){{/paramTypes}}
-          .tell(new Create{{classPrefix}}Story<{{#paramTypes}}{{type}}{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>(storyCreator), headers, story.getActor());
+{{#paramTypes}}      actor.tell(PlotSignal.CREATE_PARAM, headers, {{prefix}}Story.getActor());
+{{/paramTypes}}
+      actor.tell(new Create{{classPrefix}}Story<{{#paramTypes}}{{type}}{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>(storyCreator), headers, story.getActor());
       return story;
 
     } finally {

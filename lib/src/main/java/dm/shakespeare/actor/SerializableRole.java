@@ -205,7 +205,11 @@ public abstract class SerializableRole extends Role implements Serializable {
 
   private class AgentWrapper implements Agent {
 
-    private Agent agent;
+    private final Agent agent;
+
+    private AgentWrapper(@NotNull final Agent agent) {
+      this.agent = agent;
+    }
 
     @NotNull
     public ExecutorService getExecutorService() {
@@ -239,40 +243,32 @@ public abstract class SerializableRole extends Role implements Serializable {
       SerializableRole.this.behavior = ConstantConditions.notNull("behavior", behavior);
       agent.setBehavior(behavior);
     }
-
-    @NotNull
-    private AgentWrapper withAgent(final Agent agent) {
-      this.agent = agent;
-      return this;
-    }
   }
 
   private class BehaviorWrapper implements Behavior {
 
-    private final AgentWrapper agent;
+    private AgentWrapper agent;
 
     private BehaviorWrapper(@NotNull final Behavior behavior) {
       SerializableRole.this.behavior = ConstantConditions.notNull("behavior", behavior);
-      agent = new AgentWrapper();
     }
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) throws Exception {
-      state.getBehaviorHandler()
-          .onMessage(behavior)
-          .onMessage(message, envelop, this.agent.withAgent(agent));
+      state.getBehaviorHandler().onMessage(behavior).onMessage(message, envelop, this.agent);
     }
 
     public void onStart(@NotNull final Agent agent) throws Exception {
+      this.agent = new AgentWrapper(agent);
       final Behavior behavior = state.getBehaviorHandler().onStart(SerializableRole.this.behavior);
       state = RoleState.STARTED;
-      behavior.onStart(this.agent.withAgent(agent));
+      behavior.onStart(this.agent);
     }
 
     public void onStop(@NotNull final Agent agent) throws Exception {
       final Behavior behavior = state.getBehaviorHandler().onStop(SerializableRole.this.behavior);
       state = RoleState.STOPPED;
-      behavior.onStart(this.agent.withAgent(agent));
+      behavior.onStart(this.agent);
     }
   }
 }

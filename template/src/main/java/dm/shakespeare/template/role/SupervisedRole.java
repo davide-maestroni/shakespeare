@@ -18,24 +18,49 @@ package dm.shakespeare.template.role;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.ExecutorService;
+
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Role;
+import dm.shakespeare.actor.SerializableRole;
+import dm.shakespeare.log.Logger;
 import dm.shakespeare.template.behavior.Behaviors;
+import dm.shakespeare.template.config.BuildConfig;
+import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Created by davide-maestroni on 01/16/2019.
  */
-public class SupervisedRole extends RoleWrapper {
+public class SupervisedRole extends SerializableRole {
 
-  // TODO: 2019-06-22 Serializable, remove RoleWrapper
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+  private final Role role;
 
   public SupervisedRole(@NotNull final Role role) {
-    super(role);
+    this.role = ConstantConditions.notNull("role", role);
   }
 
   @NotNull
   @Override
-  public Behavior getBehavior(@NotNull final String id) throws Exception {
-    return Behaviors.supervised(super.getBehavior(id));
+  public ExecutorService getExecutorService(@NotNull final String id) throws Exception {
+    return role.getExecutorService(id);
+  }
+
+  @NotNull
+  @Override
+  public Logger getLogger(@NotNull final String id) throws Exception {
+    return role.getLogger(id);
+  }
+
+  @Override
+  public int getQuota(@NotNull final String id) throws Exception {
+    return role.getQuota(id);
+  }
+
+  @NotNull
+  @Override
+  public Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
+    return Behaviors.supervised(role.getBehavior(id));
   }
 }

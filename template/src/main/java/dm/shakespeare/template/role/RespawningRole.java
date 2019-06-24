@@ -108,7 +108,7 @@ public class RespawningRole extends Role implements Serializable {
 
   private class RestartingBehavior implements Behavior {
 
-    private final RestartingAgentWrapper agent = new RestartingAgentWrapper();
+    private RestartingAgentWrapper agent;
 
     private Behavior behavior;
 
@@ -118,21 +118,26 @@ public class RespawningRole extends Role implements Serializable {
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) throws Exception {
-      behavior.onMessage(message, envelop, this.agent.withAgent(agent));
+      behavior.onMessage(message, envelop, this.agent);
     }
 
     public void onStart(@NotNull final Agent agent) throws Exception {
-      behavior.onStart(this.agent.withAgent(agent));
+      this.agent = new RestartingAgentWrapper(agent);
+      behavior.onStart(this.agent);
     }
 
     public void onStop(@NotNull final Agent agent) throws Exception {
-      behavior.onStop(this.agent.withAgent(agent));
+      behavior.onStop(this.agent);
       if (!agent.isDismissed()) {
         behavior = newRoleInstance().getBehavior(agent.getSelf().getId());
       }
     }
 
     private class RestartingAgentWrapper extends AgentWrapper {
+
+      private RestartingAgentWrapper(@NotNull final Agent agent) {
+        super(agent);
+      }
 
       @Override
       public void setBehavior(@NotNull final Behavior behavior) {

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.UUID;
-import java.util.concurrent.RejectedExecutionException;
 
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
@@ -52,7 +51,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
 
   private final String receiptId = toString();
 
-  private transient SupervisedAgentWrapper agent = new SupervisedAgentWrapper();
+  private transient SupervisedAgentWrapper agent;
   private Behavior behavior;
   private transient CQueue<DelayedMessage> delayedMessages = new CQueue<DelayedMessage>();
   private transient Throwable failure;
@@ -82,7 +81,8 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
   }
 
   public void onStart(@NotNull final Agent agent) throws Exception {
-    behavior.onStart(this.agent.withAgent(agent));
+    this.agent = new SupervisedAgentWrapper(agent);
+    behavior.onStart(this.agent);
   }
 
   public void onStop(@NotNull final Agent agent) throws Exception {
@@ -99,7 +99,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
     }
     resetFailure(agent);
     bounceDelayed(agent);
-    behavior.onStop(this.agent.withAgent(agent));
+    behavior.onStop(this.agent);
   }
 
   private void bounceDelayed(@NotNull final Agent agent) {
@@ -117,12 +117,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
   }
 
   private void resetFailure(@NotNull final Agent agent) {
-    try {
-      supervisor.removeObserver(agent.getSelf());
-
-    } catch (final RejectedExecutionException e) {
-      agent.getLogger().err(e, "ignoring exception");
-    }
+    supervisor.removeObserver(agent.getSelf());
     supervisor = null;
     supervisorThread = null;
     failure = null;
@@ -271,9 +266,16 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
         final Actor self = agent.getSelf();
         final Actor sender = envelop.getSender();
         if (!sender.equals(self)) {
-          supervisor = sender;
-          supervisorThread = headers.getThreadId();
-          sender.addObserver(agent.getSelf());
+          if (sender.addObserver(agent.getSelf())) {
+            supervisor = sender;
+            supervisorThread = headers.getThreadId();
+
+          } else if (headers.getReceiptId() != null) {
+            sender.tell(new Failure(message, headers,
+                    new IllegalRecipientException("can't add observer to supervisor")),
+                headers.threadOnly(), self);
+            envelop.preventReceipt();
+          }
 
         } else if (headers.getReceiptId() != null) {
           sender.tell(new Failure(message, headers,
@@ -285,12 +287,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
       } else if (message instanceof Unsupervise) {
         final Actor sender = envelop.getSender();
         if (sender.equals(supervisor)) {
-          try {
-            supervisor.removeObserver(agent.getSelf());
-
-          } catch (final RejectedExecutionException e) {
-            agent.getLogger().err(e, "ignoring exception");
-          }
+          supervisor.removeObserver(agent.getSelf());
           supervisor = null;
           supervisorThread = null;
 
@@ -325,7 +322,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
 
       } else {
         try {
-          behavior.onMessage(message, envelop, SupervisedBehavior.this.agent.withAgent(agent));
+          behavior.onMessage(message, envelop, SupervisedBehavior.this.agent);
 
         } catch (final Throwable t) {
           if (t instanceof Error) {
@@ -385,14 +382,19 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
         final Actor self = agent.getSelf();
         final Actor sender = envelop.getSender();
         if (!sender.equals(self)) {
-          if (!sender.equals(supervisor)) {
+          if (!sender.equals(supervisor) && sender.addObserver(self)) {
             // notify old supervisor
             supervisor.tell(REPLACE, null, self);
             supervisor = sender;
             supervisorThread = headers.getThreadId();
-            sender.addObserver(self);
             sender.tell(new SupervisedFailure(failureId, failure),
                 new Headers().withThreadId(supervisorThread).withReceiptId(receiptId), self);
+
+          } else if (headers.getReceiptId() != null) {
+            sender.tell(new Failure(message, headers,
+                    new IllegalRecipientException("can't add observer to supervisor")),
+                headers.threadOnly(), self);
+            envelop.preventReceipt();
           }
 
         } else if (headers.getReceiptId() != null) {
@@ -506,6 +508,10 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
   }
 
   private class SupervisedAgentWrapper extends AgentWrapper {
+
+    private SupervisedAgentWrapper(@NotNull final Agent agent) {
+      super(agent);
+    }
 
     @Override
     public void setBehavior(@NotNull final Behavior behavior) {

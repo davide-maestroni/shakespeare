@@ -337,9 +337,16 @@ public class Stage {
     synchronized (mutex) {
       actors.put(id, actor);
     }
-    actor.addObserver(this.actor);
-    for (final Actor observer : observers) {
-      observer.tell(CREATE, null, actor);
+    if (actor.addObserver(this.actor)) {
+      for (final Actor observer : observers) {
+        observer.tell(CREATE, null, actor);
+      }
+
+    } else {
+      synchronized (mutex) {
+        actors.remove(id, actor);
+      }
+      throw new IllegalStateException();
     }
   }
 

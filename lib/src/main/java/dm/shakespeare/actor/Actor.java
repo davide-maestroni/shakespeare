@@ -44,28 +44,28 @@ public interface Actor {
    * Adding an observer to an already dismissed actor will always generate a notification message.
    *
    * @param observer the observer actor.
-   * @return this actor.
+   * @return whether the observer was successfully added.
    */
-  @NotNull
-  Actor addObserver(@NotNull Actor observer);
-  // TODO: 2019-06-22 RejectedExecution => return false
-  // TODO: 2019-06-20 messages => public getField (jackson) => avoid getters!!!
+  boolean addObserver(@NotNull Actor observer);
 
   /**
    * Dismiss this actor so that its behavior will be stopped and the actor removed from its stage.
    * <br>
    * All the messages still pending in the inbox will be bounced.
+   *
+   * @return whether the actor was successfully dismissed.
    */
-  void dismiss();
-  // TODO: 2019-06-23 return boolean
+  boolean dismiss();
 
   /**
    * Lazily dismiss this actor so that its behavior will be stopped and the actor removed from its
    * stage.<br>
    * Any pending message, at the moment this method is called, will be processed before initiating
    * the actor teardown.
+   *
+   * @return whether the actor was successfully dismissed.
    */
-  void dismissLazy();
+  boolean dismissLazy();
 
   /**
    * Immediately dismiss this actor so that its behavior will be stopped and the actor removed from
@@ -74,8 +74,10 @@ public interface Actor {
    * to this method. Be aware that, based on the actor executor service, interrupting the running
    * thread might cause the behavior to never receive a stop notification.<br>
    * All the messages still pending in the inbox will be bounced.
+   *
+   * @return whether the actor was successfully dismissed.
    */
-  void dismissNow();
+  boolean dismissNow();
 
   /**
    * Returns the actor ID.<br>
@@ -90,10 +92,9 @@ public interface Actor {
    * Removes an observer which should be notified of the actor dismissal.
    *
    * @param observer the observer actor.
-   * @return this actor.
+   * @return whether the observer was successfully removed.
    */
-  @NotNull
-  Actor removeObserver(@NotNull Actor observer);
+  boolean removeObserver(@NotNull Actor observer);
 
   /**
    * Tells to this actor the specified message.<br>
@@ -114,12 +115,9 @@ public interface Actor {
    * @param message the message instance (may be {@code null}).
    * @param headers the message headers.
    * @param sender  the sender actor.
-   * @return this actor.
    * @see Role
    */
-  @NotNull
-  Actor tell(Object message, @Nullable Headers headers, @NotNull Actor sender);
-  // TODO: 2019-06-23 return void
+  void tell(Object message, @Nullable Headers headers, @NotNull Actor sender);
 
   /**
    * Tells to this actor the specified batch of messages.<br>
@@ -143,9 +141,7 @@ public interface Actor {
    * @param messages the messages (may contains {@code null} objects).
    * @param headers  the messages headers.
    * @param sender   the sender actor.
-   * @return this actor.
    * @see Role
    */
-  @NotNull
-  Actor tellAll(@NotNull Iterable<?> messages, @Nullable Headers headers, @NotNull Actor sender);
+  void tellAll(@NotNull Iterable<?> messages, @Nullable Headers headers, @NotNull Actor sender);
 }

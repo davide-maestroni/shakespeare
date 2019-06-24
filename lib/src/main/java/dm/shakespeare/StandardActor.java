@@ -65,31 +65,57 @@ class StandardActor implements Actor {
     logger = agent.getLogger();
   }
 
-  @NotNull
-  public Actor addObserver(@NotNull final Actor observer) {
+  public boolean addObserver(@NotNull final Actor observer) {
     logger.dbg("[%s] adding observer: observer=%s", this, observer);
-    agent.getActorExecutorService().executeNext(new Runnable() {
+    try {
+      agent.getActorExecutorService().executeNext(new Runnable() {
 
-      public void run() {
-        agent.addObserver(observer);
-      }
-    });
-    return this;
+        public void run() {
+          agent.addObserver(observer);
+        }
+      });
+      return true;
+
+    } catch (final RejectedExecutionException e) {
+      logger.wrn(e, "[%s] failed to add observer: observer=%s", this, observer);
+    }
+    return false;
   }
 
-  public void dismiss() {
+  public boolean dismiss() {
     logger.dbg("[%s] dismissing", this);
-    agent.dismiss();
+    try {
+      agent.dismiss();
+      return true;
+
+    } catch (final RejectedExecutionException e) {
+      logger.wrn(e, "[%s] failed to dismiss actor");
+    }
+    return false;
   }
 
-  public void dismissLazy() {
+  public boolean dismissLazy() {
     logger.dbg("[%s] dismissing lazily", this);
-    agent.dismissLazy();
+    try {
+      agent.dismissLazy();
+      return true;
+
+    } catch (final RejectedExecutionException e) {
+      logger.wrn(e, "[%s] failed to dismiss actor");
+    }
+    return false;
   }
 
-  public void dismissNow() {
+  public boolean dismissNow() {
     logger.dbg("[%s] dismissing immediately", this);
-    agent.dismissNow();
+    try {
+      agent.dismissNow();
+      return true;
+
+    } catch (final RejectedExecutionException e) {
+      logger.wrn(e, "[%s] failed to dismiss actor");
+    }
+    return false;
   }
 
   @NotNull
@@ -97,20 +123,23 @@ class StandardActor implements Actor {
     return id;
   }
 
-  @NotNull
-  public Actor removeObserver(@NotNull final Actor observer) {
+  public boolean removeObserver(@NotNull final Actor observer) {
     logger.dbg("[%s] removing observer: observer=%s", this, observer);
-    agent.getActorExecutorService().executeNext(new Runnable() {
+    try {
+      agent.getActorExecutorService().executeNext(new Runnable() {
 
-      public void run() {
-        agent.removeObserver(observer);
-      }
-    });
-    return this;
+        public void run() {
+          agent.removeObserver(observer);
+        }
+      });
+
+    } catch (final RejectedExecutionException e) {
+      logger.wrn(e, "[%s] failed to remove observer: observer=%s", this, observer);
+    }
+    return false;
   }
 
-  @NotNull
-  public Actor tell(final Object message, @Nullable final Headers headers,
+  public void tell(final Object message, @Nullable final Headers headers,
       @NotNull final Actor sender) {
     logger.dbg("[%s] sending: headers=%s - sender=%s - message=%s", this, headers, sender, message);
     if (quotaHandler.consumeQuota()) {
@@ -136,11 +165,9 @@ class StandardActor implements Actor {
           message);
       quotaExceeded(message, new BounceEnvelop(sender, headers));
     }
-    return this;
   }
 
-  @NotNull
-  public Actor tellAll(@NotNull final Iterable<?> messages, @Nullable final Headers headers,
+  public void tellAll(@NotNull final Iterable<?> messages, @Nullable final Headers headers,
       @NotNull final Actor sender) {
     logger.dbg("[%s] sending all: headers=%s - sender=%s - message=%s", this, headers, sender,
         messages);
@@ -167,7 +194,6 @@ class StandardActor implements Actor {
           sender, messages);
       quotaExceeded(messages, new BounceEnvelop(sender, headers));
     }
-    return this;
   }
 
   @Override

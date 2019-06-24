@@ -31,42 +31,43 @@ public interface ActorSet extends Set<Actor> {
    * DeadLetter} message when an actor in this set is dismissed.
    *
    * @param observer the observer actor.
-   * @return this actor set.
+   * @return whether the observer was successfully added to all the actors.
    * @see Actor#addObserver(Actor)
    */
-  @NotNull
-  ActorSet addObserver(@NotNull Actor observer);
+  boolean addObserver(@NotNull Actor observer);
 
   /**
    * Dismiss all the actors in this set.
    *
+   * @return whether all the actors were successfully dismissed.
    * @see Actor#dismiss()
    */
-  void dismiss();
+  boolean dismiss();
 
   /**
    * Lazily dismiss all the actors in this set.
    *
+   * @return whether all the actors were successfully dismissed.
    * @see Actor#dismissLazy()
    */
-  void dismissLazy();
+  boolean dismissLazy();
 
   /**
    * Immediately dismiss all the actors in this set.
    *
+   * @return whether all the actors were successfully dismissed.
    * @see Actor#dismissNow()
    */
-  void dismissNow();
+  boolean dismissNow();
 
   /**
    * Removes an observer which should be notified of the dismissal of an actor in this set.
    *
    * @param observer the observer actor.
-   * @return this actor set.
+   * @return whether the observer was successfully removed from all the actors.
    * @see Actor#removeObserver(Actor)
    */
-  @NotNull
-  ActorSet removeObserver(@NotNull Actor observer);
+  boolean removeObserver(@NotNull Actor observer);
 
   /**
    * Tells the specified message to all the actors in this set.
@@ -74,11 +75,9 @@ public interface ActorSet extends Set<Actor> {
    * @param message the message instance (may be {@code null}).
    * @param headers the message headers.
    * @param sender  the sender actor.
-   * @return this actor set.
    * @see Actor#tell(Object, Headers, Actor)
    */
-  @NotNull
-  ActorSet tell(Object message, @Nullable Headers headers, @NotNull Actor sender);
+  void tell(Object message, @Nullable Headers headers, @NotNull Actor sender);
 
   /**
    * Tells the specified batch of messages to all the actors in this set.
@@ -86,9 +85,7 @@ public interface ActorSet extends Set<Actor> {
    * @param messages the messages (may contains {@code null} objects).
    * @param headers  the message headers.
    * @param sender   the sender actor.
-   * @return this actor set.
    * @see Actor#tellAll(Iterable, Headers, Actor)
    */
-  @NotNull
-  ActorSet tellAll(@NotNull Iterable<?> messages, @Nullable Headers headers, @NotNull Actor sender);
+  void tellAll(@NotNull Iterable<?> messages, @Nullable Headers headers, @NotNull Actor sender);
 }

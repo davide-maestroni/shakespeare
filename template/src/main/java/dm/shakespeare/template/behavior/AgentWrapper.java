@@ -31,7 +31,11 @@ import dm.shakespeare.log.Logger;
  */
 public class AgentWrapper implements Agent {
 
-  private Agent agent;
+  private final Agent agent;
+
+  public AgentWrapper(@NotNull final Agent agent) {
+    this.agent = agent;
+  }
 
   @NotNull
   public ExecutorService getExecutorService() {
@@ -63,11 +67,5 @@ public class AgentWrapper implements Agent {
 
   public void setBehavior(@NotNull final Behavior behavior) {
     agent.setBehavior(behavior);
-  }
-
-  @NotNull
-  public AgentWrapper withAgent(final Agent agent) {
-    this.agent = agent;
-    return this;
   }
 }

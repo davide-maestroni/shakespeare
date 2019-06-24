@@ -45,56 +45,68 @@ class StandardActorSet extends AbstractSet<Actor> implements ActorSet {
     this.actors = Collections.unmodifiableSet(ConstantConditions.notNullElements("actors", actors));
   }
 
-  @NotNull
-  public ActorSet addObserver(@NotNull final Actor observer) {
+  public boolean addObserver(@NotNull final Actor observer) {
+    boolean added = true;
     for (final Actor actor : actors) {
-      actor.addObserver(observer);
+      if (!actor.addObserver(observer)) {
+        added = false;
+      }
     }
-    return this;
+    return added;
   }
 
-  public void dismiss() {
+  public boolean dismiss() {
+    boolean dimissed = true;
     for (final Actor actor : actors) {
-      actor.dismiss();
+      if (!actor.dismiss()) {
+        dimissed = false;
+      }
     }
+    return dimissed;
   }
 
-  public void dismissLazy() {
+  public boolean dismissLazy() {
+    boolean dimissed = true;
     for (final Actor actor : actors) {
-      actor.dismissLazy();
+      if (!actor.dismissLazy()) {
+        dimissed = false;
+      }
     }
+    return dimissed;
   }
 
-  public void dismissNow() {
+  public boolean dismissNow() {
+    boolean dimissed = true;
     for (final Actor actor : actors) {
-      actor.dismissNow();
+      if (!actor.dismissNow()) {
+        dimissed = false;
+      }
     }
+    return dimissed;
   }
 
-  @NotNull
-  public ActorSet removeObserver(@NotNull final Actor observer) {
+  public boolean removeObserver(@NotNull final Actor observer) {
+    boolean removed = true;
     for (final Actor actor : actors) {
-      actor.removeObserver(observer);
+      if (!actor.removeObserver(observer)) {
+        removed = false;
+      }
     }
-    return this;
+    return removed;
   }
 
-  @NotNull
-  public ActorSet tell(final Object message, @Nullable final Headers headers,
+  public void tell(final Object message, @Nullable final Headers headers,
       @NotNull final Actor sender) {
     for (final Actor actor : actors) {
       actor.tell(message, headers, sender);
     }
-    return this;
   }
 
-  @NotNull
-  public ActorSet tellAll(@NotNull final Iterable<?> messages, @Nullable final Headers headers,
+  public void tellAll(@NotNull final Iterable<?> messages, @Nullable final Headers headers,
       @NotNull final Actor sender) {
     for (final Actor actor : actors) {
       actor.tellAll(messages, headers, sender);
     }
-    return this;
   }
 
   @NotNull

@@ -164,7 +164,6 @@ class StandardAgent implements Agent {
   }
 
   void dismiss() {
-    dismissed = true;
     if (dismissRunnable == null) {
       dismissRunnable = new Runnable() {
 
@@ -173,7 +172,14 @@ class StandardAgent implements Agent {
         }
       };
     }
-    actorExecutorService.executeNext(dismissRunnable);
+    try {
+      dismissed = true;
+      actorExecutorService.executeNext(dismissRunnable);
+
+    } catch (final RejectedExecutionException e) {
+      dismissed = false;
+      throw e;
+    }
   }
 
   void dismissLazy() {
