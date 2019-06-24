@@ -37,6 +37,10 @@ class AcceptHandler<T> implements Handler<T>, Serializable {
 
   private final Observer<T> observer;
 
+  /**
+   * Creates a new empty handler.<br>
+   * Usually needed during deserialization.
+   */
   AcceptHandler() {
     observer = null;
   }
@@ -51,7 +55,12 @@ class AcceptHandler<T> implements Handler<T>, Serializable {
     this.observer = ConstantConditions.notNull("observer", observer);
   }
 
-  // json
+  /**
+   * Returns the wrapped observer.<br>
+   * Usually needed during serialization.
+   *
+   * @return the observer instance.
+   */
   @NotNull
   public Observer<T> getObserver() {
     return observer;

@@ -87,7 +87,7 @@ public class Stage {
           public void onMessage(final Object message, @NotNull final Envelop envelop,
               @NotNull final Agent agent) {
             if (message instanceof DeadLetter) {
-              removeActor(id);
+              removeActor(envelop.getSender().getId());
             }
           }
         };

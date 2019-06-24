@@ -103,7 +103,7 @@ public class WeakIdentityHashMapTest {
         MapEntry.entry(key2, "test2"), MapEntry.entry(key3, "test3"));
     assertThat(map).isEqualTo(entries);
     assertThat(map.keySet()).isEqualTo(entries.keySet());
-    assertThat(map.values()).containsOnly(entries.values().toArray(new String[entries.size()]));
+    assertThat(map.values()).containsOnly(entries.values().toArray(new String[0]));
     assertThat(map.entrySet()).isEqualTo(entries.entrySet());
   }
 

@@ -37,6 +37,10 @@ class ApplyHandler<T> implements Handler<T>, Serializable {
 
   private final Mapper<T, ?> mapper;
 
+  /**
+   * Creates an empty handler.<br>
+   * Usually needed during deserialization.
+   */
   ApplyHandler() {
     mapper = null;
   }
@@ -51,7 +55,12 @@ class ApplyHandler<T> implements Handler<T>, Serializable {
     this.mapper = ConstantConditions.notNull("mapper", mapper);
   }
 
-  // json
+  /**
+   * Returns the wrapped mapper.<br>
+   * Usually needed during serialization.
+   *
+   * @return the mapper instance.
+   */
   @NotNull
   public Mapper<T, ?> getMapper() {
     return mapper;

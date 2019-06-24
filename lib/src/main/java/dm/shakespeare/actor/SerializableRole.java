@@ -84,12 +84,22 @@ public abstract class SerializableRole extends Role implements Serializable {
     return new BehaviorWrapper((behavior != null) ? behavior : getSerializableBehavior(id));
   }
 
-  // json
+  /**
+   * Returns the stored behavior.<br>
+   * Usually needed during serialization.
+   *
+   * @return the behavior instance.
+   */
   public Behavior getBehavior() {
     return behavior;
   }
 
-  // json
+  /**
+   * Returns the stored state.<br>
+   * Usually needed during serialization.
+   *
+   * @return the state type.
+   */
   public RoleState getState() {
     return state;
   }
@@ -106,7 +116,14 @@ public abstract class SerializableRole extends Role implements Serializable {
   @NotNull
   protected abstract Behavior getSerializableBehavior(@NotNull final String id) throws Exception;
 
-  private enum RoleState {
+  /**
+   * Enumeration defining the serializable role states.
+   */
+  public enum RoleState {
+
+    /**
+     * Created state.
+     */
     CREATED(new BehaviorHandler() {
 
       @NotNull
@@ -125,6 +142,9 @@ public abstract class SerializableRole extends Role implements Serializable {
       }
     }),
 
+    /**
+     * Started state.
+     */
     STARTED(new BehaviorHandler() {
 
       @NotNull
@@ -143,6 +163,9 @@ public abstract class SerializableRole extends Role implements Serializable {
       }
     }),
 
+    /**
+     * Stopped state.
+     */
     STOPPED(new BehaviorHandler() {
 
       @NotNull
@@ -161,6 +184,9 @@ public abstract class SerializableRole extends Role implements Serializable {
       }
     }),
 
+    /**
+     * Dismissed state.
+     */
     DISMISSED(new BehaviorHandler() {
 
       @NotNull
@@ -186,7 +212,7 @@ public abstract class SerializableRole extends Role implements Serializable {
     }
 
     @NotNull
-    public BehaviorHandler getBehaviorHandler() {
+    private BehaviorHandler getBehaviorHandler() {
       return handler;
     }
   }

@@ -214,7 +214,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.messageClass = messageClass;
     }
 
-    // json
     @NotNull
     public Class<?> getMessageClass() {
       return messageClass;
@@ -242,7 +241,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.messageClasses = messageClasses;
     }
 
-    // json
     @NotNull
     public Collection<? extends Class<?>> getMessageClasses() {
       return messageClasses;
@@ -292,19 +290,16 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.stopObserver = stopObserver;
     }
 
-    // json
     @NotNull
     public Handler<Object> getMessageHandler() {
       return messageHandler;
     }
 
-    // json
     @NotNull
     public Observer<? super Agent> getStartObserver() {
       return startObserver;
     }
 
-    // json
     @NotNull
     public Observer<? super Agent> getStopObserver() {
       return stopObserver;
@@ -352,7 +347,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.message = message;
     }
 
-    // json
     public Object getMessage() {
       return message;
     }
@@ -382,7 +376,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.matcher = (Matcher<Object>) matcher;
     }
 
-    // json
     @NotNull
     public Matcher<Object> getMatcher() {
       return matcher;
@@ -409,7 +402,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.handler = (Handler<Object>) handler;
     }
 
-    // json
     @NotNull
     public Handler<Object> getHandler() {
       return handler;
@@ -446,7 +438,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       }
     }
 
-    // json
     @NotNull
     public List<Observer<? super Agent>> getObservers() {
       return observers;
@@ -471,13 +462,11 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.fallbacks = fallbacks;
     }
 
-    // json
     @NotNull
     public List<Handler<?>> getFallbacks() {
       return fallbacks;
     }
 
-    // json
     @NotNull
     public List<MatchingHandler> getHandlers() {
       return handlers;
@@ -519,7 +508,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.tester = tester;
     }
 
-    // json
     @NotNull
     public Tester<? super Envelop> getTester() {
       return tester;
@@ -549,7 +537,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.tester = (Tester<Object>) tester;
     }
 
-    // json
     @NotNull
     public Tester<Object> getTester() {
       return tester;

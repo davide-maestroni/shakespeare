@@ -310,6 +310,7 @@ class StandardAgent implements Agent {
 
     @Override
     public void onStop(@NotNull final Agent agent) {
+      setStopped();
     }
   }
 
