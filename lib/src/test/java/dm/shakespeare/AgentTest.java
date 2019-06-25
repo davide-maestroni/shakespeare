@@ -102,6 +102,7 @@ public class AgentTest {
             assertThat(envelop.getSentAt()).isCloseTo(sent.get(), Offset.offset(10L));
             assertThat(envelop.getReceivedAt()).isCloseTo(received, Offset.offset(10L));
             assertThat(envelop.getHeaders().getThreadId()).isEqualTo("test");
+            assertThat(envelop.toString()).isNotNull();
             called.set(true);
           }
         };
