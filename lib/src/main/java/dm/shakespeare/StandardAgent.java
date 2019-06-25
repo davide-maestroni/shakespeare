@@ -17,7 +17,6 @@
 package dm.shakespeare;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -156,7 +155,7 @@ class StandardAgent implements Agent {
 
   void addObserver(@NotNull final Actor observer) {
     if (stopped) {
-      reply(observer, DEAD_LETTER, null);
+      observer.tell(DEAD_LETTER, null, actor);
 
     } else {
       observers.add(observer);
@@ -229,7 +228,7 @@ class StandardAgent implements Agent {
       for (final Object message : messages) {
         bounces.add(new Bounce(message, headers));
       }
-      replyAll(envelop.getSender(), bounces, headers.threadOnly());
+      envelop.getSender().tellAll(bounces, headers.threadOnly(), actor);
       return;
     }
     final Thread runner = (this.runner = Thread.currentThread());
@@ -252,30 +251,6 @@ class StandardAgent implements Agent {
     observers.remove(observer);
   }
 
-  void reply(@NotNull final Actor actor, final Object message, @Nullable final Headers headers) {
-    final Actor self = this.actor;
-    logger.dbg("[%s] replying: actor=%s - headers=%s - message=%s", self, actor, headers, message);
-    try {
-      actor.tell(message, headers, self);
-
-    } catch (final RejectedExecutionException e) {
-      logger.err(e, "[%s] ignoring exception", self);
-    }
-  }
-
-  void replyAll(@NotNull final Actor actor, @NotNull final Iterable<?> messages,
-      @Nullable final Headers headers) {
-    final Actor self = this.actor;
-    logger.dbg("[%s] replying all: actor=%s - headers=%s - message=%s", self, actor, headers,
-        messages);
-    try {
-      actor.tellAll(messages, headers, self);
-
-    } catch (final RejectedExecutionException e) {
-      logger.err(e, "[%s] ignoring exception", self);
-    }
-  }
-
   void setActor(@NotNull final Actor actor) {
     this.actor = ConstantConditions.notNull("actor", actor);
   }
@@ -293,8 +268,9 @@ class StandardAgent implements Agent {
 
   private void setStopped() {
     stopped = true;
+    final Actor actor = this.actor;
     for (final Actor observer : observers) {
-      reply(observer, DEAD_LETTER, null);
+      observer.tell(DEAD_LETTER, null, actor);
     }
   }
 
@@ -318,11 +294,12 @@ class StandardAgent implements Agent {
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) {
+      final Actor actor = StandardAgent.this.actor;
       logger.dbg("[%s] handling new message: envelop=%s - message=%s", actor, envelop, message);
       if (isDismissed()) {
         final Headers headers = envelop.getHeaders();
         if (headers.getReceiptId() != null) {
-          reply(envelop.getSender(), new Bounce(message, headers), headers.threadOnly());
+          envelop.getSender().tell(new Bounce(message, headers), headers.threadOnly(), actor);
         }
         return;
       }
@@ -331,12 +308,12 @@ class StandardAgent implements Agent {
         try {
           behavior.onMessage(message, envelop, agent);
           if (!envelop.isPreventReceipt()) {
-            reply(envelop.getSender(), new Delivery(message, headers), headers.threadOnly());
+            envelop.getSender().tell(new Delivery(message, headers), headers.threadOnly(), actor);
           }
 
         } catch (final Throwable t) {
           if (!envelop.isPreventReceipt()) {
-            reply(envelop.getSender(), new Failure(message, headers, t), headers.threadOnly());
+            envelop.getSender().tell(new Failure(message, headers, t), headers.threadOnly(), actor);
           }
           onStop(agent);
           if (t instanceof InterruptedException) {

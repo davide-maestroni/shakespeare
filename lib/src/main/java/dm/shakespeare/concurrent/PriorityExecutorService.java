@@ -26,6 +26,7 @@ import java.util.PriorityQueue;
 import java.util.WeakHashMap;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import dm.shakespeare.util.ConstantConditions;
@@ -75,13 +76,23 @@ class PriorityExecutorService extends AbstractExecutorService {
   }
 
   public void execute(@NotNull final Runnable command) {
+    final WrappedRunnable wrapped;
     synchronized (context) {
       final PriorityContext context = this.context;
-      context.queue.add(
-          new WrappedRunnable(ConstantConditions.notNull("command", command), priority,
-              context.age--));
+      wrapped = new WrappedRunnable(ConstantConditions.notNull("command", command), priority,
+          context.age--);
+      context.queue.add(wrapped);
     }
-    executorService.execute(runnable);
+
+    try {
+      executorService.execute(runnable);
+
+    } catch (final RejectedExecutionException e) {
+      synchronized (context) {
+        context.queue.remove(wrapped);
+      }
+      throw e;
+    }
   }
 
   public void shutdown() {

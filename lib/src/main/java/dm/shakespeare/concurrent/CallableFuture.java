@@ -21,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 
 import dm.shakespeare.util.ConstantConditions;
 
@@ -74,6 +75,11 @@ class CallableFuture<V> extends AbstractFuture<V> {
 
   @NotNull
   Future<V> submit() {
-    return executorService.submit(callable);
+    try {
+      return executorService.submit(callable);
+
+    } catch (final RejectedExecutionException e) {
+      return new RejectedFuture<V>(e);
+    }
   }
 }

@@ -75,23 +75,14 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
 
   public void onMessage(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
-    if (this.agent == null) {
-      this.agent = new SupervisedAgentWrapper(agent);
-    }
-    handler.handle(message, envelop, agent);
+    handler.handle(message, envelop, wrap(agent));
   }
 
   public void onStart(@NotNull final Agent agent) throws Exception {
-    if (this.agent == null) {
-      this.agent = new SupervisedAgentWrapper(agent);
-    }
-    behavior.onStart(this.agent);
+    behavior.onStart(wrap(agent));
   }
 
   public void onStop(@NotNull final Agent agent) throws Exception {
-    if (this.agent == null) {
-      this.agent = new SupervisedAgentWrapper(agent);
-    }
     final Throwable failure = this.failure;
     final DelayedMessage failureMessage = this.failureMessage;
     if ((failure != null) && (failureMessage != null)) {
@@ -105,7 +96,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
     }
     resetFailure(agent);
     bounceDelayed(agent);
-    behavior.onStop(this.agent);
+    behavior.onStop(wrap(agent));
   }
 
   private void bounceDelayed(@NotNull final Agent agent) {
@@ -137,6 +128,14 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
     for (int i = 0; i < size; ++i) {
       self.tell(SupervisedSignal.DUMMY_MESSAGE, null, self);
     }
+  }
+
+  @NotNull
+  private Agent wrap(@NotNull final Agent agent) {
+    if (this.agent == null) {
+      this.agent = new SupervisedAgentWrapper(agent);
+    }
+    return this.agent;
   }
 
   private enum SupervisedSignal {

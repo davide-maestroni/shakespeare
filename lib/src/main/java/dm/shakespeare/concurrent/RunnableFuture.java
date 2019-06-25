@@ -20,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import dm.shakespeare.util.ConstantConditions;
@@ -90,13 +91,18 @@ class RunnableFuture extends AbstractFuture<Object> {
   @NotNull
   @SuppressWarnings("unchecked")
   Future<Object> submit() {
-    return (Future<Object>) executorService.submit(new Runnable() {
+    try {
+      return (Future<Object>) executorService.submit(new Runnable() {
 
-      public void run() {
-        runnable.run();
-        updateTimestamp();
-      }
-    });
+        public void run() {
+          runnable.run();
+          updateTimestamp();
+        }
+      });
+
+    } catch (final RejectedExecutionException e) {
+      return new RejectedFuture<Object>(e);
+    }
   }
 
   private void updateTimestamp() {

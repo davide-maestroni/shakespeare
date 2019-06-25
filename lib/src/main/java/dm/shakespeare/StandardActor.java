@@ -27,6 +27,7 @@ import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Headers;
 import dm.shakespeare.log.Logger;
+import dm.shakespeare.message.Bounce;
 import dm.shakespeare.message.QuotaExceeded;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -68,7 +69,7 @@ class StandardActor implements Actor {
   public boolean addObserver(@NotNull final Actor observer) {
     logger.dbg("[%s] adding observer: observer=%s", this, observer);
     try {
-      agent.getActorExecutorService().executeNext(new Runnable() {
+      agent.getActorExecutorService().execute(new Runnable() {
 
         public void run() {
           agent.addObserver(observer);
@@ -89,7 +90,7 @@ class StandardActor implements Actor {
       return true;
 
     } catch (final RejectedExecutionException e) {
-      logger.wrn(e, "[%s] failed to dismiss actor");
+      logger.wrn(e, "[%s] failed to dismiss actor", this);
     }
     return false;
   }
@@ -101,7 +102,7 @@ class StandardActor implements Actor {
       return true;
 
     } catch (final RejectedExecutionException e) {
-      logger.wrn(e, "[%s] failed to dismiss actor");
+      logger.wrn(e, "[%s] failed to dismiss actor", this);
     }
     return false;
   }
@@ -113,7 +114,7 @@ class StandardActor implements Actor {
       return true;
 
     } catch (final RejectedExecutionException e) {
-      logger.wrn(e, "[%s] failed to dismiss actor");
+      logger.wrn(e, "[%s] failed to dismiss actor", this);
     }
     return false;
   }
@@ -126,12 +127,13 @@ class StandardActor implements Actor {
   public boolean removeObserver(@NotNull final Actor observer) {
     logger.dbg("[%s] removing observer: observer=%s", this, observer);
     try {
-      agent.getActorExecutorService().executeNext(new Runnable() {
+      agent.getActorExecutorService().execute(new Runnable() {
 
         public void run() {
           agent.removeObserver(observer);
         }
       });
+      return true;
 
     } catch (final RejectedExecutionException e) {
       logger.wrn(e, "[%s] failed to remove observer: observer=%s", this, observer);
@@ -157,7 +159,7 @@ class StandardActor implements Actor {
       } catch (final RejectedExecutionException e) {
         logger.wrn(e, "[%s] failed to send: headers=%s - sender=%s - message=%s", this, headers,
             sender, message);
-        quotaExceeded(message, new BounceEnvelop(sender, headers));
+        rejected(message, new BounceEnvelop(sender, headers));
       }
 
     } else {
@@ -186,7 +188,7 @@ class StandardActor implements Actor {
       } catch (final RejectedExecutionException e) {
         logger.wrn(e, "[%s] failed to send all: headers=%s - sender=%s - message=%s", this, headers,
             sender, messages);
-        quotaExceeded(messages, new BounceEnvelop(sender, headers));
+        rejected(messages, new BounceEnvelop(sender, headers));
       }
 
     } else {
@@ -208,14 +210,32 @@ class StandardActor implements Actor {
       for (final Object message : messages) {
         bounces.add(new QuotaExceeded(message, headers));
       }
-      agent.replyAll(envelop.getSender(), bounces, headers.threadOnly());
+      envelop.getSender().tellAll(bounces, headers.threadOnly(), this);
     }
   }
 
   private void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
     final Headers headers = envelop.getHeaders();
     if (headers.getReceiptId() != null) {
-      agent.reply(envelop.getSender(), new QuotaExceeded(message, headers), headers.threadOnly());
+      envelop.getSender().tell(new QuotaExceeded(message, headers), headers.threadOnly(), this);
+    }
+  }
+
+  private void rejected(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
+    final Headers headers = envelop.getHeaders();
+    if (headers.getReceiptId() != null) {
+      final ArrayList<Object> bounces = new ArrayList<Object>();
+      for (final Object message : messages) {
+        bounces.add(new Bounce(message, headers));
+      }
+      envelop.getSender().tellAll(bounces, headers.threadOnly(), this);
+    }
+  }
+
+  private void rejected(final Object message, @NotNull final Envelop envelop) {
+    final Headers headers = envelop.getHeaders();
+    if (headers.getReceiptId() != null) {
+      envelop.getSender().tell(new Bounce(message, headers), headers.threadOnly(), this);
     }
   }
 

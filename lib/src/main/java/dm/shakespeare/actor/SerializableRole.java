@@ -214,8 +214,7 @@ public abstract class SerializableRole extends Role implements Serializable {
     @NotNull
     private BehaviorHandler getBehaviorHandler() {
       return handler;
-    }
-  }
+    }}
 
   private interface BehaviorHandler {
 
@@ -281,20 +280,27 @@ public abstract class SerializableRole extends Role implements Serializable {
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) throws Exception {
-      state.getBehaviorHandler().onMessage(behavior).onMessage(message, envelop, this.agent);
+      state.getBehaviorHandler().onMessage(behavior).onMessage(message, envelop, wrap(agent));
     }
 
     public void onStart(@NotNull final Agent agent) throws Exception {
-      this.agent = new AgentWrapper(agent);
       final Behavior behavior = state.getBehaviorHandler().onStart(SerializableRole.this.behavior);
       state = RoleState.STARTED;
-      behavior.onStart(this.agent);
+      behavior.onStart(wrap(agent));
     }
 
     public void onStop(@NotNull final Agent agent) throws Exception {
       final Behavior behavior = state.getBehaviorHandler().onStop(SerializableRole.this.behavior);
       state = RoleState.STOPPED;
-      behavior.onStart(this.agent);
+      behavior.onStart(wrap(agent));
+    }
+
+    @NotNull
+    private Agent wrap(@NotNull final Agent agent) {
+      if (this.agent == null) {
+        this.agent = new AgentWrapper(agent);
+      }
+      return this.agent;
     }
   }
 }

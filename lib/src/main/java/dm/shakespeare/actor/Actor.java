@@ -89,7 +89,9 @@ public interface Actor {
   String getId();
 
   /**
-   * Removes an observer which should be notified of the actor dismissal.
+   * Removes an observer which should be notified of the actor dismissal.<br>
+   * A {@link dm.shakespeare.message.DeadLetter DeadLetter} message might still be sent depending
+   * on the moment at which the actor is actually dismissed.
    *
    * @param observer the observer actor.
    * @return whether the observer was successfully removed.

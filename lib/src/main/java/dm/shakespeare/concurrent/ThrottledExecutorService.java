@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import dm.shakespeare.util.CQueue;
@@ -61,7 +62,17 @@ class ThrottledExecutorService extends AbstractExecutorService {
       }
       ++pendingCount;
     }
-    executorService.execute(runnable);
+
+    try {
+      executorService.execute(runnable);
+
+    } catch (final RejectedExecutionException e) {
+      synchronized (mutex) {
+        queue.remove(command);
+        --pendingCount;
+      }
+      throw e;
+    }
   }
 
   public void shutdown() {
@@ -101,7 +112,17 @@ class ThrottledExecutorService extends AbstractExecutorService {
       }
       ++pendingCount;
     }
-    executorService.execute(runnable);
+
+    try {
+      executorService.execute(runnable);
+
+    } catch (final RejectedExecutionException e) {
+      synchronized (mutex) {
+        queue.remove(command);
+        --pendingCount;
+      }
+      throw e;
+    }
   }
 
   private class ThrottledRunnable implements Runnable {

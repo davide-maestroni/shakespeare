@@ -118,19 +118,26 @@ public class RespawningRole extends Role implements Serializable {
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) throws Exception {
-      behavior.onMessage(message, envelop, this.agent);
+      behavior.onMessage(message, envelop, wrap(agent));
     }
 
     public void onStart(@NotNull final Agent agent) throws Exception {
-      this.agent = new RestartingAgentWrapper(agent);
-      behavior.onStart(this.agent);
+      behavior.onStart(wrap(agent));
     }
 
     public void onStop(@NotNull final Agent agent) throws Exception {
-      behavior.onStop(this.agent);
+      behavior.onStop(wrap(agent));
       if (!agent.isDismissed()) {
         behavior = newRoleInstance().getBehavior(agent.getSelf().getId());
       }
+    }
+
+    @NotNull
+    private Agent wrap(@NotNull final Agent agent) {
+      if (this.agent == null) {
+        this.agent = new RestartingAgentWrapper(agent);
+      }
+      return this.agent;
     }
 
     private class RestartingAgentWrapper extends AgentWrapper {
