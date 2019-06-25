@@ -47,7 +47,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private final String receiptId = toString();
+  private transient final String receiptId = toString();
 
   private transient SupervisedAgentWrapper agent;
   private Behavior behavior;
@@ -59,12 +59,12 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
   private transient Actor supervisor;
   private transient String supervisorThread;
 
-  SupervisedBehavior() {
-    behavior = null;
+  public SupervisedBehavior(@NotNull final Behavior behavior) {
+    this.behavior = ConstantConditions.notNull("behavior", behavior);
   }
 
-  SupervisedBehavior(@NotNull final Behavior behavior) {
-    this.behavior = ConstantConditions.notNull("behavior", behavior);
+  SupervisedBehavior() {
+    behavior = null;
   }
 
   // json

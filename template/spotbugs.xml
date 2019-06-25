@@ -24,7 +24,7 @@
     <Bug pattern="SE_BAD_FIELD"/>
   </Match>
   <Match>
-    <Class name="dm.shakespeare.template.behavior.SupervisedBehavior"/>
+    <Class name="~dm\.shakespeare\.template\.behavior\.(AbstractProxyBehavior|LoadBalancerBehavior|RoundRobinBehavior|SupervisedBehavior|TopicBehavior|ProxyBehavior)"/>
     <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED"/>
   </Match>
   <Match>

@@ -24,7 +24,7 @@ import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.actor.SerializableRole;
 import dm.shakespeare.log.Logger;
-import dm.shakespeare.template.behavior.Behaviors;
+import dm.shakespeare.template.behavior.SupervisedBehavior;
 import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -61,6 +61,6 @@ public class SupervisedRole extends SerializableRole {
   @NotNull
   @Override
   public Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
-    return Behaviors.supervised(role.getBehavior(id));
+    return new SupervisedBehavior(role.getBehavior(id));
   }
 }

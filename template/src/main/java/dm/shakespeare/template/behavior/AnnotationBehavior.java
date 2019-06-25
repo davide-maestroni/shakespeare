@@ -42,7 +42,7 @@ import dm.shakespeare.template.config.BuildConfig;
 /**
  * Created by davide-maestroni on 03/24/2019.
  */
-class AnnotationBehavior extends SerializableAbstractBehavior {
+public class AnnotationBehavior extends SerializableAbstractBehavior {
 
   private static final HashMap<Class<? extends Annotation>, AnnotationHandler<?>> HANDLERS =
       new HashMap<Class<? extends Annotation>, AnnotationHandler<?>>() {{
@@ -59,12 +59,8 @@ class AnnotationBehavior extends SerializableAbstractBehavior {
 
   private final Behavior behavior;
 
-  AnnotationBehavior() {
-    behavior = null;
-  }
-
   @SuppressWarnings("unchecked")
-  AnnotationBehavior(@NotNull final Object object) throws Exception {
+  public AnnotationBehavior(@NotNull final Object object) throws Exception {
     final Class<?> objectClass = object.getClass();
     final BehaviorBuilder builder = Role.newBehavior();
     final Set<Entry<Class<? extends Annotation>, AnnotationHandler<?>>> entries =
@@ -79,6 +75,10 @@ class AnnotationBehavior extends SerializableAbstractBehavior {
       }
     }
     behavior = builder.build();
+  }
+
+  AnnotationBehavior() {
+    behavior = null;
   }
 
   // json

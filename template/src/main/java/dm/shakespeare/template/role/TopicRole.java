@@ -16,16 +16,22 @@
 
 package dm.shakespeare.template.role;
 
-import dm.shakespeare.util.ConstantConditions;
+import org.jetbrains.annotations.NotNull;
+
+import dm.shakespeare.actor.Behavior;
+import dm.shakespeare.actor.SerializableRole;
+import dm.shakespeare.template.behavior.TopicBehavior;
+import dm.shakespeare.template.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 01/13/2019.
+ * Created by davide-maestroni on 06/25/2019.
  */
-public class ActorRoles {
+public class TopicRole extends SerializableRole {
 
-  private ActorRoles() {
-    ConstantConditions.avoid();
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+  @NotNull
+  protected Behavior getSerializableBehavior(@NotNull final String id) {
+    return new TopicBehavior();
   }
-
-  // TODO: 13/01/2019 router(?), publish/subscribe(?)
 }

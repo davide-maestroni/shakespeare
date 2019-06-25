@@ -22,12 +22,15 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
+import java.util.regex.Pattern;
 
 import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Actor;
+import dm.shakespeare.actor.ActorSet;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Role;
+import dm.shakespeare.function.Tester;
 import dm.shakespeare.test.concurrent.TestExecutorService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -82,6 +85,353 @@ public class StageTest {
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
     stage.createActor(id, new TestRole(executorService));
+  }
+
+  @Test
+  public void findAllPattern() {
+    final Stage stage = new Stage();
+    final TestExecutorService executorService = new TestExecutorService();
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("a/" + i, new TestRole(executorService));
+    }
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("b/" + i, new TestRole(executorService));
+    }
+    final ActorSet a = stage.findAll(Pattern.compile("^a/.*$"));
+    final ActorSet b = stage.findAll(Pattern.compile("^b/.*$"));
+    assertThat(a).hasSize(5).doesNotContainAnyElementsOf(b);
+    assertThat(b).hasSize(5);
+    assertThat(stage.findAll(Pattern.compile("^./3$"))).hasSize(2);
+    assertThat(stage.findAll(Pattern.compile(".*"))).hasSize(10).isEqualTo(stage.getAll());
+  }
+
+  @Test
+  public void findAllPatternEmpty() {
+    final Stage stage = new Stage();
+    final ActorSet a = stage.findAll(Pattern.compile("^a/.*$"));
+    final ActorSet b = stage.findAll(Pattern.compile("^b/.*$"));
+    assertThat(a).isEmpty();
+    assertThat(b).isEmpty();
+    assertThat(stage.findAll(Pattern.compile("^./3$"))).isEmpty();
+    assertThat(stage.findAll(Pattern.compile(".*"))).isEmpty();
+  }
+
+  @Test
+  public void findAllPatternNotFound() {
+    final Stage stage = new Stage();
+    final TestExecutorService executorService = new TestExecutorService();
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("a/" + i, new TestRole(executorService));
+    }
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("b/" + i, new TestRole(executorService));
+    }
+    assertThat(stage.findAll(Pattern.compile("^c/.*$"))).isEmpty();
+  }
+
+  @Test
+  public void findAllTester() {
+    final Stage stage = new Stage();
+    final TestExecutorService executorService = new TestExecutorService();
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("a/" + i, new TestRole(executorService));
+    }
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("b/" + i, new TestRole(executorService));
+    }
+    final ActorSet a = stage.findAll(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return actor.getId().startsWith("a/");
+      }
+    });
+    final ActorSet b = stage.findAll(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return actor.getId().startsWith("b/");
+      }
+    });
+    assertThat(a).hasSize(5).doesNotContainAnyElementsOf(b);
+    assertThat(b).hasSize(5);
+    assertThat(stage.findAll(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return actor.getId().endsWith("3");
+      }
+    })).hasSize(2);
+    assertThat(stage.findAll(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return true;
+      }
+    })).hasSize(10).isEqualTo(stage.getAll());
+  }
+
+  @Test
+  public void findAllTesterEmpty() {
+    final Stage stage = new Stage();
+    final ActorSet a = stage.findAll(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return actor.getId().startsWith("a/");
+      }
+    });
+    final ActorSet b = stage.findAll(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return actor.getId().startsWith("b/");
+      }
+    });
+    assertThat(a).isEmpty();
+    assertThat(b).isEmpty();
+    assertThat(stage.findAll(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return actor.getId().endsWith("3");
+      }
+    })).isEmpty();
+    assertThat(stage.findAll(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return true;
+      }
+    })).isEmpty();
+  }
+
+  @Test(expected = IndexOutOfBoundsException.class)
+  public void findAllTesterFailure() {
+    final Stage stage = new Stage();
+    final TestExecutorService executorService = new TestExecutorService();
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("a/" + i, new TestRole(executorService));
+    }
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("b/" + i, new TestRole(executorService));
+    }
+    assertThat(stage.findAll(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        throw new IndexOutOfBoundsException();
+      }
+    }));
+  }
+
+  @Test
+  public void findAllTesterNotFound() {
+    final Stage stage = new Stage();
+    final TestExecutorService executorService = new TestExecutorService();
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("a/" + i, new TestRole(executorService));
+    }
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("b/" + i, new TestRole(executorService));
+    }
+    assertThat(stage.findAll(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return actor.getId().startsWith("c/");
+      }
+    })).isEmpty();
+  }
+
+  @Test
+  public void findAnyPattern() {
+    final Stage stage = new Stage();
+    final TestExecutorService executorService = new TestExecutorService();
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("a/" + i, new TestRole(executorService));
+    }
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("b/" + i, new TestRole(executorService));
+    }
+    final Actor a = stage.findAny(Pattern.compile("^a/.*$"));
+    final Actor b = stage.findAny(Pattern.compile("^b/.*$"));
+    assertThat(a).isNotNull().isNotEqualTo(b);
+    assertThat(b).isNotNull();
+    assertThat(stage.findAny(Pattern.compile("^./3$"))).isNotNull();
+    assertThat(stage.findAny(Pattern.compile(".*"))).isNotNull();
+  }
+
+  @Test
+  public void findAnyPatternEmpty() {
+    final Stage stage = new Stage();
+    assertThat(stage.findAny(Pattern.compile("^./3$"))).isNull();
+    assertThat(stage.findAny(Pattern.compile(".*"))).isNull();
+  }
+
+  @Test
+  public void findAnyPatternNotFound() {
+    final Stage stage = new Stage();
+    final TestExecutorService executorService = new TestExecutorService();
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("a/" + i, new TestRole(executorService));
+    }
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("b/" + i, new TestRole(executorService));
+    }
+    assertThat(stage.findAny(Pattern.compile("^c/.*$"))).isNull();
+  }
+
+  @Test
+  public void findAnyTester() {
+    final Stage stage = new Stage();
+    final TestExecutorService executorService = new TestExecutorService();
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("a/" + i, new TestRole(executorService));
+    }
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("b/" + i, new TestRole(executorService));
+    }
+    final Actor a = stage.findAny(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return actor.getId().startsWith("a/");
+      }
+    });
+    final Actor b = stage.findAny(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return actor.getId().startsWith("b/");
+      }
+    });
+    assertThat(a).isNotNull().isNotEqualTo(b);
+    assertThat(b).isNotNull();
+    assertThat(stage.findAny(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return actor.getId().endsWith("3");
+      }
+    })).isNotNull();
+    assertThat(stage.findAny(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return true;
+      }
+    })).isNotNull();
+  }
+
+  @Test
+  public void findAnyTesterEmpty() {
+    final Stage stage = new Stage();
+    final Actor a = stage.findAny(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return actor.getId().startsWith("a/");
+      }
+    });
+    final Actor b = stage.findAny(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return actor.getId().startsWith("b/");
+      }
+    });
+    assertThat(a).isNull();
+    assertThat(b).isNull();
+    assertThat(stage.findAny(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return actor.getId().endsWith("3");
+      }
+    })).isNull();
+    assertThat(stage.findAny(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return true;
+      }
+    })).isNull();
+  }
+
+  @Test(expected = IndexOutOfBoundsException.class)
+  public void findAnyTesterFailure() {
+    final Stage stage = new Stage();
+    final TestExecutorService executorService = new TestExecutorService();
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("a/" + i, new TestRole(executorService));
+    }
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("b/" + i, new TestRole(executorService));
+    }
+    assertThat(stage.findAny(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        throw new IndexOutOfBoundsException();
+      }
+    }));
+  }
+
+  @Test
+  public void findAnyTesterNotFound() {
+    final Stage stage = new Stage();
+    final TestExecutorService executorService = new TestExecutorService();
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("a/" + i, new TestRole(executorService));
+    }
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("b/" + i, new TestRole(executorService));
+    }
+    assertThat(stage.findAny(new Tester<Actor>() {
+
+      public boolean test(final Actor actor) {
+        return actor.getId().startsWith("c/");
+      }
+    })).isNull();
+  }
+
+  @Test
+  public void get() {
+    final Stage stage = new Stage();
+    final TestExecutorService executorService = new TestExecutorService();
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("a/" + i, new TestRole(executorService));
+    }
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("b/" + i, new TestRole(executorService));
+    }
+    final Actor a = stage.get("a/3");
+    final Actor b = stage.get("b/3");
+    assertThat(a).isNotNull().isNotEqualTo(b);
+    assertThat(b).isNotNull();
+  }
+
+  @Test
+  public void getAll() {
+    final Stage stage = new Stage();
+    final TestExecutorService executorService = new TestExecutorService();
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("a/" + i, new TestRole(executorService));
+    }
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("b/" + i, new TestRole(executorService));
+    }
+    assertThat(stage.getAll()).hasSize(10);
+  }
+
+  @Test
+  public void getAllEmpty() {
+    final Stage stage = new Stage();
+    assertThat(stage.getAll()).isEmpty();
+  }
+
+  @Test
+  public void getEmpty() {
+    final Stage stage = new Stage();
+    final Actor a = stage.get("a/3");
+    final Actor b = stage.get("b/3");
+    assertThat(a).isNull();
+    assertThat(b).isNull();
+  }
+
+  @Test
+  public void getNotFound() {
+    final Stage stage = new Stage();
+    final TestExecutorService executorService = new TestExecutorService();
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("a/" + i, new TestRole(executorService));
+    }
+    for (int i = 0; i < 5; i++) {
+      stage.createActor("b/" + i, new TestRole(executorService));
+    }
+    assertThat(stage.get("c/3")).isNull();
   }
 
   @Test

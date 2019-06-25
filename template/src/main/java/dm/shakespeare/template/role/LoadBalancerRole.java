@@ -20,35 +20,18 @@ import org.jetbrains.annotations.NotNull;
 
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.SerializableRole;
-import dm.shakespeare.template.behavior.AnnotationBehavior;
+import dm.shakespeare.template.behavior.LoadBalancerBehavior;
 import dm.shakespeare.template.config.BuildConfig;
-import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 01/17/2019.
+ * Created by davide-maestroni on 06/25/2019.
  */
-public class AnnotatedRole extends SerializableRole {
+public class LoadBalancerRole extends SerializableRole {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private final Object object;
-
-  public AnnotatedRole() {
-    object = this;
-  }
-
-  public AnnotatedRole(@NotNull final Object object) {
-    this.object = ConstantConditions.notNull("object", object);
-  }
-
-  // json
   @NotNull
-  public Object getObject() {
-    return object;
-  }
-
-  @NotNull
-  protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
-    return new AnnotationBehavior(object);
+  protected Behavior getSerializableBehavior(@NotNull final String id) {
+    return new LoadBalancerBehavior();
   }
 }

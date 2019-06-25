@@ -18,28 +18,47 @@ package dm.shakespeare.template.behavior;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
+import java.util.WeakHashMap;
+
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Headers;
+import dm.shakespeare.message.Bounce;
 import dm.shakespeare.template.config.BuildConfig;
 
 /**
  * Created by davide-maestroni on 06/25/2019.
  */
-public class ProxyBehavior extends AbstractProxyBehavior {
+public class RoundRobinBehavior extends ProxyBehavior {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private transient Actor proxied;
+  private transient final ArrayList<Actor> proxied = new ArrayList<Actor>();
+  private transient final WeakHashMap<Actor, Actor> senders = new WeakHashMap<Actor, Actor>();
+
+  private transient int current;
 
   @Override
   public void onMessage(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
     if (message == ProxySignal.ADD_PROXIED) {
-      proxied = envelop.getSender();
+      final Actor sender = envelop.getSender();
+      final ArrayList<Actor> proxied = this.proxied;
+      if (!proxied.contains(sender)) {
+        proxied.add(sender);
+      }
 
     } else if (message == ProxySignal.REMOVE_PROXIED) {
-      proxied = null;
+      final Actor sender = envelop.getSender();
+      final ArrayList<Actor> proxied = this.proxied;
+      final int index = proxied.indexOf(sender);
+      if (index >= 0) {
+        if (index < current) {
+          --current;
+        }
+        proxied.remove(sender);
+      }
 
     } else {
       super.onMessage(message, envelop, agent);
@@ -48,18 +67,22 @@ public class ProxyBehavior extends AbstractProxyBehavior {
 
   protected void onIncoming(@NotNull final Actor sender, final Object message, final long sentAt,
       @NotNull final Headers headers, @NotNull final Agent agent) throws Exception {
-    if (proxied != null) {
-      proxied.tell(message, headers.asSentAt(sentAt), agent.getSelf());
+    final ArrayList<Actor> proxied = this.proxied;
+    if (proxied.isEmpty()) {
+      sender.tell(new Bounce(message, headers), headers.threadOnly(), agent.getSelf());
+
+    } else {
+      final WeakHashMap<Actor, Actor> senders = this.senders;
+      Actor actor = senders.get(sender);
+      if (actor == null) {
+        final int size = proxied.size();
+        actor = proxied.get(current % size);
+        if (++current >= size) {
+          current = 0;
+        }
+        senders.put(sender, actor);
+      }
+      actor.tell(message, headers.asSentAt(sentAt), agent.getSelf());
     }
-  }
-
-  protected void onOutgoing(@NotNull final Actor sender, @NotNull final Actor recipient,
-      final Object message, final long sentAt, @NotNull final Headers headers,
-      @NotNull final Agent agent) throws Exception {
-    recipient.tell(message, headers.asSentAt(sentAt), agent.getSelf());
-  }
-
-  public enum ProxySignal {
-    ADD_PROXIED, REMOVE_PROXIED
   }
 }
