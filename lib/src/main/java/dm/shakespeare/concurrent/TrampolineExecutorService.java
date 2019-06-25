@@ -91,6 +91,9 @@ class TrampolineExecutorService extends AbstractExecutorService {
 
   public boolean awaitTermination(final long timeout, @NotNull final TimeUnit unit) throws
       InterruptedException {
+    if (isTerminated()) {
+      return true;
+    }
     final RunnableLatch latch = new RunnableLatch();
     run(latch);
     return latch.await(timeout, unit);

@@ -16,12 +16,16 @@
 
 package dm.shakespeare;
 
+import org.assertj.core.data.Offset;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import java.util.Collections;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import dm.shakespeare.actor.AbstractBehavior;
@@ -82,6 +86,123 @@ public class AgentTest {
   }
 
   @Test
+  public void envelop() {
+    final AtomicBoolean called = new AtomicBoolean();
+    final AtomicLong sent = new AtomicLong();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            final long received = System.currentTimeMillis();
+            assertThat(envelop.getSentAt()).isCloseTo(sent.get(), Offset.offset(10L));
+            assertThat(envelop.getReceivedAt()).isCloseTo(received, Offset.offset(10L));
+            assertThat(envelop.getHeaders().getThreadId()).isEqualTo("test");
+            called.set(true);
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+    });
+    sent.set(System.currentTimeMillis());
+    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
+    assertThat(called.get()).isTrue();
+  }
+
+  @Test
+  public void envelopOffset() {
+    final AtomicBoolean called = new AtomicBoolean();
+    final long sent = System.currentTimeMillis();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            final long received = System.currentTimeMillis();
+            assertThat(envelop.getSentAt()).isCloseTo(sent, Offset.offset(10L));
+            assertThat(envelop.getReceivedAt()).isCloseTo(received, Offset.offset(10L));
+            called.set(true);
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+    });
+    actor.tell("test", new Headers().asSentAt(sent), Stage.STAND_IN);
+    assertThat(called.get()).isTrue();
+  }
+
+  @Test
+  public void envelopPreventReceipt() {
+    final AtomicBoolean called = new AtomicBoolean();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            envelop.preventReceipt();
+            assertThat(envelop.isPreventReceipt()).isTrue();
+            called.set(true);
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+    });
+    final AtomicReference<Object> msg = new AtomicReference<Object>();
+    final Actor observer = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            if (Receipt.isReceipt(message, "test")) {
+              msg.set(message);
+            }
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+    });
+    actor.tell("test", new Headers().withReceiptId("test"), observer);
+    assertThat(called.get()).isTrue();
+    assertThat(msg.get()).isNull();
+  }
+
+  @Test
   public void executorService() {
     final AtomicBoolean called = new AtomicBoolean();
     final Actor actor = Stage.newActor(new Role() {
@@ -99,6 +220,315 @@ public class AgentTest {
                 called.set(true);
               }
             });
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+    });
+    actor.tell("test", null, Stage.STAND_IN);
+    assertThat(called.get()).isTrue();
+  }
+
+  @Test
+  public void executorServiceInvokeAll() {
+    final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            try {
+              agent.getExecutorService().invokeAll(Collections.singleton(new Callable<Object>() {
+
+                public Object call() {
+                  return null;
+                }
+              }));
+
+            } catch (Exception e) {
+              exception.set(e);
+            }
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+    });
+    actor.tell("test", null, Stage.STAND_IN);
+    assertThat(exception.get()).isExactlyInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
+  public void executorServiceInvokeAllTimeout() {
+    final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            try {
+              agent.getExecutorService().invokeAll(Collections.singleton(new Callable<Object>() {
+
+                public Object call() {
+                  return null;
+                }
+              }), 100, TimeUnit.MILLISECONDS);
+
+            } catch (Exception e) {
+              exception.set(e);
+            }
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+    });
+    actor.tell("test", null, Stage.STAND_IN);
+    assertThat(exception.get()).isExactlyInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
+  public void executorServiceInvokeAny() {
+    final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            try {
+              agent.getExecutorService().invokeAny(Collections.singleton(new Callable<Object>() {
+
+                public Object call() {
+                  return null;
+                }
+              }));
+
+            } catch (Exception e) {
+              exception.set(e);
+            }
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+    });
+    actor.tell("test", null, Stage.STAND_IN);
+    assertThat(exception.get()).isExactlyInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
+  public void executorServiceInvokeAnyTimeout() {
+    final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            try {
+              agent.getExecutorService().invokeAny(Collections.singleton(new Callable<Object>() {
+
+                public Object call() {
+                  return null;
+                }
+              }), 100, TimeUnit.MILLISECONDS);
+
+            } catch (Exception e) {
+              exception.set(e);
+            }
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+    });
+    actor.tell("test", null, Stage.STAND_IN);
+    assertThat(exception.get()).isExactlyInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
+  public void executorServiceShutdown() {
+    final AtomicBoolean called = new AtomicBoolean();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) throws InterruptedException {
+            final ExecutorService executorService = agent.getExecutorService();
+            executorService.shutdown();
+            assertThat(executorService.isShutdown()).isTrue();
+            assertThat(executorService.awaitTermination(100, TimeUnit.MILLISECONDS)).isTrue();
+            assertThat(executorService.isTerminated()).isTrue();
+            called.set(true);
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.newTrampolineExecutor();
+      }
+    });
+    actor.tell("test", null, Stage.STAND_IN);
+    assertThat(called.get()).isTrue();
+  }
+
+  @Test
+  public void executorServiceShutdownNow() {
+    final AtomicBoolean called = new AtomicBoolean();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) throws InterruptedException {
+            final ExecutorService executorService = agent.getExecutorService();
+            assertThat(executorService.shutdownNow()).isEmpty();
+            assertThat(executorService.isShutdown()).isTrue();
+            assertThat(executorService.awaitTermination(100, TimeUnit.MILLISECONDS)).isTrue();
+            assertThat(executorService.isTerminated()).isTrue();
+            called.set(true);
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.newTrampolineExecutor();
+      }
+    });
+    actor.tell("test", null, Stage.STAND_IN);
+    assertThat(called.get()).isTrue();
+  }
+
+  @Test
+  public void executorServiceSubmitCallable() {
+    final AtomicBoolean called = new AtomicBoolean();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            agent.getExecutorService().submit(new Callable<Object>() {
+
+              public Object call() {
+                called.set(true);
+                return null;
+              }
+            });
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+    });
+    actor.tell("test", null, Stage.STAND_IN);
+    assertThat(called.get()).isTrue();
+  }
+
+  @Test
+  public void executorServiceSubmitRunnable() {
+    final AtomicBoolean called = new AtomicBoolean();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            agent.getExecutorService().submit(new Runnable() {
+
+              public void run() {
+                called.set(true);
+              }
+            });
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+    });
+    actor.tell("test", null, Stage.STAND_IN);
+    assertThat(called.get()).isTrue();
+  }
+
+  @Test
+  public void executorServiceSubmitRunnableResult() {
+    final AtomicBoolean called = new AtomicBoolean();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            agent.getExecutorService().submit(new Runnable() {
+
+              public void run() {
+                called.set(true);
+              }
+            }, null);
           }
         };
       }
