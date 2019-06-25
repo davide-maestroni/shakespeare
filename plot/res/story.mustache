@@ -880,7 +880,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           exception = new NarrationStoppedException();
         }
         if (queue.isEmpty()) {
-          actor.tell(NarratorSignal.AVAILABLE, null, Stage.STAND_IN);
+          actor.tell(NarratorSignal.AVAILABLE, Headers.NONE, Stage.STAND_IN);
         }
       }
     }
@@ -921,7 +921,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       final boolean wasEmpty = queue.isEmpty();
       if (queue.offer(resolution, timeout, unit)) {
         if (wasEmpty) {
-          actor.tell(NarratorSignal.AVAILABLE, null, Stage.STAND_IN);
+          actor.tell(NarratorSignal.AVAILABLE, Headers.NONE, Stage.STAND_IN);
         }
         return true;
       }
@@ -1238,7 +1238,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private void cancelInputActors(@NotNull final Agent agent) {
       final Actor self = agent.getSelf();
       for (final Actor actor : getInputActors()) {
-        actor.tell(EventSignal.CANCEL, null, self);
+        actor.tell(EventSignal.CANCEL, Headers.NONE, self);
       }
     }
 
@@ -1438,7 +1438,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
                 try {
                   final Actor conflictActor = getConflictActor(conflict, agent);
                   if (conflictActor != null) {
-                    conflictActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+                    conflictActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
                   }
                   fail(conflict, agent);
 
@@ -1492,7 +1492,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else if (message == EventSignal.CANCEL) {
-          continueActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          continueActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           cancelInputActors(agent);
           agent.setBehavior(new CancelBehavior());
 
@@ -1746,7 +1746,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == EventSignal.CANCEL) {
           final Actor self = agent.getSelf();
           outputActor.tell(StorySignal.BREAK, outputHeaders, self);
-          outputActor.tell(EventSignal.CANCEL, null, self);
+          outputActor.tell(EventSignal.CANCEL, Headers.NONE, self);
           cancelInputActors(agent);
           fail(Conflict.ofCancel(), agent);
         }
@@ -1787,7 +1787,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else if (message == EventSignal.CANCEL) {
-          outputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          outputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           cancelInputActors(agent);
           agent.setBehavior(new CancelBehavior());
 
@@ -1985,7 +1985,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           agent.setBehavior(new InputBehavior());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -2024,7 +2024,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           agent.setBehavior(new CancelBehavior());
 
         } else if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
@@ -2080,7 +2080,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -2281,7 +2281,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           agent.setBehavior(new InputBehavior());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -2320,7 +2320,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           agent.setBehavior(new CancelBehavior());
 
         } else if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
@@ -2376,7 +2376,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -2424,8 +2424,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == EventSignal.CANCEL) {
           final Actor self = agent.getSelf();
           outputActor.tell(StorySignal.BREAK, outputHeaders, self);
-          outputActor.tell(EventSignal.CANCEL, null, self);
-          inputActor.tell(EventSignal.CANCEL, null, self);
+          outputActor.tell(EventSignal.CANCEL, Headers.NONE, self);
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, self);
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -2466,8 +2466,8 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else if (message == EventSignal.CANCEL) {
           final Actor self = agent.getSelf();
-          outputActor.tell(EventSignal.CANCEL, null, self);
-          inputActor.tell(EventSignal.CANCEL, null, self);
+          outputActor.tell(EventSignal.CANCEL, Headers.NONE, self);
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, self);
           agent.setBehavior(new CancelBehavior());
 
         } else {
@@ -2651,7 +2651,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           agent.setBehavior(new InputBehavior());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -2684,7 +2684,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           agent.setBehavior(new CancelBehavior());
 
         } else {
@@ -2778,9 +2778,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (message == EventSignal.CANCEL) {
           final Actor self = agent.getSelf();
           for (final Actor outputActor : outputActors.keySet()) {
-            outputActor.tell(EventSignal.CANCEL, null, self);
+            outputActor.tell(EventSignal.CANCEL, Headers.NONE, self);
           }
-          inputActor.tell(EventSignal.CANCEL, null, self);
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, self);
           agent.setBehavior(new CancelBehavior());
 
         } else {
@@ -3149,7 +3149,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           agent.setBehavior(new InputBehavior());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -3181,7 +3181,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           agent.setBehavior(new CancelBehavior());
 
         } else {
@@ -3649,7 +3649,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           agent.setBehavior(new InputBehavior());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -3682,7 +3682,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           agent.setBehavior(new CancelBehavior());
 
         } else {
@@ -3763,10 +3763,10 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           for (final Entry<Actor, OutputEffect> entry : outputEffects.entrySet()) {
             final OutputEffect outputEffect = entry.getValue();
             if (!outputEffect.isSet()) {
-              entry.getKey().tell(EventSignal.CANCEL, null, self);
+              entry.getKey().tell(EventSignal.CANCEL, Headers.NONE, self);
             }
           }
-          inputActor.tell(EventSignal.CANCEL, null, self);
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, self);
           agent.setBehavior(new CancelBehavior());
 
         } else {
@@ -4168,7 +4168,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           agent.setBehavior(new InputBehavior());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -4203,7 +4203,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           if (inputsPending) {
             agent.setBehavior(new CancelBehavior());
 
@@ -4354,7 +4354,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           agent.setBehavior(new InputBehavior());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -4389,7 +4389,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           if (inputsPending) {
             agent.setBehavior(new CancelBehavior());
 
@@ -4766,7 +4766,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           agent.setBehavior(new InputBehavior());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -4798,7 +4798,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, null, agent.getSelf());
+          inputActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
           agent.setBehavior(new CancelBehavior());
 
         } else if (inputThreadId.equals(envelop.getHeaders().getThreadId())) {

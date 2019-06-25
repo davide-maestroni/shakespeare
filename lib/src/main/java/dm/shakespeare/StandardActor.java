@@ -17,14 +17,12 @@
 package dm.shakespeare;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import dm.shakespeare.actor.Actor;
-import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Headers;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.message.Bounce;
@@ -141,7 +139,7 @@ class StandardActor implements Actor {
     return false;
   }
 
-  public void tell(final Object message, @Nullable final Headers headers,
+  public void tell(final Object message, @NotNull final Headers headers,
       @NotNull final Actor sender) {
     logger.dbg("[%s] sending: headers=%s - sender=%s - message=%s", this, headers, sender, message);
     if (quotaHandler.consumeQuota()) {
@@ -159,17 +157,17 @@ class StandardActor implements Actor {
       } catch (final RejectedExecutionException e) {
         logger.wrn(e, "[%s] failed to send: headers=%s - sender=%s - message=%s", this, headers,
             sender, message);
-        rejected(message, new BounceEnvelop(sender, headers));
+        rejected(message, headers, sender);
       }
 
     } else {
       logger.wrn("[%s] quota exceeded: headers=%s - sender=%s - message=%s", this, headers, sender,
           message);
-      quotaExceeded(message, new BounceEnvelop(sender, headers));
+      quotaExceeded(message, headers, sender);
     }
   }
 
-  public void tellAll(@NotNull final Iterable<?> messages, @Nullable final Headers headers,
+  public void tellAll(@NotNull final Iterable<?> messages, @NotNull final Headers headers,
       @NotNull final Actor sender) {
     logger.dbg("[%s] sending all: headers=%s - sender=%s - message=%s", this, headers, sender,
         messages);
@@ -188,13 +186,13 @@ class StandardActor implements Actor {
       } catch (final RejectedExecutionException e) {
         logger.wrn(e, "[%s] failed to send all: headers=%s - sender=%s - message=%s", this, headers,
             sender, messages);
-        rejected(messages, new BounceEnvelop(sender, headers));
+        rejected(messages, headers, sender);
       }
 
     } else {
       logger.wrn("[%s] quota exceeded all: headers=%s - sender=%s - message=%s", this, headers,
           sender, messages);
-      quotaExceeded(messages, new BounceEnvelop(sender, headers));
+      quotaExceeded(messages, headers, sender);
     }
   }
 
@@ -203,39 +201,39 @@ class StandardActor implements Actor {
     return super.toString() + ":" + id;
   }
 
-  private void quotaExceeded(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
-    final Headers headers = envelop.getHeaders();
+  private void quotaExceeded(@NotNull final Iterable<?> messages, @NotNull final Headers headers,
+      @NotNull final Actor sender) {
     if (headers.getReceiptId() != null) {
       final ArrayList<Object> bounces = new ArrayList<Object>();
       for (final Object message : messages) {
         bounces.add(new QuotaExceeded(message, headers));
       }
-      envelop.getSender().tellAll(bounces, headers.threadOnly(), this);
+      sender.tellAll(bounces, headers.threadOnly(), this);
     }
   }
 
-  private void quotaExceeded(final Object message, @NotNull final Envelop envelop) {
-    final Headers headers = envelop.getHeaders();
+  private void quotaExceeded(final Object message, @NotNull final Headers headers,
+      @NotNull final Actor sender) {
     if (headers.getReceiptId() != null) {
-      envelop.getSender().tell(new QuotaExceeded(message, headers), headers.threadOnly(), this);
+      sender.tell(new QuotaExceeded(message, headers), headers.threadOnly(), this);
     }
   }
 
-  private void rejected(@NotNull final Iterable<?> messages, @NotNull final Envelop envelop) {
-    final Headers headers = envelop.getHeaders();
+  private void rejected(@NotNull final Iterable<?> messages, @NotNull final Headers headers,
+      @NotNull final Actor sender) {
     if (headers.getReceiptId() != null) {
       final ArrayList<Object> bounces = new ArrayList<Object>();
       for (final Object message : messages) {
         bounces.add(new Bounce(message, headers));
       }
-      envelop.getSender().tellAll(bounces, headers.threadOnly(), this);
+      sender.tellAll(bounces, headers.threadOnly(), this);
     }
   }
 
-  private void rejected(final Object message, @NotNull final Envelop envelop) {
-    final Headers headers = envelop.getHeaders();
+  private void rejected(final Object message, @NotNull final Headers headers,
+      @NotNull final Actor sender) {
     if (headers.getReceiptId() != null) {
-      envelop.getSender().tell(new Bounce(message, headers), headers.threadOnly(), this);
+      sender.tell(new Bounce(message, headers), headers.threadOnly(), this);
     }
   }
 
@@ -244,16 +242,6 @@ class StandardActor implements Actor {
     boolean consumeQuota();
 
     void releaseQuota();
-  }
-
-  private static class BounceEnvelop extends StandardEnvelop {
-
-    BounceEnvelop(@NotNull final Actor sender, @Nullable final Headers headers) {
-      super(sender, headers);
-    }
-
-    void open() {
-    }
   }
 
   private static class DefaultQuotaHandler implements QuotaHandler {

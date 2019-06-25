@@ -20,6 +20,7 @@ import org.jetbrains.annotations.NotNull;
 
 import dm.shakespeare.Stage;
 import dm.shakespeare.actor.Actor;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -34,8 +35,8 @@ public class Spectator {
   }
 
   void cancel(final boolean thenDismiss) {
-    actor.tell(thenDismiss ? SpectatorSignal.CANCEL_AND_DISMISS : SpectatorSignal.CANCEL, null,
-        Stage.STAND_IN);
+    actor.tell(thenDismiss ? SpectatorSignal.CANCEL_AND_DISMISS : SpectatorSignal.CANCEL,
+        Headers.NONE, Stage.STAND_IN);
   }
 
   void dismiss() {
@@ -43,11 +44,11 @@ public class Spectator {
   }
 
   void pause() {
-    actor.tell(SpectatorSignal.PAUSE, null, Stage.STAND_IN);
+    actor.tell(SpectatorSignal.PAUSE, Headers.NONE, Stage.STAND_IN);
   }
 
   void resume() {
-    actor.tell(SpectatorSignal.RESUME, null, Stage.STAND_IN);
+    actor.tell(SpectatorSignal.RESUME, Headers.NONE, Stage.STAND_IN);
   }
 
   enum SpectatorSignal {

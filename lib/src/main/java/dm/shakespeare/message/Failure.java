@@ -19,7 +19,6 @@ package dm.shakespeare.message;
 import org.jetbrains.annotations.NotNull;
 
 import dm.shakespeare.actor.Headers;
-import dm.shakespeare.actor.Headers;
 import dm.shakespeare.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -36,7 +35,7 @@ public class Failure extends Bounce {
    * Creates a new empty failure message.
    */
   public Failure() {
-    this(null, Headers.EMPTY, new IllegalArgumentException());
+    this(null, Headers.NONE, new IllegalArgumentException());
   }
 
   /**

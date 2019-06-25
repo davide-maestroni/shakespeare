@@ -126,7 +126,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
     final Actor self = agent.getSelf();
     final int size = delayedMessages.size();
     for (int i = 0; i < size; ++i) {
-      self.tell(SupervisedSignal.DUMMY_MESSAGE, null, self);
+      self.tell(SupervisedSignal.DUMMY_MESSAGE, Headers.NONE, self);
     }
   }
 
@@ -382,7 +382,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
         if (!sender.equals(self)) {
           if (!sender.equals(supervisor) && sender.addObserver(self)) {
             // notify old supervisor
-            supervisor.tell(REPLACE, null, self);
+            supervisor.tell(REPLACE, Headers.NONE, self);
             supervisor = sender;
             supervisorThread = headers.getThreadId();
             sender.tell(new SupervisedFailure(failureId, failure),

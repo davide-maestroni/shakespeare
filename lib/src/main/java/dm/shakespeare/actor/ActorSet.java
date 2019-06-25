@@ -77,7 +77,7 @@ public interface ActorSet extends Set<Actor> {
    * @param sender  the sender actor.
    * @see Actor#tell(Object, Headers, Actor)
    */
-  void tell(Object message, @Nullable Headers headers, @NotNull Actor sender);
+  void tell(Object message, @NotNull Headers headers, @NotNull Actor sender);
 
   /**
    * Tells the specified batch of messages to all the actors in this set.
@@ -87,5 +87,5 @@ public interface ActorSet extends Set<Actor> {
    * @param sender   the sender actor.
    * @see Actor#tellAll(Iterable, Headers, Actor)
    */
-  void tellAll(@NotNull Iterable<?> messages, @Nullable Headers headers, @NotNull Actor sender);
+  void tellAll(@NotNull Iterable<?> messages, @NotNull Headers headers, @NotNull Actor sender);
 }

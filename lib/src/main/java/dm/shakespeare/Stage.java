@@ -33,6 +33,7 @@ import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.ActorSet;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.function.Tester;
@@ -339,7 +340,7 @@ public class Stage {
     }
     if (actor.addObserver(this.actor)) {
       for (final Actor observer : observers) {
-        observer.tell(CREATE, null, actor);
+        observer.tell(CREATE, Headers.NONE, actor);
       }
 
     } else {
@@ -376,7 +377,7 @@ public class Stage {
     if (actor != null) {
       actor.removeObserver(this.actor);
       for (final Actor observer : observers) {
-        observer.tell(DISMISS, null, actor);
+        observer.tell(DISMISS, Headers.NONE, actor);
       }
     }
   }

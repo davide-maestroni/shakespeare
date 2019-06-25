@@ -119,7 +119,7 @@ public class Plot {
     SettingInfo.set(settingInfo);
     try {
       final ActorEvent<T> event = new ActorEvent<T>(actor);
-      actor.tell(new CreateNullaryEvent(eventCreator), null, event.getActor());
+      actor.tell(new CreateNullaryEvent(eventCreator), Headers.NONE, event.getActor());
       return event;
 
     } finally {
@@ -207,7 +207,7 @@ public class Plot {
     SettingInfo.set(settingInfo);
     try {
       final ActorStory<T> story = new ActorStory<T>(actor, memory);
-      actor.tell(new CreateNullaryStory(storyCreator), null, story.getActor());
+      actor.tell(new CreateNullaryStory(storyCreator), Headers.NONE, story.getActor());
       return story;
 
     } finally {

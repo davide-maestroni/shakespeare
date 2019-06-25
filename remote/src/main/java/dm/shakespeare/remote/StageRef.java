@@ -277,7 +277,7 @@ public class StageRef extends Stage {
             if (actorId != null) {
               final Actor actor = StageRef.super.get(actorId);
               if (actor != null) {
-                actor.tell(request, null, Stage.STAND_IN);
+                actor.tell(request, Headers.NONE, Stage.STAND_IN);
                 return new MessageResponse();
               }
             }
@@ -551,7 +551,7 @@ public class StageRef extends Stage {
     for (final Actor actor : super.getAll()) {
       final ActorID actorID = ids.get(actor.getId());
       if (actorID != null) {
-        actor.tell(new RefreshInstanceId(actorID.getInstanceId()), null, Stage.STAND_IN);
+        actor.tell(new RefreshInstanceId(actorID.getInstanceId()), Headers.NONE, Stage.STAND_IN);
 
       } else if (retainAll) {
         actor.dismiss();
@@ -728,7 +728,7 @@ public class StageRef extends Stage {
         final Headers headers = request.getHeaders();
         senderActor.getActor()
             .tell(object,
-                ((headers != null) ? headers : Headers.EMPTY).asSentAt(request.getSentTimestamp()),
+                ((headers != null) ? headers : Headers.NONE).asSentAt(request.getSentTimestamp()),
                 agent.getSelf());
 
       } catch (final Exception e) {

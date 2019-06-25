@@ -17,7 +17,6 @@
 package dm.shakespeare;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Envelop;
@@ -42,10 +41,10 @@ abstract class StandardEnvelop implements Envelop, Runnable {
    * @param sender  the sender actor.
    * @param headers the message headers.
    */
-  StandardEnvelop(@NotNull final Actor sender, @Nullable final Headers headers) {
+  StandardEnvelop(@NotNull final Actor sender, @NotNull final Headers headers) {
     this.sender = ConstantConditions.notNull("sender", sender);
-    this.headers = (headers != null) ? headers : Headers.EMPTY;
-    sentAt = System.currentTimeMillis() - this.headers.getTimeOffset();
+    this.headers = ConstantConditions.notNull("headers", headers);
+    sentAt = System.currentTimeMillis() - headers.getTimeOffset();
   }
 
   @NotNull

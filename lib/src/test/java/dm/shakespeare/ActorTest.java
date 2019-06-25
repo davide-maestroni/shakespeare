@@ -45,6 +45,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class ActorTest {
 
+  // TODO: 2019-06-25 NPE
+
   @Test
   public void addObserver() {
     final Stage stage = new Stage();
@@ -359,7 +361,7 @@ public class ActorTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole role = new TestRole(executorService);
     final Actor actor = stage.createActor(role);
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(role.getMessages()).containsExactly("test");
     assertThat(role.getSenders()).containsExactly(Stage.STAND_IN);
@@ -371,7 +373,7 @@ public class ActorTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole role = new TestRole(executorService);
     final Actor actor = stage.createActor(role);
-    actor.tellAll(Arrays.asList("test1", "test2"), null, Stage.STAND_IN);
+    actor.tellAll(Arrays.asList("test1", "test2"), Headers.NONE, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(role.getMessages()).containsExactly("test1", "test2");
     assertThat(role.getSenders()).containsExactly(Stage.STAND_IN, Stage.STAND_IN);
@@ -425,7 +427,7 @@ public class ActorTest {
     });
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tellAll(Arrays.asList("test1", "test2"), null, observer);
+    actor.tellAll(Arrays.asList("test1", "test2"), Headers.NONE, observer);
     actor.tellAll(Arrays.asList("test1", "test2"), new Headers().withReceiptId("test"), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(2);
@@ -477,8 +479,8 @@ public class ActorTest {
     });
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tellAll(Arrays.asList("test1", "test2"), null, observer);
-    actor.tellAll(Arrays.asList("test1", "test2"), null, observer);
+    actor.tellAll(Arrays.asList("test1", "test2"), Headers.NONE, observer);
+    actor.tellAll(Arrays.asList("test1", "test2"), Headers.NONE, observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).isEmpty();
     assertThat(observerRole.getSenders()).isEmpty();
@@ -540,7 +542,7 @@ public class ActorTest {
     final Actor observer = stage.createActor(observerRole);
     rejectingExecutor.consumeAll();
     rejectingExecutor.setRejecting(true);
-    actor.tellAll(Arrays.asList("test1", "test2"), null, observer);
+    actor.tellAll(Arrays.asList("test1", "test2"), Headers.NONE, observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).isEmpty();
     assertThat(observerRole.getSenders()).isEmpty();
@@ -590,7 +592,7 @@ public class ActorTest {
     });
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tell("test", null, observer);
+    actor.tell("test", Headers.NONE, observer);
     actor.tell("test", new Headers().withReceiptId("test"), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(1);
@@ -636,8 +638,8 @@ public class ActorTest {
     });
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tell("test", null, observer);
-    actor.tell("test", null, observer);
+    actor.tell("test", Headers.NONE, observer);
+    actor.tell("test", Headers.NONE, observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).isEmpty();
     assertThat(observerRole.getSenders()).isEmpty();
@@ -697,7 +699,7 @@ public class ActorTest {
     final Actor observer = stage.createActor(observerRole);
     rejectingExecutor.consumeAll();
     rejectingExecutor.setRejecting(true);
-    actor.tell("test", null, observer);
+    actor.tell("test", Headers.NONE, observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).isEmpty();
     assertThat(observerRole.getSenders()).isEmpty();

@@ -47,6 +47,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class AgentTest {
 
+  // TODO: 2019-06-25 NPE setBehavior
+
   @Test
   public void dismissSelf() {
     final AtomicBoolean startCalled = new AtomicBoolean();
@@ -80,7 +82,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     assertThat(startCalled.get()).isTrue();
     assertThat(stopCalled.get()).isTrue();
   }
@@ -231,7 +233,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     assertThat(called.get()).isTrue();
   }
 
@@ -268,7 +270,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     assertThat(exception.get()).isExactlyInstanceOf(UnsupportedOperationException.class);
   }
 
@@ -305,7 +307,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     assertThat(exception.get()).isExactlyInstanceOf(UnsupportedOperationException.class);
   }
 
@@ -342,7 +344,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     assertThat(exception.get()).isExactlyInstanceOf(UnsupportedOperationException.class);
   }
 
@@ -379,7 +381,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     assertThat(exception.get()).isExactlyInstanceOf(UnsupportedOperationException.class);
   }
 
@@ -411,7 +413,7 @@ public class AgentTest {
         return ExecutorServices.newTrampolineExecutor();
       }
     });
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     assertThat(called.get()).isTrue();
   }
 
@@ -443,7 +445,7 @@ public class AgentTest {
         return ExecutorServices.newTrampolineExecutor();
       }
     });
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     assertThat(called.get()).isTrue();
   }
 
@@ -476,7 +478,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     assertThat(called.get()).isTrue();
   }
 
@@ -508,7 +510,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     assertThat(called.get()).isTrue();
   }
 
@@ -540,7 +542,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     assertThat(called.get()).isTrue();
   }
 
@@ -567,7 +569,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     }));
-    actor.get().tell("test", null, Stage.STAND_IN);
+    actor.get().tell("test", Headers.NONE, Stage.STAND_IN);
   }
 
   @Test
@@ -656,7 +658,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     assertThat(startCalled.get()).isTrue();
     assertThat(stopCalled.get()).isTrue();
   }
@@ -689,7 +691,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     Thread.sleep(1000);
     assertThat(called.get()).isTrue();
   }
@@ -722,7 +724,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     actor.dismiss();
     Thread.sleep(2000);
     assertThat(called.get()).isFalse();
@@ -762,7 +764,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     assertThat(called.get()).isTrue();
   }
 

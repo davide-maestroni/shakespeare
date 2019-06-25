@@ -46,16 +46,17 @@ import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.actor.SerializableRole;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.remote.config.LocalConfig;
 import dm.shakespeare.remote.config.RemoteConfig;
+import dm.shakespeare.remote.io.RawData;
 import dm.shakespeare.remote.transport.Connector;
 import dm.shakespeare.remote.transport.RemoteRequest;
 import dm.shakespeare.remote.transport.RemoteResponse;
 import dm.shakespeare.remote.util.Classes;
 import dm.shakespeare.remote.util.PLZW;
-import dm.shakespeare.remote.io.RawData;
 
 /**
  * Created by davide-maestroni on 04/18/2019.
@@ -77,20 +78,22 @@ public class RemoteServerTest {
     stage.connect();
     final Actor printActor = Stage.newActor(new PrintRole());
     final Actor actor = stage.createActor(new UpperRole());
-    actor.tell("hello remote!", null, printActor);
+    actor.tell("hello remote!", Headers.NONE, printActor);
   }
 
   @Test
   public void tes() throws Exception {
     {
-      final byte[] bytes = RawData.wrapOnce(
-          RemoteServerTest.class.getResourceAsStream("/TestRole.class")).toByteArray();
+      final byte[] bytes =
+          RawData.wrapOnce(RemoteServerTest.class.getResourceAsStream("/TestRole.class"))
+              .toByteArray();
       final Set<String> dependencies = Classes.getDependencies(ByteBuffer.wrap(bytes));
       System.out.println(dependencies);
     }
     {
-      final byte[] bytes = RawData.wrapOnce(
-          RemoteServerTest.class.getResourceAsStream("/TestRole$1.class")).toByteArray();
+      final byte[] bytes =
+          RawData.wrapOnce(RemoteServerTest.class.getResourceAsStream("/TestRole$1.class"))
+              .toByteArray();
       final Set<String> dependencies = Classes.getDependencies(ByteBuffer.wrap(bytes));
       System.out.println(dependencies);
     }
@@ -141,12 +144,14 @@ public class RemoteServerTest {
   @Test
   public void zip() throws Exception {
     String encoded = PLZW.getEncoder().encode("This is a test!".getBytes("US-ASCII"));
-//    System.out.println(Base64.encodeBytes("This is a test!".getBytes("US-ASCII"), Base64.GZIP).length());
+    //    System.out.println(Base64.encodeBytes("This is a test!".getBytes("US-ASCII"), Base64
+    //    .GZIP).length());
     byte[] decoded = PLZW.getDecoder().decode(encoded);
     System.out.println(new String(decoded, "US-ASCII"));
 
     PLZW.getEncoder().encode("TOBEORNOTTOBEORTOBEORNOT#".getBytes("US-ASCII"));
-//    System.out.println(Base64.encodeBytes("TOBEORNOTTOBEORTOBEORNOT#".getBytes("US-ASCII"), Base64.GZIP).length());
+    //    System.out.println(Base64.encodeBytes("TOBEORNOTTOBEORTOBEORNOT#".getBytes("US-ASCII"),
+    //    Base64.GZIP).length());
 
     JavaSerializer javaSerializer = new JavaSerializer();
     javaSerializer.whitelist(Collections.singleton("**"));
@@ -155,7 +160,7 @@ public class RemoteServerTest {
     Object deserialize = javaSerializer.deserialize(RawData.wrap(PLZW.getDecoder().decode(encoded)),
         PrintRole.class.getClassLoader());
     assert deserialize instanceof PrintRole;
-//    System.out.println(Base64.encodeBytes(bytes, Base64.GZIP).length());
+    //    System.out.println(Base64.encodeBytes(bytes, Base64.GZIP).length());
 
     StringWriter writer = new StringWriter();
     OutputStream encoder = PLZW.newEncoder(writer);
@@ -251,7 +256,7 @@ public class RemoteServerTest {
         public void onMessage(final Object message, @NotNull final Envelop envelop,
             @NotNull final Agent agent) {
           envelop.getSender()
-              .tell(("" + message).toUpperCase(Locale.ENGLISH), null, agent.getSelf());
+              .tell(("" + message).toUpperCase(Locale.ENGLISH), Headers.NONE, agent.getSelf());
         }
       };
     }

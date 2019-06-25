@@ -180,10 +180,10 @@ class ActorHandler implements InvocationHandler {
       throw new IllegalStateException();
     }
     final Actor actor = this.actor;
-    final Headers headers = (fromHeaders >= 0) ? (Headers) objects[fromHeaders] : Headers.EMPTY;
+    final Headers headers = (fromHeaders >= 0) ? (Headers) objects[fromHeaders] : Headers.NONE;
     final InvocationId invocationId = new InvocationId(UUID.randomUUID().toString());
     for (final Actor sender : actors) {
-      actor.tell(invocationId, null, sender);
+      actor.tell(invocationId, Headers.NONE, sender);
     }
     final Invocation invocation =
         new Invocation(invocationId.getId(), method.getName(), paramClasses.toArray(EMPTY_CLASSES),

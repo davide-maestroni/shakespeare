@@ -17,7 +17,6 @@
 package dm.shakespeare;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Headers;
@@ -53,14 +52,14 @@ class StandInActor implements Actor {
     return true;
   }
 
-  public void tell(final Object message, @Nullable final Headers headers,
+  public void tell(final Object message, @NotNull final Headers headers,
       @NotNull final Actor sender) {
-    if ((headers != null) && (headers.getReceiptId() != null)) {
+    if (headers.getReceiptId() != null) {
       sender.tell(new Delivery(message, headers), headers.threadOnly(), this);
     }
   }
 
-  public void tellAll(@NotNull final Iterable<?> messages, @Nullable final Headers headers,
+  public void tellAll(@NotNull final Iterable<?> messages, @NotNull final Headers headers,
       @NotNull final Actor sender) {
     for (final Object message : messages) {
       tell(message, headers, sender);

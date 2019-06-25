@@ -17,7 +17,6 @@
 package dm.shakespeare.actor;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import dm.shakespeare.Stage;
 
@@ -119,7 +118,7 @@ public interface Actor {
    * @param sender  the sender actor.
    * @see Role
    */
-  void tell(Object message, @Nullable Headers headers, @NotNull Actor sender);
+  void tell(Object message, @NotNull Headers headers, @NotNull Actor sender);
 
   /**
    * Tells to this actor the specified batch of messages.<br>
@@ -140,10 +139,10 @@ public interface Actor {
    * In case no reply is expected or no actor is interested in receiving it, it is possible to
    * use a {@link dm.shakespeare.Stage#STAND_IN Stage.STAND_IN} as sender.
    *
-   * @param messages the messages (may contains {@code null} objects).
+   * @param messages the messages (may contain {@code null} objects).
    * @param headers  the messages headers.
    * @param sender   the sender actor.
    * @see Role
    */
-  void tellAll(@NotNull Iterable<?> messages, @Nullable Headers headers, @NotNull Actor sender);
+  void tellAll(@NotNull Iterable<?> messages, @NotNull Headers headers, @NotNull Actor sender);
 }

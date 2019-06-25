@@ -29,6 +29,7 @@ import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.ActorSet;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.function.Tester;
 import dm.shakespeare.test.concurrent.TestExecutorService;
@@ -40,6 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class StageTest {
 
+  // TODO: 2019-06-25 NPE
+
   @Test
   public void createActor() {
     final Stage stage = new Stage();
@@ -48,7 +51,7 @@ public class StageTest {
     final Actor actor = stage.createActor(testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isNotNull();
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -67,7 +70,7 @@ public class StageTest {
     final Actor actor = stage.createActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -81,7 +84,7 @@ public class StageTest {
     final Actor actor = stage.createActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
     stage.createActor(id, new TestRole(executorService));
@@ -441,7 +444,7 @@ public class StageTest {
     final Actor actor = Stage.newActor(testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isNotNull();
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -459,7 +462,7 @@ public class StageTest {
     final Actor actor = Stage.newActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -472,14 +475,14 @@ public class StageTest {
     Actor actor = Stage.newActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
     testRole = new TestRole(executorService);
     actor = Stage.newActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -554,7 +557,7 @@ public class StageTest {
     final Actor actor = stage.createActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", null, Stage.STAND_IN);
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
