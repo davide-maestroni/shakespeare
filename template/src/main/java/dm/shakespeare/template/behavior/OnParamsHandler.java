@@ -28,7 +28,7 @@ import dm.shakespeare.actor.BehaviorBuilder;
 import dm.shakespeare.actor.BehaviorBuilder.Handler;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.function.Tester;
-import dm.shakespeare.template.annotation.OnParams;
+import dm.shakespeare.template.behavior.annotation.OnParams;
 import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.Iterables;

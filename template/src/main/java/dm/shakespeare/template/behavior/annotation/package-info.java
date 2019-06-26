@@ -14,26 +14,8 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.annotation;
-
-import org.jetbrains.annotations.NotNull;
-
-import dm.shakespeare.actor.Behavior.Agent;
-import dm.shakespeare.actor.BehaviorBuilder.Matcher;
-import dm.shakespeare.actor.Envelop;
-import dm.shakespeare.util.ConstantConditions;
-
 /**
- * Created by davide-maestroni on 09/06/2018.
+ * Package defining all the annotations ancd classes needed by an
+ * {@link dm.shakespeare.template.behavior.AnnotationBehavior AnnotationBehavior} class.
  */
-public class VoidMatcher implements Matcher<Object> {
-
-  private VoidMatcher() {
-    ConstantConditions.avoid();
-  }
-
-  public boolean match(final Object message, @NotNull final Envelop envelop,
-      @NotNull final Agent agent) {
-    return false;
-  }
-}
+package dm.shakespeare.template.behavior.annotation;

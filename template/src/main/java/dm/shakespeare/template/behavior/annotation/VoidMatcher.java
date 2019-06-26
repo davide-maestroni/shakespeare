@@ -14,21 +14,32 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.annotation;
+package dm.shakespeare.template.behavior.annotation;
 
-import dm.shakespeare.function.Tester;
+import org.jetbrains.annotations.NotNull;
+
+import dm.shakespeare.actor.Behavior.Agent;
+import dm.shakespeare.actor.BehaviorBuilder.Matcher;
+import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 09/06/2018.
+ * Not instantiable class indicating that a matcher has not be selected.
  */
-public class VoidTester implements Tester<Object> {
+public class VoidMatcher implements Matcher<Object> {
 
-  private VoidTester() {
+  /**
+   * Avoids explicit instantiation.
+   */
+  private VoidMatcher() {
     ConstantConditions.avoid();
   }
 
-  public boolean test(final Object value) {
+  /**
+   * {@inheritDoc}
+   */
+  public boolean match(final Object message, @NotNull final Envelop envelop,
+      @NotNull final Agent agent) {
     return false;
   }
 }

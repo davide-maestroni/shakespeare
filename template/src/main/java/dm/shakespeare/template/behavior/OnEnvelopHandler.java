@@ -25,8 +25,8 @@ import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.BehaviorBuilder;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.function.Tester;
-import dm.shakespeare.template.annotation.OnEnvelop;
-import dm.shakespeare.template.annotation.VoidTester;
+import dm.shakespeare.template.behavior.annotation.OnEnvelop;
+import dm.shakespeare.template.behavior.annotation.VoidTester;
 import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
 
@@ -45,14 +45,14 @@ class OnEnvelopHandler implements AnnotationHandler<OnEnvelop> {
     if (testerClass != VoidTester.class) {
       if (!name.isEmpty()) {
         throw new IllegalArgumentException(
-            "only one of idRegexp, testerClass and testerName parameters must be specified");
+            "only one of testerClass and testerName parameters must be specified");
       }
       tester = testerClass.newInstance();
 
     } else {
       if (name.isEmpty()) {
         throw new IllegalArgumentException(
-            "at least one of idRegexp, testerClass and testerName parameters must be specified");
+            "at least one of testerClass and testerName parameters must be specified");
       }
 
       for (final Method testerMethod : object.getClass().getMethods()) {

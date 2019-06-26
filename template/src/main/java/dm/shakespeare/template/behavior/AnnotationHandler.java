@@ -25,10 +25,19 @@ import java.lang.reflect.Method;
 import dm.shakespeare.actor.BehaviorBuilder;
 
 /**
- * Created by davide-maestroni on 09/07/2018.
+ * Interface defining an annotation handler used to build {@link AnnotationBehavior} instances.
  */
 interface AnnotationHandler<T extends Annotation> extends Serializable {
 
+  /**
+   * Handles a specific annotation.
+   *
+   * @param builder    the behavior builder instance.
+   * @param object     the annotated object.
+   * @param method     the annotated method.
+   * @param annotation the annotation instance.
+   * @throws Exception when an unexpected error occurs.
+   */
   void handle(@NotNull BehaviorBuilder builder, @NotNull Object object, @NotNull Method method,
       @NotNull T annotation) throws Exception;
 }

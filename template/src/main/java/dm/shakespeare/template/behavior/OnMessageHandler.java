@@ -25,8 +25,8 @@ import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.BehaviorBuilder;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.function.Tester;
-import dm.shakespeare.template.annotation.OnMessage;
-import dm.shakespeare.template.annotation.VoidTester;
+import dm.shakespeare.template.behavior.annotation.OnMessage;
+import dm.shakespeare.template.behavior.annotation.VoidTester;
 import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
 

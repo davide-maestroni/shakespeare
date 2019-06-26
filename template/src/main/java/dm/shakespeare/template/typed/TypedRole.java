@@ -192,6 +192,7 @@ class TypedRole extends SerializableRole {
       } else if ((message != null) && (message.getClass() == Invocation.class)) {
         final Object instance = this.instance;
         final Invocation invocation = (Invocation) message;
+        final Headers headers = envelop.getHeaders().threadOnly();
         final Method method;
         final Class<?>[] parameterTypes = invocation.getParameterTypes();
         try {
@@ -200,13 +201,11 @@ class TypedRole extends SerializableRole {
 
         } catch (final NoSuchMethodException e) {
           agent.getLogger().wrn(e, "ignoring message: %s", message);
-          envelop.getSender()
-              .tell(new InvocationException(e), envelop.getHeaders().threadOnly(), agent.getSelf());
+          envelop.getSender().tell(new InvocationException(e), headers, agent.getSelf());
           return;
         }
 
         final Actor self = agent.getSelf();
-        final Headers headers = envelop.getHeaders().threadOnly();
         try {
           final ActorArg actorArg = actorArgs.remove(invocation.getId());
           final Object[] args;

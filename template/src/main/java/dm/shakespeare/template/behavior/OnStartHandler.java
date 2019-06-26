@@ -22,7 +22,7 @@ import java.lang.reflect.Method;
 
 import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.BehaviorBuilder;
-import dm.shakespeare.template.annotation.OnStart;
+import dm.shakespeare.template.behavior.annotation.OnStart;
 import dm.shakespeare.template.config.BuildConfig;
 
 /**

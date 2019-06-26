@@ -29,18 +29,22 @@ import dm.shakespeare.actor.BehaviorBuilder;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.actor.SerializableAbstractBehavior;
-import dm.shakespeare.template.annotation.OnAny;
-import dm.shakespeare.template.annotation.OnEnvelop;
-import dm.shakespeare.template.annotation.OnMatch;
-import dm.shakespeare.template.annotation.OnMessage;
-import dm.shakespeare.template.annotation.OnNoMatch;
-import dm.shakespeare.template.annotation.OnParams;
-import dm.shakespeare.template.annotation.OnStart;
-import dm.shakespeare.template.annotation.OnStop;
+import dm.shakespeare.template.behavior.annotation.OnAny;
+import dm.shakespeare.template.behavior.annotation.OnEnvelop;
+import dm.shakespeare.template.behavior.annotation.OnMatch;
+import dm.shakespeare.template.behavior.annotation.OnMessage;
+import dm.shakespeare.template.behavior.annotation.OnNoMatch;
+import dm.shakespeare.template.behavior.annotation.OnParams;
+import dm.shakespeare.template.behavior.annotation.OnStart;
+import dm.shakespeare.template.behavior.annotation.OnStop;
 import dm.shakespeare.template.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 03/24/2019.
+ * Implementation of a {@link Behavior} wrapping an object whose methods has been decorated so to
+ * act as handlers of messages.<br>
+ * The methods should replicate handlers as defined in the {@link BehaviorBuilder} interface.
+ *
+ * @see dm.shakespeare.template.behavior.annotation
  */
 public class AnnotationBehavior extends SerializableAbstractBehavior {
 
@@ -55,10 +59,17 @@ public class AnnotationBehavior extends SerializableAbstractBehavior {
         put(OnEnvelop.class, new OnEnvelopHandler());
         put(OnNoMatch.class, new OnNoMatchHandler());
       }};
+
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   private final Behavior behavior;
 
+  /**
+   * Creates a new behavior wrapping the specified annotated object.
+   *
+   * @param object the object.
+   * @throws Exception if the object was not correctly annotated.
+   */
   @SuppressWarnings("unchecked")
   public AnnotationBehavior(@NotNull final Object object) throws Exception {
     final Class<?> objectClass = object.getClass();
@@ -77,15 +88,27 @@ public class AnnotationBehavior extends SerializableAbstractBehavior {
     behavior = builder.build();
   }
 
+  /**
+   * Creates an empty behavior.<br>
+   * Usually needed during deserialization.
+   */
   AnnotationBehavior() {
     behavior = null;
   }
 
-  // json
+  /**
+   * Returns the stored behavior.<br>
+   * Usually needed during serialization.
+   *
+   * @return the behavior instance.
+   */
   public Behavior getBehavior() {
     return behavior;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void onMessage(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
     behavior.onMessage(message, envelop, agent);

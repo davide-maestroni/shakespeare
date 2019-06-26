@@ -14,25 +14,24 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.annotation;
+package dm.shakespeare.template.behavior.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import dm.shakespeare.function.Tester;
-
 /**
- * Created by davide-maestroni on 09/06/2018.
+ * Annotation used to decorate a method handling all the messages not matching any other condition.
+ * <br>
+ * The annotate method may accept also parameters of type {@link dm.shakespeare.actor.Envelop
+ * Envelop} and {@link dm.shakespeare.actor.Behavior.Agent Agent}. Such inputs will be injected int
+ * the received objects so to match the parameters order.
+ *
+ * @see dm.shakespeare.template.behavior.AnnotationBehavior
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface OnMessage {
+public @interface OnNoMatch {
 
-  Class<?>[] messageClasses() default {};
-
-  Class<? extends Tester<?>> testerClass() default VoidTester.class;
-
-  String testerName() default "";
 }

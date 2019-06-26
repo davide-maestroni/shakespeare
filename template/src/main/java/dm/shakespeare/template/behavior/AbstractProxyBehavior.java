@@ -35,7 +35,7 @@ import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.util.WeakValueHashMap;
 
 /**
- * Created by davide-maestroni on 03/24/2019.
+ * Abstract implementation of a behavior acting as proxy of one or more actors.
  */
 public abstract class AbstractProxyBehavior extends SerializableAbstractBehavior {
 
@@ -46,6 +46,9 @@ public abstract class AbstractProxyBehavior extends SerializableAbstractBehavior
   private transient final WeakHashMap<Actor, Actor> senderToProxyMap =
       new WeakHashMap<Actor, Actor>();
 
+  /**
+   * {@inheritDoc}
+   */
   public void onMessage(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
     final WeakHashMap<Actor, Actor> senderToProxyMap = this.senderToProxyMap;
@@ -83,9 +86,30 @@ public abstract class AbstractProxyBehavior extends SerializableAbstractBehavior
     envelop.preventReceipt();
   }
 
+  /**
+   * Handles an incoming messages.
+   *
+   * @param sender  the message sender.
+   * @param message the message.
+   * @param sentAt  the time at which the message has been sent.
+   * @param headers the message headers.
+   * @param agent   the behavior agent.
+   * @throws Exception when an unexpected error occurs.
+   */
   protected abstract void onIncoming(@NotNull Actor sender, Object message, long sentAt,
       @NotNull Headers headers, @NotNull Agent agent) throws Exception;
 
+  /**
+   * Handles an outgoing messages.
+   *
+   * @param sender    the message sender.
+   * @param recipient the message recipient.
+   * @param message   the message.
+   * @param sentAt    the time at which the message has been sent.
+   * @param headers   the message headers.
+   * @param agent     the behavior agent.
+   * @throws Exception when an unexpected error occurs.
+   */
   protected abstract void onOutgoing(@NotNull Actor sender, @NotNull Actor recipient,
       Object message, long sentAt, @NotNull Headers headers, @NotNull Agent agent) throws Exception;
 

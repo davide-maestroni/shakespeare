@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.WeakHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -50,6 +49,7 @@ import dm.shakespeare.template.typed.message.InvocationException;
 import dm.shakespeare.template.typed.message.InvocationResponse;
 import dm.shakespeare.template.typed.message.InvocationResult;
 import dm.shakespeare.util.ConstantConditions;
+import dm.shakespeare.util.WeakIdentityHashMap;
 import dm.shakespeare.util.WeakValueHashMap;
 
 /**
@@ -71,11 +71,11 @@ class ActorHandler implements InvocationHandler {
   private static final Class<?>[] EMPTY_CLASSES = new Class<?>[0];
 
   private static final Map<Object, ActorHandler> actorHandlers =
-      Collections.synchronizedMap(new WeakHashMap<Object, ActorHandler>());
+      Collections.synchronizedMap(new WeakIdentityHashMap<Object, ActorHandler>());
 
   private final Actor actor;
-  private final Script script;
   private final Actor invocationActor;
+  private final Script script;
   private final Class<?> type;
 
   private ActorHandler(@NotNull final Class<?> type, @NotNull final Script script,
@@ -131,7 +131,8 @@ class ActorHandler implements InvocationHandler {
     }
     final ArrayList<Object> arguments = new ArrayList<Object>();
     final ArrayList<Actor> actors = new ArrayList<Actor>();
-    for (int i = 0; i < objects.length; ++i) {
+    final int length = (objects != null) ? objects.length : 0;
+    for (int i = 0; i < length; ++i) {
       if ((fromActor == i) || (fromHeaders == i)) {
         continue;
       }
@@ -191,10 +192,10 @@ class ActorHandler implements InvocationHandler {
     if (timeoutMillis != null) {
       final Actor invocationActor = this.invocationActor;
       final InvocationLatch latch = new InvocationLatch();
-      final Headers invocationHeaders =
-          headers.withThreadId(invocationId.getId()).withReceiptId(invocationId.getId());
+      final Headers invocationHeaders = headers.withThreadId(invocationId.getId());
       invocationActor.tell(latch, invocationHeaders, actor);
-      actor.tell(invocation, invocationHeaders, invocationActor);
+      actor.tell(invocation, invocationHeaders.withReceiptId(invocationId.getId()),
+          invocationActor);
       return latch.awaitResult(timeoutMillis, TimeUnit.MILLISECONDS);
     }
     final Actor sender = (fromActor >= 0) ? (Actor) objects[fromActor] : Stage.STAND_IN;

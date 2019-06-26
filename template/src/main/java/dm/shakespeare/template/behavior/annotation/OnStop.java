@@ -14,23 +14,22 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.annotation;
+package dm.shakespeare.template.behavior.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import dm.shakespeare.actor.BehaviorBuilder.Matcher;
-
 /**
- * Created by davide-maestroni on 09/06/2018.
+ * Annotation used to decorate a method handling the behavior stop event.
+ * The annotate method may accept only parameters of type {@link dm.shakespeare.actor.Behavior.Agent
+ * Agent}.
+ *
+ * @see dm.shakespeare.template.behavior.AnnotationBehavior
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface OnMatch {
+public @interface OnStop {
 
-  Class<? extends Matcher<?>> matcherClass() default VoidMatcher.class;
-
-  String matcherName() default "";
 }
