@@ -43,11 +43,9 @@ import dm.shakespeare.message.Receipt;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Created by davide-maestroni on 06/25/2019.
+ * {@link dm.shakespeare.actor.Behavior.Agent} unit tests.
  */
 public class AgentTest {
-
-  // TODO: 2019-06-25 NPE setBehavior
 
   @Test
   public void dismissSelf() {
@@ -731,6 +729,108 @@ public class AgentTest {
   }
 
   @Test
+  public void scheduledExecutorServiceScheduleAtFixedRate() throws InterruptedException {
+    final AtomicBoolean called = new AtomicBoolean();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            agent.getScheduledExecutorService().scheduleAtFixedRate(new Runnable() {
+
+              public void run() {
+                called.set(true);
+              }
+            }, 100, 100, TimeUnit.MILLISECONDS);
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+    });
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    Thread.sleep(1000);
+    actor.dismiss();
+    assertThat(called.get()).isTrue();
+  }
+
+  @Test
+  public void scheduledExecutorServiceScheduleCallable() throws InterruptedException {
+    final AtomicBoolean called = new AtomicBoolean();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            agent.getScheduledExecutorService().schedule(new Callable<Object>() {
+
+              public Object call() {
+                called.set(true);
+                return null;
+              }
+            }, 100, TimeUnit.MILLISECONDS);
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+    });
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    Thread.sleep(1000);
+    assertThat(called.get()).isTrue();
+  }
+
+  @Test
+  public void scheduledExecutorServiceScheduleWithFixedDelay() throws InterruptedException {
+    final AtomicBoolean called = new AtomicBoolean();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            agent.getScheduledExecutorService().scheduleWithFixedDelay(new Runnable() {
+
+              public void run() {
+                called.set(true);
+              }
+            }, 100, 100, TimeUnit.MILLISECONDS);
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+    });
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    Thread.sleep(1000);
+    actor.dismiss();
+    assertThat(called.get()).isTrue();
+  }
+
+  @Test
   public void setBehavior() {
     final AtomicBoolean called = new AtomicBoolean();
     final Actor actor = Stage.newActor(new Role() {
@@ -766,6 +866,39 @@ public class AgentTest {
     });
     actor.tell("test", Headers.NONE, Stage.STAND_IN);
     assertThat(called.get()).isTrue();
+  }
+
+  @Test
+  public void setBehaviorNPE() {
+    final AtomicReference<Exception> exception = new AtomicReference<Exception>();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          @SuppressWarnings("ConstantConditions")
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            try {
+              agent.setBehavior(null);
+
+            } catch (final Exception e) {
+              exception.set(e);
+            }
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+    });
+    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    assertThat(exception.get()).isExactlyInstanceOf(NullPointerException.class);
   }
 
   @Test

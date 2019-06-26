@@ -21,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Headers;
 import dm.shakespeare.message.Delivery;
+import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Class implementing an actor reacting in no way to the sent messages.
@@ -28,6 +29,7 @@ import dm.shakespeare.message.Delivery;
 class StandInActor implements Actor {
 
   public boolean addObserver(@NotNull final Actor observer) {
+    ConstantConditions.notNull("observer", observer);
     return true;
   }
 
@@ -49,6 +51,7 @@ class StandInActor implements Actor {
   }
 
   public boolean removeObserver(@NotNull final Actor observer) {
+    ConstantConditions.notNull("observer", observer);
     return true;
   }
 
@@ -56,6 +59,9 @@ class StandInActor implements Actor {
       @NotNull final Actor sender) {
     if (headers.getReceiptId() != null) {
       sender.tell(new Delivery(message, headers), headers.threadOnly(), this);
+
+    } else {
+      ConstantConditions.notNull("sender", sender);
     }
   }
 
@@ -64,5 +70,7 @@ class StandInActor implements Actor {
     for (final Object message : messages) {
       tell(message, headers, sender);
     }
+    ConstantConditions.notNull("headers", headers);
+    ConstantConditions.notNull("sender", sender);
   }
 }

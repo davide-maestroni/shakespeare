@@ -22,13 +22,13 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 
 import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Actor;
+import dm.shakespeare.actor.ActorSet;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Headers;
@@ -38,35 +38,37 @@ import dm.shakespeare.message.DeadLetter;
 import dm.shakespeare.message.Delivery;
 import dm.shakespeare.message.QuotaExceeded;
 import dm.shakespeare.test.concurrent.TestExecutorService;
+import dm.shakespeare.util.Iterables;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * {@link Actor} unit tests.
+ * {@link ActorSet} unit tests.
  */
-public class ActorTest {
+public class ActorSetTest {
 
   @Test
   public void addObserver() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService));
+    stage.createActor(new TestRole(executorService));
+    final ActorSet actors = stage.getAll();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    assertThat(actor.addObserver(observer)).isTrue();
-    actor.dismiss();
+    assertThat(actors.addObserver(observer)).isTrue();
+    actors.dismiss();
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(1);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(DeadLetter.class);
     assertThat(observerRole.getSenders()).hasSize(1);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
   }
 
   @Test
   public void addObserverFailure() {
     final Stage stage = new Stage();
     final RejectingExecutorService rejectingExecutor = new RejectingExecutorService();
-    final Actor actor = stage.createActor(new Role() {
+    stage.createActor(new Role() {
 
       @NotNull
       @Override
@@ -80,13 +82,14 @@ public class ActorTest {
         return rejectingExecutor;
       }
     });
+    final ActorSet actors = stage.getAll();
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
     rejectingExecutor.consumeAll();
     rejectingExecutor.setRejecting(true);
-    assertThat(actor.addObserver(observer)).isFalse();
-    actor.dismiss();
+    assertThat(actors.addObserver(observer)).isFalse();
+    actors.dismiss();
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).isEmpty();
     assertThat(observerRole.getSenders()).isEmpty();
@@ -97,31 +100,33 @@ public class ActorTest {
   public void addObserverNPE() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService));
-    actor.addObserver(null);
+    stage.createActor(new TestRole(executorService));
+    final ActorSet actors = stage.getAll();
+    actors.addObserver(null);
   }
 
   @Test
   public void dismiss() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService));
+    stage.createActor(new TestRole(executorService));
+    final ActorSet actors = stage.getAll();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tell("test", new Headers().withReceiptId("test"), observer);
-    assertThat(actor.dismiss()).isTrue();
+    actors.tell("test", new Headers().withReceiptId("test"), observer);
+    assertThat(actors.dismiss()).isTrue();
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(1);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(Bounce.class);
     assertThat(observerRole.getSenders()).hasSize(1);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
   }
 
   @Test
   public void dismissFailure() {
     final Stage stage = new Stage();
     final RejectingExecutorService rejectingExecutor = new RejectingExecutorService();
-    final Actor actor = stage.createActor(new Role() {
+    stage.createActor(new Role() {
 
       @NotNull
       @Override
@@ -135,43 +140,45 @@ public class ActorTest {
         return rejectingExecutor;
       }
     });
+    final ActorSet actors = stage.getAll();
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
     rejectingExecutor.consumeAll();
     rejectingExecutor.setRejecting(true);
-    assertThat(actor.dismiss()).isFalse();
+    assertThat(actors.dismiss()).isFalse();
     rejectingExecutor.setRejecting(false);
-    actor.tell("test", new Headers().withReceiptId("test"), observer);
+    actors.tell("test", new Headers().withReceiptId("test"), observer);
     rejectingExecutor.consumeAll();
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(1);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(Delivery.class);
     assertThat(observerRole.getSenders()).hasSize(1);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
   }
 
   @Test
   public void dismissLazy() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService));
+    stage.createActor(new TestRole(executorService));
+    final ActorSet actors = stage.getAll();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tell("test", new Headers().withReceiptId("test"), observer);
-    assertThat(actor.dismissLazy()).isTrue();
+    actors.tell("test", new Headers().withReceiptId("test"), observer);
+    assertThat(actors.dismissLazy()).isTrue();
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(1);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(Delivery.class);
     assertThat(observerRole.getSenders()).hasSize(1);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
   }
 
   @Test
   public void dismissLazyFailure() {
     final Stage stage = new Stage();
     final RejectingExecutorService rejectingExecutor = new RejectingExecutorService();
-    final Actor actor = stage.createActor(new Role() {
+    stage.createActor(new Role() {
 
       @NotNull
       @Override
@@ -185,43 +192,45 @@ public class ActorTest {
         return rejectingExecutor;
       }
     });
+    final ActorSet actors = stage.getAll();
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
     rejectingExecutor.consumeAll();
     rejectingExecutor.setRejecting(true);
-    assertThat(actor.dismissLazy()).isFalse();
+    assertThat(actors.dismissLazy()).isFalse();
     rejectingExecutor.setRejecting(false);
-    actor.tell("test", new Headers().withReceiptId("test"), observer);
+    actors.tell("test", new Headers().withReceiptId("test"), observer);
     rejectingExecutor.consumeAll();
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(1);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(Delivery.class);
     assertThat(observerRole.getSenders()).hasSize(1);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
   }
 
   @Test
   public void dismissNow() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService));
+    stage.createActor(new TestRole(executorService));
+    final ActorSet actors = stage.getAll();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tell("test", new Headers().withReceiptId("test"), observer);
-    assertThat(actor.dismissNow()).isTrue();
+    actors.tell("test", new Headers().withReceiptId("test"), observer);
+    assertThat(actors.dismissNow()).isTrue();
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(1);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(Bounce.class);
     assertThat(observerRole.getSenders()).hasSize(1);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
   }
 
   @Test
   public void dismissNowFailure() {
     final Stage stage = new Stage();
     final RejectingExecutorService rejectingExecutor = new RejectingExecutorService();
-    final Actor actor = stage.createActor(new Role() {
+    stage.createActor(new Role() {
 
       @NotNull
       @Override
@@ -235,27 +244,28 @@ public class ActorTest {
         return rejectingExecutor;
       }
     });
+    final ActorSet actors = stage.getAll();
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
     rejectingExecutor.consumeAll();
     rejectingExecutor.setRejecting(true);
-    assertThat(actor.dismissNow()).isFalse();
+    assertThat(actors.dismissNow()).isFalse();
     rejectingExecutor.setRejecting(false);
-    actor.tell("test", new Headers().withReceiptId("test"), observer);
+    actors.tell("test", new Headers().withReceiptId("test"), observer);
     rejectingExecutor.consumeAll();
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(1);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(Delivery.class);
     assertThat(observerRole.getSenders()).hasSize(1);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
   }
 
   @Test
   public void dismissNowInterrupt() throws InterruptedException {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new Role() {
+    stage.createActor(new Role() {
 
       @NotNull
       @Override
@@ -275,40 +285,32 @@ public class ActorTest {
         return Executors.newSingleThreadExecutor();
       }
     });
+    final ActorSet actors = stage.getAll();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tell("test", new Headers().withReceiptId("test"), observer);
+    actors.tell("test", new Headers().withReceiptId("test"), observer);
     Thread.sleep(1000);
-    assertThat(actor.dismissNow()).isTrue();
+    assertThat(actors.dismissNow()).isTrue();
     Thread.sleep(1000);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(1);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(Bounce.class);
     assertThat(observerRole.getSenders()).hasSize(1);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
-  }
-
-  @Test
-  public void getId() {
-    final Stage stage = new Stage();
-    final TestExecutorService executorService = new TestExecutorService();
-    final String id = UUID.randomUUID().toString();
-    assertThat(stage.createActor(id, new TestRole(executorService)).getId()).isEqualTo(id);
-    assertThat(stage.createActor(new TestRole(executorService)).getId()).isNotNull()
-        .isNotEqualTo(id);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
   }
 
   @Test
   public void removeObserver() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService));
+    stage.createActor(new TestRole(executorService));
+    final ActorSet actors = stage.getAll();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    assertThat(actor.addObserver(observer)).isTrue();
-    assertThat(actor.removeObserver(observer)).isTrue();
+    assertThat(actors.addObserver(observer)).isTrue();
+    assertThat(actors.removeObserver(observer)).isTrue();
     executorService.consumeAll();
-    actor.dismiss();
+    actors.dismiss();
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).isEmpty();
     assertThat(observerRole.getSenders()).isEmpty();
@@ -318,11 +320,12 @@ public class ActorTest {
   public void removeObserverEmpty() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService));
+    stage.createActor(new TestRole(executorService));
+    final ActorSet actors = stage.getAll();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    assertThat(actor.removeObserver(observer)).isTrue();
-    actor.dismiss();
+    assertThat(actors.removeObserver(observer)).isTrue();
+    actors.dismiss();
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).isEmpty();
     assertThat(observerRole.getSenders()).isEmpty();
@@ -332,7 +335,7 @@ public class ActorTest {
   public void removeObserverFailure() {
     final Stage stage = new Stage();
     final RejectingExecutorService rejectingExecutor = new RejectingExecutorService();
-    final Actor actor = stage.createActor(new Role() {
+    stage.createActor(new Role() {
 
       @NotNull
       @Override
@@ -346,21 +349,22 @@ public class ActorTest {
         return rejectingExecutor;
       }
     });
+    final ActorSet actors = stage.getAll();
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    assertThat(actor.addObserver(observer)).isTrue();
+    assertThat(actors.addObserver(observer)).isTrue();
     rejectingExecutor.consumeAll();
     rejectingExecutor.setRejecting(true);
-    assertThat(actor.removeObserver(observer)).isFalse();
+    assertThat(actors.removeObserver(observer)).isFalse();
     rejectingExecutor.setRejecting(false);
-    actor.dismiss();
+    actors.dismiss();
     rejectingExecutor.consumeAll();
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(1);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(DeadLetter.class);
     assertThat(observerRole.getSenders()).hasSize(1);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
   }
 
   @Test(expected = NullPointerException.class)
@@ -368,8 +372,9 @@ public class ActorTest {
   public void removeObserverNPE() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService));
-    actor.removeObserver(null);
+    stage.createActor(new TestRole(executorService));
+    final ActorSet actors = stage.getAll();
+    actors.removeObserver(null);
   }
 
   @Test
@@ -377,8 +382,9 @@ public class ActorTest {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole role = new TestRole(executorService);
-    final Actor actor = stage.createActor(role);
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    stage.createActor(role);
+    final ActorSet actors = stage.getAll();
+    actors.tell("test", Headers.NONE, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(role.getMessages()).containsExactly("test");
     assertThat(role.getSenders()).containsExactly(Stage.STAND_IN);
@@ -389,8 +395,9 @@ public class ActorTest {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole role = new TestRole(executorService);
-    final Actor actor = stage.createActor(role);
-    actor.tellAll(Arrays.asList("test1", "test2"), Headers.NONE, Stage.STAND_IN);
+    stage.createActor(role);
+    final ActorSet actors = stage.getAll();
+    actors.tellAll(Arrays.asList("test1", "test2"), Headers.NONE, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(role.getMessages()).containsExactly("test1", "test2");
     assertThat(role.getSenders()).containsExactly(Stage.STAND_IN, Stage.STAND_IN);
@@ -400,18 +407,19 @@ public class ActorTest {
   public void tellAllBounce() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService));
+    stage.createActor(new TestRole(executorService));
+    final ActorSet actors = stage.getAll();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.dismiss();
-    actor.tellAll(Arrays.asList("test1", "test2"), new Headers().withReceiptId("test"), observer);
+    actors.dismiss();
+    actors.tellAll(Arrays.asList("test1", "test2"), new Headers().withReceiptId("test"), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(2);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(Bounce.class);
     assertThat(observerRole.getMessages().get(1)).isInstanceOf(Bounce.class);
     assertThat(observerRole.getSenders()).hasSize(2);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
-    assertThat(observerRole.getSenders().get(1)).isSameAs(actor);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
+    assertThat(observerRole.getSenders().get(1)).isSameAs(Iterables.first(actors));
   }
 
   @Test
@@ -436,8 +444,9 @@ public class ActorTest {
   public void tellAllHeadersNPE() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService));
-    actor.tellAll(Collections.emptyList(), null, Stage.STAND_IN);
+    stage.createActor(new TestRole(executorService));
+    final ActorSet actors = stage.getAll();
+    actors.tellAll(Collections.emptyList(), null, Stage.STAND_IN);
   }
 
   @Test(expected = NullPointerException.class)
@@ -445,49 +454,52 @@ public class ActorTest {
   public void tellAllNPE() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService));
-    actor.tellAll(null, Headers.NONE, Stage.STAND_IN);
+    stage.createActor(new TestRole(executorService));
+    final ActorSet actors = stage.getAll();
+    actors.tellAll(null, Headers.NONE, Stage.STAND_IN);
   }
 
   @Test
   public void tellAllQuota() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService) {
+    stage.createActor(new TestRole(executorService) {
 
       @Override
       public int getQuota(@NotNull final String id) {
         return 1;
       }
     });
+    final ActorSet actors = stage.getAll();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tellAll(Arrays.asList("test1", "test2"), Headers.NONE, observer);
-    actor.tellAll(Arrays.asList("test1", "test2"), new Headers().withReceiptId("test"), observer);
+    actors.tellAll(Arrays.asList("test1", "test2"), Headers.NONE, observer);
+    actors.tellAll(Arrays.asList("test1", "test2"), new Headers().withReceiptId("test"), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(2);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(QuotaExceeded.class);
     assertThat(observerRole.getMessages().get(1)).isInstanceOf(QuotaExceeded.class);
     assertThat(observerRole.getSenders()).hasSize(2);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
-    assertThat(observerRole.getSenders().get(1)).isSameAs(actor);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
+    assertThat(observerRole.getSenders().get(1)).isSameAs(Iterables.first(actors));
   }
 
   @Test
   public void tellAllQuotaDelivery() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService) {
+    stage.createActor(new TestRole(executorService) {
 
       @Override
       public int getQuota(@NotNull final String id) {
         return 1;
       }
     });
+    final ActorSet actors = stage.getAll();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tellAll(Arrays.asList("test1", "test2"), new Headers().withReceiptId("test"), observer);
-    actor.tellAll(Arrays.asList("test1", "test2"), new Headers().withReceiptId("test"), observer);
+    actors.tellAll(Arrays.asList("test1", "test2"), new Headers().withReceiptId("test"), observer);
+    actors.tellAll(Arrays.asList("test1", "test2"), new Headers().withReceiptId("test"), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(4);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(QuotaExceeded.class);
@@ -495,27 +507,28 @@ public class ActorTest {
     assertThat(observerRole.getMessages().get(2)).isInstanceOf(Delivery.class);
     assertThat(observerRole.getMessages().get(3)).isInstanceOf(Delivery.class);
     assertThat(observerRole.getSenders()).hasSize(4);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
-    assertThat(observerRole.getSenders().get(1)).isSameAs(actor);
-    assertThat(observerRole.getSenders().get(2)).isSameAs(actor);
-    assertThat(observerRole.getSenders().get(3)).isSameAs(actor);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
+    assertThat(observerRole.getSenders().get(1)).isSameAs(Iterables.first(actors));
+    assertThat(observerRole.getSenders().get(2)).isSameAs(Iterables.first(actors));
+    assertThat(observerRole.getSenders().get(3)).isSameAs(Iterables.first(actors));
   }
 
   @Test
   public void tellAllQuotaNoReceipt() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService) {
+    stage.createActor(new TestRole(executorService) {
 
       @Override
       public int getQuota(@NotNull final String id) {
         return 1;
       }
     });
+    final ActorSet actors = stage.getAll();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tellAll(Arrays.asList("test1", "test2"), Headers.NONE, observer);
-    actor.tellAll(Arrays.asList("test1", "test2"), Headers.NONE, observer);
+    actors.tellAll(Arrays.asList("test1", "test2"), Headers.NONE, observer);
+    actors.tellAll(Arrays.asList("test1", "test2"), Headers.NONE, observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).isEmpty();
     assertThat(observerRole.getSenders()).isEmpty();
@@ -525,7 +538,7 @@ public class ActorTest {
   public void tellAllRejected() {
     final Stage stage = new Stage();
     final RejectingExecutorService rejectingExecutor = new RejectingExecutorService();
-    final Actor actor = stage.createActor(new Role() {
+    stage.createActor(new Role() {
 
       @NotNull
       @Override
@@ -539,26 +552,27 @@ public class ActorTest {
         return rejectingExecutor;
       }
     });
+    final ActorSet actors = stage.getAll();
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
     rejectingExecutor.consumeAll();
     rejectingExecutor.setRejecting(true);
-    actor.tellAll(Arrays.asList("test1", "test2"), new Headers().withReceiptId("test"), observer);
+    actors.tellAll(Arrays.asList("test1", "test2"), new Headers().withReceiptId("test"), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(2);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(Bounce.class);
     assertThat(observerRole.getMessages().get(1)).isInstanceOf(Bounce.class);
     assertThat(observerRole.getSenders()).hasSize(2);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
-    assertThat(observerRole.getSenders().get(1)).isSameAs(actor);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
+    assertThat(observerRole.getSenders().get(1)).isSameAs(Iterables.first(actors));
   }
 
   @Test
   public void tellAllRejectedNoReceipt() {
     final Stage stage = new Stage();
     final RejectingExecutorService rejectingExecutor = new RejectingExecutorService();
-    final Actor actor = stage.createActor(new Role() {
+    stage.createActor(new Role() {
 
       @NotNull
       @Override
@@ -572,12 +586,13 @@ public class ActorTest {
         return rejectingExecutor;
       }
     });
+    final ActorSet actors = stage.getAll();
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
     rejectingExecutor.consumeAll();
     rejectingExecutor.setRejecting(true);
-    actor.tellAll(Arrays.asList("test1", "test2"), Headers.NONE, observer);
+    actors.tellAll(Arrays.asList("test1", "test2"), Headers.NONE, observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).isEmpty();
     assertThat(observerRole.getSenders()).isEmpty();
@@ -588,39 +603,42 @@ public class ActorTest {
   public void tellAllSenderNPE() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService));
-    actor.tellAll(Collections.emptyList(), Headers.NONE, null);
+    stage.createActor(new TestRole(executorService));
+    final ActorSet actors = stage.getAll();
+    actors.tellAll(Collections.emptyList(), Headers.NONE, null);
   }
 
   @Test
   public void tellBounce() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService));
+    stage.createActor(new TestRole(executorService));
+    final ActorSet actors = stage.getAll();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.dismiss();
-    actor.tell("test", new Headers().withReceiptId("test"), observer);
+    actors.dismiss();
+    actors.tell("test", new Headers().withReceiptId("test"), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(1);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(Bounce.class);
     assertThat(observerRole.getSenders()).hasSize(1);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
   }
 
   @Test
   public void tellDelivery() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService));
+    stage.createActor(new TestRole(executorService));
+    final ActorSet actors = stage.getAll();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tell("test", new Headers().withReceiptId("test"), observer);
+    actors.tell("test", new Headers().withReceiptId("test"), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(1);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(Delivery.class);
     assertThat(observerRole.getSenders()).hasSize(1);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
   }
 
   @Test(expected = NullPointerException.class)
@@ -628,71 +646,75 @@ public class ActorTest {
   public void tellHeadersNPE() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService));
-    actor.tell(null, null, Stage.STAND_IN);
+    stage.createActor(new TestRole(executorService));
+    final ActorSet actors = stage.getAll();
+    actors.tell(null, null, Stage.STAND_IN);
   }
 
   @Test
   public void tellQuota() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService) {
+    stage.createActor(new TestRole(executorService) {
 
       @Override
       public int getQuota(@NotNull final String id) {
         return 1;
       }
     });
+    final ActorSet actors = stage.getAll();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tell("test", Headers.NONE, observer);
-    actor.tell("test", new Headers().withReceiptId("test"), observer);
+    actors.tell("test", Headers.NONE, observer);
+    actors.tell("test", new Headers().withReceiptId("test"), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(1);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(QuotaExceeded.class);
     assertThat(observerRole.getSenders()).hasSize(1);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
   }
 
   @Test
   public void tellQuotaDelivery() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService) {
+    stage.createActor(new TestRole(executorService) {
 
       @Override
       public int getQuota(@NotNull final String id) {
         return 1;
       }
     });
+    final ActorSet actors = stage.getAll();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tell("test", new Headers().withReceiptId("test"), observer);
-    actor.tell("test", new Headers().withReceiptId("test"), observer);
+    actors.tell("test", new Headers().withReceiptId("test"), observer);
+    actors.tell("test", new Headers().withReceiptId("test"), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(2);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(QuotaExceeded.class);
     assertThat(observerRole.getMessages().get(1)).isInstanceOf(Delivery.class);
     assertThat(observerRole.getSenders()).hasSize(2);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
-    assertThat(observerRole.getSenders().get(1)).isSameAs(actor);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
+    assertThat(observerRole.getSenders().get(1)).isSameAs(Iterables.first(actors));
   }
 
   @Test
   public void tellQuotaNoReceipt() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService) {
+    stage.createActor(new TestRole(executorService) {
 
       @Override
       public int getQuota(@NotNull final String id) {
         return 1;
       }
     });
+    final ActorSet actors = stage.getAll();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tell("test", Headers.NONE, observer);
-    actor.tell("test", Headers.NONE, observer);
+    actors.tell("test", Headers.NONE, observer);
+    actors.tell("test", Headers.NONE, observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).isEmpty();
     assertThat(observerRole.getSenders()).isEmpty();
@@ -702,7 +724,7 @@ public class ActorTest {
   public void tellRejected() {
     final Stage stage = new Stage();
     final RejectingExecutorService rejectingExecutor = new RejectingExecutorService();
-    final Actor actor = stage.createActor(new Role() {
+    stage.createActor(new Role() {
 
       @NotNull
       @Override
@@ -716,24 +738,25 @@ public class ActorTest {
         return rejectingExecutor;
       }
     });
+    final ActorSet actors = stage.getAll();
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
     rejectingExecutor.consumeAll();
     rejectingExecutor.setRejecting(true);
-    actor.tell("test", new Headers().withReceiptId("test"), observer);
+    actors.tell("test", new Headers().withReceiptId("test"), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(1);
     assertThat(observerRole.getMessages().get(0)).isInstanceOf(Bounce.class);
     assertThat(observerRole.getSenders()).hasSize(1);
-    assertThat(observerRole.getSenders().get(0)).isSameAs(actor);
+    assertThat(observerRole.getSenders().get(0)).isSameAs(Iterables.first(actors));
   }
 
   @Test
   public void tellRejectedNoReceipt() {
     final Stage stage = new Stage();
     final RejectingExecutorService rejectingExecutor = new RejectingExecutorService();
-    final Actor actor = stage.createActor(new Role() {
+    stage.createActor(new Role() {
 
       @NotNull
       @Override
@@ -747,12 +770,13 @@ public class ActorTest {
         return rejectingExecutor;
       }
     });
+    final ActorSet actors = stage.getAll();
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
     rejectingExecutor.consumeAll();
     rejectingExecutor.setRejecting(true);
-    actor.tell("test", Headers.NONE, observer);
+    actors.tell("test", Headers.NONE, observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).isEmpty();
     assertThat(observerRole.getSenders()).isEmpty();
@@ -763,8 +787,9 @@ public class ActorTest {
   public void tellSenderNPE() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = stage.createActor(new TestRole(executorService));
-    actor.tell(null, Headers.NONE, null);
+    stage.createActor(new TestRole(executorService));
+    final ActorSet actors = stage.getAll();
+    actors.tell(null, Headers.NONE, null);
   }
 
   private static class RejectingExecutorService extends TestExecutorService {

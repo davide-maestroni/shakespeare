@@ -41,7 +41,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class StageTest {
 
-  // TODO: 2019-06-25 NPE
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void addObserverNPE() {
+    final Stage stage = new Stage();
+    stage.addObserver(null);
+  }
 
   @Test
   public void createActor() {
@@ -73,6 +78,29 @@ public class StageTest {
     actor.tell("test", Headers.NONE, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void createActorIdNPE() {
+    final Stage stage = new Stage();
+    stage.createActor("id", null);
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void createActorNPE() {
+    final Stage stage = new Stage();
+    stage.createActor(null);
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void createActorNullIdNPE() {
+    final Stage stage = new Stage();
+    final TestExecutorService executorService = new TestExecutorService();
+    final TestRole testRole = new TestRole(executorService);
+    stage.createActor(null, testRole);
   }
 
   @Test(expected = IllegalStateException.class)
@@ -117,6 +145,13 @@ public class StageTest {
     assertThat(b).isEmpty();
     assertThat(stage.findAll(Pattern.compile("^./3$"))).isEmpty();
     assertThat(stage.findAll(Pattern.compile(".*"))).isEmpty();
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void findAllPatternNPE() {
+    final Stage stage = new Stage();
+    stage.findAll((Pattern) null);
   }
 
   @Test
@@ -219,6 +254,13 @@ public class StageTest {
     }));
   }
 
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void findAllTesterNPE() {
+    final Stage stage = new Stage();
+    stage.findAll((Tester<? super Actor>) null);
+  }
+
   @Test
   public void findAllTesterNotFound() {
     final Stage stage = new Stage();
@@ -260,6 +302,13 @@ public class StageTest {
     final Stage stage = new Stage();
     assertThat(stage.findAny(Pattern.compile("^./3$"))).isNull();
     assertThat(stage.findAny(Pattern.compile(".*"))).isNull();
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void findAnyPatternNPE() {
+    final Stage stage = new Stage();
+    stage.findAny((Pattern) null);
   }
 
   @Test
@@ -360,6 +409,13 @@ public class StageTest {
         throw new IndexOutOfBoundsException();
       }
     }));
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void findAnyTesterNPE() {
+    final Stage stage = new Stage();
+    stage.findAny((Tester<? super Actor>) null);
   }
 
   @Test
@@ -467,6 +523,26 @@ public class StageTest {
     assertThat(testRole.getMessages()).containsExactly("test");
   }
 
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void newActorIdNPE() {
+    Stage.newActor("id", null);
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void newActorNPE() {
+    Stage.newActor(null);
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void newActorNullIdNPE() {
+    final TestExecutorService executorService = new TestExecutorService();
+    final TestRole testRole = new TestRole(executorService);
+    Stage.newActor(null, testRole);
+  }
+
   @Test
   public void newActorSameId() {
     final String id = UUID.randomUUID().toString();
@@ -560,6 +636,13 @@ public class StageTest {
     actor.tell("test", Headers.NONE, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void removeObserverNPE() {
+    final Stage stage = new Stage();
+    stage.removeObserver(null);
   }
 
   private static class FailureRole extends Role {

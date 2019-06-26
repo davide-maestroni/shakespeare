@@ -65,6 +65,7 @@ class StandardActor implements Actor {
   }
 
   public boolean addObserver(@NotNull final Actor observer) {
+    ConstantConditions.notNull("observer", observer);
     logger.dbg("[%s] adding observer: observer=%s", this, observer);
     try {
       agent.getActorExecutorService().execute(new Runnable() {
@@ -123,6 +124,7 @@ class StandardActor implements Actor {
   }
 
   public boolean removeObserver(@NotNull final Actor observer) {
+    ConstantConditions.notNull("observer", observer);
     logger.dbg("[%s] removing observer: observer=%s", this, observer);
     try {
       agent.getActorExecutorService().execute(new Runnable() {
@@ -169,6 +171,7 @@ class StandardActor implements Actor {
 
   public void tellAll(@NotNull final Iterable<?> messages, @NotNull final Headers headers,
       @NotNull final Actor sender) {
+    ConstantConditions.notNull("messages", messages);
     logger.dbg("[%s] sending all: headers=%s - sender=%s - message=%s", this, headers, sender,
         messages);
     if (quotaHandler.consumeQuota()) {

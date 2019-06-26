@@ -148,7 +148,7 @@ public class Stage {
    * @param observer the observer actor.
    */
   public void addObserver(@NotNull final Actor observer) {
-    observers.add(observer);
+    observers.add(ConstantConditions.notNull("observer", observer));
   }
 
   /**
@@ -317,7 +317,7 @@ public class Stage {
    * @param observer the observer actor.
    */
   public void removeObserver(@NotNull final Actor observer) {
-    observers.remove(observer);
+    observers.remove(ConstantConditions.notNull("observer", observer));
   }
 
   /**
