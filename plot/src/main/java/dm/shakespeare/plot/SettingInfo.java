@@ -65,6 +65,12 @@ class SettingInfo {
     }
   }
 
+  @Nullable
+  static SettingInfo getIfPresent() {
+    final CQueue<SettingInfo> settings = localSettings.get();
+    return !settings.isEmpty() ? settings.get(0) : null;
+  }
+
   static void set(@NotNull final SettingInfo settingInfo) {
     localSettings.get().add(ConstantConditions.notNull("settingInfo", settingInfo));
   }

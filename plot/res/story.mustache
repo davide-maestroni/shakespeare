@@ -4494,11 +4494,13 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private final Actor storyActor;
     private final StorySpectatorObserver<? super T> storyObserver;
+    private final SettingInfo settingInfo;
 
     private StoryObserverRole(@NotNull final Actor storyActor,
         @NotNull final StorySpectatorObserver<? super T> storyObserver) {
       this.storyActor = ConstantConditions.notNull("storyActor", storyActor);
       this.storyObserver = ConstantConditions.notNull("storyObserver", storyObserver);
+      this.settingInfo = SettingInfo.getIfPresent();
     }
 
     @NotNull
@@ -4605,7 +4607,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @NotNull
     @Override
     public ExecutorService getExecutorService(@NotNull final String id) {
-      return ExecutorServices.localExecutor();
+      return (settingInfo != null) ? settingInfo.getExecutor() : ExecutorServices.localExecutor();
     }
   }
 {{#arities}}

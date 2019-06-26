@@ -857,11 +857,13 @@ public abstract class Event<T> {
 
     private final Actor eventActor;
     private final EventObserver<? super T> eventObserver;
+    private final SettingInfo settingInfo;
 
     private EventObserverRole(@NotNull final Actor eventActor,
         @NotNull final EventObserver<? super T> eventObserver) {
       this.eventActor = ConstantConditions.notNull("eventActor", eventActor);
       this.eventObserver = ConstantConditions.notNull("eventObserver", eventObserver);
+      this.settingInfo = SettingInfo.getIfPresent();
     }
 
     @NotNull
@@ -929,7 +931,7 @@ public abstract class Event<T> {
     @NotNull
     @Override
     public ExecutorService getExecutorService(@NotNull final String id) {
-      return ExecutorServices.localExecutor();
+      return (settingInfo != null) ? settingInfo.getExecutor() : ExecutorServices.localExecutor();
     }
   }
 
