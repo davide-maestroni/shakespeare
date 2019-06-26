@@ -104,7 +104,7 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
     } else {
       stopObserver = new MultipleAgentObserver(stopObservers);
     }
-    return new DefaultBehavior(messageHandler, startObserver, stopObserver);
+    return new StandardBehavior(messageHandler, startObserver, stopObserver);
   }
 
   @NotNull
@@ -266,56 +266,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
 
     private Object readResolve() throws ObjectStreamException {
       return DEFAULT_AGENT_OBSERVER;
-    }
-  }
-
-  private static class DefaultBehavior implements Behavior, Serializable {
-
-    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
-
-    private final Handler<Object> messageHandler;
-    private final Observer<? super Agent> startObserver;
-    private final Observer<? super Agent> stopObserver;
-
-    private DefaultBehavior() {
-      this(DEFAULT_MESSAGE_HANDLER, DEFAULT_AGENT_OBSERVER, DEFAULT_AGENT_OBSERVER);
-    }
-
-    @SuppressWarnings("unchecked")
-    private DefaultBehavior(@NotNull final Handler<?> messageHandler,
-        @NotNull final Observer<? super Agent> startObserver,
-        @NotNull final Observer<? super Agent> stopObserver) {
-      this.messageHandler = (Handler<Object>) messageHandler;
-      this.startObserver = startObserver;
-      this.stopObserver = stopObserver;
-    }
-
-    @NotNull
-    public Handler<Object> getMessageHandler() {
-      return messageHandler;
-    }
-
-    @NotNull
-    public Observer<? super Agent> getStartObserver() {
-      return startObserver;
-    }
-
-    @NotNull
-    public Observer<? super Agent> getStopObserver() {
-      return stopObserver;
-    }
-
-    public void onMessage(final Object message, @NotNull final Envelop envelop,
-        @NotNull final Agent agent) throws Exception {
-      messageHandler.handle(message, envelop, agent);
-    }
-
-    public void onStart(@NotNull final Agent agent) throws Exception {
-      startObserver.accept(agent);
-    }
-
-    public void onStop(@NotNull final Agent agent) throws Exception {
-      stopObserver.accept(agent);
     }
   }
 
@@ -516,6 +466,56 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
     boolean matches(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) throws Exception {
       return tester.test(envelop);
+    }
+  }
+
+  private static class StandardBehavior implements Behavior, Serializable {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+    private final Handler<Object> messageHandler;
+    private final Observer<? super Agent> startObserver;
+    private final Observer<? super Agent> stopObserver;
+
+    private StandardBehavior() {
+      this(DEFAULT_MESSAGE_HANDLER, DEFAULT_AGENT_OBSERVER, DEFAULT_AGENT_OBSERVER);
+    }
+
+    @SuppressWarnings("unchecked")
+    private StandardBehavior(@NotNull final Handler<?> messageHandler,
+        @NotNull final Observer<? super Agent> startObserver,
+        @NotNull final Observer<? super Agent> stopObserver) {
+      this.messageHandler = (Handler<Object>) messageHandler;
+      this.startObserver = startObserver;
+      this.stopObserver = stopObserver;
+    }
+
+    @NotNull
+    public Handler<Object> getMessageHandler() {
+      return messageHandler;
+    }
+
+    @NotNull
+    public Observer<? super Agent> getStartObserver() {
+      return startObserver;
+    }
+
+    @NotNull
+    public Observer<? super Agent> getStopObserver() {
+      return stopObserver;
+    }
+
+    public void onMessage(final Object message, @NotNull final Envelop envelop,
+        @NotNull final Agent agent) throws Exception {
+      messageHandler.handle(message, envelop, agent);
+    }
+
+    public void onStart(@NotNull final Agent agent) throws Exception {
+      startObserver.accept(agent);
+    }
+
+    public void onStop(@NotNull final Agent agent) throws Exception {
+      stopObserver.accept(agent);
     }
   }
 

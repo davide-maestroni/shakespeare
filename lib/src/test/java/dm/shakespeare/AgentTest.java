@@ -80,7 +80,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     assertThat(startCalled.get()).isTrue();
     assertThat(stopCalled.get()).isTrue();
   }
@@ -231,7 +231,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     assertThat(called.get()).isTrue();
   }
 
@@ -268,7 +268,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     assertThat(exception.get()).isExactlyInstanceOf(UnsupportedOperationException.class);
   }
 
@@ -305,7 +305,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     assertThat(exception.get()).isExactlyInstanceOf(UnsupportedOperationException.class);
   }
 
@@ -342,7 +342,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     assertThat(exception.get()).isExactlyInstanceOf(UnsupportedOperationException.class);
   }
 
@@ -379,7 +379,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     assertThat(exception.get()).isExactlyInstanceOf(UnsupportedOperationException.class);
   }
 
@@ -411,7 +411,7 @@ public class AgentTest {
         return ExecutorServices.newTrampolineExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     assertThat(called.get()).isTrue();
   }
 
@@ -443,7 +443,7 @@ public class AgentTest {
         return ExecutorServices.newTrampolineExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     assertThat(called.get()).isTrue();
   }
 
@@ -476,7 +476,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     assertThat(called.get()).isTrue();
   }
 
@@ -508,7 +508,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     assertThat(called.get()).isTrue();
   }
 
@@ -540,7 +540,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     assertThat(called.get()).isTrue();
   }
 
@@ -567,7 +567,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     }));
-    actor.get().tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.get().tell("test", Headers.EMPTY, Stage.STAND_IN);
   }
 
   @Test
@@ -656,7 +656,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     assertThat(startCalled.get()).isTrue();
     assertThat(stopCalled.get()).isTrue();
   }
@@ -689,7 +689,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     Thread.sleep(1000);
     assertThat(called.get()).isTrue();
   }
@@ -722,7 +722,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     actor.dismiss();
     Thread.sleep(2000);
     assertThat(called.get()).isFalse();
@@ -756,7 +756,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     Thread.sleep(1000);
     actor.dismiss();
     assertThat(called.get()).isTrue();
@@ -791,7 +791,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     Thread.sleep(1000);
     assertThat(called.get()).isTrue();
   }
@@ -824,7 +824,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     Thread.sleep(1000);
     actor.dismiss();
     assertThat(called.get()).isTrue();
@@ -864,7 +864,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     assertThat(called.get()).isTrue();
   }
 
@@ -897,7 +897,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.NONE, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     assertThat(exception.get()).isExactlyInstanceOf(NullPointerException.class);
   }
 

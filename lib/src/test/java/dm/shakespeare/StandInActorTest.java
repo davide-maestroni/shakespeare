@@ -117,14 +117,14 @@ public class StandInActorTest {
   @SuppressWarnings("ConstantConditions")
   public void tellAllNPE() {
     final Actor actor = Stage.STAND_IN;
-    actor.tellAll(null, Headers.NONE, Stage.STAND_IN);
+    actor.tellAll(null, Headers.EMPTY, Stage.STAND_IN);
   }
 
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void tellAllSenderNPE() {
     final Actor actor = Stage.STAND_IN;
-    actor.tellAll(Collections.emptyList(), Headers.NONE, null);
+    actor.tellAll(Collections.emptyList(), Headers.EMPTY, null);
   }
 
   @Test
@@ -151,7 +151,7 @@ public class StandInActorTest {
   @SuppressWarnings("ConstantConditions")
   public void tellSenderNPE() {
     final Actor actor = Stage.STAND_IN;
-    actor.tell(null, Headers.NONE, null);
+    actor.tell(null, Headers.EMPTY, null);
   }
 
   private static class TestRole extends Role {

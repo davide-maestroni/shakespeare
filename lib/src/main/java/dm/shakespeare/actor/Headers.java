@@ -36,9 +36,9 @@ import dm.shakespeare.config.BuildConfig;
 public class Headers implements Serializable {
 
   /**
-   * Empty headers instance.
+   * Default headers instance.
    */
-  public static final Headers NONE = new Headers();
+  public static final Headers EMPTY = new Headers();
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 

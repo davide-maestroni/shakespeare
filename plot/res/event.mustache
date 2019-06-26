@@ -163,7 +163,7 @@ public abstract class Event<T> {
   }
 
   public void cancel() {
-    getActor().tell(EventSignal.CANCEL, Headers.NONE, Stage.STAND_IN);
+    getActor().tell(EventSignal.CANCEL, Headers.EMPTY, Stage.STAND_IN);
   }
 
   @NotNull
@@ -335,7 +335,7 @@ public abstract class Event<T> {
           exception = new NarrationStoppedException();
         }
         if (queue.isEmpty()) {
-          actor.tell(NarratorSignal.AVAILABLE, Headers.NONE, Stage.STAND_IN);
+          actor.tell(NarratorSignal.AVAILABLE, Headers.EMPTY, Stage.STAND_IN);
         }
       }
     }
@@ -378,7 +378,7 @@ public abstract class Event<T> {
       if (queue.offer(resolution, timeout, unit)) {
         close();
         if (wasEmpty) {
-          actor.tell(NarratorSignal.AVAILABLE, Headers.NONE, Stage.STAND_IN);
+          actor.tell(NarratorSignal.AVAILABLE, Headers.EMPTY, Stage.STAND_IN);
         }
         return true;
       }
@@ -565,7 +565,7 @@ public abstract class Event<T> {
     private void cancelInputActors(@NotNull final Agent agent) {
       final Actor self = agent.getSelf();
       for (final Actor actor : getInputActors()) {
-        actor.tell(EventSignal.CANCEL, Headers.NONE, self);
+        actor.tell(EventSignal.CANCEL, Headers.EMPTY, self);
       }
     }
 
@@ -667,7 +667,7 @@ public abstract class Event<T> {
               try {
                 final Actor conflictActor = getConflictActor(conflict, agent);
                 if (conflictActor != null) {
-                  conflictActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
+                  conflictActor.tell(EventSignal.CANCEL, Headers.EMPTY, agent.getSelf());
                   fail(conflict, agent);
                 }
 
@@ -906,11 +906,11 @@ public abstract class Event<T> {
             agent.getSelf().dismiss();
 
           } else if (message == SpectatorSignal.CANCEL) {
-            eventActor.tell(EventSignal.CANCEL, Headers.NONE, agent.getSelf());
+            eventActor.tell(EventSignal.CANCEL, Headers.EMPTY, agent.getSelf());
 
           } else if (message == SpectatorSignal.CANCEL_AND_DISMISS) {
             final Actor self = agent.getSelf();
-            eventActor.tell(EventSignal.CANCEL, Headers.NONE, self);
+            eventActor.tell(EventSignal.CANCEL, Headers.EMPTY, self);
             self.dismiss();
 
           } else if (!(message instanceof Receipt)) {
@@ -1266,7 +1266,7 @@ public abstract class Event<T> {
           agent.setBehavior(new InputBehavior());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, Headers.NONE, actor);
+          inputActor.tell(EventSignal.CANCEL, Headers.EMPTY, actor);
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -1282,7 +1282,7 @@ public abstract class Event<T> {
           senders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, Headers.NONE, actor);
+          inputActor.tell(EventSignal.CANCEL, Headers.EMPTY, actor);
           if (inputPending) {
             agent.setBehavior(new CancelBehavior());
 
