@@ -64,4 +64,22 @@ class RejectedFuture<V> implements ScheduledFuture<V> {
   public long getDelay(@NotNull final TimeUnit timeUnit) {
     return 0;
   }
+
+  @Override
+  public int hashCode() {
+    return exception.hashCode();
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if ((o == null) || (getClass() != o.getClass())) {
+      return false;
+    }
+    final RejectedFuture<?> that = (RejectedFuture<?>) o;
+    return exception.equals(that.exception);
+  }
 }

@@ -897,6 +897,72 @@ public class BehaviorBuilderTest {
   }
 
   @Test
+  public void onNoMatchOnly() {
+    final ArrayList<Object> matches = new ArrayList<Object>();
+    final TestExecutorService executorService = new TestExecutorService();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return newBehavior().onNoMatch(new Handler<Object>() {
+
+          public void handle(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            matches.add(message);
+          }
+        }).build();
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return executorService;
+      }
+    });
+    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
+    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    executorService.consumeAll();
+    assertThat(matches).containsExactly("test", 3);
+  }
+
+  @Test
+  public void onNoMatchOnlyOrder() {
+    final ArrayList<Object> matches = new ArrayList<Object>();
+    final TestExecutorService executorService = new TestExecutorService();
+    final Actor actor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return newBehavior().onNoMatch(new Handler<Object>() {
+
+          public void handle(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            matches.add(message);
+          }
+        }).onNoMatch(new Handler<Object>() {
+
+          public void handle(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            matches.add(message.toString());
+          }
+        }).build();
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return executorService;
+      }
+    });
+    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
+    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    executorService.consumeAll();
+    assertThat(matches).containsExactly("test", "test", 3, "3");
+  }
+
+  @Test
   public void onNoMatchOrder() {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final ArrayList<Object> matches = new ArrayList<Object>();

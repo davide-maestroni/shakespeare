@@ -124,7 +124,7 @@ class StandardAgent implements Agent {
     return stopped || dismissed;
   }
 
-  public void restartSelf() {
+  public void restartBehavior() {
     logger.dbg("[%s] restarting self", actor);
     if (restartRunnable == null) {
       restartRunnable = new Runnable() {
@@ -281,7 +281,7 @@ class StandardAgent implements Agent {
         @NotNull final Agent agent) {
       behaviorWrapper = new BehaviorWrapper();
       super.onStart(agent);
-      super.onMessage(message, envelop, agent);
+      behaviorWrapper.onMessage(message, envelop, agent);
     }
 
     @Override

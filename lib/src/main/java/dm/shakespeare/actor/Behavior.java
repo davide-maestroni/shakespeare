@@ -150,7 +150,7 @@ public interface Behavior {
      * The current behavior {@link #onStop(Agent)} and {@link #onStart(Agent)} methods will be
      * called in sequence.
      */
-    void restartSelf();
+    void restartBehavior();
 
     /**
      * Modifies the current behavior.<br>

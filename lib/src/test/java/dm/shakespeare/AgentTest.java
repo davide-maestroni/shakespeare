@@ -624,7 +624,7 @@ public class AgentTest {
   }
 
   @Test
-  public void restartSelf() {
+  public void restartBehavior() {
     final AtomicBoolean startCalled = new AtomicBoolean();
     final AtomicBoolean stopCalled = new AtomicBoolean();
     final Actor actor = Stage.newActor(new Role() {
@@ -636,7 +636,7 @@ public class AgentTest {
 
           public void onMessage(final Object message, @NotNull final Envelop envelop,
               @NotNull final Agent agent) {
-            agent.restartSelf();
+            agent.restartBehavior();
           }
 
           public void onStart(@NotNull final Agent agent) {
@@ -965,7 +965,7 @@ public class AgentTest {
 
           public void onMessage(final Object message, @NotNull final Envelop envelop,
               @NotNull final Agent agent) {
-            agent.restartSelf();
+            agent.restartBehavior();
           }
 
           @Override

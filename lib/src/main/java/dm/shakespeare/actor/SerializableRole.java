@@ -260,8 +260,8 @@ public abstract class SerializableRole extends Role implements Serializable {
       return agent.isDismissed();
     }
 
-    public void restartSelf() {
-      agent.restartSelf();
+    public void restartBehavior() {
+      agent.restartBehavior();
     }
 
     public void setBehavior(@NotNull final Behavior behavior) {
@@ -291,8 +291,8 @@ public abstract class SerializableRole extends Role implements Serializable {
 
     public void onStop(@NotNull final Agent agent) throws Exception {
       final Behavior behavior = state.getBehaviorHandler().onStop(SerializableRole.this.behavior);
-      state = RoleState.STOPPED;
-      behavior.onStart(wrap(agent));
+      state = agent.isDismissed() ? RoleState.DISMISSED : RoleState.STOPPED;
+      behavior.onStop(wrap(agent));
     }
 
     @NotNull

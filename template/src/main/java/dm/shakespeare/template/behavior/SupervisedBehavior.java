@@ -444,7 +444,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
               resetFailure(agent);
               handler = new ResumeHandler();
               resumeDelayed(agent);
-              agent.restartSelf();
+              agent.restartBehavior();
 
             } else if (recoveryType == RecoveryType.RESTART_AND_RESUME) {
               final Envelop failureEnvelop = failureMessage.getEnvelop();
@@ -457,10 +457,10 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
               resetFailure(agent);
               handler = new ResumeHandler();
               resumeDelayed(agent);
-              agent.restartSelf();
+              agent.restartBehavior();
 
             } else if (recoveryType == RecoveryType.RESTART) {
-              agent.restartSelf();
+              agent.restartBehavior();
 
             } else {
               agent.getSelf().dismiss();

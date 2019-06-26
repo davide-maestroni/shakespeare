@@ -61,8 +61,8 @@ public class AgentWrapper implements Agent {
     return agent.isDismissed();
   }
 
-  public void restartSelf() {
-    agent.restartSelf();
+  public void restartBehavior() {
+    agent.restartBehavior();
   }
 
   public void setBehavior(@NotNull final Behavior behavior) {
