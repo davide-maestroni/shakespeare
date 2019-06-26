@@ -26,20 +26,29 @@
     The main concepts present in this module are:
     <ul>
         <li>
-            <a href="http://davide-maestroni.github.io/shakespeare/javadoc/1.0/lib/com/github/dm/shakespeare/actor/Behavior.html">Behavior</a>
+            <a href="http://davide-maestroni.github.io/shakespeare/javadoc/1.0.0/lib/com/github/dm/shakespeare/actor/Actor.html">Actor</a>
 <p>
-    Interface defining an Actor behavior, that is, how the Actor reacts to start/stop events and
-    newly received messages.<br>
-    The library is designed so that, every piece of code in a Behavior implementation is executed
-    sequentially in such a way that no other synchronization mechanism is needed.<br>
-    A Behavior instance may represent a single state in a more complex state machine. In fact, it
-    can be safely replaced at any moment during an Actor lifecycle.<br>
-    Inside a Behavior it is also possible to create new Actor instances, and dismiss them when
-    needed.
+    Interface defining an Actor.<br>
+    The only way to communicate with an Actor instance is by sending it messages (that is, any Java
+    object). A message might also includes a few pre-defined headers including a message thread
+    and an optional receipt ID.
 </p>
 </li>
 <li>
-    <a href="http://davide-maestroni.github.io/shakespeare/javadoc/1.0/lib/com/github/dm/shakespeare/actor/Behavior.Agent.html">Agent</a>
+    <a href="http://davide-maestroni.github.io/shakespeare/javadoc/1.0.0/lib/com/github/dm/shakespeare/actor/Behavior.html">Behavior</a>
+    <p>
+        Interface defining an Actor behavior, that is, how the Actor reacts to start/stop events and
+        newly received messages.<br>
+        The library is designed so that, every piece of code in a Behavior implementation is
+        executed sequentially in such a way that no other synchronization mechanism is needed.<br>
+        A Behavior instance may represent a single state in a more complex state machine. In fact,
+        it can be safely replaced at any moment during an Actor lifecycle.<br>
+        Inside a Behavior it is also possible to create new Actor instances, and dismiss them when
+        needed.
+    </p>
+</li>
+<li>
+    <a href="http://davide-maestroni.github.io/shakespeare/javadoc/1.0.0/lib/com/github/dm/shakespeare/actor/Behavior.Agent.html">Agent</a>
     <p>
         Interface defining an Actor execution environment.<br>
         An Agent provides to the Behavior instances information about the Actor state and several
@@ -50,11 +59,18 @@
     </p>
 </li>
 <li>
-    <a href="http://davide-maestroni.github.io/shakespeare/javadoc/1.0/lib/com/github/dm/shakespeare/actor/Role.html">Role</a>
+    <a href="http://davide-maestroni.github.io/shakespeare/javadoc/1.0.0/lib/com/github/dm/shakespeare/actor/Role.html">Role</a>
     <p>
         Base class defining an Actor role.<br>
         A Role provides the needed configuration to set up the newly created Actor instance and its
         initial Behavior.
+    </p>
+</li>
+<li>
+    <a href="http://davide-maestroni.github.io/shakespeare/javadoc/1.0.0/lib/com/github/dm/shakespeare/Stage.html">Stage</a>
+    <p>
+        Base class defining a container of Actors.<br>
+        A Stage enables filtering of Actors based on their IDs.
     </p>
 </li>
 </ul>
