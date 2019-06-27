@@ -44,6 +44,8 @@ import dm.shakespeare.log.LogPrinters;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.remote.config.RemoteConfig;
 import dm.shakespeare.remote.config.StageConfig;
+import dm.shakespeare.remote.io.DataStore;
+import dm.shakespeare.remote.io.FileDataStore;
 import dm.shakespeare.remote.io.RawData;
 import dm.shakespeare.remote.io.Serializer;
 import dm.shakespeare.remote.transport.ActorID;
@@ -117,20 +119,25 @@ public class StageReceiver {
     // classloader
     final ClassLoader classLoader =
         config.getOption(ClassLoader.class, RemoteConfig.KEY_CLASSLOADER_CLASS);
-    File container = config.getOption(File.class, RemoteConfig.KEY_CLASSLOADER_DIR);
-    if (container == null) {
-      container = new File(new File(System.getProperty("java.io.tmpdir")), "shakespeare");
-      if (!container.isDirectory() && !container.mkdir()) {
-        throw new IllegalArgumentException("missing container");
+    DataStore dataStore =
+        config.getOption(DataStore.class, RemoteConfig.KEY_CLASSLOADER_DATA_STORE_CLASS);
+    if (dataStore == null) {
+      File container = config.getOption(File.class, RemoteConfig.KEY_CLASSLOADER_DIR);
+      if (container == null) {
+        container = new File(new File(System.getProperty("java.io.tmpdir")), "shakespeare");
+        if (!container.isDirectory() && !container.mkdir()) {
+          throw new IllegalArgumentException("missing container");
+        }
       }
+      dataStore = new FileDataStore(container);
     }
     final ProtectionDomain protectionDomain =
         config.getOption(ProtectionDomain.class, RemoteConfig.KEY_PROTECTION_DOMAIN_CLASS);
     if (classLoader != null) {
-      this.classLoader = new RemoteClassLoader(classLoader, container, protectionDomain);
+      this.classLoader = new RemoteClassLoader(classLoader, protectionDomain, dataStore);
 
     } else {
-      this.classLoader = new RemoteClassLoader(container, protectionDomain);
+      this.classLoader = new RemoteClassLoader(protectionDomain, dataStore);
     }
     // executor
     final ExecutorService executorService =

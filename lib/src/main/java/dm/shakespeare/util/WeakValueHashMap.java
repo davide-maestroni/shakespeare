@@ -392,5 +392,23 @@ public class WeakValueHashMap<K, V> implements Map<K, V> {
     public V setValue(final V value) {
       return put(getKey(), value);
     }
+
+    @Override
+    public int hashCode() {
+      return entry.hashCode();
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+
+      if ((o == null) || (getClass() != o.getClass())) {
+        return false;
+      }
+      @SuppressWarnings("unchecked") final WeakEntry weakEntry = (WeakEntry) o;
+      return entry.equals(weakEntry.entry);
+    }
   }
 }

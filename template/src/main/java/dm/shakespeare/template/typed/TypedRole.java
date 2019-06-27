@@ -48,6 +48,7 @@ import dm.shakespeare.util.ConstantConditions;
 class TypedRole extends SerializableRole {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
   private final Object object;
   private final Object[] objectArgs;
   private final Class<?> objectClass;

@@ -52,6 +52,20 @@ public class WeakValueHashMapTest {
     assertThat(map).isEmpty();
   }
 
+  @Test
+  public void testEntry() {
+    final WeakValueHashMap<String, Object> map = new WeakValueHashMap<String, Object>(4, 0.75f);
+    final Object val0 = new Object();
+    final Object val1 = new Object();
+    final Object val3 = new Object();
+    map.put("test0", val0);
+    map.put("test1", val1);
+    map.put("test3", val3);
+    for (final Entry<String, Object> entry : map.entrySet()) {
+      assertThat(map.entrySet().contains(entry)).isTrue();
+    }
+  }
+
   @Test(expected = IllegalStateException.class)
   public void testEntryIteratorDoubleRemove() {
     final WeakValueHashMap<String, Object> map = new WeakValueHashMap<String, Object>(4, 0.75f);
@@ -138,6 +152,20 @@ public class WeakValueHashMapTest {
       keyIterator.next();
     }
     keyIterator.next();
+  }
+
+  @Test
+  public void testKeySet() {
+    final WeakValueHashMap<String, Object> map = new WeakValueHashMap<String, Object>(4, 0.75f);
+    final Object val0 = new Object();
+    final Object val1 = new Object();
+    final Object val3 = new Object();
+    map.put("test0", val0);
+    map.put("test1", val1);
+    map.put("test3", val3);
+    for (final String key : map.keySet()) {
+      assertThat(map.keySet().contains(key)).isTrue();
+    }
   }
 
   @Test
@@ -244,6 +272,20 @@ public class WeakValueHashMapTest {
       valueIterator.next();
     }
     valueIterator.next();
+  }
+
+  @Test
+  public void testValues() {
+    final WeakValueHashMap<String, Object> map = new WeakValueHashMap<String, Object>(4, 0.75f);
+    final Object val0 = new Object();
+    final Object val1 = new Object();
+    final Object val3 = new Object();
+    map.put("test0", val0);
+    map.put("test1", val1);
+    map.put("test3", val3);
+    for (final Object value : map.values()) {
+      assertThat(map.values().contains(value)).isTrue();
+    }
   }
 
   @Test

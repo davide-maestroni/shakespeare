@@ -230,27 +230,29 @@ public abstract class RawData implements Serializable {
 
     @Override
     public void copyTo(@NotNull final File file) throws IOException {
-      FileInputStream inputStream = null;
-      final FileOutputStream outputStream = new FileOutputStream(file);
-      try {
-        inputStream = new FileInputStream(this.file);
-        inputStream.getChannel().transferTo(0, this.file.length(), outputStream.getChannel());
+      if (!this.file.equals(file)) {
+        FileInputStream inputStream = null;
+        final FileOutputStream outputStream = new FileOutputStream(file);
+        try {
+          inputStream = new FileInputStream(this.file);
+          inputStream.getChannel().transferTo(0, this.file.length(), outputStream.getChannel());
 
-      } finally {
-        if (inputStream != null) {
+        } finally {
+          if (inputStream != null) {
+            try {
+              inputStream.close();
+
+            } catch (final IOException e) {
+              // TODO: 18/04/2019 ???
+            }
+          }
+
           try {
-            inputStream.close();
+            outputStream.close();
 
           } catch (final IOException e) {
             // TODO: 18/04/2019 ???
           }
-        }
-
-        try {
-          outputStream.close();
-
-        } catch (final IOException e) {
-          // TODO: 18/04/2019 ???
         }
       }
     }

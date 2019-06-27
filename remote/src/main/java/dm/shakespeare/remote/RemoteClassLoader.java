@@ -20,28 +20,26 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
-import java.net.MalformedURLException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import dm.shakespeare.remote.io.DataStore;
+import dm.shakespeare.remote.io.DataStore.DataEntry;
 import dm.shakespeare.remote.io.RawData;
 import dm.shakespeare.remote.util.Classes;
 
@@ -50,31 +48,24 @@ import dm.shakespeare.remote.util.Classes;
  */
 class RemoteClassLoader extends ClassLoader {
 
-  private final File container;
+  private final DataStore dataStore;
   private final Object mutex = new Object();
   private final HashMap<String, String> paths = new HashMap<String, String>();
   private final ProtectionDomain protectionDomain;
-  private final HashMap<String, File> resources = new HashMap<String, File>();
 
-  RemoteClassLoader(@NotNull final ClassLoader classLoader, @NotNull final File container,
-      @Nullable final ProtectionDomain protectionDomain) {
+  RemoteClassLoader(@NotNull final ClassLoader classLoader,
+      @Nullable final ProtectionDomain protectionDomain, @NotNull final DataStore dataStore) {
     super(classLoader);
-    if (!container.isDirectory()) {
-      throw new IllegalArgumentException("container is not a directory");
-    }
-    this.container = container;
     this.protectionDomain = protectionDomain;
-    loadResources(container);
+    this.dataStore = dataStore;
+    loadResources(dataStore);
   }
 
-  RemoteClassLoader(@NotNull final File container,
-      @Nullable final ProtectionDomain protectionDomain) {
-    if (!container.isDirectory()) {
-      throw new IllegalArgumentException("container is not a directory");
-    }
-    this.container = container;
+  RemoteClassLoader(@Nullable final ProtectionDomain protectionDomain,
+      @NotNull final DataStore dataStore) {
     this.protectionDomain = protectionDomain;
-    loadResources(container);
+    this.dataStore = dataStore;
+    loadResources(dataStore);
   }
 
   private static String normalize(final String path) {
@@ -89,31 +80,48 @@ class RemoteClassLoader extends ClassLoader {
   @Override
   protected Class<?> loadClass(final String name, final boolean resolve) throws
       ClassNotFoundException {
-    final File file;
+    RawData data = null;
     final String path = toPath(name);
     synchronized (mutex) {
-      file = resources.get(paths.get(path));
-    }
-    if (file != null) {
-      FileInputStream inputStream = null;
       try {
-        inputStream = new FileInputStream(file);
-        FileChannel channel = inputStream.getChannel();
-        final ByteBuffer buffer = channel.map(MapMode.READ_ONLY, 0, channel.size());
-        final Class<?> definedClass = super.defineClass(name, buffer, protectionDomain);
-        if (resolve) {
-          super.resolveClass(definedClass);
-        }
-        return definedClass;
+        data = dataStore.get(paths.get(path));
 
       } catch (final IOException e) {
-        if (inputStream != null) {
+        // TODO: 2019-06-27 ???
+      }
+    }
+    if (data != null) {
+      try {
+        final InputStream inputStream = data.toInputStream();
+        if (inputStream instanceof FileInputStream) {
           try {
-            inputStream.close();
+            FileChannel channel = ((FileInputStream) inputStream).getChannel();
+            final ByteBuffer buffer = channel.map(MapMode.READ_ONLY, 0, channel.size());
+            final Class<?> definedClass = super.defineClass(name, buffer, protectionDomain);
+            if (resolve) {
+              super.resolveClass(definedClass);
+            }
+            return definedClass;
 
-          } catch (final IOException ignored) {
+          } catch (final IOException e) {
+            try {
+              inputStream.close();
+
+            } catch (final IOException ignored) {
+            }
           }
+
+        } else {
+          final ByteBuffer buffer = ByteBuffer.wrap(data.toByteArray());
+          final Class<?> definedClass = super.defineClass(name, buffer, protectionDomain);
+          if (resolve) {
+            super.resolveClass(definedClass);
+          }
+          return definedClass;
         }
+
+      } catch (final IOException e) {
+        // TODO: 2019-06-27 ???
       }
     }
     try {
@@ -127,15 +135,14 @@ class RemoteClassLoader extends ClassLoader {
   @Override
   protected URL findResource(final String path) {
     final URL resource = super.findResource(path);
-    if (resource == null) {
-      final String name = paths.get(normalize(path));
-      if (name != null) {
-        final File file = resources.get(name);
-        if (file != null) {
+    synchronized (mutex) {
+      if (resource == null) {
+        final String name = paths.get(normalize(path));
+        if (name != null) {
           try {
-            return file.toURI().toURL();
+            return dataStore.getURL(name);
 
-          } catch (final MalformedURLException e) {
+          } catch (final IOException e) {
             throw new IllegalArgumentException(e);
           }
         }
@@ -150,18 +157,10 @@ class RemoteClassLoader extends ClassLoader {
       return super.findResources(null);
     }
     final ArrayList<URL> urls = new ArrayList<URL>(Collections.list(super.findResources(path)));
-    final String name = paths.get(normalize(path));
-    if (name != null) {
-      synchronized (mutex) {
-        final File file = resources.get(name);
-        if (file != null) {
-          try {
-            urls.add(file.toURI().toURL());
-
-          } catch (final MalformedURLException e) {
-            throw new IllegalArgumentException(e);
-          }
-        }
+    synchronized (mutex) {
+      final String name = paths.get(normalize(path));
+      if (name != null) {
+        urls.add(dataStore.getURL(name));
       }
     }
     return Collections.enumeration(urls);
@@ -171,114 +170,96 @@ class RemoteClassLoader extends ClassLoader {
   Set<String> register(@NotNull final Map<String, RawData> resources) throws IOException {
     final HashSet<String> missingPaths = new HashSet<String>();
     for (final Entry<String, RawData> entry : resources.entrySet()) {
-      final File file = register(entry.getKey(), entry.getValue());
-      FileInputStream inputStream = null;
-      try {
-        inputStream = new FileInputStream(file);
-        FileChannel channel = inputStream.getChannel();
-        final ByteBuffer buffer = channel.map(MapMode.READ_ONLY, 0, channel.size());
-        final Set<String> dependencies = Classes.getDependencies(buffer);
-        final HashMap<String, String> paths = this.paths;
-        for (final String name : dependencies) {
-          final String path = toPath(name);
-          final boolean hasPath;
-          synchronized (mutex) {
-            hasPath = paths.containsKey(path);
-          }
+      final RawData data = register(entry.getKey(), entry.getValue());
+      final InputStream inputStream = data.toInputStream();
+      if (inputStream instanceof FileInputStream) {
+        try {
+          FileChannel channel = ((FileInputStream) inputStream).getChannel();
+          final ByteBuffer buffer = channel.map(MapMode.READ_ONLY, 0, channel.size());
+          fillMissingPaths(buffer, missingPaths);
 
-          if (!hasPath && !(name.startsWith("java.") || name.startsWith("javax.")
-              || name.startsWith("sun.") || name.startsWith("com.sun.") || name.startsWith(
-              "com.oracle."))) {
-            try {
-              Class.forName(name, false, getParent());
-
-            } catch (final ClassNotFoundException ignored) {
-              // add only if not already in the path
-              missingPaths.add(path);
-            }
-          }
-        }
-
-      } catch (final IOException e) {
-        if (inputStream != null) {
+        } catch (final IOException e) {
           try {
             inputStream.close();
 
           } catch (final IOException ignored) {
           }
+          throw e;
         }
 
-        throw e;
+      } else {
+        final ByteBuffer buffer = ByteBuffer.wrap(data.toByteArray());
+        fillMissingPaths(buffer, missingPaths);
       }
     }
     return missingPaths;
   }
 
-  private void loadResources(@NotNull final File container) {
-    final File[] files = container.listFiles();
-    if (files != null) {
-      final HashMap<String, String> paths = this.paths;
-      final HashMap<String, File> resources = this.resources;
-      for (final File file : files) {
-        final String name = file.getName();
-        if (name.endsWith(".path")) {
-          BufferedReader reader = null;
-          try {
-            reader = new BufferedReader(new FileReader(file));
-            paths.put(reader.readLine(), name.substring(0, name.length() - ".path".length()));
+  private void fillMissingPaths(final ByteBuffer buffer, final HashSet<String> missingPaths) {
+    final Set<String> dependencies = Classes.getDependencies(buffer);
+    final HashMap<String, String> paths = this.paths;
+    for (final String name : dependencies) {
+      final String path = toPath(name);
+      final boolean hasPath;
+      synchronized (mutex) {
+        hasPath = paths.containsKey(path);
+      }
 
-          } catch (final IOException e) {
-            // TODO: 18/04/2019 ???
+      if (!hasPath && !(name.startsWith("java.") || name.startsWith("javax.") || name.startsWith(
+          "sun.") || name.startsWith("com.sun.") || name.startsWith("com.oracle."))) {
+        try {
+          Class.forName(name, false, getParent());
 
-          } finally {
-            if (reader != null) {
-              try {
-                reader.close();
-
-              } catch (final IOException e) {
-                // TODO: 18/04/2019 ??
-              }
-            }
-          }
-
-        } else if (name.endsWith(".raw")) {
-          resources.put(name.substring(0, name.length() - ".raw".length()), file);
+        } catch (final ClassNotFoundException ignored) {
+          // add only if not already in the path
+          missingPaths.add(path);
         }
       }
-      final Collection<String> names = paths.values();
-      final Iterator<String> iterator = names.iterator();
-      while (iterator.hasNext()) {
-        final String name = iterator.next();
-        if (!resources.containsKey(name)) {
-          iterator.remove();
-        }
-      }
-      resources.keySet().retainAll(names);
     }
   }
 
+  private void loadResources(@NotNull final DataStore dataStore) {
+    final HashMap<String, String> paths = this.paths;
+    final HashSet<String> resources = new HashSet<String>();
+    for (final DataEntry entry : dataStore) {
+      final String name = entry.getKey();
+      if (name.endsWith(".path")) {
+        BufferedReader reader = null;
+        try {
+          reader = new BufferedReader(new InputStreamReader(entry.getData().toInputStream()));
+          paths.put(reader.readLine(),
+              name.substring(0, name.length() - ".path".length()) + ".raw");
+
+        } catch (final IOException e) {
+          // TODO: 18/04/2019 ???
+
+        } finally {
+          if (reader != null) {
+            try {
+              reader.close();
+
+            } catch (final IOException e) {
+              // TODO: 18/04/2019 ??
+            }
+          }
+        }
+
+      } else if (name.endsWith(".raw")) {
+        resources.add(name);
+      }
+    }
+    paths.values().retainAll(resources);
+  }
+
   @NotNull
-  private File register(@NotNull final String path, @NotNull final RawData data) throws
+  private RawData register(@NotNull final String path, @NotNull final RawData data) throws
       IOException {
     final String name = Integer.toHexString(path.hashCode());
-    final FileOutputStream outputStream = new FileOutputStream(new File(container, name + ".path"));
-    try {
-      outputStream.write(path.getBytes("UTF-8"));
-      final File file = new File(container, name + ".raw");
-      data.copyTo(file);
-      synchronized (mutex) {
-        paths.put(path, name);
-        resources.put(name, file);
-      }
-      return file;
-
-    } finally {
-      try {
-        outputStream.close();
-
-      } catch (final IOException e) {
-        // TODO: 18/04/2019 ??
-      }
+    synchronized (mutex) {
+      dataStore.save(name + ".path", RawData.wrap(path.getBytes("UTF-8")));
+      final RawData rawData = dataStore.save(name + ".raw", data);
+      paths.put(path, name + ".raw");
+      return rawData;
     }
   }
 }

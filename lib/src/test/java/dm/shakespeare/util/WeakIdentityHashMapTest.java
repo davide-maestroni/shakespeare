@@ -86,6 +86,21 @@ public class WeakIdentityHashMapTest {
   }
 
   @Test
+  public void testEntrySet() {
+    final WeakIdentityHashMap<Object, String> map =
+        new WeakIdentityHashMap<Object, String>(4, 0.75f);
+    final Object key0 = new Object();
+    final Object key1 = new Object();
+    final Object key3 = new Object();
+    map.put(key0, "test0");
+    map.put(key1, "test1");
+    map.put(key3, "test3");
+    for (final Entry<Object, String> entry : map.entrySet()) {
+      assertThat(map.entrySet().contains(entry)).isTrue();
+    }
+  }
+
+  @Test
   public void testEquals() {
     final HashMap<Object, String> entries = new HashMap<Object, String>();
     final Object key0 = new Object();
@@ -157,6 +172,21 @@ public class WeakIdentityHashMapTest {
       keyIterator.next();
     }
     keyIterator.next();
+  }
+
+  @Test
+  public void testKeySet() {
+    final WeakIdentityHashMap<Object, String> map =
+        new WeakIdentityHashMap<Object, String>(4, 0.75f);
+    final Object key0 = new Object();
+    final Object key1 = new Object();
+    final Object key3 = new Object();
+    map.put(key0, "test0");
+    map.put(key1, "test1");
+    map.put(key3, "test3");
+    for (final Object key : map.keySet()) {
+      assertThat(map.keySet().contains(key)).isTrue();
+    }
   }
 
   @Test
@@ -266,6 +296,21 @@ public class WeakIdentityHashMapTest {
       valueIterator.next();
     }
     valueIterator.next();
+  }
+
+  @Test
+  public void testValues() {
+    final WeakIdentityHashMap<Object, String> map =
+        new WeakIdentityHashMap<Object, String>(4, 0.75f);
+    final Object key0 = new Object();
+    final Object key1 = new Object();
+    final Object key3 = new Object();
+    map.put(key0, "test0");
+    map.put(key1, "test1");
+    map.put(key3, "test3");
+    for (final String value : map.values()) {
+      assertThat(map.values().contains(value)).isTrue();
+    }
   }
 
   @Test

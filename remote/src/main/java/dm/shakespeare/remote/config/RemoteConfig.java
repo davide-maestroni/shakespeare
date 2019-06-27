@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import dm.shakespeare.log.Logger;
+import dm.shakespeare.remote.io.DataStore;
 import dm.shakespeare.remote.io.Serializer;
 import dm.shakespeare.remote.transport.Connector;
 
@@ -33,6 +34,7 @@ import dm.shakespeare.remote.transport.Connector;
 public class RemoteConfig extends CommonConfig {
 
   public static final String KEY_CLASSLOADER_CLASS = "sks.classloader.class";
+  public static final String KEY_CLASSLOADER_DATA_STORE_CLASS = "sks.classloader.data.store.class";
   public static final String KEY_CLASSLOADER_DIR = "sks.classloader.dir";
   public static final String KEY_PROTECTION_DOMAIN_CLASS = "sks.protection.domain.class";
   public static final String KEY_REMOTE_CREATE_ENABLE = "sks.remote.create.enable";
@@ -61,6 +63,21 @@ public class RemoteConfig extends CommonConfig {
   @NotNull
   public RemoteConfig withClassLoader(final ClassLoader classLoader) {
     return withOption(KEY_CLASSLOADER_CLASS, classLoader);
+  }
+
+  @NotNull
+  public RemoteConfig withClassLoaderDataStore(final String dataStoreClass) {
+    return withOption(KEY_CLASSLOADER_DATA_STORE_CLASS, dataStoreClass);
+  }
+
+  @NotNull
+  public RemoteConfig withClassLoaderDataStore(final Class<? extends DataStore> dataStoreClass) {
+    return withOption(KEY_CLASSLOADER_DATA_STORE_CLASS, dataStoreClass);
+  }
+
+  @NotNull
+  public RemoteConfig withClassLoaderDataStore(final DataStore dataStore) {
+    return withOption(KEY_CLASSLOADER_DATA_STORE_CLASS, dataStore);
   }
 
   @NotNull

@@ -396,5 +396,23 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
     public V setValue(final V value) {
       return map.put(reference, value);
     }
+
+    @Override
+    public int hashCode() {
+      return reference.hashCode();
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+
+      if ((o == null) || (getClass() != o.getClass())) {
+        return false;
+      }
+      @SuppressWarnings("unchecked") final WeakEntry weakEntry = (WeakEntry) o;
+      return reference.equals(weakEntry.reference);
+    }
   }
 }
