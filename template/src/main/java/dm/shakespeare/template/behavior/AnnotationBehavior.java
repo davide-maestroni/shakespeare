@@ -42,7 +42,9 @@ import dm.shakespeare.template.config.BuildConfig;
 /**
  * Implementation of a {@link Behavior} wrapping an object whose methods has been decorated so to
  * act as handlers of messages.<br>
- * The methods should replicate handlers as defined in the {@link BehaviorBuilder} interface.
+ * The methods should replicate handlers as defined in the {@link BehaviorBuilder} interface.<p>
+ * Notice that an instance of this class will be serializable only if the wrapped object effectively
+ * is.
  *
  * @see dm.shakespeare.template.behavior.annotation
  */

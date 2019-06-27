@@ -26,7 +26,7 @@ import dm.shakespeare.template.behavior.annotation.OnStart;
 import dm.shakespeare.template.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 09/07/2018.
+ * {@code AnnotationHandler} handling {@link OnStart} annotations.
  */
 class OnStartHandler implements AnnotationHandler<OnStart> {
 

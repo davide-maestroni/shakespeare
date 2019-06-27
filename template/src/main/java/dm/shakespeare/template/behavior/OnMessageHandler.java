@@ -31,7 +31,7 @@ import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
 
 /**
- * Created by davide-maestroni on 09/07/2018.
+ * {@code AnnotationHandler} handling {@link OnMessage} annotations.
  */
 class OnMessageHandler implements AnnotationHandler<OnMessage> {
 
@@ -113,7 +113,6 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
       this.messageClass = messageClass;
     }
 
-    // json
     @NotNull
     public Class<?> getMessageClass() {
       return messageClass;
@@ -138,7 +137,6 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
       this.messageClasses = messageClasses;
     }
 
-    // json
     @NotNull
     public Class<?>[] getMessageClasses() {
       return messageClasses;
@@ -171,13 +169,11 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
       this.method = Reflections.makeAccessible(method);
     }
 
-    // json
     @NotNull
     public Method getMethod() {
       return method;
     }
 
-    // json
     @NotNull
     public Object getObject() {
       return object;

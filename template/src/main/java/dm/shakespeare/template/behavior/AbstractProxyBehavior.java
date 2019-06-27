@@ -113,6 +113,23 @@ public abstract class AbstractProxyBehavior extends SerializableAbstractBehavior
   protected abstract void onOutgoing(@NotNull Actor sender, @NotNull Actor recipient,
       Object message, long sentAt, @NotNull Headers headers, @NotNull Agent agent) throws Exception;
 
+  /**
+   * Proxy signalling messages.
+   */
+  public enum ProxySignal {
+
+    /**
+     * Notifies that the sender of the message has to be added as proxied actor.
+     */
+    ADD_PROXIED,
+
+    /**
+     * Notifies that the sender of the message has to be removed from the proxied actors.
+     */
+    REMOVE_PROXIED
+
+  }
+
   private static class OutgoingMessage {
 
     private final Object message;

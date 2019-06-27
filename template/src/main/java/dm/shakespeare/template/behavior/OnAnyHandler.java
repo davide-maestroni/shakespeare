@@ -27,7 +27,7 @@ import dm.shakespeare.template.behavior.annotation.OnAny;
 import dm.shakespeare.template.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 09/07/2018.
+ * {@code AnnotationHandler} handling {@link OnAny} annotations.
  */
 class OnAnyHandler implements AnnotationHandler<OnAny> {
 

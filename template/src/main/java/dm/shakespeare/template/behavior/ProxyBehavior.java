@@ -24,7 +24,13 @@ import dm.shakespeare.actor.Headers;
 import dm.shakespeare.template.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 06/25/2019.
+ * Simple implementation of an {@code AbstractProxyBehavior} handling a single proxied actor.<br>
+ * The proxied actor is set by sending a {@link ProxySignal#ADD_PROXIED} message with the specific
+ * actor as sender. In the same way, it is unset through a {@link ProxySignal#REMOVE_PROXIED}
+ * message.<br>
+ * If further messages of the above type are received, the proxied actor will change based on the
+ * last message sender.<p>
+ * When the behavior is serialized, the knowledge of the proxied actor will be lost.
  */
 public class ProxyBehavior extends AbstractProxyBehavior {
 
@@ -32,6 +38,9 @@ public class ProxyBehavior extends AbstractProxyBehavior {
 
   private transient Actor proxied;
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public void onMessage(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
@@ -39,13 +48,18 @@ public class ProxyBehavior extends AbstractProxyBehavior {
       proxied = envelop.getSender();
 
     } else if (message == ProxySignal.REMOVE_PROXIED) {
-      proxied = null;
+      if (envelop.getSender().equals(proxied)) {
+        proxied = null;
+      }
 
     } else {
       super.onMessage(message, envelop, agent);
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   protected void onIncoming(@NotNull final Actor sender, final Object message, final long sentAt,
       @NotNull final Headers headers, @NotNull final Agent agent) throws Exception {
     if (proxied != null) {
@@ -53,13 +67,12 @@ public class ProxyBehavior extends AbstractProxyBehavior {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   protected void onOutgoing(@NotNull final Actor sender, @NotNull final Actor recipient,
       final Object message, final long sentAt, @NotNull final Headers headers,
       @NotNull final Agent agent) throws Exception {
     recipient.tell(message, headers.asSentAt(sentAt), agent.getSelf());
-  }
-
-  public enum ProxySignal {
-    ADD_PROXIED, REMOVE_PROXIED
   }
 }

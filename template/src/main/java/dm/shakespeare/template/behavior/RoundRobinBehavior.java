@@ -28,9 +28,16 @@ import dm.shakespeare.message.Bounce;
 import dm.shakespeare.template.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 06/25/2019.
+ * {@code Behavior} implementing a load balancer of other actors.<br>
+ * New balanced actors are added by sending a {@link ProxySignal#ADD_PROXIED} message with the
+ * proxied actor as sender. In the same way, balanced actors are removed through a
+ * {@link ProxySignal#REMOVE_PROXIED} message.<p>
+ * Each actor, communicating with the balancer, will be assigned a recipient based on a round-robin
+ * algorithm. Such recipient will not change for further messages coming from the same actor.
+ * Notice, however, that different recipients might be assigned to different sender actor.<p>
+ * When the behavior is serialized, the knowledge of the proxied actors will be lost.
  */
-public class RoundRobinBehavior extends ProxyBehavior {
+public class RoundRobinBehavior extends AbstractProxyBehavior {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
@@ -39,6 +46,9 @@ public class RoundRobinBehavior extends ProxyBehavior {
 
   private transient int current;
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public void onMessage(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
@@ -65,6 +75,9 @@ public class RoundRobinBehavior extends ProxyBehavior {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   protected void onIncoming(@NotNull final Actor sender, final Object message, final long sentAt,
       @NotNull final Headers headers, @NotNull final Agent agent) throws Exception {
     final ArrayList<Actor> proxied = this.proxied;
@@ -84,5 +97,14 @@ public class RoundRobinBehavior extends ProxyBehavior {
       }
       actor.tell(message, headers.asSentAt(sentAt), agent.getSelf());
     }
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  protected void onOutgoing(@NotNull final Actor sender, @NotNull final Actor recipient,
+      final Object message, final long sentAt, @NotNull final Headers headers,
+      @NotNull final Agent agent) throws Exception {
+    recipient.tell(message, headers.asSentAt(sentAt), agent.getSelf());
   }
 }

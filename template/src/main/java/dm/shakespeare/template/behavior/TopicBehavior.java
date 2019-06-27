@@ -29,7 +29,12 @@ import dm.shakespeare.actor.SerializableAbstractBehavior;
 import dm.shakespeare.template.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 06/25/2019.
+ * {@code Behavior} implementing a topic in a publish/subscribe architecture.<br>
+ * An actor can subscribe itself by sending a {@link Subscribe} message to the topic. The message
+ * may optionally contain a condition filtering published messages.<br>
+ * Dually, a subscribed actor can removed itself from the notified actors by sending a
+ * {@link Unsubscribe} message.<br>
+ * Any other type of message will be broadcast to all subscribed actors.
  */
 public class TopicBehavior extends SerializableAbstractBehavior {
 
@@ -38,6 +43,9 @@ public class TopicBehavior extends SerializableAbstractBehavior {
   private transient final WeakHashMap<Actor, Subscribe> subscriptions =
       new WeakHashMap<Actor, Subscribe>();
 
+  /**
+   * {@inheritDoc}
+   */
   public void onMessage(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) {
     if (message instanceof Subscribe) {
@@ -62,15 +70,29 @@ public class TopicBehavior extends SerializableAbstractBehavior {
     }
   }
 
+  /**
+   * Message indicating that the sender wants to subscribe to the topic.
+   */
   public static class Subscribe implements Serializable {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
+    /**
+     * Checks if the specified message should be sent to the subscribed actor.
+     *
+     * @param message the message.
+     * @param envelop the message envelop.
+     * @return {@code true} if the published message should be forwarded.
+     * @throws Exception when an unexpected error occurs.
+     */
     public boolean accept(final Object message, @NotNull final Envelop envelop) throws Exception {
       return true;
     }
   }
 
+  /**
+   * Message indicating that the sender wants to unsubscribe from the topic.
+   */
   public static class Unsubscribe implements Serializable {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;

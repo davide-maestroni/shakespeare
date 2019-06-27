@@ -30,7 +30,7 @@ import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 09/12/2018.
+ * {@code Handler} calling an annotated method of the target object on a message event.
  */
 class MethodHandler implements Handler<Object>, Serializable {
 
@@ -53,18 +53,15 @@ class MethodHandler implements Handler<Object>, Serializable {
       @NotNull final Envelop envelop, @NotNull final Agent agent) {
     final Class<?> returnType = method.getReturnType();
     if ((returnType != void.class) && (returnType != Void.class)) {
-      // TODO: 31/08/2018 specific message?
       envelop.getSender().tell(value, envelop.getHeaders().threadOnly(), agent.getSelf());
     }
   }
 
-  // json
   @NotNull
   public Method getMethod() {
     return method;
   }
 
-  // json
   @NotNull
   public Object getObject() {
     return object;

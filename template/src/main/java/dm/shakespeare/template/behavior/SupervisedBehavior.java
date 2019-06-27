@@ -37,13 +37,24 @@ import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 03/24/2019.
+ * Class wrapping a {@code Behavior} instance so add supervision functionalities.<br>
+ * A supervised behavior can be restored from a failure (that is, an exception is thrown during
+ * the processing of a message), when a supervisor actor is set. If a failure occurs, the supervisor
+ * will be notified with a {@link SupervisedFailure} message, and a {@link SupervisedRecovery} is
+ * expected as reply. The type of recovery may range from retry to dismissal of the supervised
+ * actor (see {@link RecoveryType}). Messages received during after the failure are handled
+ * accordingly, so that they might be automatically resent to the supervised actor or bounced.<p>
+ * It is possible to set (or reset) a supervisor by sending a {@link SupervisedSignal#SUPERVISE}
+ * message to the supervised actor, with the supervisor as sender. When a supervisor is replaced
+ * by a new one, the former will receive a {@link SupervisedSignal#REPLACE_SUPERVISOR} by the
+ * supervised actor.<br>
+ * In case a supervisor is unset or is dismissed while the supervised actor is in failure state, the
+ * supervised actor will be automatically dismissed.
+ * <p>
+ * When the behavior is serialized, the knowledge of the supervisor actor and the failure state will
+ * be lost.
  */
 public class SupervisedBehavior extends SerializableAbstractBehavior {
-
-  public static final ReplaceSupervisor REPLACE = new ReplaceSupervisor();
-  public static final Supervise SUPERVISE = new Supervise();
-  public static final Unsupervise UNSUPERVISE = new Unsupervise();
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
@@ -59,29 +70,54 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
   private transient Actor supervisor;
   private transient String supervisorThread;
 
+  /**
+   * Creates a new supervised behavior wrapping the specified instance.
+   *
+   * @param behavior the wrapped behavior.
+   */
   public SupervisedBehavior(@NotNull final Behavior behavior) {
     this.behavior = ConstantConditions.notNull("behavior", behavior);
   }
 
+  /**
+   * Creates an empty behavior.<br>
+   * Usually needed during deserialization.
+   */
   SupervisedBehavior() {
     behavior = null;
   }
 
-  // json
+  /**
+   * Returns the wrapped behavior.<br>
+   * Usually needed during serialization.
+   *
+   * @return th behavior instance.
+   */
   @NotNull
   public Behavior getBehavior() {
     return behavior;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   public void onMessage(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
     handler.handle(message, envelop, wrap(agent));
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   public void onStart(@NotNull final Agent agent) throws Exception {
     behavior.onStart(wrap(agent));
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   public void onStop(@NotNull final Agent agent) throws Exception {
     final Throwable failure = this.failure;
     final DelayedMessage failureMessage = this.failureMessage;
@@ -126,7 +162,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
     final Actor self = agent.getSelf();
     final int size = delayedMessages.size();
     for (int i = 0; i < size; ++i) {
-      self.tell(SupervisedSignal.DUMMY_MESSAGE, Headers.EMPTY, self);
+      self.tell(SupervisedDelayedSignal.DUMMY_MESSAGE, Headers.EMPTY, self);
     }
   }
 
@@ -138,26 +174,35 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
     return this.agent;
   }
 
-  private enum SupervisedSignal {
+  /**
+   * Supervised signalling messages.
+   */
+  public enum SupervisedSignal {
+
+    /**
+     * Notifies that the sender of the message wants to become the new supervisor.
+     */
+    SUPERVISE,
+
+    /**
+     * Notifies that the sender of the message wants to be removed as supervisor.
+     */
+    UNSUPERVISE,
+
+    /**
+     * Notifies the recipient of the message that it has been replaced as supervisor of the sender.
+     */
+    REPLACE_SUPERVISOR
+
+  }
+
+  private enum SupervisedDelayedSignal {
     DUMMY_MESSAGE
   }
 
-  public static class ReplaceSupervisor implements Serializable {
-
-    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
-
-    private ReplaceSupervisor() {
-    }
-  }
-
-  public static class Supervise implements Serializable {
-
-    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
-
-    private Supervise() {
-    }
-  }
-
+  /**
+   * Message notifying the supervisor that the supervised actor has entered a failure state.
+   */
   public static class SupervisedFailure implements Serializable {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
@@ -165,32 +210,61 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
     private final Throwable cause;
     private final String failureId;
 
+    /**
+     * Creates an empty message.<br>
+     * Usually needed during deserialization.
+     */
     private SupervisedFailure() {
       failureId = "";
       cause = new UnsupportedOperationException();
     }
 
+    /**
+     * Creates a new supervised failure message.
+     *
+     * @param failureId the failure ID.
+     * @param cause     the cause of the failure.
+     */
     private SupervisedFailure(@NotNull final String failureId, @NotNull final Throwable cause) {
       this.failureId = failureId;
       this.cause = cause;
     }
 
+    /**
+     * Returns the cause of the failure.
+     *
+     * @return the throwable instance.
+     */
     @NotNull
     public Throwable getCause() {
       return cause;
     }
 
+    /**
+     * Returns the unique failure ID.
+     *
+     * @return the failure ID.
+     */
     @NotNull
     public final String getFailureId() {
       return failureId;
     }
 
+    /**
+     * Creates a new recovery message to be sent as reply of this one.
+     *
+     * @param recoveryType the type of recovery.
+     * @return the supervised recovery message.
+     */
     @NotNull
     public SupervisedRecovery recover(@NotNull final RecoveryType recoveryType) {
       return new SupervisedRecovery(failureId, recoveryType);
     }
   }
 
+  /**
+   * Message indicating to the supervised actor how to recover itself from the failure state.
+   */
   public static class SupervisedRecovery implements Serializable {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
@@ -198,37 +272,90 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
     private final String failureId;
     private final RecoveryType recoveryType;
 
+    /**
+     * Creates an empty message.<br>
+     * Usually needed during deserialization.
+     */
     private SupervisedRecovery() {
       failureId = "";
       recoveryType = RecoveryType.DISMISS;
     }
 
+    /**
+     * Creates a new supervised recovery message.
+     *
+     * @param failureId    the failure ID.
+     * @param recoveryType the type of recovery.
+     */
     private SupervisedRecovery(@NotNull final String failureId,
         @NotNull final RecoveryType recoveryType) {
       this.failureId = ConstantConditions.notNull("failureId", failureId);
       this.recoveryType = ConstantConditions.notNull("recoveryType", recoveryType);
     }
 
+    /**
+     * Returns the unique failure ID.
+     *
+     * @return the failure ID.
+     */
     @NotNull
     public final String getFailureId() {
       return failureId;
     }
 
+    /**
+     * Returns the type of recovery to be applied.
+     *
+     * @return the recovery type.
+     */
     @NotNull
     public final RecoveryType getRecoveryType() {
       return recoveryType;
     }
 
+    /**
+     * Enumeration indicating the possible types of recovery from the failure state.
+     */
     public enum RecoveryType {
-      RETRY, RESUME, RESTART_AND_RETRY, RESTART_AND_RESUME, RESTART, DISMISS
-    }
-  }
 
-  public static class Unsupervise implements Serializable {
+      /**
+       * Tells the supervised actor to retry the processing of the message that caused the failure.
+       * <br>
+       * In case of success, all the pending messages will be processed in arrival order.
+       */
+      RETRY,
 
-    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+      /**
+       * Tells the supervised actor to drop the message that caused the failure and go on processing
+       * the pending messages still in the inbox.
+       */
+      RESUME,
 
-    private Unsupervise() {
+      /**
+       * Tells the supervised actor to restart its behavior and retry the processing of the message
+       * that caused the failure.<br>
+       * In case of success, all the pending messages will be processed in arrival order.
+       */
+      RESTART_AND_RETRY,
+
+      /**
+       * Tells the supervised actor to restart its behavior and go on processing the pending
+       * messages still in the inbox, while dropping the message that caused the failure.
+       */
+      RESTART_AND_RESUME,
+
+      /**
+       * Tells the supervised actor to restart its behavior and drop the message that caused the
+       * failure along with all the pending messages still in the inbox.
+       */
+      RESTART,
+
+      /**
+       * Tells the supervised actor to dismiss itself and drop the message that caused the failure
+       * along with all the pending messages still in the inbox.
+       */
+      DISMISS
+
     }
   }
 
@@ -256,11 +383,11 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
 
     public void handle(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) throws Exception {
-      if (message == SupervisedSignal.DUMMY_MESSAGE) {
+      if (message == SupervisedDelayedSignal.DUMMY_MESSAGE) {
         return;
       }
       final Headers headers = envelop.getHeaders();
-      if (message instanceof Supervise) {
+      if (message == SupervisedSignal.SUPERVISE) {
         final Actor self = agent.getSelf();
         final Actor sender = envelop.getSender();
         if (!sender.equals(self)) {
@@ -282,7 +409,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
           envelop.preventReceipt();
         }
 
-      } else if (message instanceof Unsupervise) {
+      } else if (message == SupervisedSignal.UNSUPERVISE) {
         final Actor sender = envelop.getSender();
         if (sender.equals(supervisor)) {
           supervisor.removeObserver(agent.getSelf());
@@ -356,7 +483,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
       final CQueue<DelayedMessage> delayedMessages = SupervisedBehavior.this.delayedMessages;
       if (!delayedMessages.isEmpty()) {
         final DelayedMessage delayedMessage = delayedMessages.removeFirst();
-        if (message != SupervisedSignal.DUMMY_MESSAGE) {
+        if (message != SupervisedDelayedSignal.DUMMY_MESSAGE) {
           delayedMessages.add(new DelayedMessage(message, envelop));
         }
         super.handle(delayedMessage.getMessage(), delayedMessage.getEnvelop(), agent);
@@ -372,27 +499,29 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
 
     public void handle(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) {
-      if (message == SupervisedSignal.DUMMY_MESSAGE) {
+      if (message == SupervisedDelayedSignal.DUMMY_MESSAGE) {
         return;
       }
       final Headers headers = envelop.getHeaders();
-      if (message instanceof Supervise) {
+      if (message == SupervisedSignal.SUPERVISE) {
         final Actor self = agent.getSelf();
         final Actor sender = envelop.getSender();
         if (!sender.equals(self)) {
-          if (!sender.equals(supervisor) && sender.addObserver(self)) {
-            // notify old supervisor
-            supervisor.tell(REPLACE, Headers.EMPTY, self);
-            supervisor = sender;
-            supervisorThread = headers.getThreadId();
-            sender.tell(new SupervisedFailure(failureId, failure),
-                new Headers().withThreadId(supervisorThread).withReceiptId(receiptId), self);
+          if (!sender.equals(supervisor)) {
+            if (sender.addObserver(self)) {
+              // notify old supervisor
+              supervisor.tell(SupervisedSignal.REPLACE_SUPERVISOR, Headers.EMPTY, self);
+              supervisor = sender;
+              supervisorThread = headers.getThreadId();
+              sender.tell(new SupervisedFailure(failureId, failure),
+                  new Headers().withThreadId(supervisorThread).withReceiptId(receiptId), self);
 
-          } else if (headers.getReceiptId() != null) {
-            sender.tell(new Failure(message, headers,
-                    new IllegalRecipientException("can't add observer to supervisor")),
-                headers.threadOnly(), self);
-            envelop.preventReceipt();
+            } else if (headers.getReceiptId() != null) {
+              sender.tell(new Failure(message, headers,
+                      new IllegalRecipientException("can't add observer to supervisor")),
+                  headers.threadOnly(), self);
+              envelop.preventReceipt();
+            }
           }
 
         } else if (headers.getReceiptId() != null) {
@@ -402,7 +531,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
           envelop.preventReceipt();
         }
 
-      } else if (message instanceof Unsupervise) {
+      } else if (message == SupervisedSignal.UNSUPERVISE) {
         final Actor sender = envelop.getSender();
         if (sender.equals(supervisor)) {
           agent.getSelf().dismiss();

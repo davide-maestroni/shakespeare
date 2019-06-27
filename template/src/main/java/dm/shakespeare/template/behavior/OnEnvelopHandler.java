@@ -31,7 +31,7 @@ import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
 
 /**
- * Created by davide-maestroni on 09/07/2018.
+ * {@code AnnotationHandler} handling {@link OnEnvelop} annotations.
  */
 class OnEnvelopHandler implements AnnotationHandler<OnEnvelop> {
 
@@ -100,13 +100,11 @@ class OnEnvelopHandler implements AnnotationHandler<OnEnvelop> {
       this.method = Reflections.makeAccessible(method);
     }
 
-    // json
     @NotNull
     public Method getMethod() {
       return method;
     }
 
-    // json
     @NotNull
     public Object getObject() {
       return object;

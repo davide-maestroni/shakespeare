@@ -27,7 +27,7 @@ import dm.shakespeare.template.behavior.annotation.OnNoMatch;
 import dm.shakespeare.template.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 09/07/2018.
+ * {@code AnnotationHandler} handling {@link OnNoMatch} annotations.
  */
 class OnNoMatchHandler implements AnnotationHandler<OnNoMatch> {
 

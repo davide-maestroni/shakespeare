@@ -29,7 +29,7 @@ import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 09/12/2018.
+ * {@code Observer} calling an annotated method of the target object on a start or stop event.
  */
 class MethodObserver implements Observer<Agent>, Serializable {
 
@@ -69,13 +69,11 @@ class MethodObserver implements Observer<Agent>, Serializable {
     method.invoke(object, args);
   }
 
-  // json
   @NotNull
   public Method getMethod() {
     return method;
   }
 
-  // json
   @NotNull
   public Object getObject() {
     return object;

@@ -30,9 +30,17 @@ import dm.shakespeare.message.Receipt;
 import dm.shakespeare.template.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 06/25/2019.
+ * {@code Behavior} implementing a load balancer of other actors.<br>
+ * New balanced actors are added by sending a {@link ProxySignal#ADD_PROXIED} message with the
+ * proxied actor as sender. In the same way, balanced actors are removed through a
+ * {@link ProxySignal#REMOVE_PROXIED} message.<p>
+ * Each actor, communicating with the balancer, will be assigned a recipient based on the minimum
+ * inbox size at the time the first message is received. Such recipient will not change for further
+ * messages coming from the same actor. Notice, however, that different recipients might be assigned
+ * to different sender actor.<p>
+ * When the behavior is serialized, the knowledge of the proxied actors will be lost.
  */
-public class LoadBalancerBehavior extends ProxyBehavior {
+public class LoadBalancerBehavior extends AbstractProxyBehavior {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
@@ -40,6 +48,9 @@ public class LoadBalancerBehavior extends ProxyBehavior {
   private transient final String receiptId = toString();
   private transient final WeakHashMap<Actor, Actor> senders = new WeakHashMap<Actor, Actor>();
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public void onMessage(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
@@ -58,6 +69,9 @@ public class LoadBalancerBehavior extends ProxyBehavior {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   protected void onIncoming(@NotNull final Actor sender, final Object message, final long sentAt,
       @NotNull final Headers headers, @NotNull final Agent agent) throws Exception {
     final HashMap<Actor, Integer> proxied = this.proxied;
@@ -77,11 +91,16 @@ public class LoadBalancerBehavior extends ProxyBehavior {
           }
         }
       }
-      proxied.put(actor, proxied.get(actor) + 1);
-      actor.tell(message, decorateHeaders(headers.asSentAt(sentAt)), agent.getSelf());
+      if (actor != null) {
+        proxied.put(actor, proxied.get(actor) + 1);
+        actor.tell(message, decorateHeaders(headers.asSentAt(sentAt)), agent.getSelf());
+      }
     }
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   protected void onOutgoing(@NotNull final Actor sender, @NotNull final Actor recipient,
       final Object message, final long sentAt, @NotNull Headers headers,
@@ -94,7 +113,7 @@ public class LoadBalancerBehavior extends ProxyBehavior {
       }
       headers = resetHeaders((Receipt) message, headers);
     }
-    super.onOutgoing(sender, recipient, message, sentAt, headers, agent);
+    recipient.tell(message, headers.asSentAt(sentAt), agent.getSelf());
   }
 
   @NotNull

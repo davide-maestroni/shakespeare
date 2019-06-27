@@ -25,7 +25,8 @@ import java.lang.annotation.Target;
  * Annotation used to decorate a method handling any message.<br>
  * The annotate method may accept also parameters of type {@link dm.shakespeare.actor.Envelop
  * Envelop} and {@link dm.shakespeare.actor.Behavior.Agent Agent}. Such inputs will be injected into
- * the received objects so to match the parameters order.
+ * the received objects so to match the parameters order.<br>
+ * The method returned value, if any, will be sent back to the sender of the message.
  *
  * @see dm.shakespeare.template.behavior.AnnotationBehavior
  */

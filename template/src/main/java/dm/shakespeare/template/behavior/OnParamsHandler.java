@@ -34,7 +34,7 @@ import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.Iterables;
 
 /**
- * Created by davide-maestroni on 09/07/2018.
+ * {@code AnnotationHandler} handling {@link OnParams} annotations.
  */
 class OnParamsHandler implements AnnotationHandler<OnParams> {
 
@@ -62,13 +62,11 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
       this.method = Reflections.makeAccessible(method);
     }
 
-    // json
     @NotNull
     public Method getMethod() {
       return method;
     }
 
-    // json
     @NotNull
     public Object getObject() {
       return object;
@@ -116,7 +114,6 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
       parameterTypes = method.getParameterTypes();
     }
 
-    // json
     @NotNull
     public Class<?>[] getParameterTypes() {
       return parameterTypes;

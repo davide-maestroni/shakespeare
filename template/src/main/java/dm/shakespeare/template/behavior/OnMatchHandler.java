@@ -31,7 +31,7 @@ import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
 
 /**
- * Created by davide-maestroni on 09/07/2018.
+ * {@code AnnotationHandler} handling {@link OnMatch} annotations.
  */
 class OnMatchHandler implements AnnotationHandler<OnMatch> {
 
@@ -103,13 +103,11 @@ class OnMatchHandler implements AnnotationHandler<OnMatch> {
       this.method = Reflections.makeAccessible(method);
     }
 
-    // json
     @NotNull
     public Method getMethod() {
       return method;
     }
 
-    // json
     @NotNull
     public Object getObject() {
       return object;
