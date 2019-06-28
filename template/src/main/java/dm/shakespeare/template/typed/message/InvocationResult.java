@@ -19,7 +19,7 @@ package dm.shakespeare.template.typed.message;
 import dm.shakespeare.template.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 06/17/2019.
+ * Message indicating that the invocation produced an output value.
  */
 public class InvocationResult extends InvocationResponse {
 
@@ -27,14 +27,29 @@ public class InvocationResult extends InvocationResponse {
 
   private final Object result;
 
+  /**
+   * Creates an empty message.<br>
+   * Usually needed during deserialization.
+   */
   public InvocationResult() {
-    this(null);
+    this(null, null);
   }
 
-  public InvocationResult(final Object result) {
+  /**
+   * Creates a new result message.
+   *
+   * @param result the result instance.
+   */
+  public InvocationResult(final String invocationId, final Object result) {
+    super(invocationId);
     this.result = result;
   }
 
+  /**
+   * Returns the invocation result.
+   *
+   * @return the result instance.
+   */
   public Object getResult() {
     return result;
   }

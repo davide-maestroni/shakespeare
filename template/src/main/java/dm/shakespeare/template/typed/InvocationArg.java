@@ -23,7 +23,7 @@ import dm.shakespeare.template.typed.actor.Script;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 06/17/2019.
+ * Invocation argument used to transfer typed actor references.
  */
 class InvocationArg implements Serializable {
 
@@ -32,14 +32,14 @@ class InvocationArg implements Serializable {
   private final Script script;
   private final Class<?> type;
 
-  InvocationArg() {
-    type = null;
-    script = null;
-  }
-
   InvocationArg(final Class<?> type, final Script script) {
     this.type = ConstantConditions.notNull("type", type);
     this.script = ConstantConditions.notNull("script", script);
+  }
+
+  private InvocationArg() {
+    type = null;
+    script = null;
   }
 
   public Script getScript() {

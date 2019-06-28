@@ -15,7 +15,7 @@
  */
 
 /**
- * Defines the library logging abstraction layer.<br>
+ * Library logging abstraction layer definitions.<br>
  * The logging layer is used internally to abstract the underlying logging framework, so to be
  * easily integrable with popular libraries (like
  * <a href="https://logging.apache.org/log4j/2.x/">log4j</a> or

@@ -33,8 +33,8 @@ import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Base abstract implementation of a role object.<br>
- * A role is used to instruct an actor on how to behave. In fact, by implementing a {@code Role}
- * object it is possible to configure:<ul>
+ * A role is used to instruct an actor on how to behave. By implementing a {@code Role} object it
+ * is possible to configure:<ul>
  * <li>the initial actor {@link Behavior}</li>
  * <li>the {@link ExecutorService} on which the actor business logic will be executed</li>
  * <li>the inbox message quota</li>

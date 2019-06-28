@@ -14,9 +14,21 @@
  * limitations under the License.
  */
 
+package dm.shakespeare.template.typed.annotation;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
 /**
- * Main library package providing basic implementation of the core interfaces like
- * {@link dm.shakespeare.Stage Stage}, {@link dm.shakespeare.actor.Envelop Envelop},
- * {@link dm.shakespeare.actor.Actor Actor} and {@link dm.shakespeare.actor.ActorSet ActorSet}.
+ * Annotation used to decorate a method input parameter so to indicate the headers of the invocation
+ * message.<br>
+ * The annotated parameter type must be assignable from an {@link dm.shakespeare.actor.Headers
+ * Headers}, and it must be the only one having this annotation.
  */
-package dm.shakespeare;
+@Target(ElementType.PARAMETER)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface HeadersFrom {
+
+}

@@ -29,6 +29,7 @@ import dm.shakespeare.template.behavior.annotation.OnMatch;
 import dm.shakespeare.template.behavior.annotation.VoidMatcher;
 import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
+import dm.shakespeare.util.ConstantConditions;
 
 /**
  * {@code AnnotationHandler} handling {@link OnMatch} annotations.
@@ -100,15 +101,13 @@ class OnMatchHandler implements AnnotationHandler<OnMatch> {
 
     private MessageMatcher(@NotNull final Object object, @NotNull final Method method) {
       this.object = object;
-      this.method = Reflections.makeAccessible(method);
+      this.method =  ConstantConditions.notNull("method", method);
     }
 
-    @NotNull
     public Method getMethod() {
       return method;
     }
 
-    @NotNull
     public Object getObject() {
       return object;
     }

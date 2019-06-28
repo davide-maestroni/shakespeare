@@ -29,6 +29,7 @@ import dm.shakespeare.template.behavior.annotation.OnMessage;
 import dm.shakespeare.template.behavior.annotation.VoidTester;
 import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
+import dm.shakespeare.util.ConstantConditions;
 
 /**
  * {@code AnnotationHandler} handling {@link OnMessage} annotations.
@@ -113,7 +114,6 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
       this.messageClass = messageClass;
     }
 
-    @NotNull
     public Class<?> getMessageClass() {
       return messageClass;
     }
@@ -137,7 +137,6 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
       this.messageClasses = messageClasses;
     }
 
-    @NotNull
     public Class<?>[] getMessageClasses() {
       return messageClasses;
     }
@@ -166,15 +165,13 @@ class OnMessageHandler implements AnnotationHandler<OnMessage> {
 
     private MessageTester(@NotNull final Object object, @NotNull final Method method) {
       this.object = object;
-      this.method = Reflections.makeAccessible(method);
+      this.method =  ConstantConditions.notNull("method", method);
     }
 
-    @NotNull
     public Method getMethod() {
       return method;
     }
 
-    @NotNull
     public Object getObject() {
       return object;
     }

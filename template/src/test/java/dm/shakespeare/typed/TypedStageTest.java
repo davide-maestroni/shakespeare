@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
+package dm.shakespeare.typed;
+
 /**
- * Main library package providing basic implementation of the core interfaces like
- * {@link dm.shakespeare.Stage Stage}, {@link dm.shakespeare.actor.Envelop Envelop},
- * {@link dm.shakespeare.actor.Actor Actor} and {@link dm.shakespeare.actor.ActorSet ActorSet}.
+ * Created by davide-maestroni on 06/28/2019.
  */
-package dm.shakespeare;
+public class TypedStageTest {
+
+
+}

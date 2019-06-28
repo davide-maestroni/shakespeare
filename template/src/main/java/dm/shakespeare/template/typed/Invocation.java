@@ -23,7 +23,7 @@ import java.io.Serializable;
 import dm.shakespeare.template.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 06/17/2019.
+ * Invocation message.
  */
 class Invocation implements Serializable {
 
@@ -34,19 +34,19 @@ class Invocation implements Serializable {
   private final String methodName;
   private final Class<?>[] parameterTypes;
 
-  Invocation() {
-    this.id = "";
-    methodName = "toString";
-    parameterTypes = new Class[0];
-    arguments = new Object[0];
-  }
-
   Invocation(@NotNull final String id, @NotNull final String methodName,
       @NotNull final Class<?>[] parameterTypes, @NotNull final Object... arguments) {
     this.id = id;
     this.methodName = methodName;
     this.parameterTypes = parameterTypes;
     this.arguments = arguments;
+  }
+
+  private Invocation() {
+    this.id = "";
+    methodName = "toString";
+    parameterTypes = new Class[0];
+    arguments = new Object[0];
   }
 
   @NotNull

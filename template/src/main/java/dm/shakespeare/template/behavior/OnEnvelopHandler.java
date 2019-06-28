@@ -29,6 +29,7 @@ import dm.shakespeare.template.behavior.annotation.OnEnvelop;
 import dm.shakespeare.template.behavior.annotation.VoidTester;
 import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.util.Reflections;
+import dm.shakespeare.util.ConstantConditions;
 
 /**
  * {@code AnnotationHandler} handling {@link OnEnvelop} annotations.
@@ -97,15 +98,13 @@ class OnEnvelopHandler implements AnnotationHandler<OnEnvelop> {
 
     private MessageTester(@NotNull final Object object, @NotNull final Method method) {
       this.object = object;
-      this.method = Reflections.makeAccessible(method);
+      this.method =  ConstantConditions.notNull("method", method);
     }
 
-    @NotNull
     public Method getMethod() {
       return method;
     }
 
-    @NotNull
     public Object getObject() {
       return object;
     }

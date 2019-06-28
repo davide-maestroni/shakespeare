@@ -14,9 +14,19 @@
  * limitations under the License.
  */
 
+package dm.shakespeare.template.typed;
+
 /**
- * Main library package providing basic implementation of the core interfaces like
- * {@link dm.shakespeare.Stage Stage}, {@link dm.shakespeare.actor.Envelop Envelop},
- * {@link dm.shakespeare.actor.Actor Actor} and {@link dm.shakespeare.actor.ActorSet ActorSet}.
+ * Exception indicating that the timeout elapsed while waiting for a type actor invocation result.
  */
-package dm.shakespeare;
+public class InvocationTimeoutException extends RuntimeException {
+
+  /**
+   * Creates a new exception instance.
+   *
+   * @param message the detail message.
+   */
+  public InvocationTimeoutException(final String message) {
+    super(message);
+  }
+}

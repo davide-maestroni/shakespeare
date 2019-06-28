@@ -21,9 +21,37 @@ import java.io.Serializable;
 import dm.shakespeare.template.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 06/17/2019.
+ * Base message class representing the result of an invocation.
  */
 public class InvocationResponse implements Serializable {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+  private final String invocationId;
+
+  /**
+   * Creates an empty message.<br>
+   * Usually needed during deserialization.
+   */
+  public InvocationResponse() {
+    this(null);
+  }
+
+  /**
+   * Creates a new response message.
+   *
+   * @param invocationId the invocation ID.
+   */
+  public InvocationResponse(final String invocationId) {
+    this.invocationId = invocationId;
+  }
+
+  /**
+   * Returns the invocation ID.
+   *
+   * @return the invocation ID.
+   */
+  public String getInvocationId() {
+    return invocationId;
+  }
 }

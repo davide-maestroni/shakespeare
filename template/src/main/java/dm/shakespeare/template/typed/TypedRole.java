@@ -43,7 +43,7 @@ import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 01/17/2019.
+ * {@code Role} implementation defining the behavior of a typed actor.
  */
 class TypedRole extends SerializableRole {
 
@@ -53,13 +53,6 @@ class TypedRole extends SerializableRole {
   private final Object[] objectArgs;
   private final Class<?> objectClass;
   private final Script script;
-
-  TypedRole() {
-    script = null;
-    object = null;
-    objectClass = null;
-    objectArgs = null;
-  }
 
   TypedRole(@NotNull final Script script, @NotNull final Object object) {
     this.script = ConstantConditions.notNull("script", script);
@@ -74,6 +67,13 @@ class TypedRole extends SerializableRole {
     this.object = null;
     this.objectClass = ConstantConditions.notNull("type", type);
     this.objectArgs = ConstantConditions.notNull("args", args);
+  }
+
+  private TypedRole() {
+    script = null;
+    object = null;
+    objectClass = null;
+    objectArgs = null;
   }
 
   @NotNull
@@ -93,24 +93,18 @@ class TypedRole extends SerializableRole {
     return script.getQuota(id);
   }
 
-  // json
   public Object getObject() {
     return object;
   }
 
-  // json
   public Object[] getObjectArgs() {
     return objectArgs;
   }
 
-  // json
-  @NotNull
   public Class<?> getObjectClass() {
     return objectClass;
   }
 
-  // json
-  @NotNull
   public Script getScript() {
     return script;
   }
@@ -126,7 +120,6 @@ class TypedRole extends SerializableRole {
     if (object != null) {
       return object;
     }
-
     return Reflections.newInstance(this.objectClass, this.objectArgs);
   }
 
@@ -158,14 +151,10 @@ class TypedRole extends SerializableRole {
       this.instance = instance;
     }
 
-    // json
-    @NotNull
     public HashMap<String, ActorArg> getActorArgs() {
       return actorArgs;
     }
 
-    // json
-    @NotNull
     public Object getInstance() {
       return instance;
     }
@@ -191,22 +180,28 @@ class TypedRole extends SerializableRole {
         }
 
       } else if ((message != null) && (message.getClass() == Invocation.class)) {
+        final Actor self = agent.getSelf();
+        agent.getLogger()
+            .dbg("[%s] handling invocation message: envelop=%s - message=%s", self, envelop,
+                message);
         final Object instance = this.instance;
         final Invocation invocation = (Invocation) message;
         final Headers headers = envelop.getHeaders().threadOnly();
         final Method method;
         final Class<?>[] parameterTypes = invocation.getParameterTypes();
         try {
-          method = Reflections.makeAccessible(
-              instance.getClass().getMethod(invocation.getMethodName(), parameterTypes));
+          method = instance.getClass().getMethod(invocation.getMethodName(), parameterTypes);
 
         } catch (final NoSuchMethodException e) {
-          agent.getLogger().wrn(e, "ignoring message: %s", message);
-          envelop.getSender().tell(new InvocationException(e), headers, agent.getSelf());
+          agent.getLogger()
+              .err(e, "[%s] invocation failure, no method found: envelop=%s - message=%s", self,
+                  envelop, message);
+          envelop.getSender()
+              .tell(new InvocationException(invocation.getId(), new InvocationMismatchException(e)),
+                  headers, self);
           return;
         }
 
-        final Actor self = agent.getSelf();
         try {
           final ActorArg actorArg = actorArgs.remove(invocation.getId());
           final Object[] args;
@@ -218,8 +213,8 @@ class TypedRole extends SerializableRole {
               if (argument instanceof InvocationArg) {
                 final InvocationArg invocationArg = (InvocationArg) argument;
                 final Class<?> type = invocationArg.getType();
-                args[i] = ActorHandler.createProxy(type, invocationArg.getScript(),
-                    actorArg.actors.removeFirst());
+                args[i] = ActorHandler.createProxy(actorArg.actors.removeFirst(), type,
+                    invocationArg.getScript());
 
               } else if (argument == TypedRoleSignal.ACTOR_ARG) {
                 args[i] = actorArg.actors.removeFirst();
@@ -230,8 +225,8 @@ class TypedRole extends SerializableRole {
                   if (element instanceof InvocationArg) {
                     final InvocationArg invocationArg = (InvocationArg) element;
                     final Class<?> type = invocationArg.getType();
-                    list.add(ActorHandler.createProxy(type, invocationArg.getScript(),
-                        actorArg.actors.removeFirst()));
+                    list.add(ActorHandler.createProxy(actorArg.actors.removeFirst(), type,
+                        invocationArg.getScript()));
 
                   } else if (element == TypedRoleSignal.ACTOR_ARG) {
                     list.add(actorArg.actors.removeFirst());
@@ -251,12 +246,15 @@ class TypedRole extends SerializableRole {
             args = arguments;
           }
           final Object result = method.invoke(instance, args);
-          envelop.getSender().tell(new InvocationResult(result), headers, self);
+          envelop.getSender().tell(new InvocationResult(invocation.getId(), result), headers, self);
 
         } catch (final Throwable t) {
+          agent.getLogger()
+              .err(t, "[%s] invocation failure: envelop=%s - message=%s", self, envelop, message);
           if (t instanceof InvocationTargetException) {
             final Throwable exception = ((InvocationTargetException) t).getTargetException();
-            envelop.getSender().tell(new InvocationException(exception), headers, self);
+            envelop.getSender()
+                .tell(new InvocationException(invocation.getId(), exception), headers, self);
             if (exception instanceof InterruptedException) {
               Thread.currentThread().interrupt();
 
@@ -266,7 +264,7 @@ class TypedRole extends SerializableRole {
             }
 
           } else {
-            envelop.getSender().tell(new InvocationException(t), headers, self);
+            envelop.getSender().tell(new InvocationException(invocation.getId(), t), headers, self);
             if (t instanceof Error) {
               // rethrow errors
               throw (Error) t;
@@ -275,7 +273,9 @@ class TypedRole extends SerializableRole {
         }
 
       } else {
-        agent.getLogger().wrn("ignoring message: %s", message);
+        agent.getLogger()
+            .wrn("[%s] ignoring message: envelop=%s - message=%s", agent.getSelf(), envelop,
+                message);
       }
     }
   }

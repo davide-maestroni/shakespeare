@@ -37,38 +37,18 @@ class AcceptHandler<T> implements Handler<T>, Serializable {
 
   private final Observer<T> observer;
 
-  /**
-   * Creates a new empty handler.<br>
-   * Usually needed during deserialization.
-   */
-  AcceptHandler() {
-    observer = null;
-  }
-
-  /**
-   * Creates a new handler wrapping the specified observer instance.<br>
-   * The returned instance will be serializable only if the observer instance effectively is.
-   *
-   * @param observer the observer to wrap.
-   */
   AcceptHandler(@NotNull final Observer<T> observer) {
     this.observer = ConstantConditions.notNull("observer", observer);
   }
 
-  /**
-   * Returns the wrapped observer.<br>
-   * Usually needed during serialization.
-   *
-   * @return the observer instance.
-   */
-  @NotNull
+  private AcceptHandler() {
+    observer = null;
+  }
+
   public Observer<T> getObserver() {
     return observer;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   public void handle(final T message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
     observer.accept(message);

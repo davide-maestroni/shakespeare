@@ -15,6 +15,6 @@
  */
 
 /**
- * Defines generic utility classes.
+ * Generic utility classes.
  */
 package dm.shakespeare.util;

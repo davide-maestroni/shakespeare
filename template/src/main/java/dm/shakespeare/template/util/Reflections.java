@@ -31,7 +31,6 @@ import dm.shakespeare.util.ConstantConditions;
 /**
  * Reflection utility class.
  */
-@SuppressWarnings("WeakerAccess")
 public class Reflections {
 
   private static final HashMap<Class<?>, Class<?>> BOXING_CLASSES =
@@ -63,7 +62,7 @@ public class Reflections {
    * @param args   the constructor arguments.
    * @param <TYPE> the target type.
    * @return the best matching constructor.
-   * @throws IllegalArgumentException if no constructor taking the specified objects as  parameters
+   * @throws IllegalArgumentException if no constructor taking the specified objects as parameters
    *                                  was found.
    */
   @NotNull
@@ -78,7 +77,7 @@ public class Reflections {
             "no suitable constructor found for type: " + type.getName());
       }
     }
-    return (Constructor<TYPE>) makeAccessible(constructor);
+    return (Constructor<TYPE>) constructor;
   }
 
   /**

@@ -15,6 +15,6 @@
  */
 
 /**
- * Defines the library messages classes.
+ * Library messages classes.
  */
 package dm.shakespeare.message;

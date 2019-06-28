@@ -22,10 +22,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by davide-maestroni on 06/20/2019.
+ * Annotation used to decorate a method input parameter so to indicate the sender of the invocation
+ * message (and, as a consequence, the recipient of the invocation result).<br>
+ * The annotated parameter type must be assignable from an {@link dm.shakespeare.actor.Actor Actor},
+ * and it must be the only one having this annotation.
  */
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface FromActor {
+public @interface ActorFrom {
 
 }

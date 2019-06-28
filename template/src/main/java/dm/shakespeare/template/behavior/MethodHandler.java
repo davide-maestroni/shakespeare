@@ -26,7 +26,6 @@ import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.actor.BehaviorBuilder.Handler;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.template.config.BuildConfig;
-import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -39,14 +38,14 @@ class MethodHandler implements Handler<Object>, Serializable {
   private final Method method;
   private final Object object;
 
-  MethodHandler() {
-    object = null;
-    method = null;
-  }
-
   MethodHandler(@NotNull final Object object, @NotNull final Method method) {
     this.object = ConstantConditions.notNull("object", object);
-    this.method = Reflections.makeAccessible(method);
+    this.method = ConstantConditions.notNull("method", method);
+  }
+
+  private MethodHandler() {
+    object = null;
+    method = null;
   }
 
   static void handleReturnValue(@NotNull final Method method, final Object value,
@@ -60,12 +59,10 @@ class MethodHandler implements Handler<Object>, Serializable {
     }
   }
 
-  @NotNull
   public Method getMethod() {
     return method;
   }
 
-  @NotNull
   public Object getObject() {
     return object;
   }

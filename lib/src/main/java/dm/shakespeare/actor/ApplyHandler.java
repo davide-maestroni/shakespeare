@@ -37,38 +37,18 @@ class ApplyHandler<T> implements Handler<T>, Serializable {
 
   private final Mapper<T, ?> mapper;
 
-  /**
-   * Creates an empty handler.<br>
-   * Usually needed during deserialization.
-   */
-  ApplyHandler() {
-    mapper = null;
-  }
-
-  /**
-   * Creates a new handler wrapping the specified mapper instance.<br>
-   * The returned instance will be serializable only if the mapper instance effectively is.
-   *
-   * @param mapper the mapper to wrap.
-   */
   ApplyHandler(@NotNull final Mapper<T, ?> mapper) {
     this.mapper = ConstantConditions.notNull("mapper", mapper);
   }
 
-  /**
-   * Returns the wrapped mapper.<br>
-   * Usually needed during serialization.
-   *
-   * @return the mapper instance.
-   */
-  @NotNull
+  private ApplyHandler() {
+    mapper = null;
+  }
+
   public Mapper<T, ?> getMapper() {
     return mapper;
   }
 
-  /**
-   * {@inheritDoc}
-   */
   public void handle(final T message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
     envelop.getSender()

@@ -30,7 +30,7 @@ import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.function.Tester;
 import dm.shakespeare.template.behavior.annotation.OnParams;
 import dm.shakespeare.template.config.BuildConfig;
-import dm.shakespeare.template.util.Reflections;
+import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.Iterables;
 
 /**
@@ -59,15 +59,13 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
 
     private MessageHandler(@NotNull final Object object, @NotNull final Method method) {
       this.object = object;
-      this.method = Reflections.makeAccessible(method);
+      this.method = ConstantConditions.notNull("method", method);
     }
 
-    @NotNull
     public Method getMethod() {
       return method;
     }
 
-    @NotNull
     public Object getObject() {
       return object;
     }
@@ -114,7 +112,6 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
       parameterTypes = method.getParameterTypes();
     }
 
-    @NotNull
     public Class<?>[] getParameterTypes() {
       return parameterTypes;
     }

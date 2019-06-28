@@ -21,7 +21,7 @@ import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.template.role.RespawningRole;
 import dm.shakespeare.template.typed.TypedStage;
 import dm.shakespeare.template.typed.actor.Script;
-import dm.shakespeare.template.typed.annotation.FromActor;
+import dm.shakespeare.template.typed.annotation.ActorFrom;
 import dm.shakespeare.template.typed.message.InvocationResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,7 +47,7 @@ public class RespawningRoleRoleTest {
   @Test
   public void typed() {
     final TypedStage stage = new TypedStage(new Stage());
-    final ToUpper test = stage.createActor(ToUpper.class, new TestScript(), "test");
+    final ToUpper test = stage.createActor(new TestScript(), ToUpper.class, "test");
     final Actor actor = Stage.newActor(new Role() {
 
       @NotNull
@@ -76,9 +76,9 @@ public class RespawningRoleRoleTest {
 
   private interface ToUpper {
 
-    void toUpperCase(@FromActor @NotNull Actor sender);
+    void toUpperCase(@ActorFrom @NotNull Actor sender);
 
-    void toUpperCase(@NotNull Locale locale, @FromActor @NotNull Actor sender);
+    void toUpperCase(@NotNull Locale locale, @ActorFrom @NotNull Actor sender);
 
     String toUpperCase();
 

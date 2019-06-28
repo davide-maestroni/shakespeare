@@ -15,8 +15,6 @@
  */
 
 /**
- * Main library package providing basic implementation of the core interfaces like
- * {@link dm.shakespeare.Stage Stage}, {@link dm.shakespeare.actor.Envelop Envelop},
- * {@link dm.shakespeare.actor.Actor Actor} and {@link dm.shakespeare.actor.ActorSet ActorSet}.
+ * Typed actor annotations definitions.
  */
-package dm.shakespeare;
+package dm.shakespeare.template.typed.annotation;

@@ -15,14 +15,12 @@
  */
 
 /**
- * Defines the library core interfaces.<br>
- * The library main concepts are:<ul>
+ * Library core interfaces and classes definitions.<br>
+ * The library main concepts include:<ul>
  * <li>{@link dm.shakespeare.actor.Behavior}: implementing the actor behavior</li>
  * <li>{@link dm.shakespeare.actor.Behavior.Agent}: providing the actor execution environment</li>
  * <li>{@link dm.shakespeare.actor.Role}: defining the actor behavior and options</li>
- * <li>{@link dm.shakespeare.Stage}: a roster of actors, acting also as new actors
- * creator</li>
- * <li>{@link dm.shakespeare.actor.Actor}: defining the actor interface</li>
+ * <li>{@link dm.shakespeare.actor.Actor Actor}: defining the actor interface</li>
  * </ul>
  * This package provides also implementations of utility classes, like: an
  * {@link dm.shakespeare.actor.AbstractBehavior}, providing empty implementation or

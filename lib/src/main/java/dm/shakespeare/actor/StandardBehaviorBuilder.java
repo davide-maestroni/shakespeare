@@ -214,7 +214,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.messageClass = messageClass;
     }
 
-    @NotNull
     public Class<?> getMessageClass() {
       return messageClass;
     }
@@ -241,7 +240,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.messageClasses = messageClasses;
     }
 
-    @NotNull
     public Collection<? extends Class<?>> getMessageClasses() {
       return messageClasses;
     }
@@ -326,7 +324,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.matcher = (Matcher<Object>) matcher;
     }
 
-    @NotNull
     public Matcher<Object> getMatcher() {
       return matcher;
     }
@@ -352,7 +349,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.handler = (Handler<Object>) handler;
     }
 
-    @NotNull
     public Handler<Object> getHandler() {
       return handler;
     }
@@ -412,12 +408,10 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.fallbacks = fallbacks;
     }
 
-    @NotNull
     public List<Handler<?>> getFallbacks() {
       return fallbacks;
     }
 
-    @NotNull
     public List<MatchingHandler> getHandlers() {
       return handlers;
     }
@@ -458,7 +452,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.tester = tester;
     }
 
-    @NotNull
     public Tester<? super Envelop> getTester() {
       return tester;
     }
@@ -490,17 +483,14 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.stopObserver = stopObserver;
     }
 
-    @NotNull
     public Handler<Object> getMessageHandler() {
       return messageHandler;
     }
 
-    @NotNull
     public Observer<? super Agent> getStartObserver() {
       return startObserver;
     }
 
-    @NotNull
     public Observer<? super Agent> getStopObserver() {
       return stopObserver;
     }
@@ -537,7 +527,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       this.tester = (Tester<Object>) tester;
     }
 
-    @NotNull
     public Tester<Object> getTester() {
       return tester;
     }

@@ -18,22 +18,28 @@ package dm.shakespeare.template.typed;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serializable;
+
+import dm.shakespeare.template.config.BuildConfig;
+
 /**
- * Created by davide-maestroni on 06/20/2019.
+ * Invocation ID message used to transfer actor references.
  */
-class InvocationId {
+class InvocationId implements Serializable {
+
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   private final String id;
-
-  InvocationId() {
-    this.id = null;
-  }
 
   InvocationId(@NotNull final String id) {
     this.id = id;
   }
 
-  String getId() {
+  private InvocationId() {
+    this.id = null;
+  }
+
+  public String getId() {
     return id;
   }
 }

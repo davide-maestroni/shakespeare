@@ -41,20 +41,20 @@ public class SupervisedRole extends SerializableRole {
   private final Role role;
 
   /**
-   * Creates a dummy role instance.<br>
-   * Usually needed during deserialization.
-   */
-  public SupervisedRole() {
-    role = new DummyRole();
-  }
-
-  /**
    * Creates a new role wrapping the specified one.
    *
    * @param role the wrapped role.
    */
   public SupervisedRole(@NotNull final Role role) {
     this.role = ConstantConditions.notNull("role", role);
+  }
+
+  /**
+   * Creates a dummy role instance.<br>
+   * Usually needed during deserialization.
+   */
+  private SupervisedRole() {
+    role = new DummyRole();
   }
 
   /**

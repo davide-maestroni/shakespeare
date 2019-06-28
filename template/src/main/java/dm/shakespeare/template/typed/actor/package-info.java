@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.template.typed.annotation;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
 /**
- * Created by davide-maestroni on 06/20/2019.
+ * Typed actors interfaces and classes definitions.<br>
+ * The main concepts include:<ul>
+ * <li>{@link dm.shakespeare.template.typed.actor.Script}: defining the type actor environment</li>
+ * This package provides also implementations of utility classes, like: a
+ * {@link dm.shakespeare.template.typed.actor.SerializableScript}, defining a {@code Script} object
+ * which is also serializable.
  */
-@Target(ElementType.PARAMETER)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface FromHeaders {
-
-}
+package dm.shakespeare.template.typed.actor;

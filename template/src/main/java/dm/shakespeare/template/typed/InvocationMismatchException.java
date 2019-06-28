@@ -14,9 +14,19 @@
  * limitations under the License.
  */
 
+package dm.shakespeare.template.typed;
+
 /**
- * Main library package providing basic implementation of the core interfaces like
- * {@link dm.shakespeare.Stage Stage}, {@link dm.shakespeare.actor.Envelop Envelop},
- * {@link dm.shakespeare.actor.Actor Actor} and {@link dm.shakespeare.actor.ActorSet ActorSet}.
+ * Exception indicating that no matching method has been found during a typed actor invocation.
  */
-package dm.shakespeare;
+public class InvocationMismatchException extends RuntimeException {
+
+  /**
+   * Creates a new exception instance.
+   *
+   * @param cause the cause.
+   */
+  public InvocationMismatchException(final Throwable cause) {
+    super(cause);
+  }
+}

@@ -83,7 +83,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
    * Creates an empty behavior.<br>
    * Usually needed during deserialization.
    */
-  SupervisedBehavior() {
+  private SupervisedBehavior() {
     behavior = null;
   }
 
@@ -435,12 +435,6 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
         } else {
           agent.getLogger()
               .wrn("[%s] cannot unset supervisor: envelop=%s - message=%s", self, envelop, message);
-          if (headers.getReceiptId() != null) {
-            sender.tell(new Failure(message, headers,
-                    new IllegalStateException("sender is not the current supervisor")),
-                headers.threadOnly(), self);
-            envelop.preventReceipt();
-          }
         }
 
       } else if (message instanceof SupervisedRecovery) {
@@ -593,12 +587,6 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
         } else {
           agent.getLogger()
               .wrn("[%s] cannot unset supervisor: envelop=%s - message=%s", self, envelop, message);
-          if (headers.getReceiptId() != null) {
-            sender.tell(new Failure(message, headers,
-                    new IllegalStateException("sender is not the current supervisor")),
-                headers.threadOnly(), self);
-            envelop.preventReceipt();
-          }
         }
 
       } else if (message instanceof SupervisedRecovery) {

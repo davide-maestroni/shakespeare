@@ -94,7 +94,7 @@ public class AnnotationBehavior extends SerializableAbstractBehavior {
    * Creates an empty behavior.<br>
    * Usually needed during deserialization.
    */
-  AnnotationBehavior() {
+  private AnnotationBehavior() {
     behavior = null;
   }
 

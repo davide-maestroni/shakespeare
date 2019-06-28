@@ -46,15 +46,6 @@ public class RespawningRole extends Role implements Serializable {
   private transient Role role;
 
   /**
-   * Creates a dummy role instance.<br>
-   * Usually needed during deserialization.
-   */
-  public RespawningRole() {
-    roleClass = DummyRole.class;
-    roleArgs = NO_ARGS;
-  }
-
-  /**
    * Creates a new role instance instantiating instances of the specified role class.
    *
    * @param roleClass the role class.
@@ -74,6 +65,15 @@ public class RespawningRole extends Role implements Serializable {
       @NotNull final Object... roleArgs) {
     this.roleClass = ConstantConditions.notNull("roleClass", roleClass);
     this.roleArgs = ConstantConditions.notNull("roleArgs", roleArgs).clone();
+  }
+
+  /**
+   * Creates a dummy role instance.<br>
+   * Usually needed during deserialization.
+   */
+  private RespawningRole() {
+    roleClass = DummyRole.class;
+    roleArgs = NO_ARGS;
   }
 
   /**

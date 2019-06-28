@@ -40,14 +40,14 @@ class MethodObserver implements Observer<Agent>, Serializable {
   private final Method method;
   private final Object object;
 
-  MethodObserver() {
-    object = null;
-    method = null;
-  }
-
   MethodObserver(@NotNull final Object object, @NotNull final Method method) {
     this.object = ConstantConditions.notNull("object", object);
-    this.method = Reflections.makeAccessible(method);
+    this.method =  ConstantConditions.notNull("method", method);
+  }
+
+  private MethodObserver() {
+    object = null;
+    method = null;
   }
 
   public void accept(final Agent agent) throws Exception {
@@ -71,12 +71,10 @@ class MethodObserver implements Observer<Agent>, Serializable {
     method.invoke(object, args);
   }
 
-  @NotNull
   public Method getMethod() {
     return method;
   }
 
-  @NotNull
   public Object getObject() {
     return object;
   }

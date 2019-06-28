@@ -15,6 +15,6 @@
  */
 
 /**
- * Defines the library functional interfaces.
+ * Library functional interfaces.
  */
 package dm.shakespeare.function;

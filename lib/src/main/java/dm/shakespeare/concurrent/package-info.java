@@ -15,7 +15,7 @@
  */
 
 /**
- * Provides implementations of {@link java.util.concurrent.ExecutorService ExecutorService}s and
+ * Implementations of {@link java.util.concurrent.ExecutorService ExecutorService}s and
  * {@link java.util.concurrent.ScheduledExecutorService ScheduledExecutorService}s.<br>
  * All the implemented utilities are exposed through the
  * {@link dm.shakespeare.concurrent.ExecutorServices} class, which act also as factory of the
