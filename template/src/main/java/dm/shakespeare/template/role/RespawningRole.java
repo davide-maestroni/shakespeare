@@ -31,7 +31,8 @@ import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 03/21/2019.
+ * Implementation of a {@link dm.shakespeare.actor.Role} respawning the wrapped role instance each
+ * time the behavior is restarted.
  */
 public class RespawningRole extends Role implements Serializable {
 
@@ -44,50 +45,88 @@ public class RespawningRole extends Role implements Serializable {
 
   private transient Role role;
 
+  /**
+   * Creates a dummy role instance.<br>
+   * Usually needed during deserialization.
+   */
   public RespawningRole() {
-    roleClass = RespawningRole.class;
+    roleClass = DummyRole.class;
     roleArgs = NO_ARGS;
   }
 
+  /**
+   * Creates a new role instance instantiating instances of the specified role class.
+   *
+   * @param roleClass the role class.
+   */
   public RespawningRole(@NotNull final Class<? extends Role> roleClass) {
     this.roleClass = ConstantConditions.notNull("roleClass", roleClass);
     roleArgs = NO_ARGS;
   }
 
+  /**
+   * Creates a new role instance instantiating instances of the specified role class.
+   *
+   * @param roleClass the role class.
+   * @param roleArgs  the constructor arguments.
+   */
   public RespawningRole(@NotNull final Class<? extends Role> roleClass,
       @NotNull final Object... roleArgs) {
     this.roleClass = ConstantConditions.notNull("roleClass", roleClass);
     this.roleArgs = ConstantConditions.notNull("roleArgs", roleArgs).clone();
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public Behavior getBehavior(@NotNull final String id) throws Exception {
     return new RestartingBehavior(getRoleInstance().getBehavior(id));
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   @Override
   public ExecutorService getExecutorService(@NotNull final String id) throws Exception {
     return getRoleInstance().getExecutorService(id);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   @Override
   public Logger getLogger(@NotNull final String id) throws Exception {
     return getRoleInstance().getLogger(id);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public int getQuota(@NotNull final String id) throws Exception {
     return getRoleInstance().getQuota(id);
   }
 
-  // json
+  /**
+   * Returns a copy of the instantiated role constructor arguments array.<br>
+   * Usually needed during serialization.
+   *
+   * @return the arguments array.
+   */
+  @NotNull
   public Object[] getRoleArgs() {
     return roleArgs.clone();
   }
 
-  // json
+  /**
+   * Returns the instantiated role class.<br>
+   * Usually needed during serialization.
+   *
+   * @return the role class.
+   */
   @NotNull
   public Class<? extends Role> getRoleClass() {
     return roleClass;

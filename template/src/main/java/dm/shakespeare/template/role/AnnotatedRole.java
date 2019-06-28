@@ -25,7 +25,10 @@ import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 01/17/2019.
+ * Implementation of a {@link dm.shakespeare.actor.Role} wrapping an object whose methods has
+ * been decorated so to act as handlers of messages.
+ *
+ * @see AnnotationBehavior
  */
 public class AnnotatedRole extends SerializableRole {
 
@@ -33,20 +36,37 @@ public class AnnotatedRole extends SerializableRole {
 
   private final Object object;
 
+  /**
+   * Creates a new role instance.<br>
+   * By default use itself as decorated object.
+   */
   public AnnotatedRole() {
     object = this;
   }
 
+  /**
+   * Creates a new role instance wrapping the specified annotated object.
+   *
+   * @param object the object instance.
+   */
   public AnnotatedRole(@NotNull final Object object) {
     this.object = ConstantConditions.notNull("object", object);
   }
 
-  // json
+  /**
+   * Returns the wrapped object.<br>
+   * Usually needed during serialization.
+   *
+   * @return the object instance.
+   */
   @NotNull
   public Object getObject() {
     return object;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
     return new AnnotationBehavior(object);

@@ -29,7 +29,10 @@ import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 01/16/2019.
+ * Implementation of a {@link dm.shakespeare.actor.Role} adding supervision functionalities to
+ * another role.
+ *
+ * @see SupervisedBehavior
  */
 public class SupervisedRole extends SerializableRole {
 
@@ -37,27 +40,63 @@ public class SupervisedRole extends SerializableRole {
 
   private final Role role;
 
+  /**
+   * Creates a dummy role instance.<br>
+   * Usually needed during deserialization.
+   */
+  public SupervisedRole() {
+    role = new DummyRole();
+  }
+
+  /**
+   * Creates a new role wrapping the specified one.
+   *
+   * @param role the wrapped role.
+   */
   public SupervisedRole(@NotNull final Role role) {
     this.role = ConstantConditions.notNull("role", role);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   @Override
   public ExecutorService getExecutorService(@NotNull final String id) throws Exception {
     return role.getExecutorService(id);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   @Override
   public Logger getLogger(@NotNull final String id) throws Exception {
     return role.getLogger(id);
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public int getQuota(@NotNull final String id) throws Exception {
     return role.getQuota(id);
   }
 
+  /**
+   * Returns the wrapped role.<br>
+   * Usually needed during serialization.
+   *
+   * @return the role instance.
+   */
+  @NotNull
+  public Role getRole() {
+    return role;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   @Override
   public Behavior getSerializableBehavior(@NotNull final String id) throws Exception {

@@ -24,14 +24,19 @@ import dm.shakespeare.template.behavior.RoundRobinBehavior;
 import dm.shakespeare.template.config.BuildConfig;
 
 /**
- * Created by davide-maestroni on 06/25/2019.
+ * Implementation of a {@link dm.shakespeare.actor.Role} acting as load balancer of other actors.
+ *
+ * @see RoundRobinBehavior
  */
 public class RoundRobinRole extends SerializableRole {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
-  protected Behavior getSerializableBehavior(@NotNull final String id) {
+  protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
     return new RoundRobinBehavior();
   }
 }

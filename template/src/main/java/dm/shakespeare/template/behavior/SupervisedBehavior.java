@@ -434,7 +434,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
 
         } else {
           agent.getLogger()
-              .err("[%s] cannot unset supervisor: envelop=%s - message=%s", self, envelop, message);
+              .wrn("[%s] cannot unset supervisor: envelop=%s - message=%s", self, envelop, message);
           if (headers.getReceiptId() != null) {
             sender.tell(new Failure(message, headers,
                     new IllegalStateException("sender is not the current supervisor")),
@@ -451,10 +451,10 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
                   self, envelop, message);
 
         } else {
+          agent.getLogger()
+              .wrn("[%s] ignoring recovery message, invalid supervisor: envelop=%s - message=%s",
+                  self, envelop, message);
           if (headers.getReceiptId() != null) {
-            agent.getLogger()
-                .err("[%s] ignoring recovery message: envelop=%s - message=%s", self, envelop,
-                    message);
             sender.tell(new Failure(message, headers,
                     new IllegalStateException("sender is not the current supervisor")),
                 headers.threadOnly(), agent.getSelf());
@@ -591,6 +591,8 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
           self.dismiss();
 
         } else {
+          agent.getLogger()
+              .wrn("[%s] cannot unset supervisor: envelop=%s - message=%s", self, envelop, message);
           if (headers.getReceiptId() != null) {
             sender.tell(new Failure(message, headers,
                     new IllegalStateException("sender is not the current supervisor")),
@@ -656,7 +658,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
 
           } else {
             agent.getLogger()
-                .dbg("[%s] ignoring supervised recovery, invalid failure ID: envelop=%s - "
+                .wrn("[%s] ignoring supervised recovery, invalid failure ID: envelop=%s - "
                     + "message=%s", self, envelop, message);
             if (headers.getReceiptId() != null) {
               sender.tell(
@@ -668,7 +670,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
 
         } else {
           agent.getLogger()
-              .dbg("[%s] ignoring supervised recovery, invalid supervisor: envelop=%s - "
+              .wrn("[%s] ignoring supervised recovery, invalid supervisor: envelop=%s - "
                   + "message=%s", self, envelop, message);
           if (headers.getReceiptId() != null) {
             sender.tell(new Failure(message, headers,
