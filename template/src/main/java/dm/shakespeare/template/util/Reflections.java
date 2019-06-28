@@ -206,18 +206,10 @@ public class Reflections {
     return confidence;
   }
 
-  /**
-   * Privileged action used to grant accessibility to a constructor.
-   */
   private static class SetAccessibleConstructorAction implements PrivilegedAction<Void> {
 
     private final Constructor<?> constructor;
 
-    /**
-     * Constructor.
-     *
-     * @param constructor the constructor instance.
-     */
     private SetAccessibleConstructorAction(@NotNull final Constructor<?> constructor) {
       this.constructor = constructor;
     }
@@ -228,18 +220,10 @@ public class Reflections {
     }
   }
 
-  /**
-   * Privileged action used to grant accessibility to a method.
-   */
   private static class SetAccessibleMethodAction implements PrivilegedAction<Void> {
 
     private final Method method;
 
-    /**
-     * Constructor.
-     *
-     * @param method the method instance.
-     */
     private SetAccessibleMethodAction(@NotNull final Method method) {
       this.method = method;
     }
