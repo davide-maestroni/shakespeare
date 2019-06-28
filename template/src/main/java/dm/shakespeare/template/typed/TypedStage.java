@@ -38,7 +38,7 @@ import dm.shakespeare.util.ConstantConditions;
  * calls may block waiting for return values, as specified by the actor {@link Script}. In case the
  * timeout elapses, a {@link InvocationTimeoutException} will be thrown.<p>
  * A typed actor interface may define methods with other actors and type actors parameters, however
- * only single objects, {@code List}s and arrays of such types are supported.<br>
+ * only single objects and {@link java.util.List List}s of such types are supported.<br>
  * Additionally, a method may include a sender actor and headers parameters (annotated with
  * {@link dm.shakespeare.template.typed.annotation.ActorFrom ActorFrom} and
  * {@link dm.shakespeare.template.typed.annotation.HeadersFrom HeadersFrom} annotation respectively.
