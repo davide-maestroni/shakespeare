@@ -262,10 +262,6 @@ class ActorHandler implements InvocationHandler {
       this.invocationId = invocationId;
     }
 
-    public String getInvocationId() {
-      return invocationId;
-    }
-
     Object awaitResult(final long timeout, @NotNull final TimeUnit unit) throws Throwable {
       if (await(timeout, unit)) {
         if (exception != null) {
@@ -275,6 +271,10 @@ class ActorHandler implements InvocationHandler {
       }
       throw new InvocationTimeoutException(
           "invocation result not available after: " + timeout + " " + unit);
+    }
+
+    String getInvocationId() {
+      return invocationId;
     }
 
     void setException(final Throwable exception) {
