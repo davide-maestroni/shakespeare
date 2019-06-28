@@ -15,7 +15,6 @@
  */
 
 /**
- * Package defining all the annotations and classes needed by an
- * {@link dm.shakespeare.template.behavior.AnnotationBehavior AnnotationBehavior} class.
+ * Behavior template implementations.
  */
-package dm.shakespeare.template.behavior.annotation;
+package dm.shakespeare.template.behavior;

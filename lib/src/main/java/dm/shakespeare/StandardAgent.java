@@ -312,6 +312,8 @@ class StandardAgent implements Agent {
           }
 
         } catch (final Throwable t) {
+          logger.err(t, "[%s] message processing failure: envelop=%s - message=%s", actor, envelop,
+              message);
           if (!envelop.isPreventReceipt()) {
             envelop.getSender().tell(new Failure(message, headers, t), headers.threadOnly(), actor);
           }
@@ -330,6 +332,8 @@ class StandardAgent implements Agent {
           behavior.onMessage(message, envelop, agent);
 
         } catch (final Throwable t) {
+          logger.err(t, "[%s] message processing failure: envelop=%s - message=%s", actor, envelop,
+              message);
           onStop(agent);
           if (t instanceof InterruptedException) {
             Thread.currentThread().interrupt();
@@ -343,6 +347,7 @@ class StandardAgent implements Agent {
     }
 
     public void onStart(@NotNull final Agent agent) {
+      final Actor actor = StandardAgent.this.actor;
       logger.dbg("[%s] staring actor", actor);
       try {
         behavior.onStart(agent);
@@ -365,6 +370,7 @@ class StandardAgent implements Agent {
       if (stopped) {
         return;
       }
+      final Actor actor = StandardAgent.this.actor;
       logger.dbg("[%s] stopping actor", actor);
       setStopped();
       try {

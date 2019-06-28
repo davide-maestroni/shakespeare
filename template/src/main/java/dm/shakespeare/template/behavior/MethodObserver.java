@@ -66,6 +66,8 @@ class MethodObserver implements Observer<Agent>, Serializable {
     } else {
       args = EMPTY_ARGS;
     }
+    agent.getLogger()
+        .dbg("[%s] invoking method: method=%s - args=%s", agent.getSelf(), method, args);
     method.invoke(object, args);
   }
 

@@ -56,6 +56,9 @@ public class RoundRobinBehavior extends AbstractProxyBehavior {
       final Actor sender = envelop.getSender();
       final ArrayList<Actor> proxied = this.proxied;
       if (!proxied.contains(sender)) {
+        agent.getLogger()
+            .dbg("[%s] adding new proxied actor: envelop=%s - message=%s", agent.getSelf(), envelop,
+                message);
         proxied.add(sender);
       }
 
@@ -67,6 +70,9 @@ public class RoundRobinBehavior extends AbstractProxyBehavior {
         if (index < current) {
           --current;
         }
+        agent.getLogger()
+            .dbg("[%s] removing proxied actor: envelop=%s - message=%s", agent.getSelf(), envelop,
+                message);
         proxied.remove(sender);
       }
 
@@ -82,6 +88,9 @@ public class RoundRobinBehavior extends AbstractProxyBehavior {
       @NotNull final Headers headers, @NotNull final Agent agent) throws Exception {
     final ArrayList<Actor> proxied = this.proxied;
     if (proxied.isEmpty()) {
+      agent.getLogger()
+          .wrn("[%s] no proxied actor present, bouncing message: sender=%s - headers=%s - "
+              + "message=%s", agent.getSelf(), sender, headers, message);
       sender.tell(new Bounce(message, headers), headers.threadOnly(), agent.getSelf());
 
     } else {
@@ -95,6 +104,9 @@ public class RoundRobinBehavior extends AbstractProxyBehavior {
         }
         senders.put(sender, actor);
       }
+      agent.getLogger()
+          .dbg("[%s] forwarding message to proxied actor: recipient=%s - sender=%s - headers=%s - "
+              + "message=%s", agent.getSelf(), actor, sender, headers, message);
       actor.tell(message, headers.asSentAt(sentAt), agent.getSelf());
     }
   }
@@ -105,6 +117,9 @@ public class RoundRobinBehavior extends AbstractProxyBehavior {
   protected void onOutgoing(@NotNull final Actor sender, @NotNull final Actor recipient,
       final Object message, final long sentAt, @NotNull final Headers headers,
       @NotNull final Agent agent) throws Exception {
+    agent.getLogger()
+        .dbg("[%s] forwarding message from proxied actor: recipient=%s - sender=%s - headers=%s - "
+            + "message=%s", agent.getSelf(), recipient, sender, headers, message);
     recipient.tell(message, headers.asSentAt(sentAt), agent.getSelf());
   }
 }

@@ -58,11 +58,18 @@ public class LoadBalancerBehavior extends AbstractProxyBehavior {
       final Actor sender = envelop.getSender();
       final HashMap<Actor, Integer> proxied = this.proxied;
       if (!proxied.containsKey(sender)) {
+        agent.getLogger()
+            .dbg("[%s] adding new proxied actor: envelop=%s - message=%s", agent.getSelf(), envelop,
+                message);
         proxied.put(sender, 0);
       }
 
     } else if (message == ProxySignal.REMOVE_PROXIED) {
-      proxied.remove(envelop.getSender());
+      final Actor sender = envelop.getSender();
+      agent.getLogger()
+          .dbg("[%s] removing proxied actor: envelop=%s - message=%s", agent.getSelf(), envelop,
+              message);
+      proxied.remove(sender);
 
     } else {
       super.onMessage(message, envelop, agent);
@@ -75,26 +82,30 @@ public class LoadBalancerBehavior extends AbstractProxyBehavior {
   protected void onIncoming(@NotNull final Actor sender, final Object message, final long sentAt,
       @NotNull final Headers headers, @NotNull final Agent agent) throws Exception {
     final HashMap<Actor, Integer> proxied = this.proxied;
-    if (proxied.isEmpty()) {
-      sender.tell(new Bounce(message, headers), headers.threadOnly(), agent.getSelf());
-
-    } else {
-      final WeakHashMap<Actor, Actor> senders = this.senders;
-      Actor actor = senders.get(sender);
-      if (actor == null) {
-        Integer min = null;
-        for (final Entry<Actor, Integer> entry : proxied.entrySet()) {
-          final Integer count = entry.getValue();
-          if ((min == null) || (count < min)) {
-            min = count;
-            actor = entry.getKey();
-          }
+    final WeakHashMap<Actor, Actor> senders = this.senders;
+    Actor actor = senders.get(sender);
+    if (actor == null) {
+      Integer min = null;
+      for (final Entry<Actor, Integer> entry : proxied.entrySet()) {
+        final Integer count = entry.getValue();
+        if ((min == null) || (count < min)) {
+          min = count;
+          actor = entry.getKey();
         }
       }
-      if (actor != null) {
-        proxied.put(actor, proxied.get(actor) + 1);
-        actor.tell(message, decorateHeaders(headers.asSentAt(sentAt)), agent.getSelf());
-      }
+    }
+    if (actor != null) {
+      agent.getLogger()
+          .dbg("[%s] forwarding message to proxied actor: recipient=%s - sender=%s - headers=%s - "
+              + "message=%s", agent.getSelf(), actor, sender, headers, message);
+      proxied.put(actor, proxied.get(actor) + 1);
+      actor.tell(message, decorateHeaders(headers.asSentAt(sentAt)), agent.getSelf());
+
+    } else {
+      agent.getLogger()
+          .wrn("[%s] no proxied actor present, bouncing message: sender=%s - headers=%s - "
+              + "message=%s", agent.getSelf(), sender, headers, message);
+      sender.tell(new Bounce(message, headers), headers.threadOnly(), agent.getSelf());
     }
   }
 
@@ -112,7 +123,13 @@ public class LoadBalancerBehavior extends AbstractProxyBehavior {
         proxied.put(sender, Math.max(0, count - 1));
       }
       headers = resetHeaders((Receipt) message, headers);
+      if (headers.getReceiptId() == null) {
+        return;
+      }
     }
+    agent.getLogger()
+        .dbg("[%s] forwarding message from proxied actor: recipient=%s - sender=%s - headers=%s - "
+            + "message=%s", agent.getSelf(), recipient, sender, headers, message);
     recipient.tell(message, headers.asSentAt(sentAt), agent.getSelf());
   }
 

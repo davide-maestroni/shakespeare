@@ -45,10 +45,18 @@ public class ProxyBehavior extends AbstractProxyBehavior {
   public void onMessage(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
     if (message == ProxySignal.ADD_PROXIED) {
-      proxied = envelop.getSender();
+      final Actor sender = envelop.getSender();
+      agent.getLogger()
+          .dbg("[%s] adding new proxied actor: envelop=%s - message=%s", agent.getSelf(), envelop,
+              message);
+      proxied = sender;
 
     } else if (message == ProxySignal.REMOVE_PROXIED) {
-      if (envelop.getSender().equals(proxied)) {
+      final Actor sender = envelop.getSender();
+      if (sender.equals(proxied)) {
+        agent.getLogger()
+            .dbg("[%s] removing proxied actor: envelop=%s - message=%s", agent.getSelf(), envelop,
+                message);
         proxied = null;
       }
 
@@ -62,7 +70,11 @@ public class ProxyBehavior extends AbstractProxyBehavior {
    */
   protected void onIncoming(@NotNull final Actor sender, final Object message, final long sentAt,
       @NotNull final Headers headers, @NotNull final Agent agent) throws Exception {
+    final Actor proxied = this.proxied;
     if (proxied != null) {
+      agent.getLogger()
+          .dbg("[%s] forwarding message to proxied actor: recipient=%s - sender=%s - headers=%s - "
+              + "message=%s", agent.getSelf(), proxied, sender, headers, message);
       proxied.tell(message, headers.asSentAt(sentAt), agent.getSelf());
     }
   }
@@ -73,6 +85,9 @@ public class ProxyBehavior extends AbstractProxyBehavior {
   protected void onOutgoing(@NotNull final Actor sender, @NotNull final Actor recipient,
       final Object message, final long sentAt, @NotNull final Headers headers,
       @NotNull final Agent agent) throws Exception {
+    agent.getLogger()
+        .dbg("[%s] forwarding message from proxied actor: recipient=%s - sender=%s - headers=%s - "
+            + "message=%s", agent.getSelf(), recipient, sender, headers, message);
     recipient.tell(message, headers.asSentAt(sentAt), agent.getSelf());
   }
 }

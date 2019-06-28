@@ -53,6 +53,9 @@ class MethodHandler implements Handler<Object>, Serializable {
       @NotNull final Envelop envelop, @NotNull final Agent agent) {
     final Class<?> returnType = method.getReturnType();
     if ((returnType != void.class) && (returnType != Void.class)) {
+      agent.getLogger()
+          .dbg("[%s] sending invocation result: method=%s - result=%s", agent.getSelf(), method,
+              value);
       envelop.getSender().tell(value, envelop.getHeaders().threadOnly(), agent.getSelf());
     }
   }
@@ -89,6 +92,8 @@ class MethodHandler implements Handler<Object>, Serializable {
     } else {
       args = new Object[]{message};
     }
+    agent.getLogger()
+        .dbg("[%s] invoking method: method=%s - args=%s", agent.getSelf(), method, args);
     final Object result = method.invoke(object, args);
     handleReturnValue(method, result, envelop, agent);
   }

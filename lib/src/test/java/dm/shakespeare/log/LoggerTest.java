@@ -67,6 +67,10 @@ public class LoggerTest {
     assertThat(testPrinter.getMessage()).contains(
         String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]));
 
+    logger.dbg(FORMAT4, (Object[]) ARGS);
+    assertThat(testPrinter.getMessage()).contains(
+        String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]));
+
     logger.dbg(ex);
     assertThat(testPrinter.getMessage()).contains(NullPointerException.class.getSimpleName());
 
@@ -96,6 +100,11 @@ public class LoggerTest {
         String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]))
         .contains(NullPointerException.class.getSimpleName());
 
+    logger.dbg(ex, FORMAT4, (Object[]) ARGS);
+    assertThat(testPrinter.getMessage()).contains(
+        String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]))
+        .contains(NullPointerException.class.getSimpleName());
+
     // - WRN
     logger.wrn(ARGS[0]);
     assertThat(testPrinter.getMessage()).contains(ARGS[0]);
@@ -115,6 +124,10 @@ public class LoggerTest {
         String.format(FORMAT3, ARGS[0], ARGS[1], ARGS[2], ARGS[3]));
 
     logger.wrn(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
+    assertThat(testPrinter.getMessage()).contains(
+        String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]));
+
+    logger.wrn(FORMAT4, (Object[]) ARGS);
     assertThat(testPrinter.getMessage()).contains(
         String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]));
 
@@ -147,6 +160,11 @@ public class LoggerTest {
         String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]))
         .contains(NullPointerException.class.getSimpleName());
 
+    logger.wrn(ex, FORMAT4, (Object[]) ARGS);
+    assertThat(testPrinter.getMessage()).contains(
+        String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]))
+        .contains(NullPointerException.class.getSimpleName());
+
     // - ERR
     logger.err(ARGS[0]);
     assertThat(testPrinter.getMessage()).contains(ARGS[0]);
@@ -166,6 +184,10 @@ public class LoggerTest {
         String.format(FORMAT3, ARGS[0], ARGS[1], ARGS[2], ARGS[3]));
 
     logger.err(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
+    assertThat(testPrinter.getMessage()).contains(
+        String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]));
+
+    logger.err(FORMAT4, (Object[]) ARGS);
     assertThat(testPrinter.getMessage()).contains(
         String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]));
 
@@ -194,6 +216,11 @@ public class LoggerTest {
         .contains(NullPointerException.class.getSimpleName());
 
     logger.err(ex, FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
+    assertThat(testPrinter.getMessage()).contains(
+        String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]))
+        .contains(NullPointerException.class.getSimpleName());
+
+    logger.err(ex, FORMAT4, (Object[]) ARGS);
     assertThat(testPrinter.getMessage()).contains(
         String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]))
         .contains(NullPointerException.class.getSimpleName());
@@ -228,6 +255,9 @@ public class LoggerTest {
     logger.dbg(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
     assertThat(testPrinter.getMessage()).isNull();
 
+    logger.dbg(FORMAT4, (Object[]) ARGS);
+    assertThat(testPrinter.getMessage()).isNull();
+
     logger.dbg(ex);
     assertThat(testPrinter.getMessage()).isNull();
 
@@ -249,6 +279,9 @@ public class LoggerTest {
     logger.dbg(ex, FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
     assertThat(testPrinter.getMessage()).isNull();
 
+    logger.dbg(ex, FORMAT4, (Object[]) ARGS);
+    assertThat(testPrinter.getMessage()).isNull();
+
     // - WRN
     logger.wrn(ARGS[0]);
     assertThat(testPrinter.getMessage()).isNull();
@@ -266,6 +299,9 @@ public class LoggerTest {
     assertThat(testPrinter.getMessage()).isNull();
 
     logger.wrn(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
+    assertThat(testPrinter.getMessage()).isNull();
+
+    logger.wrn(FORMAT4, (Object[]) ARGS);
     assertThat(testPrinter.getMessage()).isNull();
 
     logger.wrn(ex);
@@ -289,6 +325,9 @@ public class LoggerTest {
     logger.wrn(ex, FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
     assertThat(testPrinter.getMessage()).isNull();
 
+    logger.wrn(ex, FORMAT4, (Object[]) ARGS);
+    assertThat(testPrinter.getMessage()).isNull();
+
     // - ERR
     logger.err(ARGS[0]);
     assertThat(testPrinter.getMessage()).contains(ARGS[0]);
@@ -308,6 +347,10 @@ public class LoggerTest {
         String.format(FORMAT3, ARGS[0], ARGS[1], ARGS[2], ARGS[3]));
 
     logger.err(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
+    assertThat(testPrinter.getMessage()).contains(
+        String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]));
+
+    logger.err(FORMAT4, (Object[]) ARGS);
     assertThat(testPrinter.getMessage()).contains(
         String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]));
 
@@ -336,6 +379,11 @@ public class LoggerTest {
         .contains(NullPointerException.class.getSimpleName());
 
     logger.err(ex, FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
+    assertThat(testPrinter.getMessage()).contains(
+        String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]))
+        .contains(NullPointerException.class.getSimpleName());
+
+    logger.err(ex, FORMAT4, (Object[]) ARGS);
     assertThat(testPrinter.getMessage()).contains(
         String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]))
         .contains(NullPointerException.class.getSimpleName());
@@ -397,6 +445,9 @@ public class LoggerTest {
     logger.dbg(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
     assertThat(testPrinter.getMessage()).isNull();
 
+    logger.dbg(FORMAT4, (Object[]) ARGS);
+    assertThat(testPrinter.getMessage()).isNull();
+
     logger.dbg(ex);
     assertThat(testPrinter.getMessage()).isNull();
 
@@ -418,6 +469,9 @@ public class LoggerTest {
     logger.dbg(ex, FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
     assertThat(testPrinter.getMessage()).isNull();
 
+    logger.dbg(ex, FORMAT4, (Object[]) ARGS);
+    assertThat(testPrinter.getMessage()).isNull();
+
     // - WRN
     logger.wrn(ARGS[0]);
     assertThat(testPrinter.getMessage()).isNull();
@@ -435,6 +489,9 @@ public class LoggerTest {
     assertThat(testPrinter.getMessage()).isNull();
 
     logger.wrn(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
+    assertThat(testPrinter.getMessage()).isNull();
+
+    logger.wrn(FORMAT4, (Object[]) ARGS);
     assertThat(testPrinter.getMessage()).isNull();
 
     logger.wrn(ex);
@@ -458,6 +515,9 @@ public class LoggerTest {
     logger.wrn(ex, FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
     assertThat(testPrinter.getMessage()).isNull();
 
+    logger.wrn(ex, FORMAT4, (Object[]) ARGS);
+    assertThat(testPrinter.getMessage()).isNull();
+
     // - ERR
     logger.err(ARGS[0]);
     assertThat(testPrinter.getMessage()).isNull();
@@ -475,6 +535,9 @@ public class LoggerTest {
     assertThat(testPrinter.getMessage()).isNull();
 
     logger.err(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
+    assertThat(testPrinter.getMessage()).isNull();
+
+    logger.err(FORMAT4, (Object[]) ARGS);
     assertThat(testPrinter.getMessage()).isNull();
 
     logger.err(ex);
@@ -496,6 +559,9 @@ public class LoggerTest {
     assertThat(testPrinter.getMessage()).isNull();
 
     logger.err(ex, FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
+    assertThat(testPrinter.getMessage()).isNull();
+
+    logger.err(ex, FORMAT4, (Object[]) ARGS);
     assertThat(testPrinter.getMessage()).isNull();
   }
 
@@ -528,6 +594,9 @@ public class LoggerTest {
     logger.dbg(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
     assertThat(testPrinter.getMessage()).isNull();
 
+    logger.dbg(FORMAT4, (Object[]) ARGS);
+    assertThat(testPrinter.getMessage()).isNull();
+
     logger.dbg(ex);
     assertThat(testPrinter.getMessage()).isNull();
 
@@ -549,6 +618,9 @@ public class LoggerTest {
     logger.dbg(ex, FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
     assertThat(testPrinter.getMessage()).isNull();
 
+    logger.dbg(ex, FORMAT4, (Object[]) ARGS);
+    assertThat(testPrinter.getMessage()).isNull();
+
     // - WRN
     logger.wrn(ARGS[0]);
     assertThat(testPrinter.getMessage()).contains(ARGS[0]);
@@ -568,6 +640,10 @@ public class LoggerTest {
         String.format(FORMAT3, ARGS[0], ARGS[1], ARGS[2], ARGS[3]));
 
     logger.wrn(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
+    assertThat(testPrinter.getMessage()).contains(
+        String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]));
+
+    logger.wrn(FORMAT4, (Object[]) ARGS);
     assertThat(testPrinter.getMessage()).contains(
         String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]));
 
@@ -600,6 +676,11 @@ public class LoggerTest {
         String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]))
         .contains(NullPointerException.class.getSimpleName());
 
+    logger.wrn(ex, FORMAT4, (Object[]) ARGS);
+    assertThat(testPrinter.getMessage()).contains(
+        String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]))
+        .contains(NullPointerException.class.getSimpleName());
+
     // - ERR
     logger.err(ARGS[0]);
     assertThat(testPrinter.getMessage()).contains(ARGS[0]);
@@ -619,6 +700,10 @@ public class LoggerTest {
         String.format(FORMAT3, ARGS[0], ARGS[1], ARGS[2], ARGS[3]));
 
     logger.err(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
+    assertThat(testPrinter.getMessage()).contains(
+        String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]));
+
+    logger.err(FORMAT4, (Object[]) ARGS);
     assertThat(testPrinter.getMessage()).contains(
         String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]));
 
@@ -647,6 +732,11 @@ public class LoggerTest {
         .contains(NullPointerException.class.getSimpleName());
 
     logger.err(ex, FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]);
+    assertThat(testPrinter.getMessage()).contains(
+        String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]))
+        .contains(NullPointerException.class.getSimpleName());
+
+    logger.err(ex, FORMAT4, (Object[]) ARGS);
     assertThat(testPrinter.getMessage()).contains(
         String.format(FORMAT4, ARGS[0], ARGS[1], ARGS[2], ARGS[3], ARGS[4]))
         .contains(NullPointerException.class.getSimpleName());

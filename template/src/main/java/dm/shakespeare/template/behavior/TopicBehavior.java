@@ -49,12 +49,21 @@ public class TopicBehavior extends SerializableAbstractBehavior {
   public void onMessage(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) {
     if (message instanceof Subscribe) {
+      agent.getLogger()
+          .dbg("[%s] adding subscription: envelop=%s - " + "message=%s", agent.getSelf(), envelop,
+              message);
       subscriptions.put(envelop.getSender(), (Subscribe) message);
 
     } else if (message instanceof Unsubscribe) {
+      agent.getLogger()
+          .dbg("[%s] removing subscription: envelop=%s - " + "message=%s", agent.getSelf(), envelop,
+              message);
       subscriptions.remove(envelop.getSender());
 
     } else {
+      agent.getLogger()
+          .dbg("[%s] publishing message: envelop=%s - " + "message=%s", agent.getSelf(), envelop,
+              message);
       final Actor self = agent.getSelf();
       final Headers headers = envelop.getHeaders().threadOnly();
       for (final Entry<Actor, Subscribe> entry : subscriptions.entrySet()) {

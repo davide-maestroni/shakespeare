@@ -134,6 +134,25 @@ public class Logger {
    * Logs a debug message.
    *
    * @param format the message format.
+   * @param arg1   the first format argument.
+   * @param arg2   the second format argument.
+   * @param arg3   the third format argument.
+   * @param arg4   the fourth format argument.
+   * @param arg5   the fifth format argument.
+   */
+  public void dbg(@NotNull final String format, @Nullable final Object arg1,
+      @Nullable final Object arg2, @Nullable final Object arg3, @Nullable final Object arg4,
+      @Nullable final Object arg5) {
+    final LogPrinter printer = this.printer;
+    if (printer.canLogDbg()) {
+      printer.dbg(new LogMessage(locale, null, format, arg1, arg2, arg3, arg4, arg5));
+    }
+  }
+
+  /**
+   * Logs a debug message.
+   *
+   * @param format the message format.
    * @param args   the format arguments.
    */
   public void dbg(@NotNull final String format, @Nullable final Object... args) {
@@ -240,6 +259,26 @@ public class Logger {
    *
    * @param throwable the related throwable.
    * @param format    the message format.
+   * @param arg1      the first format argument.
+   * @param arg2      the second format argument.
+   * @param arg3      the third format argument.
+   * @param arg4      the fourth format argument.
+   * @param arg5      the fifth format argument.
+   */
+  public void dbg(@NotNull final Throwable throwable, @NotNull final String format,
+      @Nullable final Object arg1, @Nullable final Object arg2, @Nullable final Object arg3,
+      @Nullable final Object arg4, @Nullable final Object arg5) {
+    final LogPrinter printer = this.printer;
+    if (printer.canLogDbg()) {
+      printer.dbg(new LogMessage(locale, throwable, format, arg1, arg2, arg3, arg4, arg5));
+    }
+  }
+
+  /**
+   * Logs a debug message.
+   *
+   * @param throwable the related throwable.
+   * @param format    the message format.
    * @param args      the format arguments.
    */
   public void dbg(@NotNull final Throwable throwable, @NotNull final String format,
@@ -320,6 +359,25 @@ public class Logger {
     final LogPrinter printer = this.printer;
     if (printer.canLogErr()) {
       printer.err(new LogMessage(locale, null, format, arg1, arg2, arg3, arg4));
+    }
+  }
+
+  /**
+   * Logs an error message.
+   *
+   * @param format the message format.
+   * @param arg1   the first format argument.
+   * @param arg2   the second format argument.
+   * @param arg3   the third format argument.
+   * @param arg4   the fourth format argument.
+   * @param arg5   the fifth format argument.
+   */
+  public void err(@NotNull final String format, @Nullable final Object arg1,
+      @Nullable final Object arg2, @Nullable final Object arg3, @Nullable final Object arg4,
+      @Nullable final Object arg5) {
+    final LogPrinter printer = this.printer;
+    if (printer.canLogErr()) {
+      printer.err(new LogMessage(locale, null, format, arg1, arg2, arg3, arg4, arg5));
     }
   }
 
@@ -425,6 +483,26 @@ public class Logger {
     final LogPrinter printer = this.printer;
     if (printer.canLogErr()) {
       printer.err(new LogMessage(locale, throwable, format, arg1, arg2, arg3, arg4));
+    }
+  }
+
+  /**
+   * Logs an error message.
+   *
+   * @param throwable the related throwable.
+   * @param format    the message format.
+   * @param arg1      the first format argument.
+   * @param arg2      the second format argument.
+   * @param arg3      the third format argument.
+   * @param arg4      the fourth format argument.
+   * @param arg5      the fifth format argument.
+   */
+  public void err(@NotNull final Throwable throwable, @NotNull final String format,
+      @Nullable final Object arg1, @Nullable final Object arg2, @Nullable final Object arg3,
+      @Nullable final Object arg4, @Nullable final Object arg5) {
+    final LogPrinter printer = this.printer;
+    if (printer.canLogErr()) {
+      printer.err(new LogMessage(locale, throwable, format, arg1, arg2, arg3, arg4, arg5));
     }
   }
 
@@ -540,6 +618,25 @@ public class Logger {
    * Logs a warning message.
    *
    * @param format the message format.
+   * @param arg1   the first format argument.
+   * @param arg2   the second format argument.
+   * @param arg3   the third format argument.
+   * @param arg4   the fourth format argument.
+   * @param arg5   the fifth format argument.
+   */
+  public void wrn(@NotNull final String format, @Nullable final Object arg1,
+      @Nullable final Object arg2, @Nullable final Object arg3, @Nullable final Object arg4,
+      @Nullable final Object arg5) {
+    final LogPrinter printer = this.printer;
+    if (printer.canLogWrn()) {
+      printer.wrn(new LogMessage(locale, null, format, arg1, arg2, arg3, arg4, arg5));
+    }
+  }
+
+  /**
+   * Logs a warning message.
+   *
+   * @param format the message format.
    * @param args   the format arguments.
    */
   public void wrn(@NotNull final String format, @Nullable final Object... args) {
@@ -638,6 +735,26 @@ public class Logger {
     final LogPrinter printer = this.printer;
     if (printer.canLogWrn()) {
       printer.wrn(new LogMessage(locale, throwable, format, arg1, arg2, arg3, arg4));
+    }
+  }
+
+  /**
+   * Logs a warning message.
+   *
+   * @param throwable the related throwable.
+   * @param format    the message format.
+   * @param arg1      the first format argument.
+   * @param arg2      the second format argument.
+   * @param arg3      the third format argument.
+   * @param arg4      the fourth format argument.
+   * @param arg5      the fifth format argument.
+   */
+  public void wrn(@NotNull final Throwable throwable, @NotNull final String format,
+      @Nullable final Object arg1, @Nullable final Object arg2, @Nullable final Object arg3,
+      @Nullable final Object arg4, @Nullable final Object arg5) {
+    final LogPrinter printer = this.printer;
+    if (printer.canLogWrn()) {
+      printer.wrn(new LogMessage(locale, throwable, format, arg1, arg2, arg3, arg4, arg5));
     }
   }
 
