@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.typed.actor;
+package dm.shakespeare.typed;
 
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -45,9 +45,9 @@ import dm.shakespeare.test.concurrent.TestExecutorService;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Created by davide-maestroni on 06/28/2019.
+ * {@link TypedRole} unit tests.
  */
-public class TypedActorTest {
+public class TypedRoleTest {
 
   @Test
   public void classInvocation() {
