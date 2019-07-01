@@ -19,26 +19,16 @@ package dm.shakespeare.template.role;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.Locale;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import dm.shakespeare.Stage;
 import dm.shakespeare.actor.AbstractBehavior;
-import dm.shakespeare.actor.Actor;
 import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
+import dm.shakespeare.actor.Headers;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.concurrent.ExecutorServices;
-import dm.shakespeare.template.role.RespawningRole;
-import dm.shakespeare.template.typed.TypedStage;
-import dm.shakespeare.template.typed.actor.InstanceScript;
-import dm.shakespeare.template.typed.annotation.ActorFrom;
-import dm.shakespeare.template.typed.message.InvocationResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,63 +38,69 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RespawningRoleRoleTest {
 
   @Test
-  public void serialization() throws IOException, ClassNotFoundException {
-    final RespawningRole role = new RespawningRole(Role.class);
-    final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    final ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
-    objectOutputStream.writeObject(role);
-    objectOutputStream.close();
-    final ObjectInputStream objectInputStream =
-        new ObjectInputStream(new ByteArrayInputStream(outputStream.toByteArray()));
-    final Object o = objectInputStream.readObject();
-    assertThat(o).isExactlyInstanceOf(RespawningRole.class);
+  public void respawningArgs() {
+    TestRole.resetCount();
+    final LocalRespawningRole role = new LocalRespawningRole(TestRole.class, 3);
+    Stage.newActor(role).tell("test", Headers.EMPTY, Stage.STAND_IN);
+    assertThat(TestRole.getCount()).isEqualTo(6);
   }
 
   @Test
-  public void typed() {
-    final TypedStage stage = new TypedStage(new Stage());
-    final ToUpper test = stage.createActor(ToUpper.class, new TestScript("test"));
-    final Actor actor = Stage.newActor(new Role() {
-
-      @NotNull
-      @Override
-      public Behavior getBehavior(@NotNull final String id) {
-        return new AbstractBehavior() {
-
-          public void onMessage(final Object message, @NotNull final Envelop envelop,
-              @NotNull final Agent agent) {
-            if (message instanceof InvocationResult) {
-              System.out.println(((InvocationResult) message).getResult());
-            }
-          }
-        };
-      }
-
-      @NotNull
-      @Override
-      public ExecutorService getExecutorService(@NotNull final String id) {
-        return ExecutorServices.localExecutor();
-      }
-    });
-    test.toUpperCase(actor);
-    System.out.println(test.toUpperCase());
+  public void respawningClass() {
+    TestRole.resetCount();
+    final LocalRespawningRole role = new LocalRespawningRole(TestRole.class);
+    Stage.newActor(role).tell("test", Headers.EMPTY, Stage.STAND_IN);
+    assertThat(TestRole.getCount()).isEqualTo(2);
   }
 
-  private interface ToUpper {
+  @SuppressWarnings("unused")
+  public static class TestRole extends Role {
 
-    void toUpperCase(@ActorFrom @NotNull Actor sender);
+    private static final AtomicInteger count = new AtomicInteger();
 
-    void toUpperCase(@NotNull Locale locale, @ActorFrom @NotNull Actor sender);
+    public TestRole() {
+      this(1);
+    }
 
-    String toUpperCase();
+    public TestRole(final int toAdd) {
+      count.addAndGet(toAdd);
+    }
 
-    String toUpperCase(@NotNull Locale locale);
+    static int getCount() {
+      return count.get();
+    }
+
+    static void resetCount() {
+      count.set(0);
+    }
+
+    @NotNull
+    public Behavior getBehavior(@NotNull final String id) {
+      return new AbstractBehavior() {
+
+        public void onMessage(final Object message, @NotNull final Envelop envelop,
+            @NotNull final Agent agent) {
+          agent.restartBehavior();
+        }
+      };
+    }
+
+    @NotNull
+    @Override
+    public ExecutorService getExecutorService(@NotNull final String id) {
+      return ExecutorServices.localExecutor();
+    }
   }
 
-  private static class TestScript extends InstanceScript {
+  private static class LocalRespawningRole extends RespawningRole {
 
-    public TestScript(@NotNull final Object role) {
-      super(role);
+    public LocalRespawningRole(@NotNull final Class<? extends Role> roleClass) {
+      super(roleClass);
+    }
+
+    public LocalRespawningRole(@NotNull final Class<? extends Role> roleClass,
+        @NotNull final Object... roleArgs) {
+      super(roleClass, roleArgs);
     }
 
     @NotNull
