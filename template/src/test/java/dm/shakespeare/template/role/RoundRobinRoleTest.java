@@ -37,21 +37,21 @@ import dm.shakespeare.test.concurrent.TestExecutorService;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * {@link LoadBalancerRole} unit tests.
+ * {@link RoundRobinRole} unit tests.
  */
-public class LoadBalancerRoleTest {
+public class RoundRobinRoleTest {
 
   @Test
-  public void loadBalancer() {
+  public void roundRobin() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor loadBalancer = Stage.newActor(new LocalLoadBalancer());
-    loadBalancer.tell("test0", Headers.EMPTY, Stage.STAND_IN);
+    final Actor roundRobin = Stage.newActor(new LocalRoundRobin());
+    roundRobin.tell("test0", Headers.EMPTY, Stage.STAND_IN);
     final TestRole testRole1 = new TestRole(executorService);
-    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
-    loadBalancer.tell("test1", Headers.EMPTY, Stage.STAND_IN);
+    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
     final TestRole testRole2 = new TestRole(executorService);
-    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole2));
-    loadBalancer.tell("test2", Headers.EMPTY, Stage.newActor(new Role() {
+    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole2));
+    roundRobin.tell("test1", Headers.EMPTY, Stage.STAND_IN);
+    roundRobin.tell("test2", Headers.EMPTY, Stage.newActor(new Role() {
 
       @NotNull
       @Override
@@ -65,13 +65,13 @@ public class LoadBalancerRoleTest {
   }
 
   @Test
-  public void loadBalancerReceipt() {
+  public void roundRobinReceipt() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor loadBalancer = Stage.newActor(new LocalLoadBalancer());
+    final Actor roundRobin = Stage.newActor(new LocalRoundRobin());
     final TestRole testRole1 = new TestRole(executorService);
-    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
+    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
     final TestRole testRole2 = new TestRole(executorService);
-    loadBalancer.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.newActor(testRole2));
+    roundRobin.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.newActor(testRole2));
     executorService.consumeAll();
     assertThat(testRole1.getMessages()).containsExactly("test");
     assertThat(testRole2.getMessages()).hasSize(1);
@@ -79,33 +79,33 @@ public class LoadBalancerRoleTest {
   }
 
   @Test
-  public void loadBalancerRemove() {
+  public void roundRobinRemove() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor loadBalancer = Stage.newActor(new LocalLoadBalancer());
+    final Actor roundRobin = Stage.newActor(new LocalRoundRobin());
     final TestRole testRole1 = new TestRole(executorService);
-    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
-    loadBalancer.tell("test1", Headers.EMPTY, Stage.STAND_IN);
+    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
+    roundRobin.tell("test1", Headers.EMPTY, Stage.STAND_IN);
     final TestRole testRole2 = new TestRole(executorService);
     final Actor actor = Stage.newActor(testRole2);
-    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, actor);
-    loadBalancer.tell(ProxySignal.REMOVE_PROXIED, Headers.EMPTY, actor);
-    loadBalancer.tell("test2", Headers.EMPTY, Stage.STAND_IN);
+    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, actor);
+    roundRobin.tell(ProxySignal.REMOVE_PROXIED, Headers.EMPTY, actor);
+    roundRobin.tell("test2", Headers.EMPTY, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(testRole1.getMessages()).containsExactly("test1", "test2");
     assertThat(testRole2.getMessages()).isEmpty();
   }
 
   @Test
-  public void loadBalancerSender() {
+  public void roundRobinSender() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor loadBalancer = Stage.newActor(new LocalLoadBalancer());
-    loadBalancer.tell("test0", Headers.EMPTY, Stage.STAND_IN);
+    final Actor roundRobin = Stage.newActor(new LocalRoundRobin());
+    roundRobin.tell("test0", Headers.EMPTY, Stage.STAND_IN);
     final TestRole testRole1 = new TestRole(executorService);
-    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
-    loadBalancer.tell("test1", Headers.EMPTY, Stage.STAND_IN);
+    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
+    roundRobin.tell("test1", Headers.EMPTY, Stage.STAND_IN);
     final TestRole testRole2 = new TestRole(executorService);
-    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole2));
-    loadBalancer.tell("test2", Headers.EMPTY, Stage.STAND_IN);
+    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole2));
+    roundRobin.tell("test2", Headers.EMPTY, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(testRole1.getMessages()).containsExactly("test1", "test2");
     assertThat(testRole2.getMessages()).isEmpty();
@@ -158,7 +158,7 @@ public class LoadBalancerRoleTest {
     }
   }
 
-  private static class LocalLoadBalancer extends LoadBalancerRole {
+  private static class LocalRoundRobin extends RoundRobinRole {
 
     @NotNull
     @Override

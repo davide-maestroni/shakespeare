@@ -107,7 +107,7 @@ public class RoundRobinBehavior extends AbstractProxyBehavior {
       agent.getLogger()
           .dbg("[%s] forwarding message to proxied actor: recipient=%s - sender=%s - headers=%s - "
               + "message=%s", agent.getSelf(), actor, sender, headers, message);
-      actor.tell(message, headers.asSentAt(sentAt), agent.getSelf());
+      actor.tell(message, headers.asSentAt(sentAt), sender);
     }
   }
 

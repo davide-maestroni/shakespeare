@@ -93,6 +93,9 @@ public class LoadBalancerBehavior extends AbstractProxyBehavior {
           actor = entry.getKey();
         }
       }
+      if (actor != null) {
+        senders.put(sender, actor);
+      }
     }
     if (actor != null) {
       agent.getLogger()
