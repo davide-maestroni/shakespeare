@@ -18,7 +18,11 @@ package dm.shakespeare.template.util;
 
 import org.junit.Test;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -28,6 +32,23 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@link Reflections} unit tests.
  */
 public class ReflectionsTest {
+
+  @Test
+  public void testAccessibleConstructor() throws NoSuchMethodException, IllegalAccessException,
+      InvocationTargetException {
+    final Method method =
+        Reflections.makeAccessible(TestClass.class.getDeclaredMethod("run", List.class));
+    method.invoke(new TestClass(), Collections.emptyList());
+  }
+
+  @Test
+  public void testAccessibleMethod() throws NoSuchMethodException, IllegalAccessException,
+      InvocationTargetException, InstantiationException {
+    final Constructor<?> constructor =
+        Reflections.makeAccessible(TestClass.class.getDeclaredConstructor(List.class));
+    assertThat(constructor.newInstance(Collections.emptyList())).isExactlyInstanceOf(
+        TestClass.class);
+  }
 
   @Test
   public void testBoxingClass() {
