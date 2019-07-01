@@ -28,7 +28,7 @@ import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.BehaviorBuilder;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Role;
-import dm.shakespeare.actor.SerializableAbstractBehavior;
+import dm.shakespeare.actor.SerializableBehavior;
 import dm.shakespeare.template.behavior.annotation.OnAny;
 import dm.shakespeare.template.behavior.annotation.OnEnvelop;
 import dm.shakespeare.template.behavior.annotation.OnMatch;
@@ -48,7 +48,7 @@ import dm.shakespeare.template.config.BuildConfig;
  *
  * @see dm.shakespeare.template.behavior.annotation
  */
-public class AnnotationBehavior extends SerializableAbstractBehavior {
+public class AnnotationBehavior implements SerializableBehavior {
 
   private static final HashMap<Class<? extends Annotation>, AnnotationHandler<?>> HANDLERS =
       new HashMap<Class<? extends Annotation>, AnnotationHandler<?>>() {{
@@ -114,5 +114,19 @@ public class AnnotationBehavior extends SerializableAbstractBehavior {
   public void onMessage(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
     behavior.onMessage(message, envelop, agent);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public void onStart(@NotNull final Agent agent) throws Exception {
+    behavior.onStart(agent);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public void onStop(@NotNull final Agent agent) throws Exception {
+    behavior.onStop(agent);
   }
 }

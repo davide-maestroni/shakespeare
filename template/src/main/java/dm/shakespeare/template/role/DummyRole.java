@@ -25,11 +25,14 @@ import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.SerializableAbstractBehavior;
 import dm.shakespeare.actor.SerializableRole;
 import dm.shakespeare.concurrent.ExecutorServices;
+import dm.shakespeare.template.config.BuildConfig;
 
 /**
  * Dummy role implementation.
  */
 class DummyRole extends SerializableRole {
+
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   @NotNull
   @Override

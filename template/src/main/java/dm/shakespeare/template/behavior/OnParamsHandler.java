@@ -30,6 +30,7 @@ import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.function.Tester;
 import dm.shakespeare.template.behavior.annotation.OnParams;
 import dm.shakespeare.template.config.BuildConfig;
+import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.Iterables;
 
@@ -122,11 +123,28 @@ class OnParamsHandler implements AnnotationHandler<OnParams> {
         final Iterable<?> iterable = (Iterable<?>) message;
         int i = 0;
         for (final Object o : iterable) {
-          if ((o != null) && !parameterTypes[i++].isInstance(o)) {
+          if (i >= parameterTypes.length) {
+            return false;
+          }
+          Class<?> parameterType = parameterTypes[i];
+          while ((parameterType == Envelop.class) || (parameterType == Agent.class)) {
+            if (++i >= parameterTypes.length) {
+              return false;
+            }
+            parameterType = parameterTypes[i];
+          }
+
+          if ((o != null) && !Reflections.boxingClass(parameterTypes[i++]).isInstance(o)) {
             return false;
           }
         }
-        return (i == parameterTypes.length);
+        for (; i < parameterTypes.length; ++i) {
+          final Class<?> parameterType = parameterTypes[i];
+          if ((parameterType != Envelop.class) && (parameterType != Agent.class)) {
+            return false;
+          }
+        }
+        return true;
       }
       return false;
     }

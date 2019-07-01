@@ -73,6 +73,10 @@ class OnEnvelopHandler implements AnnotationHandler<OnEnvelop> {
     }
     final Class<?>[] parameterTypes = method.getParameterTypes();
     final int length = parameterTypes.length;
+    if (length == 0) {
+      throw new IllegalArgumentException("invalid method parameters: " + name);
+    }
+
     if (length > 1) {
       for (int i = 1; i < length; ++i) {
         final Class<?> parameterType = parameterTypes[i];

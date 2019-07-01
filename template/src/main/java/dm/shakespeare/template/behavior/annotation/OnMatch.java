@@ -45,9 +45,9 @@ public @interface OnMatch {
 
   /**
    * Returns the name of the method to be used as message matcher.<br>
-   * The method must accept a parameter assignable from an {@link dm.shakespeare.actor.Envelop
-   * Envelop}, one assignable from an {@link dm.shakespeare.actor.Behavior.Agent Agent} and one
-   * assignable from a message instance, and a boolean return type.
+   * The method must accept a parameter assignable from a message instance, one assignable from
+   * {@link dm.shakespeare.actor.Envelop Envelop}, one assignable from an
+   * {@link dm.shakespeare.actor.Behavior.Agent Agent}, and a boolean return type.
    *
    * @return the method name.
    */
