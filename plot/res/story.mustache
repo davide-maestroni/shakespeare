@@ -1022,7 +1022,18 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           nextSenders.remove(envelop.getHeaders().getThreadId());
 
         } else if (message == NarratorSignal.AVAILABLE) {
-          next(agent);
+          if (!getSenders.isEmpty()) {
+            next(agent);
+
+          } else {
+            final HashMap<String, SenderIterator> nextSenders = StoryNarrator.this.nextSenders;
+            for (final SenderIterator sender : nextSenders.values()) {
+              if (sender.isWaitNext()) {
+                next(agent);
+                break;
+              }
+            }
+          }
 
         } else if (message == EventSignal.CANCEL) {
           final Conflict conflict = Conflict.ofCancel();

@@ -97,6 +97,15 @@ class ActorHandler implements InvocationHandler {
     return (T) proxy;
   }
 
+  @NotNull
+  static Actor getActor(@NotNull final Object actor) {
+    final ActorHandler actorHandler = actorHandlers.get(ConstantConditions.notNull("actor", actor));
+    if (actorHandler == null) {
+      throw new IllegalArgumentException("the specified object is not a typed actor");
+    }
+    return actorHandler.getActor();
+  }
+
   public Object invoke(final Object proxy, final Method method, final Object[] objects) throws
       Throwable {
     // validate annotations
@@ -112,7 +121,7 @@ class ActorHandler implements InvocationHandler {
         final Class<? extends Annotation> type = annotation.annotationType();
         if (type == ActorFrom.class) {
           if ((actorFromIndex >= 0) || !Actor.class.isAssignableFrom(parameterTypes[i])) {
-            throw new IllegalStateException(
+            throw new UnsupportedOperationException(
                 "a typed actor method cannot have more than one parameter annotated with "
                     + ActorFrom.class.getSimpleName() + " annotation");
           }
@@ -121,7 +130,7 @@ class ActorHandler implements InvocationHandler {
 
         } else if (type == HeadersFrom.class) {
           if ((headersFromIndex >= 0) || !Headers.class.isAssignableFrom(parameterTypes[i])) {
-            throw new IllegalStateException(
+            throw new UnsupportedOperationException(
                 "a typed actor method cannot have more than one parameter annotated with "
                     + HeadersFrom.class.getSimpleName() + " annotation");
           }
@@ -189,7 +198,8 @@ class ActorHandler implements InvocationHandler {
     }
     final Long timeoutMillis = script.getResultTimeoutMillis(actor.getId(), method);
     if ((timeoutMillis != null) && (actorFromIndex >= 0)) {
-      throw new IllegalStateException("methods with annotated sender actor cannot have a timeout");
+      throw new UnsupportedOperationException(
+          "methods with annotated sender actor cannot have a timeout");
     }
     final Actor actor = this.actor;
     final Headers headers = (headersFrom != null) ? headersFrom : Headers.EMPTY;
@@ -210,6 +220,11 @@ class ActorHandler implements InvocationHandler {
     final Actor sender = (actorFrom != null) ? actorFrom : Stage.STAND_IN;
     actor.tell(invocation, headers, sender);
     return DEFAULT_RETURN_VALUES.get(method.getReturnType());
+  }
+
+  @NotNull
+  Actor getActor() {
+    return actor;
   }
 
   private static class InvocationBehavior extends AbstractBehavior {
@@ -243,7 +258,7 @@ class ActorHandler implements InvocationHandler {
             latch.setException(((Failure) message).getCause());
 
           } else {
-            latch.setException(new IllegalStateException());
+            latch.setException(new IllegalStateException("typed actor is unreachable"));
           }
         }
       }

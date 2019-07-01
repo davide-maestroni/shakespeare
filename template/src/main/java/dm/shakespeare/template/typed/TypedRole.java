@@ -102,22 +102,22 @@ class TypedRole extends SerializableRole {
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private final HashMap<String, ActorArg> actorArgs = new HashMap<String, ActorArg>();
-    private final Object instance;
+    private final Object role;
 
     private TypedBehavior() {
-      instance = this;
+      role = this;
     }
 
-    private TypedBehavior(@NotNull final Object instance) {
-      this.instance = instance;
+    private TypedBehavior(@NotNull final Object role) {
+      this.role = ConstantConditions.notNull("role", role);
     }
 
     public HashMap<String, ActorArg> getActorArgs() {
       return actorArgs;
     }
 
-    public Object getInstance() {
-      return instance;
+    public Object getRole() {
+      return role;
     }
 
     public void onMessage(final Object message, @NotNull final Envelop envelop,
@@ -145,7 +145,7 @@ class TypedRole extends SerializableRole {
         agent.getLogger()
             .dbg("[%s] handling invocation message: envelop=%s - message=%s", self, envelop,
                 message);
-        final Object instance = this.instance;
+        final Object instance = this.role;
         final Invocation invocation = (Invocation) message;
         final Headers headers = envelop.getHeaders().threadOnly();
         final Method method;

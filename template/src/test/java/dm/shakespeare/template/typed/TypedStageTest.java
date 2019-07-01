@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-package dm.shakespeare;
+package dm.shakespeare.template.typed;
 
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Pattern;
 
+import dm.shakespeare.Stage;
 import dm.shakespeare.Stage.StageSignal;
 import dm.shakespeare.actor.AbstractBehavior;
 import dm.shakespeare.actor.Actor;
@@ -32,26 +34,21 @@ import dm.shakespeare.actor.Behavior;
 import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Headers;
 import dm.shakespeare.actor.Role;
+import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.function.Tester;
+import dm.shakespeare.template.typed.actor.Script;
 import dm.shakespeare.test.concurrent.TestExecutorService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * {@link Stage} unit tests.
+ * {@link TypedStage} unit tests.
  */
-public class StageTest {
-
-  @Test(expected = NullPointerException.class)
-  @SuppressWarnings("ConstantConditions")
-  public void addObserverNPE() {
-    final Stage stage = new Stage();
-    stage.addObserver(null);
-  }
+public class TypedStageTest {
 
   @Test
   public void createActor() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     final Actor actor = stage.createActor(testRole);
@@ -64,12 +61,12 @@ public class StageTest {
 
   @Test(expected = IndexOutOfBoundsException.class)
   public void createActorFailure() {
-    new Stage().createActor(new FailureRole(new IndexOutOfBoundsException()));
+    new TypedStage(new Stage()).createActor(new FailureRole(new IndexOutOfBoundsException()));
   }
 
   @Test
   public void createActorId() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final String id = UUID.randomUUID().toString();
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
@@ -84,21 +81,21 @@ public class StageTest {
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void createActorIdNPE() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     stage.createActor("id", null);
   }
 
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void createActorNPE() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     stage.createActor(null);
   }
 
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void createActorNullIdNPE() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     stage.createActor(null, testRole);
@@ -106,7 +103,7 @@ public class StageTest {
 
   @Test(expected = IllegalStateException.class)
   public void createActorSameId() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final String id = UUID.randomUUID().toString();
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
@@ -120,8 +117,97 @@ public class StageTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
+  public void createTypedActor() {
+    final TypedStage stage = new TypedStage(new Stage());
+    final List<String> actor = stage.createActor(List.class, new Script() {
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+
+      @NotNull
+      @Override
+      public Object getRole(@NotNull final String id) {
+        return new ArrayList<String>();
+      }
+    });
+    assertThat(actor).isNotNull();
+    assertThat(TypedStage.getActor(actor).getId()).isNotNull();
+    assertThat(actor.add("test")).isTrue();
+    assertThat(actor).containsExactly("test");
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void createTypedActorIdNPE() {
+    final TypedStage stage = new TypedStage(new Stage());
+    stage.createActor(List.class, "id", null);
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void createTypedActorNPE() {
+    final TypedStage stage = new TypedStage(new Stage());
+    stage.createActor(List.class, null);
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void createTypedActorNullIdNPE() {
+    final TypedStage stage = new TypedStage(new Stage());
+    stage.createActor(null, new Script() {
+
+      @NotNull
+      @Override
+      public Object getRole(@NotNull final String id) {
+        return new Object();
+      }
+    });
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void createTypedActorRoleNPE() {
+    new TypedStage(new Stage()).createActor(List.class, "id", new Script() {
+
+      @NotNull
+      @Override
+      public Object getRole(@NotNull final String id) {
+        return null;
+      }
+    });
+  }
+
+  @Test(expected = IllegalStateException.class)
+  @SuppressWarnings("unchecked")
+  public void createTypedActorSameId() {
+    final TypedStage stage = new TypedStage(new Stage());
+    final String id = UUID.randomUUID().toString();
+    final List<String> actor = stage.createActor(List.class, id, new Script() {
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+
+      @NotNull
+      @Override
+      public Object getRole(@NotNull final String id) {
+        return new ArrayList<String>();
+      }
+    });
+    assertThat(actor).isNotNull();
+    assertThat(TypedStage.getActor(actor).getId()).isEqualTo(id);
+    stage.createActor(id, new TestRole(new TestExecutorService()));
+  }
+
+  @Test
   public void findAllPattern() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     for (int i = 0; i < 5; i++) {
       stage.createActor("a/" + i, new TestRole(executorService));
@@ -139,7 +225,7 @@ public class StageTest {
 
   @Test
   public void findAllPatternEmpty() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final ActorSet a = stage.findAll(Pattern.compile("^a/.*$"));
     final ActorSet b = stage.findAll(Pattern.compile("^b/.*$"));
     assertThat(a).isEmpty();
@@ -151,13 +237,13 @@ public class StageTest {
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void findAllPatternNPE() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     stage.findAll((Pattern) null);
   }
 
   @Test
   public void findAllPatternNotFound() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     for (int i = 0; i < 5; i++) {
       stage.createActor("a/" + i, new TestRole(executorService));
@@ -170,7 +256,7 @@ public class StageTest {
 
   @Test
   public void findAllTester() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     for (int i = 0; i < 5; i++) {
       stage.createActor("a/" + i, new TestRole(executorService));
@@ -208,7 +294,7 @@ public class StageTest {
 
   @Test
   public void findAllTesterEmpty() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final ActorSet a = stage.findAll(new Tester<Actor>() {
 
       public boolean test(final Actor actor) {
@@ -239,7 +325,7 @@ public class StageTest {
 
   @Test(expected = IndexOutOfBoundsException.class)
   public void findAllTesterFailure() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     for (int i = 0; i < 5; i++) {
       stage.createActor("a/" + i, new TestRole(executorService));
@@ -258,13 +344,13 @@ public class StageTest {
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void findAllTesterNPE() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     stage.findAll((Tester<? super Actor>) null);
   }
 
   @Test
   public void findAllTesterNotFound() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     for (int i = 0; i < 5; i++) {
       stage.createActor("a/" + i, new TestRole(executorService));
@@ -282,7 +368,7 @@ public class StageTest {
 
   @Test
   public void findAnyPattern() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     for (int i = 0; i < 5; i++) {
       stage.createActor("a/" + i, new TestRole(executorService));
@@ -300,7 +386,7 @@ public class StageTest {
 
   @Test
   public void findAnyPatternEmpty() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     assertThat(stage.findAny(Pattern.compile("^./3$"))).isNull();
     assertThat(stage.findAny(Pattern.compile(".*"))).isNull();
   }
@@ -308,13 +394,13 @@ public class StageTest {
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void findAnyPatternNPE() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     stage.findAny((Pattern) null);
   }
 
   @Test
   public void findAnyPatternNotFound() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     for (int i = 0; i < 5; i++) {
       stage.createActor("a/" + i, new TestRole(executorService));
@@ -327,7 +413,7 @@ public class StageTest {
 
   @Test
   public void findAnyTester() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     for (int i = 0; i < 5; i++) {
       stage.createActor("a/" + i, new TestRole(executorService));
@@ -365,7 +451,7 @@ public class StageTest {
 
   @Test
   public void findAnyTesterEmpty() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final Actor a = stage.findAny(new Tester<Actor>() {
 
       public boolean test(final Actor actor) {
@@ -396,7 +482,7 @@ public class StageTest {
 
   @Test(expected = IndexOutOfBoundsException.class)
   public void findAnyTesterFailure() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     for (int i = 0; i < 5; i++) {
       stage.createActor("a/" + i, new TestRole(executorService));
@@ -415,13 +501,13 @@ public class StageTest {
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void findAnyTesterNPE() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     stage.findAny((Tester<? super Actor>) null);
   }
 
   @Test
   public void findAnyTesterNotFound() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     for (int i = 0; i < 5; i++) {
       stage.createActor("a/" + i, new TestRole(executorService));
@@ -439,7 +525,7 @@ public class StageTest {
 
   @Test
   public void get() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     for (int i = 0; i < 5; i++) {
       stage.createActor("a/" + i, new TestRole(executorService));
@@ -453,9 +539,15 @@ public class StageTest {
     assertThat(b).isNotNull();
   }
 
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void getActorNPE() {
+    TypedStage.getActor(null);
+  }
+
   @Test
   public void getAll() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     for (int i = 0; i < 5; i++) {
       stage.createActor("a/" + i, new TestRole(executorService));
@@ -468,13 +560,13 @@ public class StageTest {
 
   @Test
   public void getAllEmpty() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     assertThat(stage.getAll()).isEmpty();
   }
 
   @Test
   public void getEmpty() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final Actor a = stage.get("a/3");
     final Actor b = stage.get("b/3");
     assertThat(a).isNull();
@@ -483,7 +575,7 @@ public class StageTest {
 
   @Test
   public void getNotFound() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     for (int i = 0; i < 5; i++) {
       stage.createActor("a/" + i, new TestRole(executorService));
@@ -498,7 +590,7 @@ public class StageTest {
   public void newActor() {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
+    final Actor actor = TypedStage.newActor(testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isNotNull();
     actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
@@ -508,7 +600,7 @@ public class StageTest {
 
   @Test(expected = IndexOutOfBoundsException.class)
   public void newActorFailure() {
-    Stage.newActor(new FailureRole(new IndexOutOfBoundsException()));
+    TypedStage.newActor(new FailureRole(new IndexOutOfBoundsException()));
   }
 
   @Test
@@ -516,7 +608,7 @@ public class StageTest {
     final String id = UUID.randomUUID().toString();
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
-    final Actor actor = Stage.newActor(id, testRole);
+    final Actor actor = TypedStage.newActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
     actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
@@ -527,13 +619,13 @@ public class StageTest {
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void newActorIdNPE() {
-    Stage.newActor("id", null);
+    TypedStage.newActor("id", null);
   }
 
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void newActorNPE() {
-    Stage.newActor(null);
+    TypedStage.newActor(null);
   }
 
   @Test(expected = NullPointerException.class)
@@ -541,7 +633,7 @@ public class StageTest {
   public void newActorNullIdNPE() {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
-    Stage.newActor(null, testRole);
+    TypedStage.newActor(null, testRole);
   }
 
   @Test
@@ -549,14 +641,14 @@ public class StageTest {
     final String id = UUID.randomUUID().toString();
     final TestExecutorService executorService = new TestExecutorService();
     TestRole testRole = new TestRole(executorService);
-    Actor actor = Stage.newActor(id, testRole);
+    Actor actor = TypedStage.newActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
     actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
     testRole = new TestRole(executorService);
-    actor = Stage.newActor(id, testRole);
+    actor = TypedStage.newActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
     actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
@@ -565,8 +657,94 @@ public class StageTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
+  public void newTypedActor() {
+    final List<String> actor = TypedStage.newActor(List.class, new Script() {
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+
+      @NotNull
+      @Override
+      public Object getRole(@NotNull final String id) {
+        return new ArrayList<String>();
+      }
+    });
+    assertThat(actor).isNotNull();
+    assertThat(TypedStage.getActor(actor).getId()).isNotNull();
+    assertThat(actor.add("test")).isTrue();
+    assertThat(actor).containsExactly("test");
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void newTypedActorIdNPE() {
+    TypedStage.newActor(List.class, "id", null);
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void newTypedActorNPE() {
+    TypedStage.newActor(List.class, null);
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void newTypedActorNullIdNPE() {
+    TypedStage.newActor(null, new Script() {
+
+      @NotNull
+      @Override
+      public Object getRole(@NotNull final String id) {
+        return new Object();
+      }
+    });
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void newTypedActorRoleNPE() {
+    TypedStage.newActor(List.class, "id", new Script() {
+
+      @NotNull
+      @Override
+      public Object getRole(@NotNull final String id) {
+        return null;
+      }
+    });
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void newTypedActorSameId() {
+    final String id = UUID.randomUUID().toString();
+    final List<String> actor = TypedStage.newActor(List.class, id, new Script() {
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+
+      @NotNull
+      @Override
+      public Object getRole(@NotNull final String id) {
+        return new ArrayList<String>();
+      }
+    });
+    assertThat(actor).isNotNull();
+    assertThat(TypedStage.getActor(actor).getId()).isEqualTo(id);
+    final Actor roleActor = TypedStage.newActor(id, new TestRole(new TestExecutorService()));
+    assertThat(roleActor).isNotNull();
+    assertThat(roleActor.getId()).isEqualTo(id);
+  }
+
+  @Test
   public void observerCreate() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     final Actor actor = stage.createActor(testRole);
@@ -579,7 +757,7 @@ public class StageTest {
 
   @Test
   public void observerCreateRemoved() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     final Actor actor = stage.createActor(testRole);
@@ -593,7 +771,7 @@ public class StageTest {
 
   @Test
   public void observerDismiss() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     final Actor actor = stage.createActor(testRole);
@@ -607,7 +785,7 @@ public class StageTest {
 
   @Test
   public void observerDismissRemoved() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     final Actor actor = stage.createActor(testRole);
@@ -623,7 +801,7 @@ public class StageTest {
   @Test
   public void recreateActorId() {
     final String id = UUID.randomUUID().toString();
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     try {
       stage.createActor(id, new FailureRole(new IndexOutOfBoundsException()));
 
@@ -642,7 +820,7 @@ public class StageTest {
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void removeObserverNPE() {
-    final Stage stage = new Stage();
+    final TypedStage stage = new TypedStage(new Stage());
     stage.removeObserver(null);
   }
 

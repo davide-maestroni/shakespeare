@@ -63,6 +63,18 @@ public class TypedStage extends Stage {
   }
 
   /**
+   * Returns the actor instance backing the specified typed actor.
+   *
+   * @param actor the typed actor instance.
+   * @return the backing actor.
+   * @throws IllegalArgumentException is the specified object is not a typed actor instance.
+   */
+  @NotNull
+  public static Actor getActor(@NotNull final Object actor) {
+    return ActorHandler.getActor(actor);
+  }
+
+  /**
    * Creates a new actor with a random ID.
    *
    * @param type   the type of interface defining the actor protocol.

@@ -23,7 +23,7 @@ import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 06/29/2019.
+ * {@code Script} implementation instantiating the role object via reflection.
  */
 public class ClassScript extends SerializableScript {
 
@@ -33,7 +33,7 @@ public class ClassScript extends SerializableScript {
   private final Class<?> roleType;
 
   /**
-   *
+   * Creates a new script instantiating a role of the specified type with the specified arguments.
    *
    * @param roleType the type of the role object to be instantiated.
    * @param roleArgs the role object constructor arguments.
@@ -43,21 +43,40 @@ public class ClassScript extends SerializableScript {
     this.roleArgs = ConstantConditions.notNull("args", roleArgs).clone();
   }
 
+  /**
+   * Creates a dummy script.<br>
+   * Usually needed during deserialization.
+   */
   private ClassScript() {
     this.roleType = Object.class;
     this.roleArgs = new Object[0];
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public Object getRole(@NotNull final String id) throws Exception {
     return Reflections.newInstance(roleType, roleArgs);
   }
 
+  /**
+   * Returns a copy of the constructor arguments array.<br>
+   * Usually needed during serialization.
+   *
+   * @return the role constructor arguments.
+   */
   @NotNull
   public Object[] getRoleArgs() {
     return roleArgs.clone();
   }
 
+  /**
+   * Returns the type of the role to be instantiated.<br>
+   * Usually needed during serialization.
+   *
+   * @return the role type.
+   */
   @NotNull
   public Class<?> getRoleType() {
     return roleType;

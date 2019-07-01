@@ -22,7 +22,7 @@ import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Created by davide-maestroni on 06/29/2019.
+ * {@code Script} implementation wrapping a role instance.
  */
 public class InstanceScript extends SerializableScript {
 
@@ -30,19 +30,37 @@ public class InstanceScript extends SerializableScript {
 
   private final Object role;
 
+  /**
+   * Creates a new script wrapping the specified role instance.
+   *
+   * @param role the role instance.
+   */
   public InstanceScript(@NotNull final Object role) {
     this.role = ConstantConditions.notNull("role", role);
   }
 
+  /**
+   * Creates a dummy script.<br>
+   * Usually needed during deserialization.
+   */
   private InstanceScript() {
     role = new Object();
   }
 
+  /**
+   * Returns the wrapped role instance.<br>
+   * Usually needed during serialization.
+   *
+   * @return the role instance.
+   */
   @NotNull
   public Object getRole() {
     return role;
   }
 
+  /**
+   * {@inheritDoc}
+   */
   @NotNull
   public Object getRole(@NotNull final String id) throws Exception {
     return role;

@@ -27,15 +27,18 @@ import dm.shakespeare.log.Logger;
 
 /**
  * Base implementation of a script object.<br>
- * A script is used to set up the environments in which a typed actor will operate. By
+ * A script is used to set up the role and the environment in which a typed actor will operate. By
  * implementing a {@code Script} object it is possible to configure:<ul>
+ * <li>the role object to be invoked</li>
  * <li>the {@link ExecutorService} on which the actor business logic will be executed</li>
  * <li>the inbox message quota</li>
  * <li>the maximum time to wait for the invocation result</li>
  * <li>the {@link Logger} instance</li>
  * </ul>
- * The script methods are only called once at the actor instantiation, and thread safety is not
- * guaranteed. So, it's advisable to employ a new script instance for each new actor.
+ * The script methods, with the exception of {@link #getResultTimeoutMillis(String, Method)}, are
+ * only called once at the actor instantiation, and thread safety is not guaranteed. So, it's
+ * advisable to employ a new script instance for each new actor, and to synchronized shared
+ * resources when needed.
  */
 public abstract class Script {
 
@@ -96,6 +99,13 @@ public abstract class Script {
     return ((returnType != void.class) && (returnType != Void.class)) ? DEFAULT_TIMEOUT : null;
   }
 
+  /**
+   * Returns the role object to be invoked by the typed actor.
+   *
+   * @param id the actor ID.
+   * @return the role instance.
+   * @throws Exception when an unexpected error occurs.
+   */
   @NotNull
   public abstract Object getRole(@NotNull String id) throws Exception;
 }

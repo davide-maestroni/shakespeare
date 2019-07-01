@@ -430,24 +430,27 @@ public abstract class Event<T> {
           agent.setBehavior(new DoneBehavior(conflict));
 
         } else if (message == NarratorSignal.AVAILABLE) {
+          boolean closed = false;
           Object effect = queue.poll();
           if (effect != null) {
+            closed = true;
             close();
             if (effect == NarratorSignal.NULL) {
               effect = null;
             }
 
           } else if (isClosed.get()) {
+            closed = true;
             effect = new Conflict(new NarrationStoppedException());
+          }
 
-          } else {
-            return;
+          if (closed) {
+            final Actor self = agent.getSelf();
+            for (final Sender sender : senders.values()) {
+              sender.getSender().tell(effect, sender.getHeaders(), self);
+            }
+            agent.setBehavior(new DoneBehavior(effect));
           }
-          final Actor self = agent.getSelf();
-          for (final Sender sender : senders.values()) {
-            sender.getSender().tell(effect, sender.getHeaders(), self);
-          }
-          agent.setBehavior(new DoneBehavior(effect));
         }
         envelop.preventReceipt();
       }

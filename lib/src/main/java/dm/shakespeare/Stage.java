@@ -38,9 +38,7 @@ import dm.shakespeare.actor.Role;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.function.Tester;
 import dm.shakespeare.log.Logger;
-import dm.shakespeare.message.Create;
 import dm.shakespeare.message.DeadLetter;
-import dm.shakespeare.message.Dismiss;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -58,16 +56,6 @@ public class Stage {
    * This actor methods will have no effect when invoked.
    */
   public static final Actor STAND_IN = new StandInActor();
-
-  /**
-   * Default instance of a {@code Create} message.
-   */
-  protected static final Create CREATE = new Create();
-
-  /**
-   * Default instance of a {@code Dismiss} message.
-   */
-  protected static final Dismiss DISMISS = new Dismiss();
 
   private final Actor actor;
   private final HashMap<String, Actor> actors = new HashMap<String, Actor>();
@@ -141,9 +129,9 @@ public class Stage {
   }
 
   /**
-   * Adds an observer that will be notified with a {@link dm.shakespeare.message.Create Create}
-   * message when a new actor instance is added to this stage, and a
-   * {@link dm.shakespeare.message.Dismiss Dismiss} message when an actor is removed.
+   * Adds an observer that will be notified with a {@link StageSignal#CREATE} message when a new
+   * actor instance is added to this stage, and a {@link StageSignal#DISMISS} message when an actor
+   * is removed.
    *
    * @param observer the observer actor.
    */
@@ -340,7 +328,7 @@ public class Stage {
     }
     if (actor.addObserver(this.actor)) {
       for (final Actor observer : observers) {
-        observer.tell(CREATE, Headers.EMPTY, actor);
+        observer.tell(StageSignal.CREATE, Headers.EMPTY, actor);
       }
 
     } else {
@@ -377,9 +365,26 @@ public class Stage {
     if (actor != null) {
       actor.removeObserver(this.actor);
       for (final Actor observer : observers) {
-        observer.tell(DISMISS, Headers.EMPTY, actor);
+        observer.tell(StageSignal.DISMISS, Headers.EMPTY, actor);
       }
     }
+  }
+
+  /**
+   * Stage signalling messages.
+   */
+  public enum StageSignal {
+
+    /**
+     * Message notifying that the sender actor has been added to a stage.
+     */
+    CREATE,
+
+    /**
+     * Message notifying that the sender actor has been removed from a stage.
+     */
+    DISMISS
+
   }
 
   private static class PatternTester implements Tester<Actor> {

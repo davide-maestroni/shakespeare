@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.typed;
+package dm.shakespeare.template.typed;
 
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
@@ -33,9 +34,6 @@ import dm.shakespeare.actor.Headers;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.message.Delivery;
-import dm.shakespeare.template.typed.InvocationMismatchException;
-import dm.shakespeare.template.typed.InvocationTimeoutException;
-import dm.shakespeare.template.typed.TypedStage;
 import dm.shakespeare.template.typed.actor.ClassScript;
 import dm.shakespeare.template.typed.actor.InstanceScript;
 import dm.shakespeare.template.typed.annotation.ActorFrom;
@@ -160,12 +158,33 @@ public class TypedRoleTest {
     assertThat(testRole.getHeaders().get(0).getThreadId()).isEqualTo("test");
   }
 
+  @Test(expected = UnsupportedOperationException.class)
+  public void fromActorTimeout() {
+    final TypedItf actor =
+        TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class, "test"));
+    actor.getValue(Stage.STAND_IN);
+  }
+
+  @Test(expected = UnsupportedOperationException.class)
+  public void fromActorUnsupported() {
+    final TypedItf actor =
+        TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class, "test"));
+    actor.setValueInvalid(Stage.STAND_IN, Stage.STAND_IN);
+  }
+
   @Test
   public void fromHeaders() {
     final TypedItf actor =
         TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class, "test"));
     final Headers headers = new Headers().withThreadId("test").withReceiptId("test");
     assertThat(actor.getValue(headers)).isEqualTo("test");
+  }
+
+  @Test(expected = UnsupportedOperationException.class)
+  public void fromHeadersUnsupported() {
+    final TypedItf actor =
+        TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class, "test"));
+    actor.setValueInvalid(Headers.EMPTY, Headers.EMPTY);
   }
 
   @Test
@@ -249,6 +268,30 @@ public class TypedRoleTest {
   }
 
   @Test
+  public void setActor() {
+    final TypedItf typed =
+        TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class, "test"));
+    final TestExecutorService executorService = new TestExecutorService();
+    final TestRole testRole = new TestRole(executorService);
+    typed.setValue(Stage.newActor(testRole));
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).hasSize(1);
+    assertThat(testRole.getMessages().get(0)).isEqualTo("test");
+  }
+
+  @Test
+  public void setActorList() {
+    final TypedItf typed =
+        TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class, "test"));
+    final TestExecutorService executorService = new TestExecutorService();
+    final TestRole testRole = new TestRole(executorService);
+    typed.setValue(Collections.singletonList(Stage.newActor(testRole)));
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).hasSize(1);
+    assertThat(testRole.getMessages().get(0)).isEqualTo("test");
+  }
+
+  @Test
   public void setFromActor() {
     final TypedItf actor =
         TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class));
@@ -314,6 +357,25 @@ public class TypedRoleTest {
     assertThat(actor.getValue()).isNull();
   }
 
+  @Test
+  public void setTypedList() {
+    final TypedItf actor =
+        TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class, "test"));
+    final TypedItf typed =
+        TypedStage.newActor(TypedItf.class, new InstanceLocalScript(new TypedRole()));
+    actor.setValues(Collections.singletonList(typed));
+    assertThat(typed.getValue()).isEqualTo("test");
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void typedBounce() {
+    final TypedItf actor = TypedStage.newActor(TypedItf.class, new InstanceScript(new TypedRole()));
+    TypedStage.getActor(actor).dismiss();
+    final TypedItf typed =
+        TypedStage.newActor(TypedItf.class, new InstanceLocalScript(new TypedRole("test")));
+    actor.getValue(typed);
+  }
+
   @Test(expected = NullPointerException.class)
   public void typedNPE() {
     final TypedItf actor =
@@ -329,6 +391,10 @@ public class TypedRoleTest {
 
     void setValue(TypedItf typed);
 
+    void setValue(Actor actor);
+
+    void setValue(List<Actor> actors);
+
     Object getValue(@ActorFrom Actor sender);
 
     Object getValue(@ActorFrom Actor sender, @HeadersFrom Headers headers);
@@ -342,8 +408,15 @@ public class TypedRoleTest {
     void setValue(@HeadersFrom Headers headers, Object value);
 
     void setValue(Object value, @ActorFrom Actor sender);
+
+    void setValueInvalid(@HeadersFrom Headers headers1, @HeadersFrom Headers headers2);
+
+    void setValueInvalid(@ActorFrom Actor sender1, @ActorFrom Actor sender2);
+
+    void setValues(List<TypedItf> typed);
   }
 
+  @SuppressWarnings({"unused", "WeakerAccess"})
   public static class TypedRole {
 
     private Object value;
@@ -363,18 +436,34 @@ public class TypedRoleTest {
       this.value = value;
     }
 
-    public void setValue(TypedItf typed) {
+    public void setValue(final TypedItf typed) {
       typed.setValue(value);
     }
 
-    public Object getValue(TypedItf typed) {
+    public void setValue(final Actor actor) {
+      actor.tell(value, Headers.EMPTY, Stage.STAND_IN);
+    }
+
+    public void setValue(final List<Actor> actors) {
+      for (final Actor actor : actors) {
+        actor.tell(value, Headers.EMPTY, Stage.STAND_IN);
+      }
+    }
+
+    public Object getValue(final TypedItf typed) {
       return typed.getValue();
+    }
+
+    public void setValues(final List<TypedItf> typed) {
+      for (final TypedItf typedItf : typed) {
+        typedItf.setValue(value);
+      }
     }
   }
 
   private static class ClassLocalScript extends ClassScript {
 
-    public ClassLocalScript(@NotNull final Class<?> roleType, @NotNull final Object... roleArgs) {
+    ClassLocalScript(@NotNull final Class<?> roleType, @NotNull final Object... roleArgs) {
       super(roleType, roleArgs);
     }
 
@@ -387,7 +476,7 @@ public class TypedRoleTest {
 
   private static class InstanceLocalScript extends InstanceScript {
 
-    public InstanceLocalScript(@NotNull final Object role) {
+    InstanceLocalScript(@NotNull final Object role) {
       super(role);
     }
 
@@ -398,6 +487,7 @@ public class TypedRoleTest {
     }
   }
 
+  @SuppressWarnings("unused")
   private static class TestRole extends Role {
 
     private final TestExecutorService executorService;
