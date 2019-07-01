@@ -99,13 +99,13 @@ public class LoadBalancerBehavior extends AbstractProxyBehavior {
           .dbg("[%s] forwarding message to proxied actor: recipient=%s - sender=%s - headers=%s - "
               + "message=%s", agent.getSelf(), actor, sender, headers, message);
       proxied.put(actor, proxied.get(actor) + 1);
-      actor.tell(message, decorateHeaders(headers.asSentAt(sentAt)), agent.getSelf());
+      actor.tell(message, decorateHeaders(headers.asSentAt(sentAt)), sender);
 
     } else {
       agent.getLogger()
           .wrn("[%s] no proxied actor present, bouncing message: sender=%s - headers=%s - "
               + "message=%s", agent.getSelf(), sender, headers, message);
-      sender.tell(new Bounce(message, headers), headers.threadOnly(), agent.getSelf());
+      sender.tell(new Bounce(message, headers), headers.threadOnly(), sender);
     }
   }
 
@@ -122,8 +122,9 @@ public class LoadBalancerBehavior extends AbstractProxyBehavior {
       if (count != null) {
         proxied.put(sender, Math.max(0, count - 1));
       }
-      headers = resetHeaders((Receipt) message, headers);
-      if (headers.getReceiptId() == null) {
+      final Headers messageHeaders =
+          resetHeaders((Receipt) message, ((Receipt) message).getHeaders());
+      if (messageHeaders.getReceiptId() == null) {
         return;
       }
     }
