@@ -65,42 +65,16 @@ public class TypedStage extends Stage {
   /**
    * Creates a new actor with a random ID.
    *
-   * @param script   the actor script.
-   * @param type     the type of interface defining the actor protocol.
-   * @param roleType the type of the role object to be instantiated.
-   * @param roleArgs the role object constructor arguments.
-   * @param <T>      the returned actor runtime type.
-   * @return the actor instance.
-   */
-  @NotNull
-  public static <T> T newActor(@NotNull final Script script, @NotNull final Class<? extends T> type,
-      @NotNull final Class<?> roleType, @NotNull final Object... roleArgs) {
-    try {
-      final Actor actor = Stage.newActor(new TypedRole(script, roleType, roleArgs));
-      return ActorHandler.createProxy(actor, type, script);
-
-    } catch (final RuntimeException e) {
-      throw e;
-
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * Creates a new actor with a random ID.
-   *
-   * @param script the actor script.
    * @param type   the type of interface defining the actor protocol.
-   * @param role   the role object instance.
+   * @param script the actor script.
    * @param <T>    the returned actor runtime type.
    * @return the actor instance.
    */
   @NotNull
-  public static <T> T newActor(@NotNull final Script script, @NotNull final Class<? extends T> type,
-      @NotNull final Object role) {
+  public static <T> T newActor(@NotNull final Class<? extends T> type,
+      @NotNull final Script script) {
     try {
-      final Actor actor = Stage.newActor(new TypedRole(script, role));
+      final Actor actor = Stage.newActor(new TypedRole(script));
       return ActorHandler.createProxy(actor, type, script);
 
     } catch (final RuntimeException e) {
@@ -114,45 +88,17 @@ public class TypedStage extends Stage {
   /**
    * Creates a new actor with the specified ID.
    *
-   * @param id       the actor ID.
-   * @param script   the actor script.
-   * @param type     the type of interface defining the actor protocol.
-   * @param roleType the type of the role object to be instantiated.
-   * @param roleArgs the role object constructor arguments.
-   * @param <T>      the returned actor runtime type.
-   * @return the actor instance.
-   */
-  @NotNull
-  public static <T> T newActor(@NotNull final String id, @NotNull final Script script,
-      @NotNull final Class<? extends T> type, @NotNull final Class<?> roleType,
-      @NotNull final Object... roleArgs) {
-    try {
-      final Actor actor = Stage.newActor(id, new TypedRole(script, roleType, roleArgs));
-      return ActorHandler.createProxy(actor, type, script);
-
-    } catch (final RuntimeException e) {
-      throw e;
-
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * Creates a new actor with the specified ID.
-   *
+   * @param type   the type of interface defining the actor protocol.
    * @param id     the actor ID.
    * @param script the actor script.
-   * @param type   the type of interface defining the actor protocol.
-   * @param role   the role object instance.
    * @param <T>    the returned actor runtime type.
    * @return the actor instance.
    */
   @NotNull
-  public static <T> T newActor(@NotNull final String id, @NotNull final Script script,
-      @NotNull final Class<? extends T> type, @NotNull final Object role) {
+  public static <T> T newActor(@NotNull final Class<? extends T> type, @NotNull final String id,
+      @NotNull final Script script) {
     try {
-      final Actor actor = Stage.newActor(id, new TypedRole(script, role));
+      final Actor actor = Stage.newActor(id, new TypedRole(script));
       return ActorHandler.createProxy(actor, type, script);
 
     } catch (final RuntimeException e) {
@@ -252,96 +198,41 @@ public class TypedStage extends Stage {
   }
 
   /**
-   * Creates a new actor, with the specified ID, playing the specified role.
+   * Creates a new actor, with the specified ID, following the specified script.
    *
-   * @param id       the actor ID.
-   * @param script   the actor script.
-   * @param type     the type of interface defining the actor protocol.
-   * @param roleType the type of the role object to be instantiated.
-   * @param roleArgs the role object constructor arguments.
-   * @param <T>      the returned actor runtime type.
-   * @return the actor instance.
-   */
-  @NotNull
-  public <T> T createActor(@NotNull final String id, @NotNull final Script script,
-      @NotNull final Class<? extends T> type, @NotNull final Class<?> roleType,
-      @NotNull final Object... roleArgs) {
-    try {
-      final Actor actor = stage.createActor(id, new TypedRole(script, roleType, roleArgs));
-      return ActorHandler.createProxy(actor, type, script);
-
-    } catch (final RuntimeException e) {
-      throw e;
-
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * Creates a new actor playing the specified role.
-   *
-   * @param script the actor script.
    * @param type   the type of interface defining the actor protocol.
-   * @param role   the role object instance.
-   * @param <T>    the returned actor runtime type.
-   * @return the actor instance.
-   */
-  @NotNull
-  public <T> T createActor(@NotNull final Script script, @NotNull final Class<? extends T> type,
-      @NotNull final Object role) {
-    try {
-      final Actor actor = stage.createActor(new TypedRole(script, role));
-      return ActorHandler.createProxy(actor, type, script);
-
-    } catch (final RuntimeException e) {
-      throw e;
-
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * Creates a new actor playing the specified role.
-   *
-   * @param script   the actor script.
-   * @param type     the type of interface defining the actor protocol.
-   * @param roleType the type of the role object to be instantiated.
-   * @param roleArgs the role object constructor arguments.
-   * @param <T>      the returned actor runtime type.
-   * @return the actor instance.
-   */
-  @NotNull
-  public <T> T createActor(@NotNull final Script script, @NotNull final Class<? extends T> type,
-      @NotNull final Class<?> roleType, @NotNull final Object... roleArgs) {
-    try {
-      final Actor actor = stage.createActor(new TypedRole(script, roleType, roleArgs));
-      return ActorHandler.createProxy(actor, type, script);
-
-    } catch (final RuntimeException e) {
-      throw e;
-
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * Creates a new actor, with the specified ID, playing the specified role.
-   *
    * @param id     the actor ID.
    * @param script the actor script.
-   * @param type   the type of interface defining the actor protocol.
-   * @param role   the role object instance.
    * @param <T>    the returned actor runtime type.
    * @return the actor instance.
    */
   @NotNull
-  public <T> T createActor(@NotNull final String id, @NotNull final Script script,
-      @NotNull final Class<? extends T> type, @NotNull final Object role) {
+  public <T> T createActor(@NotNull final Class<? extends T> type, @NotNull final String id,
+      @NotNull final Script script) {
     try {
-      final Actor actor = stage.createActor(id, new TypedRole(script, role));
+      final Actor actor = stage.createActor(id, new TypedRole(script));
+      return ActorHandler.createProxy(actor, type, script);
+
+    } catch (final RuntimeException e) {
+      throw e;
+
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
+   * Creates a new actor following the specified script.
+   *
+   * @param type   the type of interface defining the actor protocol.
+   * @param script the actor script.
+   * @param <T>    the returned actor runtime type.
+   * @return the actor instance.
+   */
+  @NotNull
+  public <T> T createActor(@NotNull final Class<? extends T> type, @NotNull final Script script) {
+    try {
+      final Actor actor = stage.createActor(new TypedRole(script));
       return ActorHandler.createProxy(actor, type, script);
 
     } catch (final RuntimeException e) {

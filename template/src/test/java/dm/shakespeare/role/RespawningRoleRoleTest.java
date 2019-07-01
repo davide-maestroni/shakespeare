@@ -20,7 +20,7 @@ import dm.shakespeare.actor.Role;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.template.role.RespawningRole;
 import dm.shakespeare.template.typed.TypedStage;
-import dm.shakespeare.template.typed.actor.Script;
+import dm.shakespeare.template.typed.actor.InstanceScript;
 import dm.shakespeare.template.typed.annotation.ActorFrom;
 import dm.shakespeare.template.typed.message.InvocationResult;
 
@@ -47,7 +47,7 @@ public class RespawningRoleRoleTest {
   @Test
   public void typed() {
     final TypedStage stage = new TypedStage(new Stage());
-    final ToUpper test = stage.createActor(new TestScript(), ToUpper.class, "test");
+    final ToUpper test = stage.createActor(ToUpper.class, new TestScript("test"));
     final Actor actor = Stage.newActor(new Role() {
 
       @NotNull
@@ -85,7 +85,11 @@ public class RespawningRoleRoleTest {
     String toUpperCase(@NotNull Locale locale);
   }
 
-  private static class TestScript extends Script {
+  private static class TestScript extends InstanceScript {
+
+    public TestScript(@NotNull final Object role) {
+      super(role);
+    }
 
     @NotNull
     @Override

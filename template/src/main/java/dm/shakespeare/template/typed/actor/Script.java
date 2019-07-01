@@ -37,7 +37,7 @@ import dm.shakespeare.log.Logger;
  * The script methods are only called once at the actor instantiation, and thread safety is not
  * guaranteed. So, it's advisable to employ a new script instance for each new actor.
  */
-public class Script {
+public abstract class Script {
 
   private static final long DEFAULT_TIMEOUT = TimeUnit.SECONDS.toMillis(20);
 
@@ -95,4 +95,7 @@ public class Script {
     final Class<?> returnType = method.getReturnType();
     return ((returnType != void.class) && (returnType != Void.class)) ? DEFAULT_TIMEOUT : null;
   }
+
+  @NotNull
+  public abstract Object getRole(@NotNull String id) throws Exception;
 }

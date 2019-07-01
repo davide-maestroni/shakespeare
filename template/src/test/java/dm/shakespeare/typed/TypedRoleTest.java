@@ -36,7 +36,8 @@ import dm.shakespeare.message.Delivery;
 import dm.shakespeare.template.typed.InvocationMismatchException;
 import dm.shakespeare.template.typed.InvocationTimeoutException;
 import dm.shakespeare.template.typed.TypedStage;
-import dm.shakespeare.template.typed.actor.Script;
+import dm.shakespeare.template.typed.actor.ClassScript;
+import dm.shakespeare.template.typed.actor.InstanceScript;
 import dm.shakespeare.template.typed.annotation.ActorFrom;
 import dm.shakespeare.template.typed.annotation.HeadersFrom;
 import dm.shakespeare.template.typed.message.InvocationResult;
@@ -52,7 +53,7 @@ public class TypedRoleTest {
   @Test
   public void classInvocation() {
     final TypedItf actor =
-        TypedStage.newActor(new LocalScript(), TypedItf.class, TypedRole.class, new Object[0]);
+        TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class));
     actor.setValue("test");
     assertThat(actor.getValue()).isEqualTo("test");
   }
@@ -61,20 +62,20 @@ public class TypedRoleTest {
   @SuppressWarnings("unchecked")
   public void classInvocationException() {
     final List<String> actor =
-        TypedStage.newActor(new LocalScript(), List.class, TypedRole.class, new Object[0]);
+        TypedStage.newActor(List.class, new ClassLocalScript(TypedRole.class));
     actor.size();
   }
 
   @Test
   public void classInvocationResult() {
     final TypedItf actor =
-        TypedStage.newActor(new LocalScript(), TypedItf.class, TypedRole.class, "test");
+        TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class, "test"));
     assertThat(actor.getValue()).isEqualTo("test");
   }
 
   @Test(expected = InvocationTimeoutException.class)
   public void classInvocationTimeout() {
-    final TypedItf actor = TypedStage.newActor(new Script() {
+    final TypedItf actor = TypedStage.newActor(TypedItf.class, new ClassScript(TypedRole.class) {
 
       @NotNull
       @Override
@@ -86,19 +87,21 @@ public class TypedRoleTest {
       public Long getResultTimeoutMillis(@NotNull final String id, @NotNull final Method method) {
         return 0L;
       }
-    }, TypedItf.class, TypedRole.class, new Object[0]);
+    });
     actor.getValue();
   }
 
   @Test
   public void fromActor() {
-    final TypedItf actor = TypedStage.newActor(new LocalScript() {
+    final TypedItf actor =
+        TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class, "test") {
 
-      @Override
-      public Long getResultTimeoutMillis(@NotNull final String id, @NotNull final Method method) {
-        return null;
-      }
-    }, TypedItf.class, TypedRole.class, "test");
+          @Override
+          public Long getResultTimeoutMillis(@NotNull final String id,
+              @NotNull final Method method) {
+            return null;
+          }
+        });
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     assertThat(actor.getValue(Stage.newActor(testRole))).isNull();
@@ -110,13 +113,15 @@ public class TypedRoleTest {
 
   @Test
   public void fromActorAndHeaders() {
-    final TypedItf actor = TypedStage.newActor(new LocalScript() {
+    final TypedItf actor =
+        TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class, "test") {
 
-      @Override
-      public Long getResultTimeoutMillis(@NotNull final String id, @NotNull final Method method) {
-        return null;
-      }
-    }, TypedItf.class, TypedRole.class, "test");
+          @Override
+          public Long getResultTimeoutMillis(@NotNull final String id,
+              @NotNull final Method method) {
+            return null;
+          }
+        });
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     final Headers headers = new Headers().withThreadId("test");
@@ -131,13 +136,15 @@ public class TypedRoleTest {
 
   @Test
   public void fromActorAndHeadersWithReceipt() {
-    final TypedItf actor = TypedStage.newActor(new LocalScript() {
+    final TypedItf actor =
+        TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class, "test") {
 
-      @Override
-      public Long getResultTimeoutMillis(@NotNull final String id, @NotNull final Method method) {
-        return null;
-      }
-    }, TypedItf.class, TypedRole.class, "test");
+          @Override
+          public Long getResultTimeoutMillis(@NotNull final String id,
+              @NotNull final Method method) {
+            return null;
+          }
+        });
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     final Headers headers = new Headers().withThreadId("test").withReceiptId("test");
@@ -156,7 +163,7 @@ public class TypedRoleTest {
   @Test
   public void fromHeaders() {
     final TypedItf actor =
-        TypedStage.newActor(new LocalScript(), TypedItf.class, TypedRole.class, "test");
+        TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class, "test"));
     final Headers headers = new Headers().withThreadId("test").withReceiptId("test");
     assertThat(actor.getValue(headers)).isEqualTo("test");
   }
@@ -164,8 +171,9 @@ public class TypedRoleTest {
   @Test
   public void getTyped() {
     final TypedItf actor =
-        TypedStage.newActor(new LocalScript(), TypedItf.class, TypedRole.class, "test");
-    final TypedItf typed = TypedStage.newActor(new LocalScript(), TypedItf.class, new TypedRole());
+        TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class, "test"));
+    final TypedItf typed =
+        TypedStage.newActor(TypedItf.class, new InstanceLocalScript(new TypedRole()));
     actor.setValue(typed);
     assertThat(typed.getValue()).isEqualTo("test");
   }
@@ -173,7 +181,8 @@ public class TypedRoleTest {
   @Test
   public void invocationAwait() {
     final TypedRole testRole = new TypedRole();
-    final TypedItf actor = TypedStage.newActor("test", new Script(), TypedItf.class, testRole);
+    final TypedItf actor =
+        TypedStage.newActor(TypedItf.class, "test", new InstanceScript(testRole));
     actor.setValue("test");
     assertThat(actor.getValue()).isEqualTo("test");
   }
@@ -182,20 +191,22 @@ public class TypedRoleTest {
   @SuppressWarnings("unchecked")
   public void invocationAwaitException() {
     final TypedRole testRole = new TypedRole();
-    final List<String> actor = TypedStage.newActor("test", new Script() {
+    final List<String> actor =
+        TypedStage.newActor(List.class, "test", new InstanceScript(testRole) {
 
-      @Override
-      public Long getResultTimeoutMillis(@NotNull final String id, @NotNull final Method method) {
-        return 2000L;
-      }
-    }, List.class, testRole);
+          @Override
+          public Long getResultTimeoutMillis(@NotNull final String id,
+              @NotNull final Method method) {
+            return 2000L;
+          }
+        });
     actor.clear();
   }
 
   @Test
   public void objectInvocation() {
     final TypedRole testRole = new TypedRole();
-    final TypedItf actor = TypedStage.newActor(new LocalScript(), TypedItf.class, testRole);
+    final TypedItf actor = TypedStage.newActor(TypedItf.class, new InstanceLocalScript(testRole));
     actor.setValue("test");
     assertThat(testRole.getValue()).isEqualTo("test");
   }
@@ -205,7 +216,7 @@ public class TypedRoleTest {
   public void objectInvocationException() {
     final TypedRole testRole = new TypedRole();
     testRole.setValue("test");
-    final List<String> actor = TypedStage.newActor(new LocalScript(), List.class, testRole);
+    final List<String> actor = TypedStage.newActor(List.class, new InstanceLocalScript(testRole));
     actor.size();
   }
 
@@ -213,7 +224,7 @@ public class TypedRoleTest {
   public void objectInvocationResult() {
     final TypedRole testRole = new TypedRole();
     testRole.setValue("test");
-    final TypedItf actor = TypedStage.newActor(new LocalScript(), TypedItf.class, testRole);
+    final TypedItf actor = TypedStage.newActor(TypedItf.class, new InstanceLocalScript(testRole));
     actor.getValue();
   }
 
@@ -221,7 +232,7 @@ public class TypedRoleTest {
   public void objectInvocationTimeout() {
     final TypedRole testRole = new TypedRole();
     testRole.setValue("test");
-    final TypedItf actor = TypedStage.newActor(new Script() {
+    final TypedItf actor = TypedStage.newActor(TypedItf.class, new InstanceScript(testRole) {
 
       @NotNull
       @Override
@@ -233,14 +244,14 @@ public class TypedRoleTest {
       public Long getResultTimeoutMillis(@NotNull final String id, @NotNull final Method method) {
         return 0L;
       }
-    }, TypedItf.class, testRole);
+    });
     actor.getValue();
   }
 
   @Test
   public void setFromActor() {
     final TypedItf actor =
-        TypedStage.newActor(new LocalScript(), TypedItf.class, TypedRole.class, new Object[0]);
+        TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class));
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     actor.setValue("test", Stage.newActor(testRole));
@@ -253,7 +264,7 @@ public class TypedRoleTest {
   @Test
   public void setFromActorAndHeaders() {
     final TypedItf actor =
-        TypedStage.newActor(new LocalScript(), TypedItf.class, TypedRole.class, new Object[0]);
+        TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class));
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     final Headers headers = new Headers().withThreadId("test");
@@ -268,7 +279,8 @@ public class TypedRoleTest {
 
   @Test
   public void setFromActorAndHeadersWithReceipt() {
-    final TypedItf actor = TypedStage.newActor(new LocalScript(), TypedItf.class, new TypedRole());
+    final TypedItf actor =
+        TypedStage.newActor(TypedItf.class, new InstanceLocalScript(new TypedRole()));
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     final Headers headers = new Headers().withThreadId("test").withReceiptId("test");
@@ -286,7 +298,8 @@ public class TypedRoleTest {
 
   @Test
   public void setFromHeaders() {
-    final TypedItf actor = TypedStage.newActor(new LocalScript(), TypedItf.class, new TypedRole());
+    final TypedItf actor =
+        TypedStage.newActor(TypedItf.class, new InstanceLocalScript(new TypedRole()));
     final Headers headers = new Headers().withThreadId("test").withReceiptId("test");
     actor.setValue(headers, "test");
     assertThat(actor.getValue()).isEqualTo("test");
@@ -294,16 +307,17 @@ public class TypedRoleTest {
 
   @Test
   public void setTyped() {
-    final TypedItf actor = TypedStage.newActor(new Script(), TypedItf.class, new TypedRole());
+    final TypedItf actor = TypedStage.newActor(TypedItf.class, new InstanceScript(new TypedRole()));
     final TypedItf typed =
-        TypedStage.newActor(new LocalScript(), TypedItf.class, TypedRole.class, "test");
+        TypedStage.newActor(TypedItf.class, new ClassLocalScript(TypedRole.class, "test"));
     assertThat(actor.getValue(typed)).isEqualTo("test");
     assertThat(actor.getValue()).isNull();
   }
 
   @Test(expected = NullPointerException.class)
   public void typedNPE() {
-    final TypedItf actor = TypedStage.newActor(new LocalScript(), TypedItf.class, new TypedRole());
+    final TypedItf actor =
+        TypedStage.newActor(TypedItf.class, new InstanceLocalScript(new TypedRole()));
     actor.getValue((TypedItf) null);
   }
 
@@ -358,7 +372,24 @@ public class TypedRoleTest {
     }
   }
 
-  private static class LocalScript extends Script {
+  private static class ClassLocalScript extends ClassScript {
+
+    public ClassLocalScript(@NotNull final Class<?> roleType, @NotNull final Object... roleArgs) {
+      super(roleType, roleArgs);
+    }
+
+    @NotNull
+    @Override
+    public ExecutorService getExecutorService(@NotNull final String id) {
+      return ExecutorServices.localExecutor();
+    }
+  }
+
+  private static class InstanceLocalScript extends InstanceScript {
+
+    public InstanceLocalScript(@NotNull final Object role) {
+      super(role);
+    }
 
     @NotNull
     @Override

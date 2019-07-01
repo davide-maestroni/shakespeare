@@ -38,7 +38,6 @@ import dm.shakespeare.template.config.BuildConfig;
 import dm.shakespeare.template.typed.actor.Script;
 import dm.shakespeare.template.typed.message.InvocationException;
 import dm.shakespeare.template.typed.message.InvocationResult;
-import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -49,31 +48,14 @@ class TypedRole extends SerializableRole {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private final Object object;
-  private final Object[] objectArgs;
-  private final Class<?> objectClass;
   private final Script script;
 
-  TypedRole(@NotNull final Script script, @NotNull final Object object) {
+  TypedRole(@NotNull final Script script) {
     this.script = ConstantConditions.notNull("script", script);
-    this.object = ConstantConditions.notNull("object", object);
-    this.objectClass = object.getClass();
-    this.objectArgs = null;
-  }
-
-  TypedRole(@NotNull final Script script, @NotNull final Class<?> type,
-      @NotNull final Object... args) {
-    this.script = ConstantConditions.notNull("script", script);
-    this.object = null;
-    this.objectClass = ConstantConditions.notNull("type", type);
-    this.objectArgs = ConstantConditions.notNull("args", args);
   }
 
   private TypedRole() {
     script = null;
-    object = null;
-    objectClass = null;
-    objectArgs = null;
   }
 
   @NotNull
@@ -93,34 +75,13 @@ class TypedRole extends SerializableRole {
     return script.getQuota(id);
   }
 
-  public Object getObject() {
-    return object;
-  }
-
-  public Object[] getObjectArgs() {
-    return objectArgs;
-  }
-
-  public Class<?> getObjectClass() {
-    return objectClass;
-  }
-
   public Script getScript() {
     return script;
   }
 
   @NotNull
-  protected Behavior getSerializableBehavior(@NotNull final String id) {
-    return new TypedBehavior(getInstance());
-  }
-
-  @NotNull
-  private Object getInstance() {
-    final Object object = this.object;
-    if (object != null) {
-      return object;
-    }
-    return Reflections.newInstance(this.objectClass, this.objectArgs);
+  protected Behavior getSerializableBehavior(@NotNull final String id) throws Exception {
+    return new TypedBehavior(script.getRole(id));
   }
 
   enum TypedRoleSignal {

@@ -16,14 +16,35 @@
 
 package dm.shakespeare.template.typed.actor;
 
-import java.io.Serializable;
+import org.jetbrains.annotations.NotNull;
 
 import dm.shakespeare.template.config.BuildConfig;
+import dm.shakespeare.util.ConstantConditions;
 
 /**
- * Serializable implementation of a {@code Script}.
+ * Created by davide-maestroni on 06/29/2019.
  */
-public abstract class SerializableScript extends Script implements Serializable {
+public class InstanceScript extends SerializableScript {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+  private final Object role;
+
+  public InstanceScript(@NotNull final Object role) {
+    this.role = ConstantConditions.notNull("role", role);
+  }
+
+  private InstanceScript() {
+    role = new Object();
+  }
+
+  @NotNull
+  public Object getRole() {
+    return role;
+  }
+
+  @NotNull
+  public Object getRole(@NotNull final String id) throws Exception {
+    return role;
+  }
 }
