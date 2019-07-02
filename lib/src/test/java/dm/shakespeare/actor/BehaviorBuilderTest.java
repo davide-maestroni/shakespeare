@@ -45,7 +45,7 @@ public class BehaviorBuilderTest {
   public void onAny() {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -65,14 +65,14 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tellAll(Arrays.asList("test", 3), Headers.EMPTY, Stage.STAND_IN);
+    actor.tellAll(Arrays.asList("test", 3), Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test", 3);
   }
 
   @Test(expected = NullPointerException.class)
   public void onAnyNPE() {
-    Stage.newActor(new Role() {
+    Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -87,7 +87,7 @@ public class BehaviorBuilderTest {
   public void onAnyOrder() {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -113,7 +113,7 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tellAll(Arrays.asList("test", 3), Headers.EMPTY, Stage.STAND_IN);
+    actor.tellAll(Arrays.asList("test", 3), Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test", "test", 3, "3");
   }
@@ -122,7 +122,7 @@ public class BehaviorBuilderTest {
   public void onEnvelop() {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -147,15 +147,15 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly(3);
   }
 
   @Test(expected = NullPointerException.class)
   public void onEnvelopHandlerNPE() {
-    Stage.newActor(new Role() {
+    Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -175,7 +175,7 @@ public class BehaviorBuilderTest {
   public void onEnvelopOrder() {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -211,15 +211,15 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly(3, "3");
   }
 
   @Test(expected = NullPointerException.class)
   public void onEnvelopTesterNPE() {
-    Stage.newActor(new Role() {
+    Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -239,7 +239,7 @@ public class BehaviorBuilderTest {
   public void onEqualTo() {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -259,15 +259,15 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test");
   }
 
   @Test(expected = NullPointerException.class)
   public void onEqualToNPE() {
-    Stage.newActor(new Role() {
+    Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -282,7 +282,7 @@ public class BehaviorBuilderTest {
   public void onEqualToNull() {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -302,8 +302,8 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(null, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(null, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly((String) null);
   }
@@ -312,7 +312,7 @@ public class BehaviorBuilderTest {
   public void onEqualToOrder() {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -338,8 +338,8 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test", "TEST");
   }
@@ -348,7 +348,7 @@ public class BehaviorBuilderTest {
   public void onMatch() {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -374,18 +374,18 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).isEmpty();
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test");
   }
 
   @Test(expected = NullPointerException.class)
   public void onMatchHandlerNPE() {
-    Stage.newActor(new Role() {
+    Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -404,7 +404,7 @@ public class BehaviorBuilderTest {
 
   @Test(expected = NullPointerException.class)
   public void onMatchMatcherNPE() {
-    Stage.newActor(new Role() {
+    Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -424,7 +424,7 @@ public class BehaviorBuilderTest {
   public void onMatchOrder() {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -462,11 +462,11 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).isEmpty();
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test", "TEST");
   }
@@ -475,7 +475,7 @@ public class BehaviorBuilderTest {
   public void onMessageClass() {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -495,15 +495,15 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test");
   }
 
   @Test(expected = NullPointerException.class)
   public void onMessageClassHandlerNPE() {
-    Stage.newActor(new Role() {
+    Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -516,7 +516,7 @@ public class BehaviorBuilderTest {
 
   @Test(expected = NullPointerException.class)
   public void onMessageClassNPE() {
-    Stage.newActor(new Role() {
+    Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -536,7 +536,7 @@ public class BehaviorBuilderTest {
   public void onMessageClassOrder() {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -562,8 +562,8 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test", "TEST");
   }
@@ -572,7 +572,7 @@ public class BehaviorBuilderTest {
   public void onMessageClasses() {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -593,15 +593,15 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test");
   }
 
   @Test(expected = NullPointerException.class)
   public void onMessageClassesElementNPE() {
-    Stage.newActor(new Role() {
+    Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -618,7 +618,7 @@ public class BehaviorBuilderTest {
 
   @Test(expected = NullPointerException.class)
   public void onMessageClassesHandlerNPE() {
-    Stage.newActor(new Role() {
+    Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -631,7 +631,7 @@ public class BehaviorBuilderTest {
 
   @Test(expected = NullPointerException.class)
   public void onMessageClassesNPE() {
-    Stage.newActor(new Role() {
+    Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -651,7 +651,7 @@ public class BehaviorBuilderTest {
   public void onMessageClassesOrder() {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -678,8 +678,8 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test", "TEST");
   }
@@ -688,7 +688,7 @@ public class BehaviorBuilderTest {
   public void onMessageTester() {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -713,15 +713,15 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test");
   }
 
   @Test(expected = NullPointerException.class)
   public void onMessageTesterHandlerNPE() {
-    Stage.newActor(new Role() {
+    Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -739,7 +739,7 @@ public class BehaviorBuilderTest {
 
   @Test(expected = NullPointerException.class)
   public void onMessageTesterNPE() {
-    Stage.newActor(new Role() {
+    Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -759,7 +759,7 @@ public class BehaviorBuilderTest {
   public void onMessageTesterOrder() {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -795,8 +795,8 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test", "TEST");
   }
@@ -806,7 +806,7 @@ public class BehaviorBuilderTest {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final ArrayList<Object> matches = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -838,8 +838,8 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test");
     assertThat(matches).containsExactly(3, 3);
@@ -850,7 +850,7 @@ public class BehaviorBuilderTest {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final ArrayList<Object> matches = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -876,8 +876,8 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test", 3);
     assertThat(matches).isEmpty();
@@ -885,7 +885,7 @@ public class BehaviorBuilderTest {
 
   @Test(expected = NullPointerException.class)
   public void onNoMatchNPE() {
-    Stage.newActor(new Role() {
+    Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -900,7 +900,7 @@ public class BehaviorBuilderTest {
   public void onNoMatchOnly() {
     final ArrayList<Object> matches = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -920,8 +920,8 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(matches).containsExactly("test", 3);
   }
@@ -930,7 +930,7 @@ public class BehaviorBuilderTest {
   public void onNoMatchOnlyOrder() {
     final ArrayList<Object> matches = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -956,8 +956,8 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(matches).containsExactly("test", "test", 3, "3");
   }
@@ -967,7 +967,7 @@ public class BehaviorBuilderTest {
     final ArrayList<Object> messages = new ArrayList<Object>();
     final ArrayList<Object> matches = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -999,8 +999,8 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test");
     assertThat(matches).containsExactly(3, "3");
@@ -1010,7 +1010,7 @@ public class BehaviorBuilderTest {
   public void onStart() {
     final ArrayList<Object> ids = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -1029,14 +1029,14 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(ids).containsExactly(actor.getId());
   }
 
   @Test(expected = NullPointerException.class)
   public void onStartNPE() {
-    Stage.newActor(new Role() {
+    Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -1051,7 +1051,7 @@ public class BehaviorBuilderTest {
   public void onStartOrder() {
     final ArrayList<Object> ids = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -1075,7 +1075,7 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(ids).containsExactly(actor.getId(), actor.getId().toUpperCase(Locale.ENGLISH));
   }
@@ -1084,7 +1084,7 @@ public class BehaviorBuilderTest {
   public void onStop() {
     final ArrayList<Object> ids = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -1103,7 +1103,7 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(ids).isEmpty();
     actor.dismiss();
@@ -1113,7 +1113,7 @@ public class BehaviorBuilderTest {
 
   @Test(expected = NullPointerException.class)
   public void onStopNPE() {
-    Stage.newActor(new Role() {
+    Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -1128,7 +1128,7 @@ public class BehaviorBuilderTest {
   public void onStopOrder() {
     final ArrayList<Object> ids = new ArrayList<Object>();
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -1152,7 +1152,7 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell(3, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell(3, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(ids).isEmpty();
     actor.dismiss();

@@ -51,6 +51,8 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class TypedStage extends Stage {
 
+  private static final TypedStage BACK_STAGE = new TypedStage(Stage.back());
+
   private final Stage stage;
 
   /**
@@ -63,6 +65,14 @@ public class TypedStage extends Stage {
   }
 
   /**
+   * {@inheritDoc}
+   */
+  @NotNull
+  public static TypedStage back() {
+    return BACK_STAGE;
+  }
+
+  /**
    * Returns the actor instance backing the specified typed actor.
    *
    * @param actor the typed actor instance.
@@ -72,53 +82,6 @@ public class TypedStage extends Stage {
   @NotNull
   public static Actor getActor(@NotNull final Object actor) {
     return ActorHandler.getActor(actor);
-  }
-
-  /**
-   * Creates a new actor with a random ID.
-   *
-   * @param type   the type of interface defining the actor protocol.
-   * @param script the actor script.
-   * @param <T>    the returned actor runtime type.
-   * @return the actor instance.
-   */
-  @NotNull
-  public static <T> T newActor(@NotNull final Class<? extends T> type,
-      @NotNull final Script script) {
-    try {
-      final Actor actor = Stage.newActor(new TypedRole(script));
-      return ActorHandler.createProxy(actor, type, script);
-
-    } catch (final RuntimeException e) {
-      throw e;
-
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * Creates a new actor with the specified ID.
-   *
-   * @param type   the type of interface defining the actor protocol.
-   * @param id     the actor ID.
-   * @param script the actor script.
-   * @param <T>    the returned actor runtime type.
-   * @return the actor instance.
-   */
-  @NotNull
-  public static <T> T newActor(@NotNull final Class<? extends T> type, @NotNull final String id,
-      @NotNull final Script script) {
-    try {
-      final Actor actor = Stage.newActor(id, new TypedRole(script));
-      return ActorHandler.createProxy(actor, type, script);
-
-    } catch (final RuntimeException e) {
-      throw e;
-
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
   }
 
   /**

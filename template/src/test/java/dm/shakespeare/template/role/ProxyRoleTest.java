@@ -44,12 +44,12 @@ public class ProxyRoleTest {
   @Test
   public void proxy() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor proxy = Stage.newActor(new LocalProxy());
-    proxy.tell("test0", Headers.EMPTY, Stage.STAND_IN);
+    final Actor proxy = Stage.back().createActor(new LocalProxy());
+    proxy.tell("test0", Headers.EMPTY, Stage.standIn());
     final TestRole testRole = new TestRole(executorService);
-    proxy.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole));
-    proxy.tell("test1", Headers.EMPTY, Stage.STAND_IN);
-    proxy.tell("test2", Headers.EMPTY, Stage.newActor(new Role() {
+    proxy.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole));
+    proxy.tell("test1", Headers.EMPTY, Stage.standIn());
+    proxy.tell("test2", Headers.EMPTY, Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -64,11 +64,11 @@ public class ProxyRoleTest {
   @Test
   public void proxyReceipt() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor proxy = Stage.newActor(new LocalProxy());
+    final Actor proxy = Stage.back().createActor(new LocalProxy());
     final TestRole testRole1 = new TestRole(executorService);
-    proxy.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
+    proxy.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole1));
     final TestRole testRole2 = new TestRole(executorService);
-    proxy.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.newActor(testRole2));
+    proxy.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.back().createActor(testRole2));
     executorService.consumeAll();
     assertThat(testRole1.getMessages()).containsExactly("test");
     assertThat(testRole2.getMessages()).hasSize(1);
@@ -78,15 +78,15 @@ public class ProxyRoleTest {
   @Test
   public void proxyRemove() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor proxy = Stage.newActor(new LocalProxy());
+    final Actor proxy = Stage.back().createActor(new LocalProxy());
     final TestRole testRole1 = new TestRole(executorService);
-    proxy.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
-    proxy.tell("test1", Headers.EMPTY, Stage.STAND_IN);
+    proxy.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole1));
+    proxy.tell("test1", Headers.EMPTY, Stage.standIn());
     final TestRole testRole2 = new TestRole(executorService);
-    final Actor actor = Stage.newActor(testRole2);
+    final Actor actor = Stage.back().createActor(testRole2);
     proxy.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, actor);
     proxy.tell(ProxySignal.REMOVE_PROXIED, Headers.EMPTY, actor);
-    proxy.tell("test2", Headers.EMPTY, Stage.STAND_IN);
+    proxy.tell("test2", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole1.getMessages()).containsExactly("test1");
     assertThat(testRole2.getMessages()).isEmpty();
@@ -95,14 +95,14 @@ public class ProxyRoleTest {
   @Test
   public void proxySender() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor proxy = Stage.newActor(new LocalProxy());
-    proxy.tell("test0", Headers.EMPTY, Stage.STAND_IN);
+    final Actor proxy = Stage.back().createActor(new LocalProxy());
+    proxy.tell("test0", Headers.EMPTY, Stage.standIn());
     final TestRole testRole1 = new TestRole(executorService);
-    proxy.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
-    proxy.tell("test1", Headers.EMPTY, Stage.STAND_IN);
+    proxy.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole1));
+    proxy.tell("test1", Headers.EMPTY, Stage.standIn());
     final TestRole testRole2 = new TestRole(executorService);
-    proxy.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole2));
-    proxy.tell("test2", Headers.EMPTY, Stage.STAND_IN);
+    proxy.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole2));
+    proxy.tell("test2", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole1.getMessages()).containsExactly("test1");
     assertThat(testRole2.getMessages()).containsExactly("test2");

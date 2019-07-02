@@ -49,7 +49,7 @@ public class RoleTest {
         msg.set(value);
       }
     });
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -64,7 +64,7 @@ public class RoleTest {
       }
     });
     final TestRole observerRole = new TestRole(executorService);
-    final Actor observer = Stage.newActor(observerRole);
+    final Actor observer = Stage.back().createActor(observerRole);
     actor.tell("test", Headers.EMPTY, observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).isEmpty();
@@ -86,7 +86,7 @@ public class RoleTest {
         return value.toUpperCase(Locale.ENGLISH);
       }
     });
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -101,7 +101,7 @@ public class RoleTest {
       }
     });
     final TestRole observerRole = new TestRole(executorService);
-    final Actor observer = Stage.newActor(observerRole);
+    final Actor observer = Stage.back().createActor(observerRole);
     actor.tell("test", Headers.EMPTY, observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).containsExactly("TEST");
@@ -117,7 +117,7 @@ public class RoleTest {
   @Test
   public void from() throws InterruptedException {
     final CountDownLatch latch = new CountDownLatch(1);
-    final Actor actor = Stage.newActor(Role.from(new Mapper<String, Behavior>() {
+    final Actor actor = Stage.back().createActor(Role.from(new Mapper<String, Behavior>() {
 
       public Behavior apply(final String id) {
         return new AbstractBehavior() {
@@ -129,7 +129,7 @@ public class RoleTest {
         };
       }
     }));
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
   }
 

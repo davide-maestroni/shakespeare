@@ -163,7 +163,7 @@ public abstract class Event<T> {
   }
 
   public void cancel() {
-    getActor().tell(EventSignal.CANCEL, Headers.EMPTY, Stage.STAND_IN);
+    getActor().tell(EventSignal.CANCEL, Headers.EMPTY, Stage.standIn());
   }
 
   @NotNull
@@ -173,7 +173,7 @@ public abstract class Event<T> {
 
   @NotNull
   public Spectator play(@NotNull final EventObserver<? super T> eventObserver) {
-    final Actor actor = Stage.newActor(new EventObserverRole<T>(getActor(), eventObserver));
+    final Actor actor = Stage.back().createActor(new EventObserverRole<T>(getActor(), eventObserver));
     final String actorId = actor.getId();
     getActor().tell(EventSignal.GET, new Headers().withReceiptId(actorId).withThreadId(actorId),
         actor);
@@ -319,7 +319,7 @@ public abstract class Event<T> {
 
     EventNarrator(@NotNull final BlockingQueue<Object> queue) {
       this.queue = ConstantConditions.notNull("queue", queue);
-      actor = Stage.newActor(new PlotRole(SettingInfo.get()) {
+      actor = Stage.back().createActor(new PlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override
@@ -335,7 +335,7 @@ public abstract class Event<T> {
           exception = new NarrationStoppedException();
         }
         if (queue.isEmpty()) {
-          actor.tell(NarratorSignal.AVAILABLE, Headers.EMPTY, Stage.STAND_IN);
+          actor.tell(NarratorSignal.AVAILABLE, Headers.EMPTY, Stage.standIn());
         }
       }
     }
@@ -378,7 +378,7 @@ public abstract class Event<T> {
       if (queue.offer(resolution, timeout, unit)) {
         close();
         if (wasEmpty) {
-          actor.tell(NarratorSignal.AVAILABLE, Headers.EMPTY, Stage.STAND_IN);
+          actor.tell(NarratorSignal.AVAILABLE, Headers.EMPTY, Stage.standIn());
         }
         return true;
       }
@@ -519,7 +519,7 @@ public abstract class Event<T> {
     private AbstractEvent(final int numInputs) {
       inputs = new Object[numInputs];
       final SettingInfo settingInfo = (this.settingInfo = SettingInfo.get());
-      final String actorId = (actor = Stage.newActor(new PlotRole(settingInfo) {
+      final String actorId = (actor = Stage.back().createActor(new PlotRole(settingInfo) {
 
         @NotNull
         @Override
@@ -840,7 +840,7 @@ public abstract class Event<T> {
     private final Actor actor;
 
     private EffectEvent(final T effect) {
-      actor = Stage.newActor(new LocalPlotRole(SettingInfo.get()) {
+      actor = Stage.back().createActor(new LocalPlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override
@@ -1097,7 +1097,7 @@ public abstract class Event<T> {
 
     private IncidentEvent(@NotNull final Throwable incident) {
       final Conflict conflict = new Conflict(incident);
-      actor = Stage.newActor(new LocalPlotRole(SettingInfo.get()) {
+      actor = Stage.back().createActor(new LocalPlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override
@@ -1213,7 +1213,7 @@ public abstract class Event<T> {
       inputActor = event.getActor();
       this.delay = ConstantConditions.positive("delay", delay);
       this.unit = ConstantConditions.notNull("unit", unit);
-      final String actorId = (actor = Stage.newActor(new PlotRole(SettingInfo.get()) {
+      final String actorId = (actor = Stage.back().createActor(new PlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override

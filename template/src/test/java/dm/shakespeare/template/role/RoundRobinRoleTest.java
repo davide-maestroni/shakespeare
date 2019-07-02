@@ -44,14 +44,14 @@ public class RoundRobinRoleTest {
   @Test
   public void roundRobin() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor roundRobin = Stage.newActor(new LocalRoundRobin());
-    roundRobin.tell("test0", Headers.EMPTY, Stage.STAND_IN);
+    final Actor roundRobin = Stage.back().createActor(new LocalRoundRobin());
+    roundRobin.tell("test0", Headers.EMPTY, Stage.standIn());
     final TestRole testRole1 = new TestRole(executorService);
-    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
+    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole1));
     final TestRole testRole2 = new TestRole(executorService);
-    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole2));
-    roundRobin.tell("test1", Headers.EMPTY, Stage.STAND_IN);
-    roundRobin.tell("test2", Headers.EMPTY, Stage.newActor(new Role() {
+    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole2));
+    roundRobin.tell("test1", Headers.EMPTY, Stage.standIn());
+    roundRobin.tell("test2", Headers.EMPTY, Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -67,11 +67,12 @@ public class RoundRobinRoleTest {
   @Test
   public void roundRobinReceipt() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor roundRobin = Stage.newActor(new LocalRoundRobin());
+    final Actor roundRobin = Stage.back().createActor(new LocalRoundRobin());
     final TestRole testRole1 = new TestRole(executorService);
-    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
+    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole1));
     final TestRole testRole2 = new TestRole(executorService);
-    roundRobin.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.newActor(testRole2));
+    roundRobin.tell("test", Headers.EMPTY.withReceiptId("test"),
+        Stage.back().createActor(testRole2));
     executorService.consumeAll();
     assertThat(testRole1.getMessages()).containsExactly("test");
     assertThat(testRole2.getMessages()).hasSize(1);
@@ -81,15 +82,15 @@ public class RoundRobinRoleTest {
   @Test
   public void roundRobinRemove() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor roundRobin = Stage.newActor(new LocalRoundRobin());
+    final Actor roundRobin = Stage.back().createActor(new LocalRoundRobin());
     final TestRole testRole1 = new TestRole(executorService);
-    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
-    roundRobin.tell("test1", Headers.EMPTY, Stage.STAND_IN);
+    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole1));
+    roundRobin.tell("test1", Headers.EMPTY, Stage.standIn());
     final TestRole testRole2 = new TestRole(executorService);
-    final Actor actor = Stage.newActor(testRole2);
+    final Actor actor = Stage.back().createActor(testRole2);
     roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, actor);
     roundRobin.tell(ProxySignal.REMOVE_PROXIED, Headers.EMPTY, actor);
-    roundRobin.tell("test2", Headers.EMPTY, Stage.STAND_IN);
+    roundRobin.tell("test2", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole1.getMessages()).containsExactly("test1", "test2");
     assertThat(testRole2.getMessages()).isEmpty();
@@ -98,14 +99,14 @@ public class RoundRobinRoleTest {
   @Test
   public void roundRobinSender() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor roundRobin = Stage.newActor(new LocalRoundRobin());
-    roundRobin.tell("test0", Headers.EMPTY, Stage.STAND_IN);
+    final Actor roundRobin = Stage.back().createActor(new LocalRoundRobin());
+    roundRobin.tell("test0", Headers.EMPTY, Stage.standIn());
     final TestRole testRole1 = new TestRole(executorService);
-    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
-    roundRobin.tell("test1", Headers.EMPTY, Stage.STAND_IN);
+    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole1));
+    roundRobin.tell("test1", Headers.EMPTY, Stage.standIn());
     final TestRole testRole2 = new TestRole(executorService);
-    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole2));
-    roundRobin.tell("test2", Headers.EMPTY, Stage.STAND_IN);
+    roundRobin.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole2));
+    roundRobin.tell("test2", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole1.getMessages()).containsExactly("test1", "test2");
     assertThat(testRole2.getMessages()).isEmpty();

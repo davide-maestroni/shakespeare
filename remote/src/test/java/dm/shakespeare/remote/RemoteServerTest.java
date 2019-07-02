@@ -76,7 +76,7 @@ public class RemoteServerTest {
         .withConnector(connector.localConnector(stageReceiver.connect()))
         .withExecutor(executorService));
     stage.connect();
-    final Actor printActor = Stage.newActor(new PrintRole());
+    final Actor printActor = Stage.back().createActor(new PrintRole());
     final Actor actor = stage.createActor(new UpperRole());
     actor.tell("hello remote!", Headers.EMPTY, printActor);
   }

@@ -51,11 +51,21 @@ public class Stage {
 
   // TODO: 28/02/2019 swagger converter
 
-  /**
-   * Stand-in actor instance.<br>
-   * This actor methods will have no effect when invoked.
-   */
-  public static final Actor STAND_IN = new StandInActor();
+  private static final Stage BACK_STAGE = new Stage() {
+
+    @NotNull
+    @Override
+    public Actor createActor(@NotNull final Role role) {
+      return newActor(randomId(), role);
+    }
+
+    @NotNull
+    @Override
+    public Actor createActor(@NotNull final String id, @NotNull final Role role) {
+      return newActor(id, role);
+    }
+  };
+  private static final StandInActor STAND_IN = new StandInActor();
 
   private final Actor actor;
   private final HashMap<String, Actor> actors = new HashMap<String, Actor>();
@@ -66,7 +76,7 @@ public class Stage {
    * Creates a new stage instance.
    */
   public Stage() {
-    actor = newActor(new Role() {
+    actor = newActor(randomId(), new Role() {
 
       @NotNull
       @Override
@@ -91,25 +101,32 @@ public class Stage {
   }
 
   /**
-   * Creates a new actor with a random ID.
+   * Returns the back stage instance.<br>
+   * This particular stage does not register its actors, so that no strong reference is retained.
+   * The immediate consequence it is that, through this stage, it is possible to create multiple
+   * actors with the same ID.<br>
+   * Calls to get and find methods will never returned any result.
    *
-   * @param role the actor role.
-   * @return the new actor instance.
+   * @return the stage instance.
    */
   @NotNull
-  public static Actor newActor(@NotNull final Role role) {
-    return newActor(UUID.randomUUID().toString(), role);
+  public static Stage back() {
+    return BACK_STAGE;
   }
 
   /**
-   * Creates a new actor with the specified ID.
+   * Returns the stand-in actor instance.<br>
+   * This actor methods will have no effect when invoked.
    *
-   * @param id   the actor ID.
-   * @param role the actor role.
-   * @return the new actor instance.
+   * @return the actor instance.
    */
   @NotNull
-  public static Actor newActor(@NotNull final String id, @NotNull final Role role) {
+  public static Actor standIn() {
+    return STAND_IN;
+  }
+
+  @NotNull
+  private static Actor newActor(@NotNull final String id, @NotNull final Role role) {
     try {
       final int quota = role.getQuota(id);
       final Logger logger = role.getLogger(id);
@@ -126,6 +143,11 @@ public class Stage {
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @NotNull
+  private static String randomId() {
+    return UUID.randomUUID().toString();
   }
 
   /**
@@ -151,7 +173,7 @@ public class Stage {
     synchronized (mutex) {
       final HashMap<String, Actor> actors = this.actors;
       do {
-        id = UUID.randomUUID().toString();
+        id = randomId();
       } while (actors.containsKey(id));
       // reserve ID
       actors.put(id, null);

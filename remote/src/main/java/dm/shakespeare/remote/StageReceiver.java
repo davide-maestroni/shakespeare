@@ -257,7 +257,7 @@ public class StageReceiver {
       final SenderID senderID = new SenderID(actorID, senderId);
       Actor sender = senders.get(senderID);
       if (sender == null) {
-        sender = Stage.newActor(actorID.getActorId(), new SenderRole(actorID, senderId));
+        sender = Stage.back().createActor(actorID.getActorId(), new SenderRole(actorID, senderId));
         senders.put(senderID, sender);
       }
       return sender;

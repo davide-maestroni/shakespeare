@@ -44,14 +44,14 @@ public class LoadBalancerRoleTest {
   @Test
   public void loadBalancer() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor loadBalancer = Stage.newActor(new LocalLoadBalancer());
-    loadBalancer.tell("test0", Headers.EMPTY, Stage.STAND_IN);
+    final Actor loadBalancer = Stage.back().createActor(new LocalLoadBalancer());
+    loadBalancer.tell("test0", Headers.EMPTY, Stage.standIn());
     final TestRole testRole1 = new TestRole(executorService);
-    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
-    loadBalancer.tell("test1", Headers.EMPTY, Stage.STAND_IN);
+    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole1));
+    loadBalancer.tell("test1", Headers.EMPTY, Stage.standIn());
     final TestRole testRole2 = new TestRole(executorService);
-    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole2));
-    loadBalancer.tell("test2", Headers.EMPTY, Stage.newActor(new Role() {
+    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole2));
+    loadBalancer.tell("test2", Headers.EMPTY, Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -67,11 +67,12 @@ public class LoadBalancerRoleTest {
   @Test
   public void loadBalancerReceipt() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor loadBalancer = Stage.newActor(new LocalLoadBalancer());
+    final Actor loadBalancer = Stage.back().createActor(new LocalLoadBalancer());
     final TestRole testRole1 = new TestRole(executorService);
-    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
+    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole1));
     final TestRole testRole2 = new TestRole(executorService);
-    loadBalancer.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.newActor(testRole2));
+    loadBalancer.tell("test", Headers.EMPTY.withReceiptId("test"),
+        Stage.back().createActor(testRole2));
     executorService.consumeAll();
     assertThat(testRole1.getMessages()).containsExactly("test");
     assertThat(testRole2.getMessages()).hasSize(1);
@@ -81,15 +82,15 @@ public class LoadBalancerRoleTest {
   @Test
   public void loadBalancerRemove() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor loadBalancer = Stage.newActor(new LocalLoadBalancer());
+    final Actor loadBalancer = Stage.back().createActor(new LocalLoadBalancer());
     final TestRole testRole1 = new TestRole(executorService);
-    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
-    loadBalancer.tell("test1", Headers.EMPTY, Stage.STAND_IN);
+    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole1));
+    loadBalancer.tell("test1", Headers.EMPTY, Stage.standIn());
     final TestRole testRole2 = new TestRole(executorService);
-    final Actor actor = Stage.newActor(testRole2);
+    final Actor actor = Stage.back().createActor(testRole2);
     loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, actor);
     loadBalancer.tell(ProxySignal.REMOVE_PROXIED, Headers.EMPTY, actor);
-    loadBalancer.tell("test2", Headers.EMPTY, Stage.STAND_IN);
+    loadBalancer.tell("test2", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole1.getMessages()).containsExactly("test1", "test2");
     assertThat(testRole2.getMessages()).isEmpty();
@@ -98,14 +99,14 @@ public class LoadBalancerRoleTest {
   @Test
   public void loadBalancerSender() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor loadBalancer = Stage.newActor(new LocalLoadBalancer());
-    loadBalancer.tell("test0", Headers.EMPTY, Stage.STAND_IN);
+    final Actor loadBalancer = Stage.back().createActor(new LocalLoadBalancer());
+    loadBalancer.tell("test0", Headers.EMPTY, Stage.standIn());
     final TestRole testRole1 = new TestRole(executorService);
-    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole1));
-    loadBalancer.tell("test1", Headers.EMPTY, Stage.STAND_IN);
+    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole1));
+    loadBalancer.tell("test1", Headers.EMPTY, Stage.standIn());
     final TestRole testRole2 = new TestRole(executorService);
-    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.newActor(testRole2));
-    loadBalancer.tell("test2", Headers.EMPTY, Stage.STAND_IN);
+    loadBalancer.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole2));
+    loadBalancer.tell("test2", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole1.getMessages()).containsExactly("test1", "test2");
     assertThat(testRole2.getMessages()).isEmpty();

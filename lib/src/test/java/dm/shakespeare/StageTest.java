@@ -50,6 +50,76 @@ public class StageTest {
   }
 
   @Test
+  public void backStageActor() {
+    final TestExecutorService executorService = new TestExecutorService();
+    final TestRole testRole = new TestRole(executorService);
+    final Actor actor = Stage.back().createActor(testRole);
+    assertThat(actor).isNotNull();
+    assertThat(actor.getId()).isNotNull();
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).containsExactly("test");
+  }
+
+  @Test(expected = IndexOutOfBoundsException.class)
+  public void backStageActorFailure() {
+    Stage.back().createActor(new FailureRole(new IndexOutOfBoundsException()));
+  }
+
+  @Test
+  public void backStageActorId() {
+    final String id = UUID.randomUUID().toString();
+    final TestExecutorService executorService = new TestExecutorService();
+    final TestRole testRole = new TestRole(executorService);
+    final Actor actor = Stage.back().createActor(id, testRole);
+    assertThat(actor).isNotNull();
+    assertThat(actor.getId()).isEqualTo(id);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).containsExactly("test");
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void backStageActorIdNPE() {
+    Stage.back().createActor("id", null);
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void backStageActorNPE() {
+    Stage.back().createActor(null);
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void backStageActorNullIdNPE() {
+    final TestExecutorService executorService = new TestExecutorService();
+    final TestRole testRole = new TestRole(executorService);
+    Stage.back().createActor(null, testRole);
+  }
+
+  @Test
+  public void backStageActorSameId() {
+    final String id = UUID.randomUUID().toString();
+    final TestExecutorService executorService = new TestExecutorService();
+    TestRole testRole = new TestRole(executorService);
+    Actor actor = Stage.back().createActor(id, testRole);
+    assertThat(actor).isNotNull();
+    assertThat(actor.getId()).isEqualTo(id);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).containsExactly("test");
+    testRole = new TestRole(executorService);
+    actor = Stage.back().createActor(id, testRole);
+    assertThat(actor).isNotNull();
+    assertThat(actor.getId()).isEqualTo(id);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).containsExactly("test");
+  }
+
+  @Test
   public void createActor() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
@@ -57,7 +127,7 @@ public class StageTest {
     final Actor actor = stage.createActor(testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isNotNull();
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -76,7 +146,7 @@ public class StageTest {
     final Actor actor = stage.createActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -113,7 +183,7 @@ public class StageTest {
     final Actor actor = stage.createActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
     stage.createActor(id, new TestRole(executorService));
@@ -495,76 +565,6 @@ public class StageTest {
   }
 
   @Test
-  public void newActor() {
-    final TestExecutorService executorService = new TestExecutorService();
-    final TestRole testRole = new TestRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
-    assertThat(actor).isNotNull();
-    assertThat(actor.getId()).isNotNull();
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
-    executorService.consumeAll();
-    assertThat(testRole.getMessages()).containsExactly("test");
-  }
-
-  @Test(expected = IndexOutOfBoundsException.class)
-  public void newActorFailure() {
-    Stage.newActor(new FailureRole(new IndexOutOfBoundsException()));
-  }
-
-  @Test
-  public void newActorId() {
-    final String id = UUID.randomUUID().toString();
-    final TestExecutorService executorService = new TestExecutorService();
-    final TestRole testRole = new TestRole(executorService);
-    final Actor actor = Stage.newActor(id, testRole);
-    assertThat(actor).isNotNull();
-    assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
-    executorService.consumeAll();
-    assertThat(testRole.getMessages()).containsExactly("test");
-  }
-
-  @Test(expected = NullPointerException.class)
-  @SuppressWarnings("ConstantConditions")
-  public void newActorIdNPE() {
-    Stage.newActor("id", null);
-  }
-
-  @Test(expected = NullPointerException.class)
-  @SuppressWarnings("ConstantConditions")
-  public void newActorNPE() {
-    Stage.newActor(null);
-  }
-
-  @Test(expected = NullPointerException.class)
-  @SuppressWarnings("ConstantConditions")
-  public void newActorNullIdNPE() {
-    final TestExecutorService executorService = new TestExecutorService();
-    final TestRole testRole = new TestRole(executorService);
-    Stage.newActor(null, testRole);
-  }
-
-  @Test
-  public void newActorSameId() {
-    final String id = UUID.randomUUID().toString();
-    final TestExecutorService executorService = new TestExecutorService();
-    TestRole testRole = new TestRole(executorService);
-    Actor actor = Stage.newActor(id, testRole);
-    assertThat(actor).isNotNull();
-    assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
-    executorService.consumeAll();
-    assertThat(testRole.getMessages()).containsExactly("test");
-    testRole = new TestRole(executorService);
-    actor = Stage.newActor(id, testRole);
-    assertThat(actor).isNotNull();
-    assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
-    executorService.consumeAll();
-    assertThat(testRole.getMessages()).containsExactly("test");
-  }
-
-  @Test
   public void observerCreate() {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
@@ -634,7 +634,7 @@ public class StageTest {
     final Actor actor = stage.createActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }

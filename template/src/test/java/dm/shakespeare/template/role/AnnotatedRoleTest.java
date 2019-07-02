@@ -55,8 +55,8 @@ public class AnnotatedRoleTest {
   public void onAny() {
     final TestExecutorService executorService = new TestExecutorService();
     final OnAnyRole testRole = new OnAnyRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -70,7 +70,7 @@ public class AnnotatedRoleTest {
       public void add() {
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -82,7 +82,7 @@ public class AnnotatedRoleTest {
       public void add(final Object object, final int size) {
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test
@@ -103,8 +103,8 @@ public class AnnotatedRoleTest {
         };
       }
     };
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell("test", Headers.EMPTY, Stage.newActor(observerRole));
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell("test", Headers.EMPTY, Stage.back().createActor(observerRole));
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(observerRole.getMessages()).containsExactly(actor.getId());
@@ -114,11 +114,11 @@ public class AnnotatedRoleTest {
   public void onEnvelop() {
     final TestExecutorService executorService = new TestExecutorService();
     final OnEnvelopRole testRole = new OnEnvelopRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
-    actor.tell("test", Headers.EMPTY.withThreadId("test"), Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY.withThreadId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -133,7 +133,7 @@ public class AnnotatedRoleTest {
         getMessages().add(object);
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -145,7 +145,7 @@ public class AnnotatedRoleTest {
       public void add() {
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -157,7 +157,7 @@ public class AnnotatedRoleTest {
       public void add(final Object object, final int size) {
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -170,7 +170,7 @@ public class AnnotatedRoleTest {
         getMessages().add(object);
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -186,7 +186,7 @@ public class AnnotatedRoleTest {
       public void filter() {
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test
@@ -207,8 +207,8 @@ public class AnnotatedRoleTest {
         };
       }
     };
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell("test", Headers.EMPTY.withThreadId("TEST"), Stage.newActor(observerRole));
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell("test", Headers.EMPTY.withThreadId("TEST"), Stage.back().createActor(observerRole));
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(observerRole.getMessages()).containsExactly("TEST");
@@ -218,11 +218,11 @@ public class AnnotatedRoleTest {
   public void onEnvelopTester() {
     final TestExecutorService executorService = new TestExecutorService();
     final OnEnvelopTesterRole testRole = new OnEnvelopTesterRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
-    actor.tell("test", Headers.EMPTY.withThreadId("test"), Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY.withThreadId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -231,11 +231,11 @@ public class AnnotatedRoleTest {
   public void onMatch() {
     final TestExecutorService executorService = new TestExecutorService();
     final OnMatchRole testRole = new OnMatchRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
-    actor.tell("test", Headers.EMPTY.withThreadId("test"), Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY.withThreadId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -250,7 +250,7 @@ public class AnnotatedRoleTest {
         getMessages().add(object);
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -266,7 +266,7 @@ public class AnnotatedRoleTest {
       public void filter() {
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -278,7 +278,7 @@ public class AnnotatedRoleTest {
       public void add() {
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -290,7 +290,7 @@ public class AnnotatedRoleTest {
       public void add(final Object object, final int size) {
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -303,18 +303,18 @@ public class AnnotatedRoleTest {
         getMessages().add(object);
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test
   public void onMatchMatcher() {
     final TestExecutorService executorService = new TestExecutorService();
     final OnMatchMatcherRole testRole = new OnMatchMatcherRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell("TEST", Headers.EMPTY, Stage.STAND_IN);
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell("TEST", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -337,8 +337,8 @@ public class AnnotatedRoleTest {
         };
       }
     };
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell("test", Headers.EMPTY, Stage.newActor(observerRole));
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell("test", Headers.EMPTY, Stage.back().createActor(observerRole));
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(observerRole.getMessages()).containsExactly(actor.getId());
@@ -348,11 +348,11 @@ public class AnnotatedRoleTest {
   public void onMessage() {
     final TestExecutorService executorService = new TestExecutorService();
     final OnMessageRole testRole = new OnMessageRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell("TEST", Headers.EMPTY, Stage.STAND_IN);
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell("TEST", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -361,11 +361,11 @@ public class AnnotatedRoleTest {
   public void onMessageClass() {
     final TestExecutorService executorService = new TestExecutorService();
     final OnMessageClassRole testRole = new OnMessageClassRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell(1, Headers.EMPTY, Stage.STAND_IN);
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell(1, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -374,9 +374,9 @@ public class AnnotatedRoleTest {
   public void onMessageClasses() {
     final TestExecutorService executorService = new TestExecutorService();
     final OnMessageClassesRole testRole = new OnMessageClassesRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell(1, Headers.EMPTY, Stage.STAND_IN);
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell(1, Headers.EMPTY, Stage.standIn());
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly(1, "test");
   }
@@ -392,7 +392,7 @@ public class AnnotatedRoleTest {
         getMessages().add(object);
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -404,7 +404,7 @@ public class AnnotatedRoleTest {
       public void add() {
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -416,7 +416,7 @@ public class AnnotatedRoleTest {
       public void add(final Object object, final int size) {
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -429,7 +429,7 @@ public class AnnotatedRoleTest {
         getMessages().add(object);
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -445,7 +445,7 @@ public class AnnotatedRoleTest {
       public void filter() {
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test
@@ -466,8 +466,9 @@ public class AnnotatedRoleTest {
         };
       }
     };
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell("test", Headers.EMPTY.withThreadId("THREAD"), Stage.newActor(observerRole));
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell("test", Headers.EMPTY.withThreadId("THREAD"),
+        Stage.back().createActor(observerRole));
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(observerRole.getMessages()).containsExactly("THREAD");
@@ -477,11 +478,11 @@ public class AnnotatedRoleTest {
   public void onMessageTester() {
     final TestExecutorService executorService = new TestExecutorService();
     final OnMessageTesterRole testRole = new OnMessageTesterRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell("TEST", Headers.EMPTY, Stage.STAND_IN);
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell("TEST", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -490,11 +491,11 @@ public class AnnotatedRoleTest {
   public void onNoMatch() {
     final TestExecutorService executorService = new TestExecutorService();
     final OnNoMatchRole testRole = new OnNoMatchRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell(1, Headers.EMPTY, Stage.STAND_IN);
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell(1, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -508,7 +509,7 @@ public class AnnotatedRoleTest {
       public void add() {
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test(expected = IllegalArgumentException.class)
@@ -520,7 +521,7 @@ public class AnnotatedRoleTest {
       public void add(final Object object, final int size) {
       }
     };
-    Stage.newActor(testRole);
+    Stage.back().createActor(testRole);
   }
 
   @Test
@@ -541,8 +542,8 @@ public class AnnotatedRoleTest {
         };
       }
     };
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell("test", Headers.EMPTY, Stage.newActor(observerRole));
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell("test", Headers.EMPTY, Stage.back().createActor(observerRole));
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(observerRole.getMessages()).containsExactly(actor.getId());
@@ -552,8 +553,8 @@ public class AnnotatedRoleTest {
   public void onParams() {
     final TestExecutorService executorService = new TestExecutorService();
     final OnParamsRole testRole = new OnParamsRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell(Arrays.asList("test", 3), Headers.EMPTY, Stage.STAND_IN);
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell(Arrays.asList("test", 3), Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test", 3);
   }
@@ -562,8 +563,8 @@ public class AnnotatedRoleTest {
   public void onParamsEmpty() {
     final TestExecutorService executorService = new TestExecutorService();
     final OnParamsRole testRole = new OnParamsRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell(Collections.emptyList(), Headers.EMPTY, Stage.STAND_IN);
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell(Collections.emptyList(), Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("TEST");
   }
@@ -586,11 +587,11 @@ public class AnnotatedRoleTest {
         };
       }
     };
-    final Actor actor = Stage.newActor(testRole);
+    final Actor actor = Stage.back().createActor(testRole);
     actor.tell(Arrays.asList("test", 3), Headers.EMPTY.withThreadId("test3"),
-        Stage.newActor(observerRole));
+        Stage.back().createActor(observerRole));
     actor.tell(Collections.emptyList(), Headers.EMPTY.withThreadId("test3"),
-        Stage.newActor(observerRole));
+        Stage.back().createActor(observerRole));
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(observerRole.getMessages()).containsExactly("test3", actor.getId());
@@ -600,8 +601,8 @@ public class AnnotatedRoleTest {
   public void onStart() {
     final TestExecutorService executorService = new TestExecutorService();
     final OnStartRole testRole = new OnStartRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell(1, Headers.EMPTY, Stage.STAND_IN);
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell(1, Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactlyInAnyOrder("test", actor.getId());
   }
@@ -610,8 +611,8 @@ public class AnnotatedRoleTest {
   public void onStop() {
     final TestExecutorService executorService = new TestExecutorService();
     final OnStopRole testRole = new OnStopRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
-    actor.tell(1, Headers.EMPTY, Stage.STAND_IN);
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell(1, Headers.EMPTY, Stage.standIn());
     actor.dismissLazy();
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactlyInAnyOrder("test", actor.getId());

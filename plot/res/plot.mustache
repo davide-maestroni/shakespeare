@@ -400,7 +400,7 @@ public class Plot {
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     public Actor call(final Role role) {
-      return Stage.newActor(role);
+      return Stage.back().createActor(role);
     }
 
     private Object readResolve() throws ObjectStreamException {

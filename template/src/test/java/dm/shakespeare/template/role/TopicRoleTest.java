@@ -44,10 +44,10 @@ public class TopicRoleTest {
   @Test
   public void subscription() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new LocalTopicRole());
+    final Actor actor = Stage.back().createActor(new LocalTopicRole());
     final TestRole testRole = new TestRole(executorService);
-    actor.tell(new Subscribe(), Headers.EMPTY, Stage.newActor(testRole));
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell(new Subscribe(), Headers.EMPTY, Stage.back().createActor(testRole));
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -55,7 +55,7 @@ public class TopicRoleTest {
   @Test
   public void subscriptionFilter() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new LocalTopicRole());
+    final Actor actor = Stage.back().createActor(new LocalTopicRole());
     final TestRole testRole = new TestRole(executorService);
     actor.tell(new Subscribe() {
 
@@ -63,9 +63,9 @@ public class TopicRoleTest {
       public boolean accept(final Object message, @NotNull final Envelop envelop) {
         return message instanceof String;
       }
-    }, Headers.EMPTY, Stage.newActor(testRole));
-    actor.tell(1, Headers.EMPTY, Stage.STAND_IN);
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    }, Headers.EMPTY, Stage.back().createActor(testRole));
+    actor.tell(1, Headers.EMPTY, Stage.standIn());
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -73,12 +73,12 @@ public class TopicRoleTest {
   @Test
   public void unsubscription() {
     final TestExecutorService executorService = new TestExecutorService();
-    final Actor actor = Stage.newActor(new LocalTopicRole());
+    final Actor actor = Stage.back().createActor(new LocalTopicRole());
     final TestRole testRole = new TestRole(executorService);
-    final Actor testActor = Stage.newActor(testRole);
+    final Actor testActor = Stage.back().createActor(testRole);
     actor.tell(new Subscribe(), Headers.EMPTY, testActor);
     actor.tell(new Unsubscribe(), Headers.EMPTY, testActor);
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
   }

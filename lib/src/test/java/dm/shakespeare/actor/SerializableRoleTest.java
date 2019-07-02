@@ -50,19 +50,20 @@ public class SerializableRoleTest {
   @Test
   public void from() throws InterruptedException {
     final CountDownLatch latch = new CountDownLatch(1);
-    final Actor actor = Stage.newActor(SerializableRole.from(new Mapper<String, Behavior>() {
+    final Actor actor =
+        Stage.back().createActor(SerializableRole.from(new Mapper<String, Behavior>() {
 
-      public Behavior apply(final String id) {
-        return new AbstractBehavior() {
+          public Behavior apply(final String id) {
+            return new AbstractBehavior() {
 
-          public void onMessage(final Object message, @NotNull final Envelop envelop,
-              @NotNull final Agent agent) {
-            latch.countDown();
+              public void onMessage(final Object message, @NotNull final Envelop envelop,
+                  @NotNull final Agent agent) {
+                latch.countDown();
+              }
+            };
           }
-        };
-      }
-    }));
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+        }));
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
   }
 
@@ -82,10 +83,10 @@ public class SerializableRoleTest {
     final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
     final ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
     final SerializableRole deserialized = (SerializableRole) objectInputStream.readObject();
-    final Actor actor = Stage.newActor(deserialized);
+    final Actor actor = Stage.back().createActor(deserialized);
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
-    final Actor observer = Stage.newActor(observerRole);
+    final Actor observer = Stage.back().createActor(observerRole);
     actor.tell(3, Headers.EMPTY, observer);
     Thread.sleep(1000);
     executorService.consumeAll();
@@ -96,7 +97,7 @@ public class SerializableRoleTest {
   @Test
   public void serializationBehavior() throws IOException, ClassNotFoundException {
     final SerializableBehaviorRole role = new SerializableBehaviorRole();
-    Stage.newActor(role).tell(3, Headers.EMPTY, Stage.STAND_IN);
+    Stage.back().createActor(role).tell(3, Headers.EMPTY, Stage.standIn());
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     final ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
     objectOutputStream.writeObject(role);
@@ -104,10 +105,10 @@ public class SerializableRoleTest {
     final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
     final ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
     final SerializableRole deserialized = (SerializableRole) objectInputStream.readObject();
-    final Actor actor = Stage.newActor(deserialized);
+    final Actor actor = Stage.back().createActor(deserialized);
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
-    final Actor observer = Stage.newActor(observerRole);
+    final Actor observer = Stage.back().createActor(observerRole);
     actor.tell(3, Headers.EMPTY, observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).containsExactly("3");
@@ -124,10 +125,10 @@ public class SerializableRoleTest {
     final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
     final ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
     final SerializableRole deserialized = (SerializableRole) objectInputStream.readObject();
-    final Actor actor = Stage.newActor(deserialized);
+    final Actor actor = Stage.back().createActor(deserialized);
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
-    final Actor observer = Stage.newActor(observerRole);
+    final Actor observer = Stage.back().createActor(observerRole);
     actor.tell(3, Headers.EMPTY, observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).containsExactly("3");
@@ -137,8 +138,8 @@ public class SerializableRoleTest {
   @Test
   public void serializationDismissed() throws IOException, ClassNotFoundException {
     final SerializableDismissedRole role = new SerializableDismissedRole();
-    final Actor roleActor = Stage.newActor(role);
-    roleActor.tell(null, Headers.EMPTY, Stage.STAND_IN);
+    final Actor roleActor = Stage.back().createActor(role);
+    roleActor.tell(null, Headers.EMPTY, Stage.standIn());
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     final ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
     objectOutputStream.writeObject(role);
@@ -146,10 +147,10 @@ public class SerializableRoleTest {
     final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
     final ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
     final SerializableRole deserialized = (SerializableRole) objectInputStream.readObject();
-    final Actor actor = Stage.newActor(deserialized);
+    final Actor actor = Stage.back().createActor(deserialized);
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
-    final Actor observer = Stage.newActor(observerRole);
+    final Actor observer = Stage.back().createActor(observerRole);
     actor.tell(3, Headers.EMPTY.withReceiptId("test"), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(1);
@@ -160,7 +161,7 @@ public class SerializableRoleTest {
   @Test
   public void serializationStarted() throws IOException, ClassNotFoundException {
     final SerializableStartedRole role = new SerializableStartedRole();
-    Stage.newActor(role).tell(3, Headers.EMPTY, Stage.STAND_IN);
+    Stage.back().createActor(role).tell(3, Headers.EMPTY, Stage.standIn());
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     final ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
     objectOutputStream.writeObject(role);
@@ -168,10 +169,10 @@ public class SerializableRoleTest {
     final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
     final ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
     final SerializableRole deserialized = (SerializableRole) objectInputStream.readObject();
-    final Actor actor = Stage.newActor(deserialized);
+    final Actor actor = Stage.back().createActor(deserialized);
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
-    final Actor observer = Stage.newActor(observerRole);
+    final Actor observer = Stage.back().createActor(observerRole);
     actor.tell(3, Headers.EMPTY, observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).containsExactly(1);
@@ -181,7 +182,7 @@ public class SerializableRoleTest {
   @Test
   public void serializationStopped() throws IOException, ClassNotFoundException {
     final SerializableStoppedRole role = new SerializableStoppedRole();
-    Stage.newActor(role).tell(null, Headers.EMPTY, Stage.STAND_IN);
+    Stage.back().createActor(role).tell(null, Headers.EMPTY, Stage.standIn());
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     final ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
     objectOutputStream.writeObject(role);
@@ -189,10 +190,10 @@ public class SerializableRoleTest {
     final ByteArrayInputStream inputStream = new ByteArrayInputStream(outputStream.toByteArray());
     final ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
     final SerializableRole deserialized = (SerializableRole) objectInputStream.readObject();
-    final Actor actor = Stage.newActor(deserialized);
+    final Actor actor = Stage.back().createActor(deserialized);
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
-    final Actor observer = Stage.newActor(observerRole);
+    final Actor observer = Stage.back().createActor(observerRole);
     actor.tell(3, Headers.EMPTY, observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).containsExactly(1);
@@ -202,7 +203,7 @@ public class SerializableRoleTest {
   @Test
   public void setBehaviorNPE() {
     final AtomicReference<Exception> exception = new AtomicReference<Exception>();
-    final Actor actor = Stage.newActor(new SerializableRole() {
+    final Actor actor = Stage.back().createActor(new SerializableRole() {
 
       @NotNull
       @Override
@@ -227,7 +228,7 @@ public class SerializableRoleTest {
         };
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     assertThat(exception.get()).isExactlyInstanceOf(NullPointerException.class);
   }
 

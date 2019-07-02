@@ -83,7 +83,7 @@ class ActorHandler implements InvocationHandler {
     this.actor = ConstantConditions.notNull("actor", actor);
     this.type = ConstantConditions.notNull("type", type);
     this.script = ConstantConditions.notNull("script", script);
-    invocationActor = Stage.newActor(new InvocationRole());
+    invocationActor = Stage.back().createActor(new InvocationRole());
   }
 
   @NotNull
@@ -217,7 +217,7 @@ class ActorHandler implements InvocationHandler {
       actor.tell(invocation, headers.withReceiptId(invocationId.getId()), invocationActor);
       return latch.awaitResult(timeoutMillis, TimeUnit.MILLISECONDS);
     }
-    final Actor sender = (actorFrom != null) ? actorFrom : Stage.STAND_IN;
+    final Actor sender = (actorFrom != null) ? actorFrom : Stage.standIn();
     actor.tell(invocation, headers, sender);
     return DEFAULT_RETURN_VALUES.get(method.getReturnType());
   }

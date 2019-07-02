@@ -74,7 +74,7 @@ public abstract class AbstractProxyBehavior extends SerializableAbstractBehavior
       final Actor self = agent.getSelf();
       if (!senderToProxyMap.containsKey(sender)) {
         proxyToSenderMap.keySet().retainAll(senderToProxyMap.values());
-        final Actor proxy = Stage.newActor(sender.getId(), new SenderRole(self));
+        final Actor proxy = Stage.back().createActor(sender.getId(), new SenderRole(self));
         senderToProxyMap.put(sender, proxy);
         proxyToSenderMap.put(proxy, sender);
       }

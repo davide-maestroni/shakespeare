@@ -34,15 +34,15 @@ class StandInActor implements Actor {
   }
 
   public boolean dismiss() {
-    return true;
+    return false;
   }
 
   public boolean dismissLazy() {
-    return true;
+    return false;
   }
 
   public boolean dismissNow() {
-    return true;
+    return false;
   }
 
   @NotNull

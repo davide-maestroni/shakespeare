@@ -36,7 +36,7 @@ public class Spectator {
 
   void cancel(final boolean thenDismiss) {
     actor.tell(thenDismiss ? SpectatorSignal.CANCEL_AND_DISMISS : SpectatorSignal.CANCEL,
-        Headers.EMPTY, Stage.STAND_IN);
+        Headers.EMPTY, Stage.standIn());
   }
 
   void dismiss() {
@@ -44,11 +44,11 @@ public class Spectator {
   }
 
   void pause() {
-    actor.tell(SpectatorSignal.PAUSE, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell(SpectatorSignal.PAUSE, Headers.EMPTY, Stage.standIn());
   }
 
   void resume() {
-    actor.tell(SpectatorSignal.RESUME, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell(SpectatorSignal.RESUME, Headers.EMPTY, Stage.standIn());
   }
 
   enum SpectatorSignal {

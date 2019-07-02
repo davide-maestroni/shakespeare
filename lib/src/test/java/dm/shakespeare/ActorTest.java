@@ -378,10 +378,10 @@ public class ActorTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole role = new TestRole(executorService);
     final Actor actor = stage.createActor(role);
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(role.getMessages()).containsExactly("test");
-    assertThat(role.getSenders()).containsExactly(Stage.STAND_IN);
+    assertThat(role.getSenders()).containsExactly(Stage.standIn());
   }
 
   @Test
@@ -390,10 +390,10 @@ public class ActorTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole role = new TestRole(executorService);
     final Actor actor = stage.createActor(role);
-    actor.tellAll(Arrays.asList("test1", "test2"), Headers.EMPTY, Stage.STAND_IN);
+    actor.tellAll(Arrays.asList("test1", "test2"), Headers.EMPTY, Stage.standIn());
     executorService.consumeAll();
     assertThat(role.getMessages()).containsExactly("test1", "test2");
-    assertThat(role.getSenders()).containsExactly(Stage.STAND_IN, Stage.STAND_IN);
+    assertThat(role.getSenders()).containsExactly(Stage.standIn(), Stage.standIn());
   }
 
   @Test
@@ -437,7 +437,7 @@ public class ActorTest {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
     final Actor actor = stage.createActor(new TestRole(executorService));
-    actor.tellAll(Collections.emptyList(), null, Stage.STAND_IN);
+    actor.tellAll(Collections.emptyList(), null, Stage.standIn());
   }
 
   @Test(expected = NullPointerException.class)
@@ -446,7 +446,7 @@ public class ActorTest {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
     final Actor actor = stage.createActor(new TestRole(executorService));
-    actor.tellAll(null, Headers.EMPTY, Stage.STAND_IN);
+    actor.tellAll(null, Headers.EMPTY, Stage.standIn());
   }
 
   @Test
@@ -629,7 +629,7 @@ public class ActorTest {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
     final Actor actor = stage.createActor(new TestRole(executorService));
-    actor.tell(null, null, Stage.STAND_IN);
+    actor.tell(null, null, Stage.standIn());
   }
 
   @Test

@@ -36,57 +36,57 @@ import dm.shakespeare.test.concurrent.TestExecutorService;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * {@link Stage#STAND_IN} unit tests.
+ * {@link Stage#standIn()} unit tests.
  */
 public class StandInActorTest {
 
   @Test
   public void addObserver() {
-    final Actor actor = Stage.STAND_IN;
+    final Actor actor = Stage.standIn();
     assertThat(actor.addObserver(actor)).isTrue();
   }
 
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void addObserverNPE() {
-    final Actor actor = Stage.STAND_IN;
+    final Actor actor = Stage.standIn();
     actor.addObserver(null);
   }
 
   @Test
   public void dismiss() {
-    final Actor actor = Stage.STAND_IN;
+    final Actor actor = Stage.standIn();
     assertThat(actor.dismiss()).isTrue();
   }
 
   @Test
   public void dismissLazy() {
-    final Actor actor = Stage.STAND_IN;
+    final Actor actor = Stage.standIn();
     assertThat(actor.dismissLazy()).isTrue();
   }
 
   @Test
   public void dismissNow() {
-    final Actor actor = Stage.STAND_IN;
+    final Actor actor = Stage.standIn();
     assertThat(actor.dismissNow()).isTrue();
   }
 
   @Test
   public void getId() {
-    final Actor actor = Stage.STAND_IN;
+    final Actor actor = Stage.standIn();
     assertThat(actor.getId()).isNotNull();
   }
 
   @Test
   public void removeObserver() {
-    final Actor actor = Stage.STAND_IN;
+    final Actor actor = Stage.standIn();
     assertThat(actor.removeObserver(actor)).isTrue();
   }
 
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void removeObserverNPE() {
-    final Actor actor = Stage.STAND_IN;
+    final Actor actor = Stage.standIn();
     actor.removeObserver(null);
   }
 
@@ -94,36 +94,36 @@ public class StandInActorTest {
   public void tellAllDelivery() {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
-    Stage.STAND_IN.tellAll(Arrays.asList("test1", "test2"), new Headers().withReceiptId("test"),
-        actor);
+    final Actor actor = Stage.back().createActor(testRole);
+    Stage.standIn()
+        .tellAll(Arrays.asList("test1", "test2"), new Headers().withReceiptId("test"), actor);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).hasSize(2);
     assertThat(testRole.getMessages().get(0)).isInstanceOf(Delivery.class);
     assertThat(testRole.getMessages().get(1)).isInstanceOf(Delivery.class);
     assertThat(testRole.getSenders()).hasSize(2);
-    assertThat(testRole.getSenders().get(0)).isSameAs(Stage.STAND_IN);
-    assertThat(testRole.getSenders().get(0)).isSameAs(Stage.STAND_IN);
+    assertThat(testRole.getSenders().get(0)).isSameAs(Stage.standIn());
+    assertThat(testRole.getSenders().get(0)).isSameAs(Stage.standIn());
   }
 
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void tellAllHeadersNPE() {
-    final Actor actor = Stage.STAND_IN;
-    actor.tellAll(Collections.emptyList(), null, Stage.STAND_IN);
+    final Actor actor = Stage.standIn();
+    actor.tellAll(Collections.emptyList(), null, Stage.standIn());
   }
 
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void tellAllNPE() {
-    final Actor actor = Stage.STAND_IN;
-    actor.tellAll(null, Headers.EMPTY, Stage.STAND_IN);
+    final Actor actor = Stage.standIn();
+    actor.tellAll(null, Headers.EMPTY, Stage.standIn());
   }
 
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void tellAllSenderNPE() {
-    final Actor actor = Stage.STAND_IN;
+    final Actor actor = Stage.standIn();
     actor.tellAll(Collections.emptyList(), Headers.EMPTY, null);
   }
 
@@ -131,26 +131,26 @@ public class StandInActorTest {
   public void tellDelivery() {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
-    final Actor actor = Stage.newActor(testRole);
-    Stage.STAND_IN.tell(null, new Headers().withReceiptId("test"), actor);
+    final Actor actor = Stage.back().createActor(testRole);
+    Stage.standIn().tell(null, new Headers().withReceiptId("test"), actor);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).hasSize(1);
     assertThat(testRole.getMessages().get(0)).isInstanceOf(Delivery.class);
     assertThat(testRole.getSenders()).hasSize(1);
-    assertThat(testRole.getSenders().get(0)).isSameAs(Stage.STAND_IN);
+    assertThat(testRole.getSenders().get(0)).isSameAs(Stage.standIn());
   }
 
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void tellHeadersNPE() {
-    final Actor actor = Stage.STAND_IN;
-    actor.tell(null, null, Stage.STAND_IN);
+    final Actor actor = Stage.standIn();
+    actor.tell(null, null, Stage.standIn());
   }
 
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void tellSenderNPE() {
-    final Actor actor = Stage.STAND_IN;
+    final Actor actor = Stage.standIn();
     actor.tell(null, Headers.EMPTY, null);
   }
 

@@ -51,7 +51,7 @@ public class AgentTest {
   public void dismissSelf() {
     final AtomicBoolean startCalled = new AtomicBoolean();
     final AtomicBoolean stopCalled = new AtomicBoolean();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -80,7 +80,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     assertThat(startCalled.get()).isTrue();
     assertThat(stopCalled.get()).isTrue();
   }
@@ -89,7 +89,7 @@ public class AgentTest {
   public void envelop() {
     final AtomicBoolean called = new AtomicBoolean();
     final AtomicLong sent = new AtomicLong();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -115,7 +115,7 @@ public class AgentTest {
       }
     });
     sent.set(System.currentTimeMillis());
-    actor.tell("test", new Headers().withThreadId("test"), Stage.STAND_IN);
+    actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
     assertThat(called.get()).isTrue();
   }
 
@@ -123,7 +123,7 @@ public class AgentTest {
   public void envelopOffset() {
     final AtomicBoolean called = new AtomicBoolean();
     final long sent = System.currentTimeMillis();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -146,14 +146,14 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", new Headers().asSentAt(sent), Stage.STAND_IN);
+    actor.tell("test", new Headers().asSentAt(sent), Stage.standIn());
     assertThat(called.get()).isTrue();
   }
 
   @Test
   public void envelopPreventReceipt() {
     final AtomicBoolean called = new AtomicBoolean();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -176,7 +176,7 @@ public class AgentTest {
       }
     });
     final AtomicReference<Object> msg = new AtomicReference<Object>();
-    final Actor observer = Stage.newActor(new Role() {
+    final Actor observer = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -206,7 +206,7 @@ public class AgentTest {
   @Test
   public void executorService() {
     final AtomicBoolean called = new AtomicBoolean();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -231,14 +231,14 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     assertThat(called.get()).isTrue();
   }
 
   @Test
   public void executorServiceInvokeAll() {
     final AtomicReference<Exception> exception = new AtomicReference<Exception>();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -268,14 +268,14 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     assertThat(exception.get()).isExactlyInstanceOf(UnsupportedOperationException.class);
   }
 
   @Test
   public void executorServiceInvokeAllTimeout() {
     final AtomicReference<Exception> exception = new AtomicReference<Exception>();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -305,14 +305,14 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     assertThat(exception.get()).isExactlyInstanceOf(UnsupportedOperationException.class);
   }
 
   @Test
   public void executorServiceInvokeAny() {
     final AtomicReference<Exception> exception = new AtomicReference<Exception>();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -342,14 +342,14 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     assertThat(exception.get()).isExactlyInstanceOf(UnsupportedOperationException.class);
   }
 
   @Test
   public void executorServiceInvokeAnyTimeout() {
     final AtomicReference<Exception> exception = new AtomicReference<Exception>();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -379,14 +379,14 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     assertThat(exception.get()).isExactlyInstanceOf(UnsupportedOperationException.class);
   }
 
   @Test
   public void executorServiceShutdown() {
     final AtomicBoolean called = new AtomicBoolean();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -411,14 +411,14 @@ public class AgentTest {
         return ExecutorServices.newTrampolineExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     assertThat(called.get()).isTrue();
   }
 
   @Test
   public void executorServiceShutdownNow() {
     final AtomicBoolean called = new AtomicBoolean();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -443,14 +443,14 @@ public class AgentTest {
         return ExecutorServices.newTrampolineExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     assertThat(called.get()).isTrue();
   }
 
   @Test
   public void executorServiceSubmitCallable() {
     final AtomicBoolean called = new AtomicBoolean();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -476,14 +476,14 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     assertThat(called.get()).isTrue();
   }
 
   @Test
   public void executorServiceSubmitRunnable() {
     final AtomicBoolean called = new AtomicBoolean();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -508,14 +508,14 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     assertThat(called.get()).isTrue();
   }
 
   @Test
   public void executorServiceSubmitRunnableResult() {
     final AtomicBoolean called = new AtomicBoolean();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -540,14 +540,14 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     assertThat(called.get()).isTrue();
   }
 
   @Test
   public void getSelf() {
     final AtomicReference<Actor> actor = new AtomicReference<Actor>();
-    actor.set(Stage.newActor(new Role() {
+    actor.set(Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -567,12 +567,12 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     }));
-    actor.get().tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.get().tell("test", Headers.EMPTY, Stage.standIn());
   }
 
   @Test
   public void messageFailure() {
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -593,7 +593,7 @@ public class AgentTest {
       }
     });
     final AtomicReference<Object> msg = new AtomicReference<Object>();
-    final Actor observer = Stage.newActor(new Role() {
+    final Actor observer = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -627,7 +627,7 @@ public class AgentTest {
   public void restartBehavior() {
     final AtomicBoolean startCalled = new AtomicBoolean();
     final AtomicBoolean stopCalled = new AtomicBoolean();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -656,7 +656,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     assertThat(startCalled.get()).isTrue();
     assertThat(stopCalled.get()).isTrue();
   }
@@ -664,7 +664,7 @@ public class AgentTest {
   @Test
   public void scheduledExecutorService() throws InterruptedException {
     final AtomicBoolean called = new AtomicBoolean();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -689,7 +689,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     Thread.sleep(1000);
     assertThat(called.get()).isTrue();
   }
@@ -697,7 +697,7 @@ public class AgentTest {
   @Test
   public void scheduledExecutorServiceCancel() throws InterruptedException {
     final AtomicBoolean called = new AtomicBoolean();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -722,7 +722,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     actor.dismiss();
     Thread.sleep(2000);
     assertThat(called.get()).isFalse();
@@ -731,7 +731,7 @@ public class AgentTest {
   @Test
   public void scheduledExecutorServiceScheduleAtFixedRate() throws InterruptedException {
     final AtomicBoolean called = new AtomicBoolean();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -756,7 +756,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     Thread.sleep(1000);
     actor.dismiss();
     assertThat(called.get()).isTrue();
@@ -765,7 +765,7 @@ public class AgentTest {
   @Test
   public void scheduledExecutorServiceScheduleCallable() throws InterruptedException {
     final AtomicBoolean called = new AtomicBoolean();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -791,7 +791,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     Thread.sleep(1000);
     assertThat(called.get()).isTrue();
   }
@@ -799,7 +799,7 @@ public class AgentTest {
   @Test
   public void scheduledExecutorServiceScheduleWithFixedDelay() throws InterruptedException {
     final AtomicBoolean called = new AtomicBoolean();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -824,7 +824,7 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     Thread.sleep(1000);
     actor.dismiss();
     assertThat(called.get()).isTrue();
@@ -833,7 +833,7 @@ public class AgentTest {
   @Test
   public void setBehavior() {
     final AtomicBoolean called = new AtomicBoolean();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -864,14 +864,14 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     assertThat(called.get()).isTrue();
   }
 
   @Test
   public void setBehaviorNPE() {
     final AtomicReference<Exception> exception = new AtomicReference<Exception>();
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -897,13 +897,13 @@ public class AgentTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.standIn());
     assertThat(exception.get()).isExactlyInstanceOf(NullPointerException.class);
   }
 
   @Test
   public void startFailure() {
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -928,7 +928,7 @@ public class AgentTest {
       }
     });
     final AtomicReference<Object> msg = new AtomicReference<Object>();
-    final Actor observer = Stage.newActor(new Role() {
+    final Actor observer = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -956,7 +956,7 @@ public class AgentTest {
 
   @Test
   public void stopFailure() {
-    final Actor actor = Stage.newActor(new Role() {
+    final Actor actor = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -982,7 +982,7 @@ public class AgentTest {
       }
     });
     final AtomicReference<Object> msg = new AtomicReference<Object>();
-    final Actor observer = Stage.newActor(new Role() {
+    final Actor observer = Stage.back().createActor(new Role() {
 
       @NotNull
       @Override

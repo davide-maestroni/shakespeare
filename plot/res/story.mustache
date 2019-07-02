@@ -498,7 +498,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public Spectator playEachObserved(@NotNull final StorySpectatorObserver<? super T> storyObserver) {
-    final Actor actor = Stage.newActor(new StoryObserverRole<T>(getActor(), storyObserver));
+    final Actor actor = Stage.back().createActor(new StoryObserverRole<T>(getActor(), storyObserver));
     final String actorId = actor.getId();
     getActor().tell(StorySignal.NEXT, new Headers().withReceiptId(actorId).withThreadId(actorId),
         actor);
@@ -864,7 +864,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         @NotNull final Memory memory) {
       this.queue = ConstantConditions.notNull("queue", queue);
       this.memory = ConstantConditions.notNull("memory", memory);
-      actor = Stage.newActor(new PlotRole(SettingInfo.get()) {
+      actor = Stage.back().createActor(new PlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override
@@ -880,7 +880,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           exception = new NarrationStoppedException();
         }
         if (queue.isEmpty()) {
-          actor.tell(NarratorSignal.AVAILABLE, Headers.EMPTY, Stage.STAND_IN);
+          actor.tell(NarratorSignal.AVAILABLE, Headers.EMPTY, Stage.standIn());
         }
       }
     }
@@ -921,7 +921,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       final boolean wasEmpty = queue.isEmpty();
       if (queue.offer(resolution, timeout, unit)) {
         if (wasEmpty) {
-          actor.tell(NarratorSignal.AVAILABLE, Headers.EMPTY, Stage.STAND_IN);
+          actor.tell(NarratorSignal.AVAILABLE, Headers.EMPTY, Stage.standIn());
         }
         return true;
       }
@@ -1191,7 +1191,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       inputs = new Object[numInputs];
       this.memory = ConstantConditions.notNull("memory", memory);
       final SettingInfo settingInfo = (this.settingInfo = SettingInfo.get());
-      final String actorId = (actor = Stage.newActor(new PlotRole(settingInfo) {
+      final String actorId = (actor = Stage.back().createActor(new PlotRole(settingInfo) {
 
         @NotNull
         @Override
@@ -1861,7 +1861,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       this.effectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
       this.memory = ConstantConditions.notNull("memory", memory);
       final SettingInfo settingInfo = (this.settingInfo = SettingInfo.get());
-      final String actorId = (actor = Stage.newActor(new PlotRole(settingInfo) {
+      final String actorId = (actor = Stage.back().createActor(new PlotRole(settingInfo) {
 
         @NotNull
         @Override
@@ -2131,7 +2131,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       this.effectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
       this.memory = ConstantConditions.notNull("memory", memory);
       final SettingInfo settingInfo = (this.settingInfo = SettingInfo.get());
-      final String actorId = (actor = Stage.newActor(new PlotRole(settingInfo) {
+      final String actorId = (actor = Stage.back().createActor(new PlotRole(settingInfo) {
 
         @NotNull
         @Override
@@ -2554,7 +2554,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       this.effectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
       this.memory = ConstantConditions.notNull("memory", memory);
       final SettingInfo settingInfo = (this.settingInfo = SettingInfo.get());
-      final String actorId = (actor = Stage.newActor(new PlotRole(settingInfo) {
+      final String actorId = (actor = Stage.back().createActor(new PlotRole(settingInfo) {
 
         @NotNull
         @Override
@@ -2983,7 +2983,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     private final Actor actor;
 
     private EffectStory(final T effect) {
-      actor = Stage.newActor(new LocalPlotRole(SettingInfo.get()) {
+      actor = Stage.back().createActor(new LocalPlotRole(SettingInfo.get()) {
 
         private final HashSet<String> threadIds = new HashSet<String>();
 
@@ -3034,7 +3034,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private EffectsStory(@NotNull final Iterable<? extends T> effects) {
       ConstantConditions.notNull("effects", effects);
-      actor = Stage.newActor(new LocalPlotRole(SettingInfo.get()) {
+      actor = Stage.back().createActor(new LocalPlotRole(SettingInfo.get()) {
 
         private final HashMap<String, Iterator<? extends T>> threadIds =
             new HashMap<String, Iterator<? extends T>>();
@@ -3091,7 +3091,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private EventStory(@NotNull final Event<? extends T> event) {
       inputActor = event.getActor();
-      final String actorId = (actor = Stage.newActor(new LocalPlotRole(SettingInfo.get()) {
+      final String actorId = (actor = Stage.back().createActor(new LocalPlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override
@@ -3426,7 +3426,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private IncidentStory(@NotNull final Throwable incident) {
       final Conflict conflict = new Conflict(incident);
-      actor = Stage.newActor(new LocalPlotRole(SettingInfo.get()) {
+      actor = Stage.back().createActor(new LocalPlotRole(SettingInfo.get()) {
 
         private final HashSet<String> threadIds = new HashSet<String>();
 
@@ -3476,7 +3476,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private IncidentsStory(@NotNull final Iterable<? extends Throwable> incidents) {
       ConstantConditions.notNull("incidents", incidents);
-      actor = Stage.newActor(new LocalPlotRole(SettingInfo.get()) {
+      actor = Stage.back().createActor(new LocalPlotRole(SettingInfo.get()) {
 
         private final HashMap<String, Iterator<? extends Throwable>> threadIds =
             new HashMap<String, Iterator<? extends Throwable>>();
@@ -3556,7 +3556,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       this.effectHandler = ConstantConditions.notNull("effectHandler", effectHandler);
       this.memory = ConstantConditions.notNull("memory", memory);
       final SettingInfo settingInfo = (this.settingInfo = SettingInfo.get());
-      final String actorId = (actor = Stage.newActor(new PlotRole(settingInfo) {
+      final String actorId = (actor = Stage.back().createActor(new PlotRole(settingInfo) {
 
         @NotNull
         @Override
@@ -4088,7 +4088,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       this.period = ConstantConditions.positive("period", period);
       this.unit = ConstantConditions.notNull("unit", unit);
       this.memory = ConstantConditions.notNull("memory", memory);
-      final String actorId = (actor = Stage.newActor(new PlotRole(SettingInfo.get()) {
+      final String actorId = (actor = Stage.back().createActor(new PlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override
@@ -4279,7 +4279,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       this.delay = ConstantConditions.positive("delay", delay);
       this.unit = ConstantConditions.notNull("unit", unit);
       this.memory = ConstantConditions.notNull("memory", memory);
-      final String actorId = (actor = Stage.newActor(new PlotRole(SettingInfo.get()) {
+      final String actorId = (actor = Stage.back().createActor(new PlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override
@@ -4712,7 +4712,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
     private UnfoldStory(@NotNull final Event<? extends Iterable<? extends T>> event) {
       inputActor = event.getActor();
-      final String actorId = (actor = Stage.newActor(new LocalPlotRole(SettingInfo.get()) {
+      final String actorId = (actor = Stage.back().createActor(new LocalPlotRole(SettingInfo.get()) {
 
         @NotNull
         @Override
