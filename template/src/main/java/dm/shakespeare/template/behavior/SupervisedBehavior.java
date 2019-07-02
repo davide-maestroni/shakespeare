@@ -119,19 +119,26 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
    */
   @Override
   public void onStop(@NotNull final Agent agent) throws Exception {
-    final Throwable failure = this.failure;
-    final DelayedMessage failureMessage = this.failureMessage;
-    if ((failure != null) && (failureMessage != null)) {
-      final Envelop envelop = failureMessage.getEnvelop();
-      final Headers headers = envelop.getHeaders();
-      if (headers.getReceiptId() != null) {
-        envelop.getSender()
-            .tell(new Bounce(failureMessage.getMessage(), headers), headers.threadOnly(),
-                agent.getSelf());
+    if (agent.isDismissed()) {
+      final Throwable failure = this.failure;
+      final DelayedMessage failureMessage = this.failureMessage;
+      if ((failure != null) && (failureMessage != null)) {
+        final Envelop envelop = failureMessage.getEnvelop();
+        final Headers headers = envelop.getHeaders();
+        if (headers.getReceiptId() != null) {
+          envelop.getSender()
+              .tell(new Bounce(failureMessage.getMessage(), headers), headers.threadOnly(),
+                  agent.getSelf());
+        }
       }
+      if (supervisor != null) {
+        supervisor.removeObserver(agent.getSelf());
+      }
+      supervisor = null;
+      supervisorThread = null;
+      resetFailure();
+      bounceDelayed(agent);
     }
-    resetFailure(agent);
-    bounceDelayed(agent);
     behavior.onStop(wrap(agent));
   }
 
@@ -149,10 +156,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
     this.delayedMessages = new CQueue<DelayedMessage>();
   }
 
-  private void resetFailure(@NotNull final Agent agent) {
-    supervisor.removeObserver(agent.getSelf());
-    supervisor = null;
-    supervisorThread = null;
+  private void resetFailure() {
     failure = null;
     failureId = null;
     failureMessage = null;
@@ -391,22 +395,29 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
       if (message == SupervisedSignal.SUPERVISE) {
         final Actor sender = envelop.getSender();
         if (!sender.equals(self)) {
-          if (sender.addObserver(agent.getSelf())) {
-            agent.getLogger()
-                .dbg("[%s] supervisor successfully set: envelop=%s - message=%s", self, envelop,
-                    message);
-            supervisor = sender;
-            supervisorThread = headers.getThreadId();
+          if (!sender.equals(supervisor)) {
+            if (supervisor != null) {
+              // notify old supervisor
+              supervisor.tell(SupervisedSignal.REPLACE_SUPERVISOR, Headers.EMPTY, self);
+              supervisor.removeObserver(self);
+            }
+            if (sender.addObserver(agent.getSelf())) {
+              agent.getLogger()
+                  .dbg("[%s] supervisor successfully set: envelop=%s - message=%s", self, envelop,
+                      message);
+              supervisor = sender;
+              supervisorThread = headers.getThreadId();
 
-          } else {
-            agent.getLogger()
-                .err("[%s] failed to add observer to supervisor: envelop=%s - message=%s", self,
-                    envelop, message);
-            if (headers.getReceiptId() != null) {
-              sender.tell(new Failure(message, headers,
-                      new IllegalRecipientException("can't add observer to supervisor")),
-                  headers.threadOnly(), self);
-              envelop.preventReceipt();
+            } else {
+              agent.getLogger()
+                  .err("[%s] failed to add observer to supervisor: envelop=%s - message=%s", self,
+                      envelop, message);
+              if (headers.getReceiptId() != null) {
+                sender.tell(new Failure(message, headers,
+                        new IllegalRecipientException("can't add observer to supervisor")),
+                    headers.threadOnly(), self);
+                envelop.preventReceipt();
+              }
             }
           }
 
@@ -458,7 +469,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
 
       } else if (Receipt.isReceipt(message, receiptId)) {
         agent.getLogger()
-            .wrn("[%s] ignoring receipt message, not in failure state: envelop=%s - message=%s",
+            .dbg("[%s] ignoring receipt message, not in failure state: envelop=%s - message=%s",
                 self, envelop, message);
 
       } else if (message instanceof DeadLetter) {
@@ -540,12 +551,13 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
         final Actor sender = envelop.getSender();
         if (!sender.equals(self)) {
           if (!sender.equals(supervisor)) {
+            // notify old supervisor
+            supervisor.tell(SupervisedSignal.REPLACE_SUPERVISOR, Headers.EMPTY, self);
+            supervisor.removeObserver(self);
             if (sender.addObserver(self)) {
               agent.getLogger()
                   .dbg("[%s] supervisor successfully replaced: supervisor=%s - envelop=%s - "
                       + "message=%s", self, supervisor, envelop, message);
-              // notify old supervisor
-              supervisor.tell(SupervisedSignal.REPLACE_SUPERVISOR, Headers.EMPTY, self);
               supervisor = sender;
               supervisorThread = headers.getThreadId();
               sender.tell(new SupervisedFailure(failureId, failure),
@@ -601,7 +613,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
             final DelayedMessage failureMessage = SupervisedBehavior.this.failureMessage;
             if (recoveryType == RecoveryType.RETRY) {
               delayedMessages.addFirst(failureMessage);
-              resetFailure(agent);
+              resetFailure();
               handler = new ResumeHandler();
               resumeDelayed(agent);
 
@@ -613,13 +625,13 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
                     .tell(new Failure(failureMessage.getMessage(), failureHeaders, failure),
                         failureHeaders.threadOnly(), self);
               }
-              resetFailure(agent);
+              resetFailure();
               handler = new ResumeHandler();
               resumeDelayed(agent);
 
             } else if (recoveryType == RecoveryType.RESTART_AND_RETRY) {
               delayedMessages.addFirst(failureMessage);
-              resetFailure(agent);
+              resetFailure();
               handler = new ResumeHandler();
               resumeDelayed(agent);
               agent.restartBehavior();
@@ -632,12 +644,16 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
                     .tell(new Failure(failureMessage.getMessage(), failureHeaders, failure),
                         failureHeaders.threadOnly(), self);
               }
-              resetFailure(agent);
+              resetFailure();
               handler = new ResumeHandler();
               resumeDelayed(agent);
               agent.restartBehavior();
 
             } else if (recoveryType == RecoveryType.RESTART) {
+              delayedMessages.addFirst(failureMessage);
+              resetFailure();
+              bounceDelayed(agent);
+              handler = new DefaultHandler();
               agent.restartBehavior();
 
             } else {
