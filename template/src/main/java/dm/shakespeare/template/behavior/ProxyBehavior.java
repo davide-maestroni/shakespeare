@@ -75,7 +75,7 @@ public class ProxyBehavior extends AbstractProxyBehavior {
       agent.getLogger()
           .dbg("[%s] forwarding message to proxied actor: recipient=%s - sender=%s - headers=%s - "
               + "message=%s", agent.getSelf(), proxied, sender, headers, message);
-      proxied.tell(message, headers.asSentAt(sentAt), agent.getSelf());
+      proxied.tell(message, headers.asSentAt(sentAt), sender);
     }
   }
 

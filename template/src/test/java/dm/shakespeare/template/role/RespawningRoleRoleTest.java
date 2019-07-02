@@ -40,7 +40,7 @@ public class RespawningRoleRoleTest {
   @Test
   public void respawningArgs() {
     TestRole.resetCount();
-    final LocalRespawningRole role = new LocalRespawningRole(TestRole.class, 3);
+    final RespawningRole role = new RespawningRole(TestRole.class, 3);
     Stage.newActor(role).tell("test", Headers.EMPTY, Stage.STAND_IN);
     assertThat(TestRole.getCount()).isEqualTo(6);
   }
@@ -48,7 +48,7 @@ public class RespawningRoleRoleTest {
   @Test
   public void respawningClass() {
     TestRole.resetCount();
-    final LocalRespawningRole role = new LocalRespawningRole(TestRole.class);
+    final RespawningRole role = new RespawningRole(TestRole.class);
     Stage.newActor(role).tell("test", Headers.EMPTY, Stage.STAND_IN);
     assertThat(TestRole.getCount()).isEqualTo(2);
   }
@@ -83,24 +83,6 @@ public class RespawningRoleRoleTest {
           agent.restartBehavior();
         }
       };
-    }
-
-    @NotNull
-    @Override
-    public ExecutorService getExecutorService(@NotNull final String id) {
-      return ExecutorServices.localExecutor();
-    }
-  }
-
-  private static class LocalRespawningRole extends RespawningRole {
-
-    public LocalRespawningRole(@NotNull final Class<? extends Role> roleClass) {
-      super(roleClass);
-    }
-
-    public LocalRespawningRole(@NotNull final Class<? extends Role> roleClass,
-        @NotNull final Object... roleArgs) {
-      super(roleClass, roleArgs);
     }
 
     @NotNull

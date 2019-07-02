@@ -19,6 +19,7 @@ package dm.shakespeare.template.role;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 
@@ -30,9 +31,14 @@ import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.actor.Headers;
 import dm.shakespeare.actor.Role;
 import dm.shakespeare.concurrent.ExecutorServices;
+import dm.shakespeare.message.Bounce;
+import dm.shakespeare.message.Delivery;
+import dm.shakespeare.message.Failure;
 import dm.shakespeare.template.behavior.SupervisedBehavior.SupervisedFailure;
+import dm.shakespeare.template.behavior.SupervisedBehavior.SupervisedRecovery;
 import dm.shakespeare.template.behavior.SupervisedBehavior.SupervisedRecovery.RecoveryType;
 import dm.shakespeare.template.behavior.SupervisedBehavior.SupervisedSignal;
+import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.test.concurrent.TestExecutorService;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,6 +47,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@link SupervisedRole} unit tests.
  */
 public class SupervisedRoleTest {
+
+  @NotNull
+  private static SupervisedRecovery newRecovery(@NotNull final String failureId,
+      @NotNull final RecoveryType recoveryType) throws Exception {
+    final Constructor<?> constructor = Reflections.makeAccessible(
+        SupervisedRecovery.class.getDeclaredConstructor(String.class, RecoveryType.class));
+    return (SupervisedRecovery) constructor.newInstance(failureId, recoveryType);
+  }
 
   @Test
   public void dismissWhileFailed() {
@@ -56,6 +70,82 @@ public class SupervisedRoleTest {
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(supervisorRole.getMessages()).hasSize(1);
     assertThat(supervisorRole.getMessages().get(0)).isExactlyInstanceOf(SupervisedFailure.class);
+  }
+
+  @Test
+  public void recoveryInvalid() throws Exception {
+    final TestExecutorService executorService = new TestExecutorService();
+    final TestRole testRole = new TestRole(executorService);
+    final Actor actor = Stage.newActor(new SupervisedRole(testRole));
+    final TestRole supervisorRole = new TestRole(executorService);
+    final Actor supervisor = Stage.newActor(supervisorRole);
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
+    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.STAND_IN);
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).isEmpty();
+    assertThat(supervisorRole.getMessages()).hasSize(1);
+    assertThat(supervisorRole.getMessages().get(0)).isExactlyInstanceOf(SupervisedFailure.class);
+    supervisorRole.getMessages().clear();
+    actor.tell(newRecovery("test", RecoveryType.DISMISS), Headers.EMPTY.withReceiptId("test"),
+        Stage.newActor(supervisorRole));
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).isEmpty();
+    assertThat(supervisorRole.getMessages()).hasSize(1);
+    assertThat(supervisorRole.getMessages().get(0)).isExactlyInstanceOf(Failure.class);
+  }
+
+  @Test
+  public void recoveryInvalidId() throws Exception {
+    final TestExecutorService executorService = new TestExecutorService();
+    final TestRole testRole = new TestRole(executorService);
+    final Actor actor = Stage.newActor(new SupervisedRole(testRole));
+    final TestRole supervisorRole = new TestRole(executorService);
+    final Actor supervisor = Stage.newActor(supervisorRole);
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
+    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.STAND_IN);
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).isEmpty();
+    assertThat(supervisorRole.getMessages()).hasSize(1);
+    assertThat(supervisorRole.getMessages().get(0)).isExactlyInstanceOf(SupervisedFailure.class);
+    supervisorRole.getMessages().clear();
+    actor.tell(newRecovery("test", RecoveryType.DISMISS), Headers.EMPTY.withReceiptId("test"),
+        supervisor);
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).isEmpty();
+    assertThat(supervisorRole.getMessages()).hasSize(1);
+    assertThat(supervisorRole.getMessages().get(0)).isExactlyInstanceOf(Failure.class);
+  }
+
+  @Test
+  public void recoveryInvalidNotFailure() throws Exception {
+    final TestExecutorService executorService = new TestExecutorService();
+    final TestRole testRole = new TestRole(executorService);
+    final Actor actor = Stage.newActor(new SupervisedRole(testRole));
+    final TestRole supervisorRole = new TestRole(executorService);
+    final Actor supervisor = Stage.newActor(supervisorRole);
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
+    actor.tell(newRecovery("TEST", RecoveryType.DISMISS), Headers.EMPTY.withReceiptId("test"),
+        actor);
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).hasSize(1);
+    assertThat(testRole.getMessages().get(0)).isExactlyInstanceOf(Failure.class);
+    assertThat(supervisorRole.getMessages()).isEmpty();
+  }
+
+  @Test
+  public void recoveryNotFailure() throws Exception {
+    final TestExecutorService executorService = new TestExecutorService();
+    final TestRole testRole = new TestRole(executorService);
+    final Actor actor = Stage.newActor(new SupervisedRole(testRole));
+    final TestRole supervisorRole = new TestRole(executorService);
+    final Actor supervisor = Stage.newActor(supervisorRole);
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
+    actor.tell(newRecovery("test", RecoveryType.RESUME), Headers.EMPTY.withReceiptId("test"),
+        supervisor);
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).isEmpty();
+    assertThat(supervisorRole.getMessages()).hasSize(1);
+    assertThat(supervisorRole.getMessages().get(0)).isExactlyInstanceOf(Delivery.class);
   }
 
   @Test
@@ -96,6 +186,88 @@ public class SupervisedRoleTest {
     actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, Stage.STAND_IN);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
+  }
+
+  @Test
+  public void superviseSelf() {
+    final TestExecutorService executorService = new TestExecutorService();
+    final TestRole testRole = new TestRole(executorService);
+    final Actor actor = Stage.newActor(new SupervisedRole(testRole));
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY.withReceiptId("test"), actor);
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).hasSize(1);
+    assertThat(testRole.getMessages().get(0)).isExactlyInstanceOf(Failure.class);
+  }
+
+  @Test
+  public void superviseSelfWhileFailed() {
+    final TestExecutorService executorService = new TestExecutorService();
+    final TestRole testRole = new TestRole(executorService);
+    final Actor actor = Stage.newActor(new SupervisedRole(testRole));
+    final TestRole supervisorRole = new TestRole(executorService);
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY.withReceiptId("test"),
+        Stage.newActor(supervisorRole));
+    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.STAND_IN);
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY.withReceiptId("test"), actor);
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).isEmpty();
+    assertThat(supervisorRole.getMessages()).hasSize(2);
+    assertThat(supervisorRole.getMessages().get(0)).isExactlyInstanceOf(Delivery.class);
+    assertThat(supervisorRole.getMessages().get(1)).isExactlyInstanceOf(SupervisedFailure.class);
+  }
+
+  @Test
+  public void supervisedBounce() {
+    final TestExecutorService executorService = new TestExecutorService();
+    final TestRole testRole = new TestRole(executorService);
+    final Actor actor = Stage.newActor(new SupervisedRole(testRole));
+    final Actor supervisor = Stage.newActor(new Role() {
+
+      @NotNull
+      @Override
+      public Behavior getBehavior(@NotNull final String id) {
+        return new AbstractBehavior() {
+
+          public void onMessage(final Object message, @NotNull final Envelop envelop,
+              @NotNull final Agent agent) {
+            throw new IndexOutOfBoundsException();
+          }
+        };
+      }
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return ExecutorServices.localExecutor();
+      }
+    });
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
+    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.STAND_IN);
+    final TestRole otherRole = new TestRole(executorService);
+    actor.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.newActor(otherRole));
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).isEmpty();
+    assertThat(otherRole.getMessages()).hasSize(1);
+    assertThat(otherRole.getMessages().get(0)).isExactlyInstanceOf(Bounce.class);
+  }
+
+  @Test
+  public void supervisedDeadLetter() {
+    final TestExecutorService executorService = new TestExecutorService();
+    final TestRole testRole = new TestRole(executorService);
+    final Actor actor = Stage.newActor(new SupervisedRole(testRole));
+    final TestRole supervisorRole = new TestRole(executorService);
+    final Actor supervisor = Stage.newActor(supervisorRole);
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
+    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.STAND_IN);
+    supervisor.dismiss();
+    final TestRole otherRole = new TestRole(executorService);
+    actor.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.newActor(otherRole));
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).isEmpty();
+    assertThat(supervisorRole.getMessages()).isEmpty();
+    assertThat(otherRole.getMessages()).hasSize(1);
+    assertThat(otherRole.getMessages().get(0)).isExactlyInstanceOf(Bounce.class);
   }
 
   @Test
@@ -373,6 +545,41 @@ public class SupervisedRoleTest {
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(supervisorRole.getMessages()).isEmpty();
+  }
+
+  @Test
+  public void unsuperviseInvalid() {
+    final TestExecutorService executorService = new TestExecutorService();
+    final TestRole testRole = new TestRole(executorService);
+    final Actor actor = Stage.newActor(new SupervisedRole(testRole));
+    final TestRole supervisorRole = new TestRole(executorService);
+    final Actor supervisor = Stage.newActor(supervisorRole);
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
+    actor.tell(SupervisedSignal.UNSUPERVISE, Headers.EMPTY.withReceiptId("test"), actor);
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).hasSize(1);
+    assertThat(testRole.getMessages().get(0)).isExactlyInstanceOf(Failure.class);
+    assertThat(supervisorRole.getMessages()).isEmpty();
+  }
+
+  @Test
+  public void unsuperviseInvalidWhileFailed() {
+    final TestExecutorService executorService = new TestExecutorService();
+    final TestRole testRole = new TestRole(executorService);
+    final Actor actor = Stage.newActor(new SupervisedRole(testRole));
+    final TestRole supervisorRole = new TestRole(executorService);
+    final Actor supervisor = Stage.newActor(supervisorRole);
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
+    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.STAND_IN);
+    final TestRole otherRole = new TestRole(executorService);
+    actor.tell(SupervisedSignal.UNSUPERVISE, Headers.EMPTY.withReceiptId("test"),
+        Stage.newActor(otherRole));
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).isEmpty();
+    assertThat(otherRole.getMessages()).hasSize(1);
+    assertThat(otherRole.getMessages().get(0)).isExactlyInstanceOf(Failure.class);
+    assertThat(supervisorRole.getMessages()).hasSize(1);
+    assertThat(supervisorRole.getMessages().get(0)).isExactlyInstanceOf(SupervisedFailure.class);
   }
 
   @Test

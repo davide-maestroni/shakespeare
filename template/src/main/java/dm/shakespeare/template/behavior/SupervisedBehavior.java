@@ -414,7 +414,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
                       envelop, message);
               if (headers.getReceiptId() != null) {
                 sender.tell(new Failure(message, headers,
-                        new IllegalRecipientException("can't add observer to supervisor")),
+                        new IllegalStateException("can't add observer to supervisor")),
                     headers.threadOnly(), self);
                 envelop.preventReceipt();
               }
@@ -446,6 +446,12 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
         } else {
           agent.getLogger()
               .wrn("[%s] cannot unset supervisor: envelop=%s - message=%s", self, envelop, message);
+          if (headers.getReceiptId() != null) {
+            sender.tell(new Failure(message, headers,
+                    new IllegalStateException("sender is not the current supervisor")),
+                headers.threadOnly(), self);
+            envelop.preventReceipt();
+          }
         }
 
       } else if (message instanceof SupervisedRecovery) {
@@ -569,7 +575,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
                       envelop, message);
               if (headers.getReceiptId() != null) {
                 sender.tell(new Failure(message, headers,
-                        new IllegalRecipientException("can't add observer to supervisor")),
+                        new IllegalStateException("can't add observer to supervisor")),
                     headers.threadOnly(), self);
                 envelop.preventReceipt();
               }
@@ -599,6 +605,12 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
         } else {
           agent.getLogger()
               .wrn("[%s] cannot unset supervisor: envelop=%s - message=%s", self, envelop, message);
+          if (headers.getReceiptId() != null) {
+            sender.tell(new Failure(message, headers,
+                    new IllegalStateException("sender is not the current supervisor")),
+                headers.threadOnly(), self);
+            envelop.preventReceipt();
+          }
         }
 
       } else if (message instanceof SupervisedRecovery) {
