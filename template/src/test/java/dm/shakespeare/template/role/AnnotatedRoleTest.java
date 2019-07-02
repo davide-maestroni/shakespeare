@@ -370,6 +370,17 @@ public class AnnotatedRoleTest {
     assertThat(testRole.getMessages()).containsExactly("test");
   }
 
+  @Test
+  public void onMessageClasses() {
+    final TestExecutorService executorService = new TestExecutorService();
+    final OnMessageClassesRole testRole = new OnMessageClassesRole(executorService);
+    final Actor actor = Stage.newActor(testRole);
+    actor.tell(1, Headers.EMPTY, Stage.STAND_IN);
+    actor.tell("test", Headers.EMPTY, Stage.STAND_IN);
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).containsExactly(1, "test");
+  }
+
   @Test(expected = IllegalArgumentException.class)
   public void onMessageInvalidAnnotation() {
     final TestExecutorService executorService = new TestExecutorService();
@@ -747,6 +758,18 @@ public class AnnotatedRoleTest {
     }
 
     @OnMessage(messageClasses = String.class)
+    public void add(final Object object) {
+      getMessages().add(object);
+    }
+  }
+
+  public static class OnMessageClassesRole extends TestRole {
+
+    OnMessageClassesRole(@NotNull final TestExecutorService executorService) {
+      super(executorService);
+    }
+
+    @OnMessage(messageClasses = {Integer.class, String.class})
     public void add(final Object object) {
       getMessages().add(object);
     }
