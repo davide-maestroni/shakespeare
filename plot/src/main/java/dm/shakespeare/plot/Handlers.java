@@ -18,6 +18,10 @@ package dm.shakespeare.plot;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.ObjectStreamException;
+import java.io.Serializable;
+
+import dm.shakespeare.plot.config.BuildConfig;
 import dm.shakespeare.plot.function.NullaryFunction;
 import dm.shakespeare.plot.function.UnaryFunction;
 import dm.shakespeare.util.ConstantConditions;
@@ -27,14 +31,7 @@ import dm.shakespeare.util.ConstantConditions;
  */
 public class Handlers {
 
-  // TODO: 05/04/2019 skip(?)
-
-  private static final UnaryFunction<?, ?> IDENTITY = new UnaryFunction<Object, Object>() {
-
-    public Object call(final Object first) {
-      return first;
-    }
-  };
+  private static final IdentityFunction IDENTITY = new IdentityFunction();
 
   private Handlers() {
     ConstantConditions.avoid();
@@ -47,18 +44,63 @@ public class Handlers {
   }
 
   @NotNull
+  public static <T> UnaryFunction<T, Story<T>> skip(final int numEffects) {
+    return new SkipFunction<T>(numEffects);
+  }
+
+  @NotNull
   public static NullaryFunction<Event<Boolean>> take(final int maxEffects) {
     return new TakeFunction(maxEffects);
   }
 
-  private static class TakeFunction implements NullaryFunction<Event<Boolean>> {
+  private static class IdentityFunction implements UnaryFunction<Object, Object>, Serializable {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+    public Object call(final Object effect) {
+      return effect;
+    }
+
+    private Object readResolve() throws ObjectStreamException {
+      return IDENTITY;
+    }
+  }
+
+  private static class SkipFunction<T> implements UnaryFunction<T, Story<T>>, Serializable {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+    private final int numEffects;
+
+    private int count = 0;
+
+    private SkipFunction() {
+      numEffects = 0;
+    }
+
+    private SkipFunction(final int numEffects) {
+      this.numEffects = ConstantConditions.notNegative("numEffects", numEffects);
+    }
+
+    public Story<T> call(final T effect) {
+      return (++count > numEffects) ? Story.ofSingleEffect(effect) : null;
+    }
+  }
+
+  private static class TakeFunction implements NullaryFunction<Event<Boolean>>, Serializable {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private final int maxEffects;
 
     private int count = 0;
 
+    private TakeFunction() {
+      maxEffects = 0;
+    }
+
     private TakeFunction(final int maxEffects) {
-      this.maxEffects = ConstantConditions.notNegative(maxEffects);
+      this.maxEffects = ConstantConditions.notNegative("maxEffects", maxEffects);
     }
 
     public Event<Boolean> call() {

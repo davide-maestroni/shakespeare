@@ -71,28 +71,26 @@ public class Plot {
     this(DEFAULT_SETTING);
   }
 
-  public Plot(@NotNull final Logger logger) throws Exception {
+  public Plot(@NotNull final Logger logger) {
     this(DEFAULT_SETTING, logger);
   }
 
-  public Plot(@NotNull final Setting setting) throws Exception {
-    this(setting, DEFAULT_ACTOR_FACTORY);
+  public Plot(@NotNull final Setting setting) {
+    this(setting, Stage.back());
   }
 
-  public Plot(@NotNull final Setting setting, @NotNull final Logger logger) throws Exception {
-    this(setting, DEFAULT_ACTOR_FACTORY, logger);
+  public Plot(@NotNull final Setting setting, @NotNull final Logger logger) {
+    this(setting, Stage.back(), logger);
   }
 
-  public Plot(@NotNull final Setting setting,
-      @NotNull final UnaryFunction<? super Role, ? extends Actor> actorFactory) throws Exception {
-    actor = actorFactory.call(new PlotFactoryRole(setting));
+  public Plot(@NotNull final Setting setting, @NotNull final Stage stage) {
+    actor = stage.createActor(new PlotFactoryRole(setting));
     settingInfo = new SettingInfo(ExecutorServices.localExecutor(), Role.defaultLogger(this));
   }
 
-  public Plot(@NotNull final Setting setting,
-      @NotNull final UnaryFunction<? super Role, ? extends Actor> actorFactory,
-      @NotNull final Logger logger) throws Exception {
-    actor = actorFactory.call(new PlotFactoryRole(setting));
+  public Plot(@NotNull final Setting setting, @NotNull final Stage stage,
+      @NotNull final Logger logger) {
+    actor = stage.createActor(new PlotFactoryRole(setting));
     settingInfo = new SettingInfo(ExecutorServices.localExecutor(), logger);
   }
 
@@ -638,6 +636,7 @@ public class Plot {
         if (actor == null) {
           actor = actors.get(sender);
         }
+
         if (actor != null) {
           actor.tell(message, envelop.getHeaders().asSentAt(envelop.getSentAt()),
               agent.getSelf());
