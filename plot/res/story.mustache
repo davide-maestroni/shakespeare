@@ -485,19 +485,19 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
   @NotNull
   public Spectator playEach(@NotNull final StoryObserver<? super T> storyObserver) {
-    return playEachObserved(new SpectatorStoryObserver<T>(storyObserver));
+    return playObserved(new SpectatorStoryObserver<T>(storyObserver));
   }
 
   @NotNull
-  public Spectator playEachObserved(@Nullable final SpectatorObserver<? super T> effectObserver,
+  public Spectator playObserved(@Nullable final SpectatorObserver<? super T> effectObserver,
       @Nullable final SpectatorObserver<? super Throwable> incidentObserver,
       @Nullable final Observer<? super Spectator> endObserver) {
-    return playEachObserved(new DefaultStorySpectatorObserver<T>(effectObserver, incidentObserver,
+    return playObserved(new DefaultStorySpectatorObserver<T>(effectObserver, incidentObserver,
         endObserver));
   }
 
   @NotNull
-  public Spectator playEachObserved(@NotNull final StorySpectatorObserver<? super T> storyObserver) {
+  public Spectator playObserved(@NotNull final StorySpectatorObserver<? super T> storyObserver) {
     final Actor actor = Stage.back().createActor(new StoryObserverRole<T>(getActor(), storyObserver));
     final String actorId = actor.getId();
     getActor().tell(StorySignal.NEXT, new Headers().withReceiptId(actorId).withThreadId(actorId),
