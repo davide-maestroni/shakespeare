@@ -33,10 +33,10 @@ import java.util.concurrent.TimeUnit;
 public class TestScheduledExecutorService extends TestExecutorService
     implements ScheduledExecutorService {
 
-  private final LinkedList<AbstractFuture<?>> mFutures = new LinkedList<AbstractFuture<?>>();
+  private final LinkedList<AbstractFuture<?>> futures = new LinkedList<AbstractFuture<?>>();
 
   public void advance(final long period, @NotNull final TimeUnit unit) {
-    final LinkedList<AbstractFuture<?>> futures = mFutures;
+    final LinkedList<AbstractFuture<?>> futures = this.futures;
     for (final AbstractFuture<?> future : futures) {
       future.setTimestamp(future.getTimestamp() - unit.toNanos(period));
     }
@@ -64,8 +64,8 @@ public class TestScheduledExecutorService extends TestExecutorService
   public ScheduledFuture<?> schedule(@NotNull final Runnable command, final long delay,
       @NotNull final TimeUnit unit) {
     final RunnableFuture future =
-        new RunnableFuture(mFutures, command, AbstractFuture.toTimestampNanos(delay, unit));
-    mFutures.add(future);
+        new RunnableFuture(futures, command, AbstractFuture.toTimestampNanos(delay, unit));
+    futures.add(future);
     return future;
   }
 
@@ -74,7 +74,7 @@ public class TestScheduledExecutorService extends TestExecutorService
       @NotNull final TimeUnit unit) {
     final CallableFuture<V> future =
         new CallableFuture<V>(callable, AbstractFuture.toTimestampNanos(delay, unit));
-    mFutures.add(future);
+    futures.add(future);
     return future;
   }
 
@@ -82,9 +82,9 @@ public class TestScheduledExecutorService extends TestExecutorService
   public ScheduledFuture<?> scheduleAtFixedRate(@NotNull final Runnable command,
       final long initialDelay, final long period, @NotNull final TimeUnit unit) {
     final RunnableFuture future =
-        new RunnableFuture(mFutures, command, AbstractFuture.toTimestampNanos(initialDelay, unit),
+        new RunnableFuture(futures, command, AbstractFuture.toTimestampNanos(initialDelay, unit),
             unit.toNanos(TestConditions.positive("period", period)));
-    mFutures.add(future);
+    futures.add(future);
     return future;
   }
 
@@ -92,9 +92,9 @@ public class TestScheduledExecutorService extends TestExecutorService
   public ScheduledFuture<?> scheduleWithFixedDelay(@NotNull final Runnable command,
       final long initialDelay, final long delay, @NotNull final TimeUnit unit) {
     final RunnableFuture future =
-        new RunnableFuture(mFutures, command, AbstractFuture.toTimestampNanos(initialDelay, unit),
+        new RunnableFuture(futures, command, AbstractFuture.toTimestampNanos(initialDelay, unit),
             unit.toNanos(-TestConditions.positive("delay", delay)));
-    mFutures.add(future);
+    futures.add(future);
     return future;
   }
 }

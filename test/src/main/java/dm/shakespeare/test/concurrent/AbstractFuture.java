@@ -29,14 +29,14 @@ import java.util.concurrent.TimeUnit;
  */
 abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
 
-  private ExecutionException mException;
-  private boolean mIsCancelled;
-  private boolean mIsDone;
-  private long mTimestamp;
-  private V mValue;
+  private ExecutionException exception;
+  private boolean isCancelled;
+  private boolean isDone;
+  private long timestamp;
+  private V value;
 
   AbstractFuture(final long timestamp) {
-    mTimestamp = timestamp;
+    this.timestamp = timestamp;
   }
 
   static long toTimestampNanos(final long delay, @NotNull final TimeUnit unit) {
@@ -44,50 +44,50 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
   }
 
   public boolean cancel(final boolean mayInterruptIfRunning) {
-    if (!mIsDone && !mIsCancelled) {
-      mIsCancelled = true;
+    if (!isDone && !isCancelled) {
+      isCancelled = true;
       return true;
     }
     return false;
   }
 
   public boolean isCancelled() {
-    return mIsCancelled;
+    return isCancelled;
   }
 
   public boolean isDone() {
-    return mIsDone;
+    return isDone;
   }
 
   public V get() throws InterruptedException, ExecutionException {
-    if (mIsCancelled) {
+    if (isCancelled) {
       throw new CancellationException();
     }
-    final ExecutionException exception = mException;
+    final ExecutionException exception = this.exception;
     if (exception != null) {
       throw exception;
     }
 
-    if (!mIsDone) {
+    if (!isDone) {
       throw new InterruptedException();
     }
-    return mValue;
+    return value;
   }
 
   public V get(final long timeout, @NotNull final TimeUnit timeUnit) throws InterruptedException,
       ExecutionException {
-    if (mIsCancelled) {
+    if (isCancelled) {
       throw new CancellationException();
     }
-    final ExecutionException exception = mException;
+    final ExecutionException exception = this.exception;
     if (exception != null) {
       throw exception;
     }
 
-    if (!mIsDone) {
+    if (!isDone) {
       throw new InterruptedException();
     }
-    return mValue;
+    return value;
   }
 
   public int compareTo(@NotNull final Delayed delayed) {
@@ -99,16 +99,16 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
   }
 
   public long getDelay(@NotNull final TimeUnit timeUnit) {
-    return timeUnit.convert(mTimestamp, TimeUnit.NANOSECONDS);
+    return timeUnit.convert(timestamp, TimeUnit.NANOSECONDS);
   }
 
   @Override
   public int hashCode() {
-    int result = (int) (mTimestamp ^ (mTimestamp >>> 32));
-    result = 31 * result + (mException != null ? mException.hashCode() : 0);
-    result = 31 * result + (mIsCancelled ? 1 : 0);
-    result = 31 * result + (mIsDone ? 1 : 0);
-    result = 31 * result + (mValue != null ? mValue.hashCode() : 0);
+    int result = (int) (timestamp ^ (timestamp >>> 32));
+    result = 31 * result + (exception != null ? exception.hashCode() : 0);
+    result = 31 * result + (isCancelled ? 1 : 0);
+    result = 31 * result + (isDone ? 1 : 0);
+    result = 31 * result + (value != null ? value.hashCode() : 0);
     return result;
   }
 
@@ -122,18 +122,18 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
       return false;
     }
     final AbstractFuture<?> that = (AbstractFuture<?>) o;
-    return (mTimestamp == that.mTimestamp) && (mIsCancelled == that.mIsCancelled) && (mIsDone
-        == that.mIsDone) && (mException != null ? mException.equals(that.mException)
-        : that.mException == null) && (mValue != null ? mValue.equals(that.mValue)
-        : that.mValue == null);
+    return (timestamp == that.timestamp) && (isCancelled == that.isCancelled) && (isDone
+        == that.isDone) && (exception != null ? exception.equals(that.exception)
+        : that.exception == null) && (value != null ? value.equals(that.value)
+        : that.value == null);
   }
 
   public void run() {
     try {
-      mValue = getValue();
+      value = getValue();
 
     } catch (final Throwable t) {
-      mException = new ExecutionException(t);
+      exception = new ExecutionException(t);
       if (t instanceof InterruptedException) {
         Thread.currentThread().interrupt();
 
@@ -143,16 +143,16 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
       }
 
     } finally {
-      mIsDone = true;
+      isDone = true;
     }
   }
 
   long getTimestamp() {
-    return mTimestamp;
+    return timestamp;
   }
 
   void setTimestamp(final long timestamp) {
-    mTimestamp = timestamp;
+    this.timestamp = timestamp;
   }
 
   abstract V getValue() throws Exception;

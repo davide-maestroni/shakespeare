@@ -20,8 +20,6 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Utility class for verifying constant conditions.
- * <p>
- * Created by davide-maestroni on 03/27/2016.
  */
 class TestConditions {
 

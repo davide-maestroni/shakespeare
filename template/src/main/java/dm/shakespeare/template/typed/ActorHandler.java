@@ -23,10 +23,8 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -70,8 +68,9 @@ class ActorHandler implements InvocationHandler {
       }};
   private static final Class<?>[] EMPTY_CLASSES = new Class<?>[0];
 
-  private static final Map<Object, ActorHandler> actorHandlers =
-      Collections.synchronizedMap(new WeakIdentityHashMap<Object, ActorHandler>());
+  private static final WeakIdentityHashMap<Object, ActorHandler> actorHandlers =
+      new WeakIdentityHashMap<Object, ActorHandler>();
+  private static final Object mutex = new Object();
 
   private final Actor actor;
   private final Actor invocationActor;
@@ -93,17 +92,42 @@ class ActorHandler implements InvocationHandler {
     final ActorHandler handler = new ActorHandler(actor, type, script);
     final Object proxy =
         Proxy.newProxyInstance(type.getClassLoader(), new Class<?>[]{type}, handler);
-    actorHandlers.put(proxy, handler);
+    synchronized (mutex) {
+      actorHandlers.put(proxy, handler);
+    }
     return (T) proxy;
   }
 
   @NotNull
   static Actor getActor(@NotNull final Object actor) {
-    final ActorHandler actorHandler = actorHandlers.get(ConstantConditions.notNull("actor", actor));
+    final ActorHandler actorHandler;
+    synchronized (mutex) {
+      actorHandler = actorHandlers.get(ConstantConditions.notNull("actor", actor));
+    }
+
     if (actorHandler == null) {
       throw new IllegalArgumentException("the specified object is not a typed actor");
     }
-    return actorHandler.getActor();
+    return actorHandler.actor;
+  }
+
+  @NotNull
+  static <T> T getProxy(@NotNull final Actor actor, @NotNull final Class<?> type) {
+    ConstantConditions.notNull("actor", actor);
+    Script script = null;
+    synchronized (mutex) {
+      for (final ActorHandler handler : actorHandlers.values()) {
+        if (handler.actor.equals(actor)) {
+          script = handler.script;
+          break;
+        }
+      }
+    }
+
+    if (script == null) {
+      throw new IllegalArgumentException("the specified instance does not back a typed actor");
+    }
+    return createProxy(actor, type, script);
   }
 
   public Object invoke(final Object proxy, final Method method, final Object[] objects) throws
@@ -162,7 +186,11 @@ class ActorHandler implements InvocationHandler {
         if (List.class.isAssignableFrom(object.getClass())) {
           final ArrayList<Object> list = new ArrayList<Object>();
           for (final Object element : (List<?>) object) {
-            final ActorHandler handler = actorHandlers.get(element);
+            final ActorHandler handler;
+            synchronized (mutex) {
+              handler = actorHandlers.get(element);
+            }
+
             if (handler != null) {
               list.add(new InvocationArg(handler.type, handler.script));
               actors.add(handler.actor);
@@ -178,7 +206,11 @@ class ActorHandler implements InvocationHandler {
           arguments.add(list);
 
         } else {
-          final ActorHandler handler = actorHandlers.get(object);
+          final ActorHandler handler;
+          synchronized (mutex) {
+            handler = actorHandlers.get(object);
+          }
+
           if (handler != null) {
             arguments.add(new InvocationArg(handler.type, handler.script));
             actors.add(handler.actor);
@@ -220,11 +252,6 @@ class ActorHandler implements InvocationHandler {
     final Actor sender = (actorFrom != null) ? actorFrom : Stage.standIn();
     actor.tell(invocation, headers, sender);
     return DEFAULT_RETURN_VALUES.get(method.getReturnType());
-  }
-
-  @NotNull
-  Actor getActor() {
-    return actor;
   }
 
   private static class InvocationBehavior extends AbstractBehavior {

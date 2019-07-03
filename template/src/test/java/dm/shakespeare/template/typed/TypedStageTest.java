@@ -20,6 +20,8 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -654,6 +656,39 @@ public class TypedStageTest {
       stage.createActor("b/" + i, new TestRole(executorService));
     }
     assertThat(stage.get("c/3")).isNull();
+  }
+
+  @Test
+  public void getTyped() {
+    final List<?> actor = TypedStage.back().createActor(List.class, new Script() {
+
+      @NotNull
+      @Override
+      public Object getRole(@NotNull final String id) {
+        return Collections.emptyList();
+      }
+    });
+    assertThat(TypedStage.getTyped(Collection.class, TypedStage.getActor(actor))).isNotNull();
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void getTypedClassNPE() {
+    TypedStage.getTyped(null,
+        TypedStage.getActor(TypedStage.back().createActor(List.class, new Script() {
+
+          @NotNull
+          @Override
+          public Object getRole(@NotNull final String id) {
+            return Collections.emptyList();
+          }
+        })));
+  }
+
+  @Test(expected = NullPointerException.class)
+  @SuppressWarnings("ConstantConditions")
+  public void getTypedNPE() {
+    TypedStage.getTyped(List.class, null);
   }
 
   @Test

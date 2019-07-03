@@ -85,6 +85,20 @@ public class TypedStage extends Stage {
   }
 
   /**
+   * Returns a new typed actor backed by the specified one.
+   *
+   * @param type  the type of interface defining the actor protocol.
+   * @param actor the backing actor.
+   * @param <T>   the returned actor runtime type.
+   * @return the typed actor instance.
+   * @throws IllegalArgumentException is the specified actor does not backed a typed instance.
+   */
+  @NotNull
+  public static <T> T getTyped(@NotNull final Class<? extends T> type, @NotNull final Actor actor) {
+    return ActorHandler.getProxy(actor, type);
+  }
+
+  /**
    * {@inheritDoc}
    */
   @Override
@@ -173,13 +187,15 @@ public class TypedStage extends Stage {
   }
 
   /**
-   * Creates a new actor, with the specified ID, following the specified script.
+   * Creates a new typed actor, with the specified ID, following the specified script.<br>
+   * Notice that the returned instance will proxy any call to the instance methods, including
+   * {@link Object#hashCode()}, {@link Object#equals(Object)} and {@link Object#toString()}.
    *
    * @param type   the type of interface defining the actor protocol.
    * @param id     the actor ID.
    * @param script the actor script.
    * @param <T>    the returned actor runtime type.
-   * @return the actor instance.
+   * @return the typed actor instance.
    */
   @NotNull
   public <T> T createActor(@NotNull final Class<? extends T> type, @NotNull final String id,
@@ -197,12 +213,14 @@ public class TypedStage extends Stage {
   }
 
   /**
-   * Creates a new actor following the specified script.
+   * Creates a new typed actor following the specified script.<br>
+   * Notice that the returned instance will proxy any call to the instance methods, including
+   * {@link Object#hashCode()}, {@link Object#equals(Object)} and {@link Object#toString()}.
    *
    * @param type   the type of interface defining the actor protocol.
    * @param script the actor script.
    * @param <T>    the returned actor runtime type.
-   * @return the actor instance.
+   * @return the typed actor instance.
    */
   @NotNull
   public <T> T createActor(@NotNull final Class<? extends T> type, @NotNull final Script script) {

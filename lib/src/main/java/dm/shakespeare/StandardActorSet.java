@@ -18,20 +18,17 @@ package dm.shakespeare;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.AbstractSet;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 
 import dm.shakespeare.actor.Actor;
-import dm.shakespeare.actor.ActorSet;
-import dm.shakespeare.actor.Headers;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Class implementing an actor set.
  */
-class StandardActorSet extends AbstractSet<Actor> implements ActorSet {
+class StandardActorSet extends AbstractActorSet {
 
   private final Set<Actor> actors;
 
@@ -42,99 +39,6 @@ class StandardActorSet extends AbstractSet<Actor> implements ActorSet {
    */
   StandardActorSet(@NotNull final Set<? extends Actor> actors) {
     this.actors = Collections.unmodifiableSet(ConstantConditions.notNullElements("actors", actors));
-  }
-
-  public boolean addObserver(@NotNull final Actor observer) {
-    if (!isEmpty()) {
-      boolean added = true;
-      for (final Actor actor : actors) {
-        if (!actor.addObserver(observer)) {
-          added = false;
-        }
-      }
-      return added;
-    }
-    ConstantConditions.notNull("observer", observer);
-    return false;
-  }
-
-  public boolean dismiss() {
-    if (!isEmpty()) {
-      boolean dimissed = true;
-      for (final Actor actor : actors) {
-        if (!actor.dismiss()) {
-          dimissed = false;
-        }
-      }
-      return dimissed;
-    }
-    return false;
-  }
-
-  public boolean dismissLazy() {
-    if (!isEmpty()) {
-      boolean dimissed = true;
-      for (final Actor actor : actors) {
-        if (!actor.dismissLazy()) {
-          dimissed = false;
-        }
-      }
-      return dimissed;
-    }
-    return false;
-  }
-
-  public boolean dismissNow() {
-    if (!isEmpty()) {
-      boolean dimissed = true;
-      for (final Actor actor : actors) {
-        if (!actor.dismissNow()) {
-          dimissed = false;
-        }
-      }
-      return dimissed;
-    }
-    return false;
-  }
-
-  public boolean removeObserver(@NotNull final Actor observer) {
-    if (!isEmpty()) {
-      boolean removed = true;
-      for (final Actor actor : actors) {
-        if (!actor.removeObserver(observer)) {
-          removed = false;
-        }
-      }
-      return removed;
-    }
-    ConstantConditions.notNull("observer", observer);
-    return false;
-  }
-
-  public void tell(final Object message, @NotNull final Headers headers,
-      @NotNull final Actor sender) {
-    if (!isEmpty()) {
-      for (final Actor actor : actors) {
-        actor.tell(message, headers, sender);
-      }
-
-    } else {
-      ConstantConditions.notNull("headers", headers);
-      ConstantConditions.notNull("sender", sender);
-    }
-  }
-
-  public void tellAll(@NotNull final Iterable<?> messages, @NotNull final Headers headers,
-      @NotNull final Actor sender) {
-    if (!isEmpty()) {
-      for (final Actor actor : actors) {
-        actor.tellAll(messages, headers, sender);
-      }
-
-    } else {
-      ConstantConditions.notNull("headers", headers);
-      ConstantConditions.notNull("sender", sender);
-    }
   }
 
   @NotNull

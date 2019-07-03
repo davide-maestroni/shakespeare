@@ -25,17 +25,17 @@ import java.util.concurrent.Callable;
  */
 class CallableFuture<V> extends AbstractFuture<V> {
 
-  private final Callable<V> mCallable;
+  private final Callable<V> callable;
 
   CallableFuture(@NotNull final Callable<V> callable, final long timestamp) {
     super(timestamp);
-    mCallable = TestConditions.notNull("callable", callable);
+    this.callable = TestConditions.notNull("callable", callable);
   }
 
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + mCallable.hashCode();
+    result = 31 * result + callable.hashCode();
     return result;
   }
 
@@ -53,10 +53,10 @@ class CallableFuture<V> extends AbstractFuture<V> {
       return false;
     }
     final CallableFuture<?> that = (CallableFuture<?>) o;
-    return mCallable.equals(that.mCallable);
+    return callable.equals(that.callable);
   }
 
   V getValue() throws Exception {
-    return mCallable.call();
+    return callable.call();
   }
 }

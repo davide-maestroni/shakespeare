@@ -31,22 +31,22 @@ import java.util.concurrent.TimeUnit;
  */
 public class TestExecutorService extends AbstractExecutorService {
 
-  private final Queue<Runnable> mRunnables;
+  private final Queue<Runnable> runnables;
 
-  private boolean mIsShutdown;
+  private boolean isShutdown;
 
   public TestExecutorService() {
     this(new LinkedList<Runnable>());
   }
 
   public TestExecutorService(@NotNull final Queue<Runnable> queue) {
-    mRunnables = TestConditions.notNull("queue", queue);
+    runnables = TestConditions.notNull("queue", queue);
   }
 
   @SuppressWarnings("ResultOfMethodCallIgnored")
   public int consume(final int maxTasks) {
     TestConditions.positive("maxTasks", maxTasks);
-    final Queue<Runnable> runnables = mRunnables;
+    final Queue<Runnable> runnables = this.runnables;
     int count = 0;
     while ((count < maxTasks) && !runnables.isEmpty()) {
       runnables.remove().run();
@@ -56,7 +56,7 @@ public class TestExecutorService extends AbstractExecutorService {
   }
 
   public int consumeAll() {
-    final Queue<Runnable> runnables = mRunnables;
+    final Queue<Runnable> runnables = this.runnables;
     int count = 0;
     while (!runnables.isEmpty()) {
       runnables.remove().run();
@@ -66,40 +66,40 @@ public class TestExecutorService extends AbstractExecutorService {
   }
 
   public void execute(@NotNull final Runnable runnable) {
-    if (mIsShutdown) {
+    if (isShutdown) {
       throw new RejectedExecutionException();
     }
-    mRunnables.add(runnable);
+    runnables.add(runnable);
   }
 
   public int getTaskCount() {
-    return mRunnables.size();
+    return runnables.size();
   }
 
   public void shutdown() {
-    mIsShutdown = true;
+    isShutdown = true;
     consumeAll();
   }
 
   @NotNull
   public List<Runnable> shutdownNow() {
-    mIsShutdown = true;
-    final ArrayList<Runnable> runnables = new ArrayList<Runnable>(mRunnables);
-    mRunnables.clear();
+    isShutdown = true;
+    final ArrayList<Runnable> runnables = new ArrayList<Runnable>(this.runnables);
+    this.runnables.clear();
     return runnables;
   }
 
   public boolean isShutdown() {
-    return mIsShutdown;
+    return isShutdown;
   }
 
   public boolean isTerminated() {
-    return mIsShutdown;
+    return isShutdown;
   }
 
   public boolean awaitTermination(final long timeout, @NotNull final TimeUnit unit) throws
       InterruptedException {
-    if (mIsShutdown) {
+    if (isShutdown) {
       return true;
     }
     Thread.sleep(unit.toMillis(timeout));

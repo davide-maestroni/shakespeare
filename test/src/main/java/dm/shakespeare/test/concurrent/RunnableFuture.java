@@ -26,9 +26,9 @@ import java.util.concurrent.TimeUnit;
  */
 class RunnableFuture extends AbstractFuture<Object> {
 
-  private final List<AbstractFuture<?>> mFutures;
-  private final long mPeriod;
-  private final Runnable mRunnable;
+  private final List<AbstractFuture<?>> futures;
+  private final long period;
+  private final Runnable runnable;
 
   RunnableFuture(@NotNull final List<AbstractFuture<?>> futures, @NotNull final Runnable runnable,
       final long timestamp) {
@@ -38,16 +38,16 @@ class RunnableFuture extends AbstractFuture<Object> {
   RunnableFuture(@NotNull final List<AbstractFuture<?>> futures, @NotNull final Runnable runnable,
       final long timestamp, final long period) {
     super(timestamp);
-    mFutures = TestConditions.notNull("futures", futures);
-    mRunnable = TestConditions.notNull("runnable", runnable);
-    mPeriod = period;
+    this.futures = TestConditions.notNull("futures", futures);
+    this.runnable = TestConditions.notNull("runnable", runnable);
+    this.period = period;
   }
 
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + (int) (mPeriod ^ (mPeriod >>> 32));
-    result = 31 * result + mRunnable.hashCode();
+    result = 31 * result + (int) (period ^ (period >>> 32));
+    result = 31 * result + runnable.hashCode();
     return result;
   }
 
@@ -65,19 +65,19 @@ class RunnableFuture extends AbstractFuture<Object> {
       return false;
     }
     final RunnableFuture that = (RunnableFuture) o;
-    return (mPeriod == that.mPeriod) && mRunnable.equals(that.mRunnable);
+    return (period == that.period) && runnable.equals(that.runnable);
   }
 
   Object getValue() {
-    mRunnable.run();
+    runnable.run();
     if (updateTimestamp()) {
-      mFutures.add(this);
+      futures.add(this);
     }
     return null;
   }
 
   private boolean updateTimestamp() {
-    long period = mPeriod;
+    long period = this.period;
     if (period == 0) {
       return false;
     }
