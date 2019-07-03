@@ -163,7 +163,7 @@ public abstract class Event<T> {
   }
 
   public void cancel() {
-    getActor().tell(EventSignal.CANCEL, Headers.EMPTY, Stage.standIn());
+    getActor().tell(EventSignal.CANCEL, Headers.empty(), Stage.standIn());
   }
 
   @NotNull
@@ -175,7 +175,7 @@ public abstract class Event<T> {
   public Spectator play(@NotNull final EventObserver<? super T> eventObserver) {
     final Actor actor = Stage.back().createActor(new EventObserverRole<T>(getActor(), eventObserver));
     final String actorId = actor.getId();
-    getActor().tell(EventSignal.GET, new Headers().withReceiptId(actorId).withThreadId(actorId),
+    getActor().tell(EventSignal.GET, Headers.empty().withReceiptId(actorId).withThreadId(actorId),
         actor);
     return new Spectator(actor);
   }
@@ -335,7 +335,7 @@ public abstract class Event<T> {
           exception = new NarrationStoppedException();
         }
         if (queue.isEmpty()) {
-          actor.tell(NarratorSignal.AVAILABLE, Headers.EMPTY, Stage.standIn());
+          actor.tell(NarratorSignal.AVAILABLE, Headers.empty(), Stage.standIn());
         }
       }
     }
@@ -378,7 +378,7 @@ public abstract class Event<T> {
       if (queue.offer(resolution, timeout, unit)) {
         close();
         if (wasEmpty) {
-          actor.tell(NarratorSignal.AVAILABLE, Headers.EMPTY, Stage.standIn());
+          actor.tell(NarratorSignal.AVAILABLE, Headers.empty(), Stage.standIn());
         }
         return true;
       }
@@ -527,7 +527,7 @@ public abstract class Event<T> {
           return new InitBehavior();
         }
       })).getId();
-      final Headers headers = (this.headers = new Headers().withReceiptId(actorId));
+      final Headers headers = (this.headers = Headers.empty().withReceiptId(actorId));
       inputThread = actorId + ":input";
       outputHeaders = headers.withThreadId(actorId + ":output");
     }
@@ -568,7 +568,7 @@ public abstract class Event<T> {
     private void cancelInputActors(@NotNull final Agent agent) {
       final Actor self = agent.getSelf();
       for (final Actor actor : getInputActors()) {
-        actor.tell(EventSignal.CANCEL, Headers.EMPTY, self);
+        actor.tell(EventSignal.CANCEL, Headers.empty(), self);
       }
     }
 
@@ -670,7 +670,7 @@ public abstract class Event<T> {
               try {
                 final Actor conflictActor = getConflictActor(conflict, agent);
                 if (conflictActor != null) {
-                  conflictActor.tell(EventSignal.CANCEL, Headers.EMPTY, agent.getSelf());
+                  conflictActor.tell(EventSignal.CANCEL, Headers.empty(), agent.getSelf());
                   fail(conflict, agent);
                 }
 
@@ -911,11 +911,11 @@ public abstract class Event<T> {
             agent.getSelf().dismiss();
 
           } else if (message == SpectatorSignal.CANCEL) {
-            eventActor.tell(EventSignal.CANCEL, Headers.EMPTY, agent.getSelf());
+            eventActor.tell(EventSignal.CANCEL, Headers.empty(), agent.getSelf());
 
           } else if (message == SpectatorSignal.CANCEL_AND_DISMISS) {
             final Actor self = agent.getSelf();
-            eventActor.tell(EventSignal.CANCEL, Headers.EMPTY, self);
+            eventActor.tell(EventSignal.CANCEL, Headers.empty(), self);
             self.dismiss();
 
           } else if (!(message instanceof Receipt)) {
@@ -1221,7 +1221,7 @@ public abstract class Event<T> {
           return new InitBehavior();
         }
       })).getId();
-      inputHeaders = new Headers().withReceiptId(actorId).withThreadId(actorId + ":input");
+      inputHeaders = Headers.empty().withReceiptId(actorId).withThreadId(actorId + ":input");
     }
 
     public void run() {
@@ -1271,7 +1271,7 @@ public abstract class Event<T> {
           agent.setBehavior(new InputBehavior());
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, Headers.EMPTY, actor);
+          inputActor.tell(EventSignal.CANCEL, Headers.empty(), actor);
           fail(Conflict.ofCancel(), agent);
         }
         envelop.preventReceipt();
@@ -1287,7 +1287,7 @@ public abstract class Event<T> {
           senders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
 
         } else if (message == EventSignal.CANCEL) {
-          inputActor.tell(EventSignal.CANCEL, Headers.EMPTY, actor);
+          inputActor.tell(EventSignal.CANCEL, Headers.empty(), actor);
           if (inputPending) {
             agent.setBehavior(new CancelBehavior());
 

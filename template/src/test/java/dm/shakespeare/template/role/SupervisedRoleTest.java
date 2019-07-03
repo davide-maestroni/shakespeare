@@ -63,8 +63,8 @@ public class SupervisedRoleTest {
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
     final TestRole supervisorRole = new TestRole(executorService);
     final Actor supervisor = Stage.back().createActor(supervisorRole);
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
-    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), supervisor);
+    actor.tell("fail", Headers.empty().withReceiptId("test"), Stage.standIn());
     actor.dismissLazy();
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
@@ -79,14 +79,14 @@ public class SupervisedRoleTest {
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
     final TestRole supervisorRole = new TestRole(executorService);
     final Actor supervisor = Stage.back().createActor(supervisorRole);
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
-    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), supervisor);
+    actor.tell("fail", Headers.empty().withReceiptId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(supervisorRole.getMessages()).hasSize(1);
     assertThat(supervisorRole.getMessages().get(0)).isExactlyInstanceOf(SupervisedFailure.class);
     supervisorRole.getMessages().clear();
-    actor.tell(newRecovery("test", RecoveryType.DISMISS), Headers.EMPTY.withReceiptId("test"),
+    actor.tell(newRecovery("test", RecoveryType.DISMISS), Headers.empty().withReceiptId("test"),
         Stage.back().createActor(supervisorRole));
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
@@ -101,14 +101,14 @@ public class SupervisedRoleTest {
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
     final TestRole supervisorRole = new TestRole(executorService);
     final Actor supervisor = Stage.back().createActor(supervisorRole);
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
-    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), supervisor);
+    actor.tell("fail", Headers.empty().withReceiptId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(supervisorRole.getMessages()).hasSize(1);
     assertThat(supervisorRole.getMessages().get(0)).isExactlyInstanceOf(SupervisedFailure.class);
     supervisorRole.getMessages().clear();
-    actor.tell(newRecovery("test", RecoveryType.DISMISS), Headers.EMPTY.withReceiptId("test"),
+    actor.tell(newRecovery("test", RecoveryType.DISMISS), Headers.empty().withReceiptId("test"),
         supervisor);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
@@ -123,8 +123,8 @@ public class SupervisedRoleTest {
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
     final TestRole supervisorRole = new TestRole(executorService);
     final Actor supervisor = Stage.back().createActor(supervisorRole);
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
-    actor.tell(newRecovery("TEST", RecoveryType.DISMISS), Headers.EMPTY.withReceiptId("test"),
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), supervisor);
+    actor.tell(newRecovery("TEST", RecoveryType.DISMISS), Headers.empty().withReceiptId("test"),
         actor);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).hasSize(1);
@@ -139,8 +139,8 @@ public class SupervisedRoleTest {
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
     final TestRole supervisorRole = new TestRole(executorService);
     final Actor supervisor = Stage.back().createActor(supervisorRole);
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
-    actor.tell(newRecovery("test", RecoveryType.RESUME), Headers.EMPTY.withReceiptId("test"),
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), supervisor);
+    actor.tell(newRecovery("test", RecoveryType.RESUME), Headers.empty().withReceiptId("test"),
         supervisor);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
@@ -154,8 +154,10 @@ public class SupervisedRoleTest {
     final TestRole testRole = new TestRole(executorService);
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
     final TestRole supervisorRole = new TestRole(executorService);
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, Stage.back().createActor(supervisorRole));
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, Stage.back().createActor(supervisorRole));
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(),
+        Stage.back().createActor(supervisorRole));
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(),
+        Stage.back().createActor(supervisorRole));
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(supervisorRole.getMessages()).containsExactly(SupervisedSignal.REPLACE_SUPERVISOR);
@@ -167,9 +169,11 @@ public class SupervisedRoleTest {
     final TestRole testRole = new TestRole(executorService);
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
     final TestRole supervisorRole = new TestRole(executorService);
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, Stage.back().createActor(supervisorRole));
-    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, Stage.back().createActor(supervisorRole));
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(),
+        Stage.back().createActor(supervisorRole));
+    actor.tell("fail", Headers.empty().withReceiptId("test"), Stage.standIn());
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(),
+        Stage.back().createActor(supervisorRole));
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(supervisorRole.getMessages()).hasSize(3);
@@ -183,7 +187,7 @@ public class SupervisedRoleTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, Stage.standIn());
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
   }
@@ -193,7 +197,7 @@ public class SupervisedRoleTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY.withReceiptId("test"), actor);
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty().withReceiptId("test"), actor);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).hasSize(1);
     assertThat(testRole.getMessages().get(0)).isExactlyInstanceOf(Failure.class);
@@ -205,10 +209,10 @@ public class SupervisedRoleTest {
     final TestRole testRole = new TestRole(executorService);
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
     final TestRole supervisorRole = new TestRole(executorService);
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY.withReceiptId("test"),
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty().withReceiptId("test"),
         Stage.back().createActor(supervisorRole));
-    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY.withReceiptId("test"), actor);
+    actor.tell("fail", Headers.empty().withReceiptId("test"), Stage.standIn());
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty().withReceiptId("test"), actor);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(supervisorRole.getMessages()).hasSize(2);
@@ -241,10 +245,10 @@ public class SupervisedRoleTest {
         return ExecutorServices.localExecutor();
       }
     });
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
-    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), supervisor);
+    actor.tell("fail", Headers.empty().withReceiptId("test"), Stage.standIn());
     final TestRole otherRole = new TestRole(executorService);
-    actor.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.back().createActor(otherRole));
+    actor.tell("test", Headers.empty().withReceiptId("test"), Stage.back().createActor(otherRole));
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(otherRole.getMessages()).hasSize(1);
@@ -258,11 +262,11 @@ public class SupervisedRoleTest {
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
     final TestRole supervisorRole = new TestRole(executorService);
     final Actor supervisor = Stage.back().createActor(supervisorRole);
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
-    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), supervisor);
+    actor.tell("fail", Headers.empty().withReceiptId("test"), Stage.standIn());
     supervisor.dismiss();
     final TestRole otherRole = new TestRole(executorService);
-    actor.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.back().createActor(otherRole));
+    actor.tell("test", Headers.empty().withReceiptId("test"), Stage.back().createActor(otherRole));
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(supervisorRole.getMessages()).isEmpty();
@@ -275,7 +279,7 @@ public class SupervisedRoleTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, Stage.back().createActor(new Role() {
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -299,11 +303,11 @@ public class SupervisedRoleTest {
         return ExecutorServices.localExecutor();
       }
     }));
-    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
-    actor.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell("fail", Headers.empty().withReceiptId("test"), Stage.standIn());
+    actor.tell("test", Headers.empty().withReceiptId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
-    actor.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell("test", Headers.empty().withReceiptId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
   }
@@ -314,8 +318,9 @@ public class SupervisedRoleTest {
     final TestRole testRole = new TestRole(executorService);
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
     final TestRole supervisorRole = new TestRole(executorService);
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, Stage.back().createActor(supervisorRole));
-    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(),
+        Stage.back().createActor(supervisorRole));
+    actor.tell("fail", Headers.empty().withReceiptId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(supervisorRole.getMessages()).hasSize(1);
@@ -327,7 +332,7 @@ public class SupervisedRoleTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, Stage.back().createActor(new Role() {
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -351,11 +356,11 @@ public class SupervisedRoleTest {
         return ExecutorServices.localExecutor();
       }
     }));
-    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
-    actor.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell("fail", Headers.empty().withReceiptId("test"), Stage.standIn());
+    actor.tell("test", Headers.empty().withReceiptId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
-    actor.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell("test", Headers.empty().withReceiptId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -365,7 +370,7 @@ public class SupervisedRoleTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, Stage.back().createActor(new Role() {
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -389,11 +394,11 @@ public class SupervisedRoleTest {
         return ExecutorServices.localExecutor();
       }
     }));
-    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
-    actor.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell("fail", Headers.empty().withReceiptId("test"), Stage.standIn());
+    actor.tell("test", Headers.empty().withReceiptId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
-    actor.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell("test", Headers.empty().withReceiptId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test", "test");
   }
@@ -403,7 +408,7 @@ public class SupervisedRoleTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, Stage.back().createActor(new Role() {
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -437,11 +442,11 @@ public class SupervisedRoleTest {
         return ExecutorServices.localExecutor();
       }
     }));
-    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
-    actor.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell("fail", Headers.empty().withReceiptId("test"), Stage.standIn());
+    actor.tell("test", Headers.empty().withReceiptId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
-    actor.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell("test", Headers.empty().withReceiptId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test", "test");
   }
@@ -451,7 +456,7 @@ public class SupervisedRoleTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, Stage.back().createActor(new Role() {
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -475,11 +480,11 @@ public class SupervisedRoleTest {
         return ExecutorServices.localExecutor();
       }
     }));
-    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
-    actor.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell("fail", Headers.empty().withReceiptId("test"), Stage.standIn());
+    actor.tell("test", Headers.empty().withReceiptId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
-    actor.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell("test", Headers.empty().withReceiptId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test", "test");
   }
@@ -489,7 +494,7 @@ public class SupervisedRoleTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, Stage.back().createActor(new Role() {
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -523,11 +528,11 @@ public class SupervisedRoleTest {
         return ExecutorServices.localExecutor();
       }
     }));
-    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
-    actor.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell("fail", Headers.empty().withReceiptId("test"), Stage.standIn());
+    actor.tell("test", Headers.empty().withReceiptId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
-    actor.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell("test", Headers.empty().withReceiptId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test", "test");
   }
@@ -539,9 +544,9 @@ public class SupervisedRoleTest {
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
     final TestRole supervisorRole = new TestRole(executorService);
     final Actor supervisor = Stage.back().createActor(supervisorRole);
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
-    actor.tell(SupervisedSignal.UNSUPERVISE, Headers.EMPTY, supervisor);
-    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), supervisor);
+    actor.tell(SupervisedSignal.UNSUPERVISE, Headers.empty(), supervisor);
+    actor.tell("fail", Headers.empty().withReceiptId("test"), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(supervisorRole.getMessages()).isEmpty();
@@ -554,8 +559,8 @@ public class SupervisedRoleTest {
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
     final TestRole supervisorRole = new TestRole(executorService);
     final Actor supervisor = Stage.back().createActor(supervisorRole);
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
-    actor.tell(SupervisedSignal.UNSUPERVISE, Headers.EMPTY.withReceiptId("test"), actor);
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), supervisor);
+    actor.tell(SupervisedSignal.UNSUPERVISE, Headers.empty().withReceiptId("test"), actor);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).hasSize(1);
     assertThat(testRole.getMessages().get(0)).isExactlyInstanceOf(Failure.class);
@@ -569,10 +574,10 @@ public class SupervisedRoleTest {
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
     final TestRole supervisorRole = new TestRole(executorService);
     final Actor supervisor = Stage.back().createActor(supervisorRole);
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
-    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), supervisor);
+    actor.tell("fail", Headers.empty().withReceiptId("test"), Stage.standIn());
     final TestRole otherRole = new TestRole(executorService);
-    actor.tell(SupervisedSignal.UNSUPERVISE, Headers.EMPTY.withReceiptId("test"),
+    actor.tell(SupervisedSignal.UNSUPERVISE, Headers.empty().withReceiptId("test"),
         Stage.back().createActor(otherRole));
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
@@ -589,9 +594,9 @@ public class SupervisedRoleTest {
     final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
     final TestRole supervisorRole = new TestRole(executorService);
     final Actor supervisor = Stage.back().createActor(supervisorRole);
-    actor.tell(SupervisedSignal.SUPERVISE, Headers.EMPTY, supervisor);
-    actor.tell("fail", Headers.EMPTY.withReceiptId("test"), Stage.standIn());
-    actor.tell(SupervisedSignal.UNSUPERVISE, Headers.EMPTY, supervisor);
+    actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), supervisor);
+    actor.tell("fail", Headers.empty().withReceiptId("test"), Stage.standIn());
+    actor.tell(SupervisedSignal.UNSUPERVISE, Headers.empty(), supervisor);
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
     assertThat(supervisorRole.getMessages()).hasSize(1);

@@ -56,19 +56,19 @@ public class StandInActorTest {
   @Test
   public void dismiss() {
     final Actor actor = Stage.standIn();
-    assertThat(actor.dismiss()).isTrue();
+    assertThat(actor.dismiss()).isFalse();
   }
 
   @Test
   public void dismissLazy() {
     final Actor actor = Stage.standIn();
-    assertThat(actor.dismissLazy()).isTrue();
+    assertThat(actor.dismissLazy()).isFalse();
   }
 
   @Test
   public void dismissNow() {
     final Actor actor = Stage.standIn();
-    assertThat(actor.dismissNow()).isTrue();
+    assertThat(actor.dismissNow()).isFalse();
   }
 
   @Test
@@ -117,14 +117,14 @@ public class StandInActorTest {
   @SuppressWarnings("ConstantConditions")
   public void tellAllNPE() {
     final Actor actor = Stage.standIn();
-    actor.tellAll(null, Headers.EMPTY, Stage.standIn());
+    actor.tellAll(null, Headers.empty(), Stage.standIn());
   }
 
   @Test(expected = NullPointerException.class)
   @SuppressWarnings("ConstantConditions")
   public void tellAllSenderNPE() {
     final Actor actor = Stage.standIn();
-    actor.tellAll(Collections.emptyList(), Headers.EMPTY, null);
+    actor.tellAll(Collections.emptyList(), Headers.empty(), null);
   }
 
   @Test
@@ -151,7 +151,7 @@ public class StandInActorTest {
   @SuppressWarnings("ConstantConditions")
   public void tellSenderNPE() {
     final Actor actor = Stage.standIn();
-    actor.tell(null, Headers.EMPTY, null);
+    actor.tell(null, Headers.empty(), null);
   }
 
   private static class TestRole extends Role {

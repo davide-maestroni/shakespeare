@@ -45,11 +45,11 @@ public class ProxyRoleTest {
   public void proxy() {
     final TestExecutorService executorService = new TestExecutorService();
     final Actor proxy = Stage.back().createActor(new LocalProxy());
-    proxy.tell("test0", Headers.EMPTY, Stage.standIn());
+    proxy.tell("test0", Headers.empty(), Stage.standIn());
     final TestRole testRole = new TestRole(executorService);
-    proxy.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole));
-    proxy.tell("test1", Headers.EMPTY, Stage.standIn());
-    proxy.tell("test2", Headers.EMPTY, Stage.back().createActor(new Role() {
+    proxy.tell(ProxySignal.ADD_PROXIED, Headers.empty(), Stage.back().createActor(testRole));
+    proxy.tell("test1", Headers.empty(), Stage.standIn());
+    proxy.tell("test2", Headers.empty(), Stage.back().createActor(new Role() {
 
       @NotNull
       @Override
@@ -66,9 +66,9 @@ public class ProxyRoleTest {
     final TestExecutorService executorService = new TestExecutorService();
     final Actor proxy = Stage.back().createActor(new LocalProxy());
     final TestRole testRole1 = new TestRole(executorService);
-    proxy.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole1));
+    proxy.tell(ProxySignal.ADD_PROXIED, Headers.empty(), Stage.back().createActor(testRole1));
     final TestRole testRole2 = new TestRole(executorService);
-    proxy.tell("test", Headers.EMPTY.withReceiptId("test"), Stage.back().createActor(testRole2));
+    proxy.tell("test", Headers.empty().withReceiptId("test"), Stage.back().createActor(testRole2));
     executorService.consumeAll();
     assertThat(testRole1.getMessages()).containsExactly("test");
     assertThat(testRole2.getMessages()).hasSize(1);
@@ -80,13 +80,13 @@ public class ProxyRoleTest {
     final TestExecutorService executorService = new TestExecutorService();
     final Actor proxy = Stage.back().createActor(new LocalProxy());
     final TestRole testRole1 = new TestRole(executorService);
-    proxy.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole1));
-    proxy.tell("test1", Headers.EMPTY, Stage.standIn());
+    proxy.tell(ProxySignal.ADD_PROXIED, Headers.empty(), Stage.back().createActor(testRole1));
+    proxy.tell("test1", Headers.empty(), Stage.standIn());
     final TestRole testRole2 = new TestRole(executorService);
     final Actor actor = Stage.back().createActor(testRole2);
-    proxy.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, actor);
-    proxy.tell(ProxySignal.REMOVE_PROXIED, Headers.EMPTY, actor);
-    proxy.tell("test2", Headers.EMPTY, Stage.standIn());
+    proxy.tell(ProxySignal.ADD_PROXIED, Headers.empty(), actor);
+    proxy.tell(ProxySignal.REMOVE_PROXIED, Headers.empty(), actor);
+    proxy.tell("test2", Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole1.getMessages()).containsExactly("test1");
     assertThat(testRole2.getMessages()).isEmpty();
@@ -96,13 +96,13 @@ public class ProxyRoleTest {
   public void proxySender() {
     final TestExecutorService executorService = new TestExecutorService();
     final Actor proxy = Stage.back().createActor(new LocalProxy());
-    proxy.tell("test0", Headers.EMPTY, Stage.standIn());
+    proxy.tell("test0", Headers.empty(), Stage.standIn());
     final TestRole testRole1 = new TestRole(executorService);
-    proxy.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole1));
-    proxy.tell("test1", Headers.EMPTY, Stage.standIn());
+    proxy.tell(ProxySignal.ADD_PROXIED, Headers.empty(), Stage.back().createActor(testRole1));
+    proxy.tell("test1", Headers.empty(), Stage.standIn());
     final TestRole testRole2 = new TestRole(executorService);
-    proxy.tell(ProxySignal.ADD_PROXIED, Headers.EMPTY, Stage.back().createActor(testRole2));
-    proxy.tell("test2", Headers.EMPTY, Stage.standIn());
+    proxy.tell(ProxySignal.ADD_PROXIED, Headers.empty(), Stage.back().createActor(testRole2));
+    proxy.tell("test2", Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole1.getMessages()).containsExactly("test1");
     assertThat(testRole2.getMessages()).containsExactly("test2");

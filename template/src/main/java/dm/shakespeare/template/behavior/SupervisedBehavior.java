@@ -166,7 +166,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
     final Actor self = agent.getSelf();
     final int size = delayedMessages.size();
     for (int i = 0; i < size; ++i) {
-      self.tell(SupervisedDelayedSignal.DUMMY_MESSAGE, Headers.EMPTY, self);
+      self.tell(SupervisedDelayedSignal.DUMMY_MESSAGE, Headers.empty(), self);
     }
   }
 
@@ -398,7 +398,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
           if (!sender.equals(supervisor)) {
             if (supervisor != null) {
               // notify old supervisor
-              supervisor.tell(SupervisedSignal.REPLACE_SUPERVISOR, Headers.EMPTY, self);
+              supervisor.tell(SupervisedSignal.REPLACE_SUPERVISOR, Headers.empty(), self);
               supervisor.removeObserver(self);
             }
             if (sender.addObserver(agent.getSelf())) {
@@ -509,7 +509,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
                   .dbg("[%s] sending failure to supervisor: failureId=%s - supervisor=%s", self,
                       failureId, supervisor);
               supervisor.tell(new SupervisedFailure(failureId, t),
-                  new Headers().withThreadId(supervisorThread).withReceiptId(receiptId),
+                  Headers.empty().withThreadId(supervisorThread).withReceiptId(receiptId),
                   agent.getSelf());
               failure = t;
               SupervisedBehavior.this.failureId = failureId;
@@ -558,7 +558,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
         if (!sender.equals(self)) {
           if (!sender.equals(supervisor)) {
             // notify old supervisor
-            supervisor.tell(SupervisedSignal.REPLACE_SUPERVISOR, Headers.EMPTY, self);
+            supervisor.tell(SupervisedSignal.REPLACE_SUPERVISOR, Headers.empty(), self);
             supervisor.removeObserver(self);
             if (sender.addObserver(self)) {
               agent.getLogger()
@@ -567,7 +567,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
               supervisor = sender;
               supervisorThread = headers.getThreadId();
               sender.tell(new SupervisedFailure(failureId, failure),
-                  new Headers().withThreadId(supervisorThread).withReceiptId(receiptId), self);
+                  Headers.empty().withThreadId(supervisorThread).withReceiptId(receiptId), self);
 
             } else {
               agent.getLogger()

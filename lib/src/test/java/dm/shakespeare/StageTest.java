@@ -56,7 +56,7 @@ public class StageTest {
     final Actor actor = Stage.back().createActor(testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isNotNull();
-    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    actor.tell("test", Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -74,7 +74,7 @@ public class StageTest {
     final Actor actor = Stage.back().createActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    actor.tell("test", Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -107,14 +107,14 @@ public class StageTest {
     Actor actor = Stage.back().createActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    actor.tell("test", Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
     testRole = new TestRole(executorService);
     actor = Stage.back().createActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    actor.tell("test", Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -127,7 +127,7 @@ public class StageTest {
     final Actor actor = stage.createActor(testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isNotNull();
-    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    actor.tell("test", Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -146,7 +146,7 @@ public class StageTest {
     final Actor actor = stage.createActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    actor.tell("test", Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -183,7 +183,7 @@ public class StageTest {
     final Actor actor = stage.createActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    actor.tell("test", Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
     stage.createActor(id, new TestRole(executorService));
@@ -634,7 +634,7 @@ public class StageTest {
     final Actor actor = stage.createActor(id, testRole);
     assertThat(actor).isNotNull();
     assertThat(actor.getId()).isEqualTo(id);
-    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    actor.tell("test", Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }

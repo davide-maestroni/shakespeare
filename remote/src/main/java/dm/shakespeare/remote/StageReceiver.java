@@ -515,7 +515,7 @@ public class StageReceiver {
           headers = headers.asSentAt(request.getSentTimestamp());
 
         } else {
-          headers = new Headers().asSentAt(request.getSentTimestamp());
+          headers = Headers.empty().asSentAt(request.getSentTimestamp());
         }
         actor.tell(msg, headers, sender);
 
@@ -572,7 +572,7 @@ public class StageReceiver {
           headers = headers.asSentAt(request.getSentTimestamp());
 
         } else {
-          headers = new Headers().asSentAt(request.getSentTimestamp());
+          headers = Headers.empty().asSentAt(request.getSentTimestamp());
         }
         actor.tell(msg, headers, sender);
 

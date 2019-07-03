@@ -277,7 +277,7 @@ public class StageRef extends Stage {
             if (actorId != null) {
               final Actor actor = StageRef.super.get(actorId);
               if (actor != null) {
-                actor.tell(request, Headers.EMPTY, Stage.standIn());
+                actor.tell(request, Headers.empty(), Stage.standIn());
                 return new MessageResponse();
               }
             }
@@ -551,7 +551,8 @@ public class StageRef extends Stage {
     for (final Actor actor : super.getAll()) {
       final ActorID actorID = ids.get(actor.getId());
       if (actorID != null) {
-        actor.tell(new RefreshInstanceId(actorID.getInstanceId()), Headers.EMPTY, Stage.standIn());
+        actor.tell(new RefreshInstanceId(actorID.getInstanceId()), Headers.empty(),
+            Stage.standIn());
 
       } else if (retainAll) {
         actor.dismiss();
@@ -727,9 +728,8 @@ public class StageRef extends Stage {
         }
         final Headers headers = request.getHeaders();
         senderActor.getActor()
-            .tell(object,
-                ((headers != null) ? headers : Headers.EMPTY).asSentAt(request.getSentTimestamp()),
-                agent.getSelf());
+            .tell(object, ((headers != null) ? headers : Headers.empty()).asSentAt(
+                request.getSentTimestamp()), agent.getSelf());
 
       } catch (final Exception e) {
         logger.wrn(e, "failed to deserialize message");

@@ -186,7 +186,7 @@ public class TypedRoleTest {
   public void fromHeadersUnsupported() {
     final TypedItf actor = TypedStage.back()
         .createActor(TypedItf.class, new ClassLocalScript(TypedRole.class, "test"));
-    actor.setValueInvalid(Headers.EMPTY, Headers.EMPTY);
+    actor.setValueInvalid(Headers.empty(), Headers.empty());
   }
 
   @Test
@@ -450,12 +450,12 @@ public class TypedRoleTest {
     }
 
     public void setValue(final Actor actor) {
-      actor.tell(value, Headers.EMPTY, Stage.standIn());
+      actor.tell(value, Headers.empty(), Stage.standIn());
     }
 
     public void setValue(final List<Actor> actors) {
       for (final Actor actor : actors) {
-        actor.tell(value, Headers.EMPTY, Stage.standIn());
+        actor.tell(value, Headers.empty(), Stage.standIn());
       }
     }
 

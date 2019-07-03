@@ -78,7 +78,7 @@ public class RemoteServerTest {
     stage.connect();
     final Actor printActor = Stage.back().createActor(new PrintRole());
     final Actor actor = stage.createActor(new UpperRole());
-    actor.tell("hello remote!", Headers.EMPTY, printActor);
+    actor.tell("hello remote!", Headers.empty(), printActor);
   }
 
   @Test
@@ -256,7 +256,7 @@ public class RemoteServerTest {
         public void onMessage(final Object message, @NotNull final Envelop envelop,
             @NotNull final Agent agent) {
           envelop.getSender()
-              .tell(("" + message).toUpperCase(Locale.ENGLISH), Headers.EMPTY, agent.getSelf());
+              .tell(("" + message).toUpperCase(Locale.ENGLISH), Headers.empty(), agent.getSelf());
         }
       };
     }

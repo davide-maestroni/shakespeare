@@ -155,7 +155,7 @@ class StandardAgent implements Agent {
 
   void addObserver(@NotNull final Actor observer) {
     if (stopped) {
-      observer.tell(DEAD_LETTER, Headers.EMPTY, actor);
+      observer.tell(DEAD_LETTER, Headers.empty(), actor);
 
     } else {
       observers.add(observer);
@@ -270,7 +270,7 @@ class StandardAgent implements Agent {
     stopped = true;
     final Actor actor = this.actor;
     for (final Actor observer : observers) {
-      observer.tell(DEAD_LETTER, Headers.EMPTY, actor);
+      observer.tell(DEAD_LETTER, Headers.empty(), actor);
     }
   }
 

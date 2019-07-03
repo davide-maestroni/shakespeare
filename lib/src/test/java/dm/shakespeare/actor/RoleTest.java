@@ -65,7 +65,7 @@ public class RoleTest {
     });
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = Stage.back().createActor(observerRole);
-    actor.tell("test", Headers.EMPTY, observer);
+    actor.tell("test", Headers.empty(), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).isEmpty();
     assertThat(observerRole.getSenders()).isEmpty();
@@ -102,7 +102,7 @@ public class RoleTest {
     });
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = Stage.back().createActor(observerRole);
-    actor.tell("test", Headers.EMPTY, observer);
+    actor.tell("test", Headers.empty(), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).containsExactly("TEST");
     assertThat(observerRole.getSenders()).containsExactly(actor);
@@ -129,7 +129,7 @@ public class RoleTest {
         };
       }
     }));
-    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    actor.tell("test", Headers.empty(), Stage.standIn());
     assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
   }
 

@@ -202,10 +202,10 @@ class ActorHandler implements InvocationHandler {
           "methods with annotated sender actor cannot have a timeout");
     }
     final Actor actor = this.actor;
-    final Headers headers = (headersFrom != null) ? headersFrom : Headers.EMPTY;
+    final Headers headers = (headersFrom != null) ? headersFrom : Headers.empty();
     final InvocationId invocationId = new InvocationId(UUID.randomUUID().toString());
     for (final Actor sender : actors) {
-      actor.tell(invocationId, Headers.EMPTY, sender);
+      actor.tell(invocationId, Headers.empty(), sender);
     }
     final Invocation invocation =
         new Invocation(invocationId.getId(), method.getName(), paramClasses.toArray(EMPTY_CLASSES),
@@ -213,7 +213,7 @@ class ActorHandler implements InvocationHandler {
     if (timeoutMillis != null) {
       final Actor invocationActor = this.invocationActor;
       final InvocationLatch latch = new InvocationLatch(invocationId.getId());
-      invocationActor.tell(latch, Headers.EMPTY, actor);
+      invocationActor.tell(latch, Headers.empty(), actor);
       actor.tell(invocation, headers.withReceiptId(invocationId.getId()), invocationActor);
       return latch.awaitResult(timeoutMillis, TimeUnit.MILLISECONDS);
     }

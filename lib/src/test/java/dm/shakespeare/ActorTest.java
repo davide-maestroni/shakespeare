@@ -378,7 +378,7 @@ public class ActorTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole role = new TestRole(executorService);
     final Actor actor = stage.createActor(role);
-    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    actor.tell("test", Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(role.getMessages()).containsExactly("test");
     assertThat(role.getSenders()).containsExactly(Stage.standIn());
@@ -390,7 +390,7 @@ public class ActorTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole role = new TestRole(executorService);
     final Actor actor = stage.createActor(role);
-    actor.tellAll(Arrays.asList("test1", "test2"), Headers.EMPTY, Stage.standIn());
+    actor.tellAll(Arrays.asList("test1", "test2"), Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(role.getMessages()).containsExactly("test1", "test2");
     assertThat(role.getSenders()).containsExactly(Stage.standIn(), Stage.standIn());
@@ -446,7 +446,7 @@ public class ActorTest {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
     final Actor actor = stage.createActor(new TestRole(executorService));
-    actor.tellAll(null, Headers.EMPTY, Stage.standIn());
+    actor.tellAll(null, Headers.empty(), Stage.standIn());
   }
 
   @Test
@@ -462,7 +462,7 @@ public class ActorTest {
     });
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tellAll(Arrays.asList("test1", "test2"), Headers.EMPTY, observer);
+    actor.tellAll(Arrays.asList("test1", "test2"), Headers.empty(), observer);
     actor.tellAll(Arrays.asList("test1", "test2"), new Headers().withReceiptId("test"), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(2);
@@ -514,8 +514,8 @@ public class ActorTest {
     });
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tellAll(Arrays.asList("test1", "test2"), Headers.EMPTY, observer);
-    actor.tellAll(Arrays.asList("test1", "test2"), Headers.EMPTY, observer);
+    actor.tellAll(Arrays.asList("test1", "test2"), Headers.empty(), observer);
+    actor.tellAll(Arrays.asList("test1", "test2"), Headers.empty(), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).isEmpty();
     assertThat(observerRole.getSenders()).isEmpty();
@@ -577,7 +577,7 @@ public class ActorTest {
     final Actor observer = stage.createActor(observerRole);
     rejectingExecutor.consumeAll();
     rejectingExecutor.setRejecting(true);
-    actor.tellAll(Arrays.asList("test1", "test2"), Headers.EMPTY, observer);
+    actor.tellAll(Arrays.asList("test1", "test2"), Headers.empty(), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).isEmpty();
     assertThat(observerRole.getSenders()).isEmpty();
@@ -589,7 +589,7 @@ public class ActorTest {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
     final Actor actor = stage.createActor(new TestRole(executorService));
-    actor.tellAll(Collections.emptyList(), Headers.EMPTY, null);
+    actor.tellAll(Collections.emptyList(), Headers.empty(), null);
   }
 
   @Test
@@ -645,7 +645,7 @@ public class ActorTest {
     });
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tell("test", Headers.EMPTY, observer);
+    actor.tell("test", Headers.empty(), observer);
     actor.tell("test", new Headers().withReceiptId("test"), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(1);
@@ -691,8 +691,8 @@ public class ActorTest {
     });
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = stage.createActor(observerRole);
-    actor.tell("test", Headers.EMPTY, observer);
-    actor.tell("test", Headers.EMPTY, observer);
+    actor.tell("test", Headers.empty(), observer);
+    actor.tell("test", Headers.empty(), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).isEmpty();
     assertThat(observerRole.getSenders()).isEmpty();
@@ -752,7 +752,7 @@ public class ActorTest {
     final Actor observer = stage.createActor(observerRole);
     rejectingExecutor.consumeAll();
     rejectingExecutor.setRejecting(true);
-    actor.tell("test", Headers.EMPTY, observer);
+    actor.tell("test", Headers.empty(), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).isEmpty();
     assertThat(observerRole.getSenders()).isEmpty();
@@ -764,7 +764,7 @@ public class ActorTest {
     final Stage stage = new Stage();
     final TestExecutorService executorService = new TestExecutorService();
     final Actor actor = stage.createActor(new TestRole(executorService));
-    actor.tell(null, Headers.EMPTY, null);
+    actor.tell(null, Headers.empty(), null);
   }
 
   private static class RejectingExecutorService extends TestExecutorService {

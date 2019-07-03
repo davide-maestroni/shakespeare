@@ -117,7 +117,7 @@ public class Plot {
     SettingInfo.set(settingInfo);
     try {
       final ActorEvent<T> event = new ActorEvent<T>(actor);
-      actor.tell(new CreateNullaryEvent(eventCreator), Headers.EMPTY, event.getActor());
+      actor.tell(new CreateNullaryEvent(eventCreator), Headers.empty(), event.getActor());
       return event;
 
     } finally {
@@ -132,7 +132,7 @@ public class Plot {
     SettingInfo.set(settingInfo);
     try {
       final ActorEvent<R> event = new ActorEvent<R>(actor);
-      final Headers headers = new Headers().withThreadId(event.getActor().getId());
+      final Headers headers = Headers.empty().withThreadId(event.getActor().getId());
       for (final Event<? extends T> anEvent : events) {
         actor.tell(PlotSignal.CREATE_PARAM, headers, anEvent.getActor());
       }
@@ -152,7 +152,7 @@ public class Plot {
     SettingInfo.set(settingInfo);
     try {
       final ActorEvent<R> event = new ActorEvent<R>(actor);
-      final Headers headers = new Headers().withThreadId(event.getActor().getId());
+      final Headers headers = Headers.empty().withThreadId(event.getActor().getId());
 {{#paramTypes}}      actor.tell(PlotSignal.CREATE_PARAM, headers, {{prefix}}Event.getActor());
 {{/paramTypes}}
       actor.tell(new Create{{classPrefix}}Event<{{#paramTypes}}{{type}}{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>(eventCreator), headers, event.getActor());
@@ -205,7 +205,7 @@ public class Plot {
     SettingInfo.set(settingInfo);
     try {
       final ActorStory<T> story = new ActorStory<T>(actor, memory);
-      actor.tell(new CreateNullaryStory(storyCreator), Headers.EMPTY, story.getActor());
+      actor.tell(new CreateNullaryStory(storyCreator), Headers.empty(), story.getActor());
       return story;
 
     } finally {
@@ -227,7 +227,7 @@ public class Plot {
     SettingInfo.set(settingInfo);
     try {
       final ActorStory<R> story = new ActorStory<R>(actor, memory);
-      final Headers headers = new Headers().withThreadId(story.getActor().getId());
+      final Headers headers = Headers.empty().withThreadId(story.getActor().getId());
       for (final Story<? extends T> aStory : stories) {
         actor.tell(PlotSignal.CREATE_PARAM, headers, aStory.getActor());
       }
@@ -254,7 +254,7 @@ public class Plot {
     SettingInfo.set(settingInfo);
     try {
       final ActorStory<R> story = new ActorStory<R>(actor, memory);
-      final Headers headers = new Headers().withThreadId(story.getActor().getId());
+      final Headers headers = Headers.empty().withThreadId(story.getActor().getId());
 {{#paramTypes}}      actor.tell(PlotSignal.CREATE_PARAM, headers, {{prefix}}Story.getActor());
 {{/paramTypes}}
       actor.tell(new Create{{classPrefix}}Story<{{#paramTypes}}{{type}}{{#hasNext}}, {{/hasNext}}{{/paramTypes}}>(storyCreator), headers, story.getActor());

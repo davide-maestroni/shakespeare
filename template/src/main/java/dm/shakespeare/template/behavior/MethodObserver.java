@@ -25,7 +25,6 @@ import java.util.Collections;
 import dm.shakespeare.actor.Behavior.Agent;
 import dm.shakespeare.function.Observer;
 import dm.shakespeare.template.config.BuildConfig;
-import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
@@ -33,7 +32,7 @@ import dm.shakespeare.util.ConstantConditions;
  */
 class MethodObserver implements Observer<Agent>, Serializable {
 
-  private static final Object[] EMPTY_ARGS = new Object[0];
+  private static final Object[] NO_ARGS = new Object[0];
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
@@ -42,7 +41,7 @@ class MethodObserver implements Observer<Agent>, Serializable {
 
   MethodObserver(@NotNull final Object object, @NotNull final Method method) {
     this.object = ConstantConditions.notNull("object", object);
-    this.method =  ConstantConditions.notNull("method", method);
+    this.method = ConstantConditions.notNull("method", method);
   }
 
   private MethodObserver() {
@@ -64,7 +63,7 @@ class MethodObserver implements Observer<Agent>, Serializable {
       }
 
     } else {
-      args = EMPTY_ARGS;
+      args = NO_ARGS;
     }
     agent.getLogger()
         .dbg("[%s] invoking method: method=%s - args=%s", agent.getSelf(), method, args);

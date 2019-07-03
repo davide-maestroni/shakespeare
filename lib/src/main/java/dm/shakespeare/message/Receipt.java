@@ -42,7 +42,7 @@ public class Receipt implements Serializable {
    * Creates a new empty receipt message.
    */
   public Receipt() {
-    this(null, Headers.EMPTY);
+    this(null, Headers.empty());
   }
 
   /**

@@ -350,7 +350,7 @@ public class Stage {
     }
     if (actor.addObserver(this.actor)) {
       for (final Actor observer : observers) {
-        observer.tell(StageSignal.CREATE, Headers.EMPTY, actor);
+        observer.tell(StageSignal.CREATE, Headers.empty(), actor);
       }
 
     } else {
@@ -387,7 +387,7 @@ public class Stage {
     if (actor != null) {
       actor.removeObserver(this.actor);
       for (final Actor observer : observers) {
-        observer.tell(StageSignal.DISMISS, Headers.EMPTY, actor);
+        observer.tell(StageSignal.DISMISS, Headers.empty(), actor);
       }
     }
   }

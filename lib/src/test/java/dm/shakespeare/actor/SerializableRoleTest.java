@@ -63,7 +63,7 @@ public class SerializableRoleTest {
             };
           }
         }));
-    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    actor.tell("test", Headers.empty(), Stage.standIn());
     assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
   }
 
@@ -87,7 +87,7 @@ public class SerializableRoleTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = Stage.back().createActor(observerRole);
-    actor.tell(3, Headers.EMPTY, observer);
+    actor.tell(3, Headers.empty(), observer);
     Thread.sleep(1000);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).containsExactly("3");
@@ -97,7 +97,7 @@ public class SerializableRoleTest {
   @Test
   public void serializationBehavior() throws IOException, ClassNotFoundException {
     final SerializableBehaviorRole role = new SerializableBehaviorRole();
-    Stage.back().createActor(role).tell(3, Headers.EMPTY, Stage.standIn());
+    Stage.back().createActor(role).tell(3, Headers.empty(), Stage.standIn());
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     final ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
     objectOutputStream.writeObject(role);
@@ -109,7 +109,7 @@ public class SerializableRoleTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = Stage.back().createActor(observerRole);
-    actor.tell(3, Headers.EMPTY, observer);
+    actor.tell(3, Headers.empty(), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).containsExactly("3");
     assertThat(observerRole.getSenders()).containsExactly(actor);
@@ -129,7 +129,7 @@ public class SerializableRoleTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = Stage.back().createActor(observerRole);
-    actor.tell(3, Headers.EMPTY, observer);
+    actor.tell(3, Headers.empty(), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).containsExactly("3");
     assertThat(observerRole.getSenders()).containsExactly(actor);
@@ -139,7 +139,7 @@ public class SerializableRoleTest {
   public void serializationDismissed() throws IOException, ClassNotFoundException {
     final SerializableDismissedRole role = new SerializableDismissedRole();
     final Actor roleActor = Stage.back().createActor(role);
-    roleActor.tell(null, Headers.EMPTY, Stage.standIn());
+    roleActor.tell(null, Headers.empty(), Stage.standIn());
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     final ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
     objectOutputStream.writeObject(role);
@@ -151,7 +151,7 @@ public class SerializableRoleTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = Stage.back().createActor(observerRole);
-    actor.tell(3, Headers.EMPTY.withReceiptId("test"), observer);
+    actor.tell(3, Headers.empty().withReceiptId("test"), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).hasSize(1);
     assertThat(observerRole.getMessages().get(0)).isExactlyInstanceOf(Bounce.class);
@@ -161,7 +161,7 @@ public class SerializableRoleTest {
   @Test
   public void serializationStarted() throws IOException, ClassNotFoundException {
     final SerializableStartedRole role = new SerializableStartedRole();
-    Stage.back().createActor(role).tell(3, Headers.EMPTY, Stage.standIn());
+    Stage.back().createActor(role).tell(3, Headers.empty(), Stage.standIn());
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     final ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
     objectOutputStream.writeObject(role);
@@ -173,7 +173,7 @@ public class SerializableRoleTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = Stage.back().createActor(observerRole);
-    actor.tell(3, Headers.EMPTY, observer);
+    actor.tell(3, Headers.empty(), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).containsExactly(1);
     assertThat(observerRole.getSenders()).containsExactly(actor);
@@ -182,7 +182,7 @@ public class SerializableRoleTest {
   @Test
   public void serializationStopped() throws IOException, ClassNotFoundException {
     final SerializableStoppedRole role = new SerializableStoppedRole();
-    Stage.back().createActor(role).tell(null, Headers.EMPTY, Stage.standIn());
+    Stage.back().createActor(role).tell(null, Headers.empty(), Stage.standIn());
     final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     final ObjectOutputStream objectOutputStream = new ObjectOutputStream(outputStream);
     objectOutputStream.writeObject(role);
@@ -194,7 +194,7 @@ public class SerializableRoleTest {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole observerRole = new TestRole(executorService);
     final Actor observer = Stage.back().createActor(observerRole);
-    actor.tell(3, Headers.EMPTY, observer);
+    actor.tell(3, Headers.empty(), observer);
     executorService.consumeAll();
     assertThat(observerRole.getMessages()).containsExactly(1);
     assertThat(observerRole.getSenders()).containsExactly(actor);
@@ -228,7 +228,7 @@ public class SerializableRoleTest {
         };
       }
     });
-    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    actor.tell("test", Headers.empty(), Stage.standIn());
     assertThat(exception.get()).isExactlyInstanceOf(NullPointerException.class);
   }
 
@@ -254,7 +254,7 @@ public class SerializableRoleTest {
 
             public void onMessage(final Object message, @NotNull final Envelop envelop,
                 @NotNull final Agent agent) {
-              envelop.getSender().tell(message.toString(), Headers.EMPTY, agent.getSelf());
+              envelop.getSender().tell(message.toString(), Headers.empty(), agent.getSelf());
             }
           });
         }
@@ -277,7 +277,7 @@ public class SerializableRoleTest {
         public void onMessage(final Object message, @NotNull final Envelop envelop,
             @NotNull final Agent agent) {
           assertThat(getBehavior()).isSameAs(this);
-          envelop.getSender().tell(message.toString(), Headers.EMPTY, agent.getSelf());
+          envelop.getSender().tell(message.toString(), Headers.empty(), agent.getSelf());
         }
       };
     }
@@ -297,7 +297,7 @@ public class SerializableRoleTest {
 
         public void onMessage(final Object message, @NotNull final Envelop envelop,
             @NotNull final Agent agent) {
-          envelop.getSender().tell(message.toString(), Headers.EMPTY, agent.getSelf());
+          envelop.getSender().tell(message.toString(), Headers.empty(), agent.getSelf());
         }
 
         @Override
@@ -316,7 +316,7 @@ public class SerializableRoleTest {
 
         public void onMessage(final Object message, @NotNull final Envelop envelop,
             @NotNull final Agent agent) {
-          envelop.getSender().tell(message.toString(), Headers.EMPTY, agent.getSelf());
+          envelop.getSender().tell(message.toString(), Headers.empty(), agent.getSelf());
         }
       };
     }
@@ -338,7 +338,7 @@ public class SerializableRoleTest {
 
         public void onMessage(final Object message, @NotNull final Envelop envelop,
             @NotNull final Agent agent) {
-          envelop.getSender().tell(count, Headers.EMPTY, agent.getSelf());
+          envelop.getSender().tell(count, Headers.empty(), agent.getSelf());
         }
 
         @Override
@@ -368,7 +368,7 @@ public class SerializableRoleTest {
 
         public void onMessage(final Object message, @NotNull final Envelop envelop,
             @NotNull final Agent agent) {
-          envelop.getSender().tell(count, Headers.EMPTY, agent.getSelf());
+          envelop.getSender().tell(count, Headers.empty(), agent.getSelf());
           agent.restartBehavior();
         }
 

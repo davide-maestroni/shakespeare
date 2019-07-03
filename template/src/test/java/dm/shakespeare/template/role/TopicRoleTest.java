@@ -46,8 +46,8 @@ public class TopicRoleTest {
     final TestExecutorService executorService = new TestExecutorService();
     final Actor actor = Stage.back().createActor(new LocalTopicRole());
     final TestRole testRole = new TestRole(executorService);
-    actor.tell(new Subscribe(), Headers.EMPTY, Stage.back().createActor(testRole));
-    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    actor.tell(new Subscribe(), Headers.empty(), Stage.back().createActor(testRole));
+    actor.tell("test", Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -63,9 +63,9 @@ public class TopicRoleTest {
       public boolean accept(final Object message, @NotNull final Envelop envelop) {
         return message instanceof String;
       }
-    }, Headers.EMPTY, Stage.back().createActor(testRole));
-    actor.tell(1, Headers.EMPTY, Stage.standIn());
-    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    }, Headers.empty(), Stage.back().createActor(testRole));
+    actor.tell(1, Headers.empty(), Stage.standIn());
+    actor.tell("test", Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactly("test");
   }
@@ -76,9 +76,9 @@ public class TopicRoleTest {
     final Actor actor = Stage.back().createActor(new LocalTopicRole());
     final TestRole testRole = new TestRole(executorService);
     final Actor testActor = Stage.back().createActor(testRole);
-    actor.tell(new Subscribe(), Headers.EMPTY, testActor);
-    actor.tell(new Unsubscribe(), Headers.EMPTY, testActor);
-    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    actor.tell(new Subscribe(), Headers.empty(), testActor);
+    actor.tell(new Unsubscribe(), Headers.empty(), testActor);
+    actor.tell("test", Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();
   }

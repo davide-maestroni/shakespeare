@@ -35,10 +35,7 @@ import dm.shakespeare.config.BuildConfig;
  */
 public class Headers implements Serializable {
 
-  /**
-   * Default headers instance.
-   */
-  public static final Headers EMPTY = new Headers();
+  private static final Headers EMPTY = new Headers();
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
@@ -59,6 +56,16 @@ public class Headers implements Serializable {
     this.threadId = threadId;
     this.receiptId = receiptId;
     this.timeOffset = timeOffset;
+  }
+
+  /**
+   * Returns the default headers instance.
+   *
+   * @return the headers instance.
+   */
+  @NotNull
+  public static Headers empty() {
+    return EMPTY;
   }
 
   /**

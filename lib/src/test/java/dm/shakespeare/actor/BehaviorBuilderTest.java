@@ -65,7 +65,7 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tellAll(Arrays.asList("test", 3), Headers.EMPTY, Stage.standIn());
+    actor.tellAll(Arrays.asList("test", 3), Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test", 3);
   }
@@ -113,7 +113,7 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tellAll(Arrays.asList("test", 3), Headers.EMPTY, Stage.standIn());
+    actor.tellAll(Arrays.asList("test", 3), Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test", "test", 3, "3");
   }
@@ -148,7 +148,7 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly(3);
   }
@@ -212,7 +212,7 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly(3, "3");
   }
@@ -260,7 +260,7 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test");
   }
@@ -303,7 +303,7 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(null, Headers.EMPTY, Stage.standIn());
+    actor.tell(null, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly((String) null);
   }
@@ -339,7 +339,7 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test", "TEST");
   }
@@ -375,10 +375,10 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).isEmpty();
-    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    actor.tell("test", Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test");
   }
@@ -463,10 +463,10 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).isEmpty();
-    actor.tell("test", Headers.EMPTY, Stage.standIn());
+    actor.tell("test", Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test", "TEST");
   }
@@ -496,7 +496,7 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test");
   }
@@ -563,7 +563,7 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test", "TEST");
   }
@@ -594,7 +594,7 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test");
   }
@@ -679,7 +679,7 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test", "TEST");
   }
@@ -714,7 +714,7 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test");
   }
@@ -796,7 +796,7 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test", "TEST");
   }
@@ -839,7 +839,7 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test");
     assertThat(matches).containsExactly(3, 3);
@@ -877,7 +877,7 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test", 3);
     assertThat(matches).isEmpty();
@@ -921,7 +921,7 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(matches).containsExactly("test", 3);
   }
@@ -957,7 +957,7 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(matches).containsExactly("test", "test", 3, "3");
   }
@@ -1000,7 +1000,7 @@ public class BehaviorBuilderTest {
       }
     });
     actor.tell("test", new Headers().withThreadId("test"), Stage.standIn());
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(messages).containsExactly("test");
     assertThat(matches).containsExactly(3, "3");
@@ -1029,7 +1029,7 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(ids).containsExactly(actor.getId());
   }
@@ -1075,7 +1075,7 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(ids).containsExactly(actor.getId(), actor.getId().toUpperCase(Locale.ENGLISH));
   }
@@ -1103,7 +1103,7 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(ids).isEmpty();
     actor.dismiss();
@@ -1152,7 +1152,7 @@ public class BehaviorBuilderTest {
         return executorService;
       }
     });
-    actor.tell(3, Headers.EMPTY, Stage.standIn());
+    actor.tell(3, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(ids).isEmpty();
     actor.dismiss();
