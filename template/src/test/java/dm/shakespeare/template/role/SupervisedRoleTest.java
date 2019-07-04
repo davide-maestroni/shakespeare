@@ -38,8 +38,8 @@ import dm.shakespeare.template.behavior.SupervisedBehavior.SupervisedFailure;
 import dm.shakespeare.template.behavior.SupervisedBehavior.SupervisedRecovery;
 import dm.shakespeare.template.behavior.SupervisedBehavior.SupervisedRecovery.RecoveryType;
 import dm.shakespeare.template.behavior.SupervisedBehavior.SupervisedSignal;
-import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.test.concurrent.TestExecutorService;
+import dm.shakespeare.util.Reflections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -186,7 +186,9 @@ public class SupervisedRoleTest {
   public void supervise() {
     final TestExecutorService executorService = new TestExecutorService();
     final TestRole testRole = new TestRole(executorService);
-    final Actor actor = Stage.back().createActor(new SupervisedRole(testRole));
+    final SupervisedRole supervisedRole = new SupervisedRole(testRole);
+    final Actor actor = Stage.back().createActor(supervisedRole);
+    assertThat(supervisedRole.getRole()).isEqualTo(testRole);
     actor.tell(SupervisedSignal.SUPERVISE, Headers.empty(), Stage.standIn());
     executorService.consumeAll();
     assertThat(testRole.getMessages()).isEmpty();

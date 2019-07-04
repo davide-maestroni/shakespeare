@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  ~ Copyright 2018 Davide Maestroni
+  ~ Copyright 2019 Davide Maestroni
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -23,19 +23,11 @@
     <Class name="~dm\.shakespeare\..*Test(\$.*)?$"/>
   </Match>
   <Match>
-    <Class name="~dm\.shakespeare\.template\.behavior\.(AnnotationBehavior|AnnotationBehavior|MethodHandler|MethodObserver|OnEnvelopHandler\$MessageTester|OnMatchHandler\$MessageMatcher|OnMessageHandler\$MessageTester|OnParamsHandler\$MessageHandler|SupervisedBehavior)"/>
+    <Class name="~dm\.shakespeare\.typed\.(InvocationArg|TypedRole|TypedRole\$TypedBehavior)"/>
     <Bug pattern="SE_BAD_FIELD"/>
   </Match>
   <Match>
-    <Class name="~dm\.shakespeare\.template\.behavior\.(AbstractProxyBehavior|LoadBalancerBehavior|RoundRobinBehavior|SupervisedBehavior|TopicBehavior|ProxyBehavior)"/>
-    <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED"/>
-  </Match>
-  <Match>
-    <Class name="dm.shakespeare.template.role.RespawningRole"/>
-    <Bug pattern="SE_TRANSIENT_FIELD_NOT_RESTORED"/>
-  </Match>
-  <Match>
-    <Class name="dm.shakespeare.template.role.SupervisedRole"/>
-    <Bug pattern="SE_BAD_FIELD"/>
+    <Class name="dm.shakespeare.typed.message.InvocationException"/>
+    <Bug pattern="NM_CLASS_NOT_EXCEPTION"/>
   </Match>
 </FindBugsFilter>

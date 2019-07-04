@@ -28,7 +28,6 @@ import dm.shakespeare.actor.Envelop;
 import dm.shakespeare.template.behavior.annotation.OnMatch;
 import dm.shakespeare.template.behavior.annotation.VoidMatcher;
 import dm.shakespeare.template.config.BuildConfig;
-import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;
 
 /**

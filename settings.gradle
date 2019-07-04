@@ -1,1 +1,1 @@
-include ':lib', ':plot', ':remote', ':sample', ':template', ':test'
+include ':lib', ':plot', ':remote', ':sample', ':template', ':test', ':typed'

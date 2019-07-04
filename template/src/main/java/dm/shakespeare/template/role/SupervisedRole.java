@@ -54,7 +54,7 @@ public class SupervisedRole extends SerializableRole {
    * Usually needed during deserialization.
    */
   private SupervisedRole() {
-    role = new DummyRole();
+    role = null;
   }
 
   /**
@@ -89,7 +89,6 @@ public class SupervisedRole extends SerializableRole {
    *
    * @return the role instance.
    */
-  @NotNull
   public Role getRole() {
     return role;
   }

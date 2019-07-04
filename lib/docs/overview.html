@@ -29,18 +29,19 @@
             <a href="http://davide-maestroni.github.io/shakespeare/javadoc/1.0.0/lib/com/github/dm/shakespeare/actor/Actor.html">Actor</a>
 <p>
     Interface defining an Actor.<br>
-    The only way to communicate with an Actor instance is by sending it messages (that is, any Java
-    object). A message might also includes a few pre-defined headers including a message thread
-    and an optional receipt ID.
+    An Actor represent a processing unit inside the framework. The only way to communicate with it
+    is through messages (that is, any Java object).<br>
+    A message might be customized through a few pre-defined headers, including a message thread, a
+    timestamp offset and an optional receipt ID.
 </p>
 </li>
 <li>
     <a href="http://davide-maestroni.github.io/shakespeare/javadoc/1.0.0/lib/com/github/dm/shakespeare/actor/Behavior.html">Behavior</a>
     <p>
-        Interface defining an Actor behavior, that is, how the Actor reacts to start/stop events and
-        newly received messages.<br>
-        The library is designed so that, every piece of code in a Behavior implementation is
-        executed sequentially in such a way that no other synchronization mechanism is needed.<br>
+        Interface representing an Actor behavior that defines how the Actor reacts to newly received
+        messages and start/stop events.<br>
+        The library is designed so that the Behavior source code is executed sequentially, in such a
+        way that no other synchronization mechanism is needed at runtime.<br>
         A Behavior instance may represent a single state in a more complex state machine. In fact,
         it can be safely replaced at any moment during an Actor lifecycle.<br>
         Inside a Behavior it is also possible to create new Actor instances, and dismiss them when
@@ -51,11 +52,12 @@
     <a href="http://davide-maestroni.github.io/shakespeare/javadoc/1.0.0/lib/com/github/dm/shakespeare/actor/Behavior.Agent.html">Agent</a>
     <p>
         Interface defining an Actor execution environment.<br>
-        An Agent provides to the Behavior instances information about the Actor state and several
+        An Agent provides to the Behavior instance information about the Actor state and several
         ways to control it.<br>
-        Moreover, an Agent makes available references to utility classes such as a logger instance
-        and executor services, employed to submit asynchronous tasks which are safely executed
-        through the same actor synchronization mechanism.
+        Moreover, an Agent exposes references to utility classes such as a Logger instance
+        and executor services. The services can be safely employed to submit asynchronous tasks,
+        since executed they are executed through the same actor synchronization mechanism. Any
+        task still pending during the actor dismissal is automatically cancelled by the Agent.
     </p>
 </li>
 <li>
@@ -70,10 +72,18 @@
     <a href="http://davide-maestroni.github.io/shakespeare/javadoc/1.0.0/lib/com/github/dm/shakespeare/Stage.html">Stage</a>
     <p>
         Base class defining a container of Actors.<br>
-        A Stage enables filtering of Actors based on their IDs.
+        A Stage enables retrieval and filtering of Actors based on their IDs.
     </p>
 </li>
 </ul>
+</p>
+<h1>Tutorial (How to)</h1>
+<h2>Create a new Stage</h2>
+<p>
+    A new Stage instance can be simply instantiated through the default constructor.
+<pre class="brush:java">
+Stage stage = new Stage();
+</pre>
 </p>
 </body>
 </html>

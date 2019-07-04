@@ -27,8 +27,8 @@ import dm.shakespeare.actor.Role;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.template.behavior.AgentWrapper;
 import dm.shakespeare.template.config.BuildConfig;
-import dm.shakespeare.template.util.Reflections;
 import dm.shakespeare.util.ConstantConditions;
+import dm.shakespeare.util.Reflections;
 
 /**
  * Implementation of a {@link dm.shakespeare.actor.Role} respawning the wrapped role instance each
@@ -72,7 +72,7 @@ public class RespawningRole extends Role implements Serializable {
    * Usually needed during deserialization.
    */
   private RespawningRole() {
-    roleClass = DummyRole.class;
+    roleClass = null;
     roleArgs = NO_ARGS;
   }
 
@@ -116,7 +116,6 @@ public class RespawningRole extends Role implements Serializable {
    *
    * @return the arguments array.
    */
-  @NotNull
   public Object[] getRoleArgs() {
     return roleArgs.clone();
   }
@@ -127,7 +126,6 @@ public class RespawningRole extends Role implements Serializable {
    *
    * @return the role class.
    */
-  @NotNull
   public Class<? extends Role> getRoleClass() {
     return roleClass;
   }

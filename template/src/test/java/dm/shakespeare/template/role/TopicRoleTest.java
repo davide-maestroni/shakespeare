@@ -53,6 +53,24 @@ public class TopicRoleTest {
   }
 
   @Test
+  public void subscriptionFailure() {
+    final TestExecutorService executorService = new TestExecutorService();
+    final Actor actor = Stage.back().createActor(new LocalTopicRole());
+    final TestRole testRole = new TestRole(executorService);
+    actor.tell(new Subscribe() {
+
+      @Override
+      public boolean accept(final Object message, @NotNull final Envelop envelop) {
+        return ((String) message).length() > 0;
+      }
+    }, Headers.empty(), Stage.back().createActor(testRole));
+    actor.tell(1, Headers.empty(), Stage.standIn());
+    actor.tell("test", Headers.empty(), Stage.standIn());
+    executorService.consumeAll();
+    assertThat(testRole.getMessages()).containsExactly("test");
+  }
+
+  @Test
   public void subscriptionFilter() {
     final TestExecutorService executorService = new TestExecutorService();
     final Actor actor = Stage.back().createActor(new LocalTopicRole());

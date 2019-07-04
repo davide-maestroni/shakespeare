@@ -25,8 +25,9 @@ import dm.shakespeare.template.config.BuildConfig;
 
 /**
  * Simple implementation of an {@code AbstractProxyBehavior} handling a single proxied actor.<br>
- * The proxied actor is set by sending a {@link ProxySignal#ADD_PROXIED} message with the specific
- * actor as sender. In the same way, it is unset through a {@link ProxySignal#REMOVE_PROXIED}
+ * The proxied actor is set by sending a {@link AbstractProxyBehavior.ProxySignal#ADD_PROXIED
+ * ProxySignal.ADD_PROXIED} message with the specific actor as sender. In the same way, it is unset
+ * through a {@link AbstractProxyBehavior.ProxySignal#REMOVE_PROXIED ProxySignal.REMOVE_PROXIED}
  * message.<br>
  * If further messages of the above type are received, the proxied actor will change based on the
  * last message sender.<p>

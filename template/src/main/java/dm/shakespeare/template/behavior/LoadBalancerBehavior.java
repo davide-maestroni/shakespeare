@@ -31,9 +31,10 @@ import dm.shakespeare.template.config.BuildConfig;
 
 /**
  * {@code Behavior} implementing a load balancer of other actors.<br>
- * New balanced actors are added by sending a {@link ProxySignal#ADD_PROXIED} message with the
- * proxied actor as sender. In the same way, balanced actors are removed through a
- * {@link ProxySignal#REMOVE_PROXIED} message.<p>
+ * New balanced actors are added by sending a {@link AbstractProxyBehavior.ProxySignal#ADD_PROXIED
+ * ProxySignal.ADD_PROXIED} message with the proxied actor as sender. In the same way, balanced
+ * actors are removed through a {@link AbstractProxyBehavior.ProxySignal#REMOVE_PROXIED
+ * ProxySignal.REMOVE_PROXIED} message.<p>
  * Each actor, communicating with the balancer, will be assigned a recipient based on the minimum
  * inbox size at the time the first message is received. Such recipient will not change for further
  * messages coming from the same actor. Notice, however, that different recipients might be assigned

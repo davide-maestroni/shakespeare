@@ -85,6 +85,14 @@ public class Handlers {
     public Story<T> call(final T effect) {
       return (++count > numEffects) ? Story.ofSingleEffect(effect) : null;
     }
+
+    public int getCount() {
+      return count;
+    }
+
+    public int getNumEffects() {
+      return numEffects;
+    }
   }
 
   private static class TakeFunction implements NullaryFunction<Event<Boolean>>, Serializable {
@@ -105,6 +113,14 @@ public class Handlers {
 
     public Event<Boolean> call() {
       return Event.ofEffect(++count <= maxEffects);
+    }
+
+    public int getCount() {
+      return count;
+    }
+
+    public int getMaxEffects() {
+      return maxEffects;
     }
   }
 }

@@ -93,7 +93,6 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
    *
    * @return th behavior instance.
    */
-  @NotNull
   public Behavior getBehavior() {
     return behavior;
   }

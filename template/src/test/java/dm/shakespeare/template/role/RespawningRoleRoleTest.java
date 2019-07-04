@@ -41,6 +41,8 @@ public class RespawningRoleRoleTest {
   public void respawningArgs() {
     TestRole.resetCount();
     final RespawningRole role = new RespawningRole(TestRole.class, 3);
+    assertThat(role.getRoleClass()).isEqualTo(TestRole.class);
+    assertThat(role.getRoleArgs()).containsExactly(3);
     Stage.back().createActor(role).tell("test", Headers.empty(), Stage.standIn());
     assertThat(TestRole.getCount()).isEqualTo(6);
   }
@@ -49,6 +51,8 @@ public class RespawningRoleRoleTest {
   public void respawningClass() {
     TestRole.resetCount();
     final RespawningRole role = new RespawningRole(TestRole.class);
+    assertThat(role.getRoleClass()).isEqualTo(TestRole.class);
+    assertThat(role.getRoleArgs()).isEmpty();
     Stage.back().createActor(role).tell("test", Headers.empty(), Stage.standIn());
     assertThat(TestRole.getCount()).isEqualTo(2);
   }

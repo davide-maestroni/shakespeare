@@ -42,6 +42,7 @@ import dm.shakespeare.template.behavior.annotation.OnParams;
 import dm.shakespeare.template.behavior.annotation.OnStart;
 import dm.shakespeare.template.behavior.annotation.OnStop;
 import dm.shakespeare.test.concurrent.TestExecutorService;
+import dm.shakespeare.util.Reflections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,6 +51,26 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SuppressWarnings("unused")
 public class AnnotatedRoleTest {
+
+  @Test
+  public void annotatedObject() throws NoSuchMethodException {
+    final TestExecutorService executorService = new TestExecutorService();
+    final AnnotatedList list = new AnnotatedList();
+    Reflections.makeAccessible(list.getClass().getDeclaredMethod("add", Object.class));
+    final AnnotatedRole testRole = new AnnotatedRole(list) {
+
+      @NotNull
+      @Override
+      public ExecutorService getExecutorService(@NotNull final String id) {
+        return executorService;
+      }
+    };
+    final Actor actor = Stage.back().createActor(testRole);
+    actor.tell("test", Headers.empty(), Stage.standIn());
+    executorService.consumeAll();
+    assertThat(list).containsExactly("test");
+    assertThat(testRole.getObject()).isSameAs(list);
+  }
 
   @Test
   public void onAny() {
@@ -617,6 +638,15 @@ public class AnnotatedRoleTest {
     actor.dismissLazy();
     executorService.consumeAll();
     assertThat(testRole.getMessages()).containsExactlyInAnyOrder("test", actor.getId());
+  }
+
+  public static class AnnotatedList extends ArrayList<Object> {
+
+    @OnAny
+    @Override
+    public boolean add(final Object o) {
+      return super.add(o);
+    }
   }
 
   public static class EnvelopTester implements Tester<Envelop> {
