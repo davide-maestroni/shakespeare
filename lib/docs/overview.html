@@ -85,5 +85,65 @@
 Stage stage = new Stage();
 </pre>
 </p>
+<p>
+    Alternatively, in case the actor instance does not need to be retained for future querying, it
+    is possible to employ the back stage instance instead.
+<pre class="brush:java">
+Stage stage = Stage.back();
+</pre>
+</p>
+<p>
+    It is also possible to customize actor instantiation by overriding the
+    <i class="brush:java">buildActor(String, Role)</i> method.<br>
+    For example, to make all the created actors supervised, a new Stage class may be defined as
+    follows:
+<pre class="brush:java">
+public class SupervisedStage extends Stage {
+
+  &#64;NotNull
+  &#64;Override
+  protected Actor buildActor(&#64;NotNull final String id, &#64;NotNull final Role role) throws Exception {
+    return super.buildActor(id, new SupervisedRole(role));
+  }
+}
+</pre>
+</p>
+<h2>Create a new Actor</h2>
+<p>
+    An Actor is usually instantiated through a Stage.
+<pre class="brush:java">
+stage.createActor(actorId, new Role() {
+
+  &#64;NotNull
+  &#64;Override
+  public Behavior getBehavior(&#64;NotNull String id) throws Exception {
+    return new AbstractBehavior() {
+
+      &#64;Override
+      public void onMessage(Object message, &#64;NotNull Envelop envelop, &#64;NotNull Agent agent) throws Exception {
+        // do your stuff here
+      }
+    };
+  }
+});
+</pre>
+</p>
+<p>
+    Besides directly instantiating a Behavior, the Role class provides a builder employing
+    functional interfaces to handle messages and start/stop events.
+<pre class="brush:java">
+stage.createActor(new Role() {
+
+  &#64;NotNull
+  &#64;Override
+  public Behavior getBehavior(&#64;NotNull String id) throws Exception {
+    BehaviorBuilder builder = newBehavior();
+    // add your handlers here.
+    return builder.build();
+  }
+});
+</pre>
+If no actor ID is specified, the Stage will create a new unique one.
+</p>
 </body>
 </html>

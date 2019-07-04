@@ -150,7 +150,25 @@ public abstract class Role {
 
   /**
    * Returns the executor service backing the actor execution.<br>
-   * By default the {@link #defaultExecutorService()} instance will be returned.
+   * By default the {@link #defaultExecutorService()} instance will be returned.<br>
+   * Notice that it is responsibility of the overriding class to properly shutdown the returned
+   * executor when needed, for example by calling {@link ExecutorService#shutdown()} method on
+   * the stop event in the returned behavior:
+   * <pre class="brush:java">
+   *   private static class MyBehavior extends AbstractBehavior {
+   *
+   *     public void onMessage(Object message, &#64;NotNull Envelop envelop, &#64;NotNull Agent agent)
+   *         throws Exception {
+   *       // do your stuff here
+   *     }
+   *
+   *     public void onStop(&#64;NotNull Agent agent) throws Exception {
+   *       if (agent.isDismissed()) {
+   *         agent.getExecutorService().shutdown();
+   *       }
+   *     }
+   *   }
+   * </pre>
    *
    * @param id the actor ID.
    * @return the executor service instance.
