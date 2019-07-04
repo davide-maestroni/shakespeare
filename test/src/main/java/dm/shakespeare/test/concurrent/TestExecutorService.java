@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class TestExecutorService extends AbstractExecutorService {
 
-  private final Queue<Runnable> runnables;
+  private final Queue<Runnable> tasks;
 
   private boolean isShutdown;
 
@@ -40,26 +40,26 @@ public class TestExecutorService extends AbstractExecutorService {
   }
 
   public TestExecutorService(@NotNull final Queue<Runnable> queue) {
-    runnables = TestConditions.notNull("queue", queue);
+    tasks = TestConditions.notNull("queue", queue);
   }
 
   @SuppressWarnings("ResultOfMethodCallIgnored")
   public int consume(final int maxTasks) {
     TestConditions.positive("maxTasks", maxTasks);
-    final Queue<Runnable> runnables = this.runnables;
+    final Queue<Runnable> tasks = this.tasks;
     int count = 0;
-    while ((count < maxTasks) && !runnables.isEmpty()) {
-      runnables.remove().run();
+    while ((count < maxTasks) && !tasks.isEmpty()) {
+      tasks.remove().run();
       ++count;
     }
     return count;
   }
 
   public int consumeAll() {
-    final Queue<Runnable> runnables = this.runnables;
+    final Queue<Runnable> tasks = this.tasks;
     int count = 0;
-    while (!runnables.isEmpty()) {
-      runnables.remove().run();
+    while (!tasks.isEmpty()) {
+      tasks.remove().run();
       ++count;
     }
     return count;
@@ -69,11 +69,11 @@ public class TestExecutorService extends AbstractExecutorService {
     if (isShutdown) {
       throw new RejectedExecutionException();
     }
-    runnables.add(runnable);
+    tasks.add(runnable);
   }
 
   public int getTaskCount() {
-    return runnables.size();
+    return tasks.size();
   }
 
   public void shutdown() {
@@ -84,8 +84,8 @@ public class TestExecutorService extends AbstractExecutorService {
   @NotNull
   public List<Runnable> shutdownNow() {
     isShutdown = true;
-    final ArrayList<Runnable> runnables = new ArrayList<Runnable>(this.runnables);
-    this.runnables.clear();
+    final ArrayList<Runnable> runnables = new ArrayList<Runnable>(this.tasks);
+    this.tasks.clear();
     return runnables;
   }
 
