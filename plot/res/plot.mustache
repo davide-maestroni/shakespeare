@@ -61,34 +61,21 @@ import dm.shakespeare.util.WeakValueHashMap;
  */
 public class Plot {
 
-  private static final DefaultActorFactory DEFAULT_ACTOR_FACTORY = new DefaultActorFactory();
   private static final DefaultSetting DEFAULT_SETTING = new DefaultSetting();
 
   private final Actor actor;
   private final SettingInfo settingInfo;
 
-  public Plot() throws Exception {
-    this(DEFAULT_SETTING);
+  public Plot(@NotNull final Stage stage) {
+    this(stage, DEFAULT_SETTING);
   }
 
-  public Plot(@NotNull final Logger logger) {
-    this(DEFAULT_SETTING, logger);
-  }
-
-  public Plot(@NotNull final Setting setting) {
-    this(setting, Stage.back());
-  }
-
-  public Plot(@NotNull final Setting setting, @NotNull final Logger logger) {
-    this(setting, Stage.back(), logger);
-  }
-
-  public Plot(@NotNull final Setting setting, @NotNull final Stage stage) {
+  public Plot(@NotNull final Stage stage, @NotNull final Setting setting) {
     actor = stage.createActor(new PlotFactoryRole(setting));
     settingInfo = new SettingInfo(ExecutorServices.localExecutor(), Role.defaultLogger(this));
   }
 
-  public Plot(@NotNull final Setting setting, @NotNull final Stage stage,
+  public Plot(@NotNull final Stage stage, @NotNull final Setting setting,
       @NotNull final Logger logger) {
     actor = stage.createActor(new PlotFactoryRole(setting));
     settingInfo = new SettingInfo(ExecutorServices.localExecutor(), logger);
@@ -392,19 +379,6 @@ public class Plot {
     }
   }
 {{/arities}}
-
-  private static class DefaultActorFactory implements UnaryFunction<Role, Actor>, Serializable {
-
-    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
-
-    public Actor call(final Role role) {
-      return Stage.back().createActor(role);
-    }
-
-    private Object readResolve() throws ObjectStreamException {
-      return DEFAULT_ACTOR_FACTORY;
-    }
-  }
 
   private static class DefaultSetting extends SerializableSetting {
 
