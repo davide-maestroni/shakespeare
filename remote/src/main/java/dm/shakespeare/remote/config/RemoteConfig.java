@@ -175,6 +175,42 @@ public class RemoteConfig extends CommonConfig {
   }
 
   @NotNull
+  public RemoteConfig withSendersCacheMaxSize(final String maxSize) {
+    super.withSendersCacheMaxSize(maxSize);
+    return this;
+  }
+
+  @NotNull
+  public RemoteConfig withSendersCacheMaxSize(final Number maxSize) {
+    super.withSendersCacheMaxSize(maxSize);
+    return this;
+  }
+
+  @NotNull
+  public RemoteConfig withSendersCacheMaxSize(final int maxSize) {
+    super.withSendersCacheMaxSize(maxSize);
+    return this;
+  }
+
+  @NotNull
+  public RemoteConfig withSendersCacheTimeout(final String timeoutMillis) {
+    super.withSendersCacheTimeout(timeoutMillis);
+    return this;
+  }
+
+  @NotNull
+  public RemoteConfig withSendersCacheTimeout(final Number timeoutMillis) {
+    super.withSendersCacheTimeout(timeoutMillis);
+    return this;
+  }
+
+  @NotNull
+  public RemoteConfig withSendersCacheTimeout(final long timeoutMillis) {
+    super.withSendersCacheTimeout(timeoutMillis);
+    return this;
+  }
+
+  @NotNull
   @Override
   public RemoteConfig withSerializer(final String serializerClass) {
     super.withSerializer(serializerClass);

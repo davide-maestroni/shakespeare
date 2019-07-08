@@ -17,6 +17,7 @@
 package dm.shakespeare.remote.transport;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Created by davide-maestroni on 04/16/2019.
@@ -37,7 +38,7 @@ public interface Connector {
     void disconnect();
 
     @NotNull
-    RemoteResponse send(@NotNull RemoteRequest request, @NotNull String receiverId) throws
+    RemoteResponse send(@NotNull RemoteRequest request, @Nullable String receiverId) throws
         Exception;
   }
 }

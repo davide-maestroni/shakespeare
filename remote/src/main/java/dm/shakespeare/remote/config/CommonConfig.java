@@ -34,6 +34,8 @@ public class CommonConfig extends StageConfig {
   public static final String KEY_EXECUTOR_CLASS = "sks.executor.service.class";
   public static final String KEY_LOGGER_CLASS = "sks.logger.class";
   public static final String KEY_LOGGER_NAME = "sks.logger.name";
+  public static final String KEY_SENDERS_CACHE_MAX_SIZE = "sks.senders.cache.max.size";
+  public static final String KEY_SENDERS_CACHE_TIMEOUT = "sks.senders.cache.timeout.millis";
   public static final String KEY_SERIALIZER_BLACKLIST = "sks.serializer.black.list";
   public static final String KEY_SERIALIZER_CLASS = "sks.serializer.class";
   public static final String KEY_SERIALIZER_WHITELIST = "sks.serializer.white.list";
@@ -107,6 +109,36 @@ public class CommonConfig extends StageConfig {
   public CommonConfig withOptions(@NotNull final Map<? extends String, ?> options) {
     super.withOptions(options);
     return this;
+  }
+
+  @NotNull
+  public CommonConfig withSendersCacheMaxSize(final String maxSize) {
+    return withOption(KEY_SENDERS_CACHE_MAX_SIZE, maxSize);
+  }
+
+  @NotNull
+  public CommonConfig withSendersCacheMaxSize(final Number maxSize) {
+    return withOption(KEY_SENDERS_CACHE_MAX_SIZE, maxSize);
+  }
+
+  @NotNull
+  public CommonConfig withSendersCacheMaxSize(final int maxSize) {
+    return withOption(KEY_SENDERS_CACHE_MAX_SIZE, maxSize);
+  }
+
+  @NotNull
+  public CommonConfig withSendersCacheTimeout(final String timeoutMillis) {
+    return withOption(KEY_SENDERS_CACHE_TIMEOUT, timeoutMillis);
+  }
+
+  @NotNull
+  public CommonConfig withSendersCacheTimeout(final Number timeoutMillis) {
+    return withOption(KEY_SENDERS_CACHE_TIMEOUT, timeoutMillis);
+  }
+
+  @NotNull
+  public CommonConfig withSendersCacheTimeout(final long timeoutMillis) {
+    return withOption(KEY_SENDERS_CACHE_TIMEOUT, timeoutMillis);
   }
 
   @NotNull

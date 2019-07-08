@@ -33,8 +33,6 @@ public class LocalConfig extends CommonConfig {
   public static final String KEY_ACTORS_FULL_SYNC_TIME = "sks.actors.sync.full.millis";
   public static final String KEY_ACTORS_PART_SYNC_TIME = "sks.actors.sync.part.millis";
   public static final String KEY_REMOTE_ID = "sks.remote.id";
-  public static final String KEY_SENDERS_CACHE_MAX_SIZE = "sks.senders.cache.max.size";
-  public static final String KEY_SENDERS_CACHE_TIMEOUT = "sks.senders.cache.timeout.millis";
 
   public LocalConfig() {
   }
@@ -164,6 +162,42 @@ public class LocalConfig extends CommonConfig {
   }
 
   @NotNull
+  public LocalConfig withSendersCacheMaxSize(final String maxSize) {
+    super.withSendersCacheMaxSize(maxSize);
+    return this;
+  }
+
+  @NotNull
+  public LocalConfig withSendersCacheMaxSize(final Number maxSize) {
+    super.withSendersCacheMaxSize(maxSize);
+    return this;
+  }
+
+  @NotNull
+  public LocalConfig withSendersCacheMaxSize(final int maxSize) {
+    super.withSendersCacheMaxSize(maxSize);
+    return this;
+  }
+
+  @NotNull
+  public LocalConfig withSendersCacheTimeout(final String timeoutMillis) {
+    super.withSendersCacheTimeout(timeoutMillis);
+    return this;
+  }
+
+  @NotNull
+  public LocalConfig withSendersCacheTimeout(final Number timeoutMillis) {
+    super.withSendersCacheTimeout(timeoutMillis);
+    return this;
+  }
+
+  @NotNull
+  public LocalConfig withSendersCacheTimeout(final long timeoutMillis) {
+    super.withSendersCacheTimeout(timeoutMillis);
+    return this;
+  }
+
+  @NotNull
   @Override
   public LocalConfig withSerializer(final String serializerClass) {
     super.withSerializer(serializerClass);
@@ -215,42 +249,6 @@ public class LocalConfig extends CommonConfig {
   @NotNull
   public LocalConfig withRemoteId(final String remoteId) {
     withOption(KEY_REMOTE_ID, remoteId);
-    return this;
-  }
-
-  @NotNull
-  public LocalConfig withSendersCacheMaxSize(final String maxSize) {
-    withOption(KEY_SENDERS_CACHE_MAX_SIZE, maxSize);
-    return this;
-  }
-
-  @NotNull
-  public LocalConfig withSendersCacheMaxSize(final Number maxSize) {
-    withOption(KEY_SENDERS_CACHE_MAX_SIZE, maxSize);
-    return this;
-  }
-
-  @NotNull
-  public LocalConfig withSendersCacheMaxSize(final int maxSize) {
-    withOption(KEY_SENDERS_CACHE_MAX_SIZE, maxSize);
-    return this;
-  }
-
-  @NotNull
-  public LocalConfig withSendersCacheTimeout(final String timeoutMillis) {
-    withOption(KEY_SENDERS_CACHE_TIMEOUT, timeoutMillis);
-    return this;
-  }
-
-  @NotNull
-  public LocalConfig withSendersCacheTimeout(final Number timeoutMillis) {
-    withOption(KEY_SENDERS_CACHE_TIMEOUT, timeoutMillis);
-    return this;
-  }
-
-  @NotNull
-  public LocalConfig withSendersCacheTimeout(final long timeoutMillis) {
-    withOption(KEY_SENDERS_CACHE_TIMEOUT, timeoutMillis);
     return this;
   }
 }

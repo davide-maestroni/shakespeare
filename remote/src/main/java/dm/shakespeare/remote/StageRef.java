@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -92,6 +93,8 @@ public class StageRef extends Stage {
   private final AtomicLong lastSyncTime = new AtomicLong();
   private final Logger logger;
   private final Syncer presync;
+  private final Map<Actor, Void> remoteActors =
+      Collections.synchronizedMap(new WeakHashMap<Actor, Void>());
   private final String remoteId;
   private final Integer sendersCacheSize;
   private final Long sendersCacheTimeout;
@@ -229,6 +232,11 @@ public class StageRef extends Stage {
         };
       }
     }
+  }
+
+  @NotNull
+  private static String createInstanceId() {
+    return "local:" + UUID.randomUUID().toString();
   }
 
   private static boolean isNotEmpty(@Nullable final String string) {
@@ -496,7 +504,10 @@ public class StageRef extends Stage {
       throw new Exception(error);
     }
     final ActorID actorID = actorResponse.getActorID();
-    return super.buildActor(id, new RemoteRole((actorID != null) ? actorID.getInstanceId() : null));
+    final Actor actor =
+        super.buildActor(id, new RemoteRole((actorID != null) ? actorID.getInstanceId() : null));
+    remoteActors.put(actor, null);
+    return actor;
   }
 
   public void uploadResources(@NotNull final String pathRegex) {
@@ -614,9 +625,10 @@ public class StageRef extends Stage {
 
   private class RemoteRole extends Role {
 
-    private final HashMap<Actor, SenderActor> actors = new HashMap<Actor, SenderActor>();
+    private final HashMap<Actor, SenderActor> actorToSender = new HashMap<Actor, SenderActor>();
     private final String instanceId;
-    private final HashMap<String, SenderActor> instanceIds = new HashMap<String, SenderActor>();
+    private final HashMap<String, SenderActor> instanceIdToSender =
+        new HashMap<String, SenderActor>();
     private final CQueue<SenderActor> senders = new CQueue<SenderActor>();
 
     private RemoteRole(final String instanceId) {
@@ -675,8 +687,8 @@ public class StageRef extends Stage {
 
     private void flushSenders() {
       final CQueue<SenderActor> senders = this.senders;
-      final HashMap<Actor, SenderActor> actors = this.actors;
-      final HashMap<String, SenderActor> instanceIds = this.instanceIds;
+      final HashMap<Actor, SenderActor> actorToSender = this.actorToSender;
+      final HashMap<String, SenderActor> instanceIdToSender = this.instanceIdToSender;
       int toRemove = senders.size() - sendersCacheSize;
       final long timeout = System.currentTimeMillis() - sendersCacheTimeout;
       final Iterator<SenderActor> iterator = senders.iterator();
@@ -685,8 +697,8 @@ public class StageRef extends Stage {
         if ((toRemove <= 0) && (senderActor.getTimestamp() >= timeout)) {
           break;
         }
-        actors.remove(senderActor.getActor());
-        instanceIds.remove(senderActor.getInstanceId());
+        actorToSender.remove(senderActor.getActor());
+        instanceIdToSender.remove(senderActor.getInstanceId());
         iterator.remove();
         --toRemove;
       }
@@ -710,7 +722,7 @@ public class StageRef extends Stage {
       if (targetActorID == null) {
         return false;
       }
-      final SenderActor senderActor = instanceIds.get(targetActorID.getInstanceId());
+      final SenderActor senderActor = instanceIdToSender.get(targetActorID.getInstanceId());
       if (senderActor == null) {
         return false;
       }
@@ -742,23 +754,22 @@ public class StageRef extends Stage {
         @NotNull final Agent agent) throws Exception {
       final String senderInstanceId;
       final Actor sender = envelop.getSender();
-      if (sender.equals(StageRef.super.get(sender.getId()))) {
+      if (remoteActors.containsKey(sender)) {
         senderInstanceId = null;
 
       } else {
-        final HashMap<Actor, SenderActor> actors = this.actors;
-        final HashMap<String, SenderActor> instanceIds = this.instanceIds;
+        final HashMap<Actor, SenderActor> actorToSender = this.actorToSender;
         final CQueue<SenderActor> senders = RemoteRole.this.senders;
-        SenderActor senderActor = actors.get(sender);
+        SenderActor senderActor = actorToSender.get(sender);
         if (senderActor != null) {
           senderInstanceId = senderActor.getInstanceId();
           senders.remove(senderActor);
 
         } else {
-          senderInstanceId = "local:" + UUID.randomUUID().toString();
+          senderInstanceId = createInstanceId();
           senderActor = new SenderActor(sender, senderInstanceId);
-          actors.put(sender, senderActor);
-          instanceIds.put(senderInstanceId, senderActor);
+          actorToSender.put(sender, senderActor);
+          instanceIdToSender.put(senderInstanceId, senderActor);
         }
         senders.add(senderActor);
       }
