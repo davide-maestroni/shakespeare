@@ -666,6 +666,7 @@ public class StageRef extends Stage {
               }
             }
           }
+          envelop.preventReceipt();
         }
 
         @Override

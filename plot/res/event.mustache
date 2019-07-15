@@ -687,6 +687,7 @@ public abstract class Event<T> {
             }
           }
         }
+        envelop.preventReceipt();
       }
     }
 
@@ -927,6 +928,7 @@ public abstract class Event<T> {
               agent.getSelf().dismiss();
             }
           }
+          envelop.preventReceipt();
         }
       };
     }
@@ -1256,6 +1258,7 @@ public abstract class Event<T> {
         } else if (isSame(inputHeaders.getThreadId(), envelop.getHeaders().getThreadId())) {
           fail(Conflict.ofCancel(), agent);
         }
+        envelop.preventReceipt();
       }
     }
 

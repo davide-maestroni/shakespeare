@@ -1467,6 +1467,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             }
           }
         }
+        envelop.preventReceipt();
       }
     }
 
@@ -1897,33 +1898,49 @@ public abstract class Story<T> extends Event<Iterable<T>> {
       fail(conflict, memory, getSenders, nextSenders, agent);
     }
 
-    @SuppressWarnings({"unchecked", "LoopConditionNotUpdatedInsideLoop"})
+    @SuppressWarnings("unchecked")
     private void nextOutput(@NotNull final Behavior behavior, @NotNull final Agent agent) {
+      SettingInfo.set(settingInfo);
       try {
         final Iterator<?> inputIterator = this.inputIterator;
-        final boolean hasGetSenders = !getSenders.isEmpty();
-        do {
-          if (inputIterator.hasNext()) {
-            SettingInfo.set(settingInfo);
-            try {
+        final Memory memory = this.memory;
+        if (!getSenders.isEmpty()) {
+          final HashMap<String, SenderIterator> nextSenders = this.nextSenders;
+          final UnaryFunction<? super T, ? extends R> effectHandler = this.effectHandler;
+          if (!nextSenders.isEmpty()) {
+            while (inputIterator.hasNext()) {
               final R effect = effectHandler.call((T) inputIterator.next());
               memory.put(effect);
               final Actor self = agent.getSelf();
               for (final SenderIterator sender : nextSenders.values()) {
                 sender.tellNext(self);
               }
-
-            } finally {
-              SettingInfo.unset();
             }
-            agent.setBehavior(behavior);
 
           } else {
-            done(agent);
-            break;
+            while (inputIterator.hasNext()) {
+              final R effect = effectHandler.call((T) inputIterator.next());
+              //int n = ((Integer) inputIterator.next()).intValue();
+              memory.put(0);
+            }
           }
+          done(agent);
 
-        } while (hasGetSenders);
+        } else if (inputIterator.hasNext()) {
+          final R effect = effectHandler.call((T) inputIterator.next());
+          memory.put(effect);
+          final HashMap<String, SenderIterator> nextSenders = this.nextSenders;
+          if (!nextSenders.isEmpty()) {
+            final Actor self = agent.getSelf();
+            for (final SenderIterator sender : nextSenders.values()) {
+              sender.tellNext(self);
+            }
+          }
+          agent.setBehavior(behavior);
+
+        } else {
+          done(agent);
+        }
 
       } catch (final Throwable t) {
         if (t instanceof Error) {
@@ -1935,6 +1952,9 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         if (t instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }
+
+      } finally {
+        SettingInfo.unset();
       }
     }
 
@@ -4603,6 +4623,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               envelop.getSender().tell(StorySignal.NEXT, headers, self);
             }
           }
+          envelop.preventReceipt();
         }
 
         public void onStart(@NotNull final Agent agent) {
@@ -4759,6 +4780,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         } else if (inputThreadId.equals(envelop.getHeaders().getThreadId())) {
           fail(Conflict.ofCancel(), agent);
         }
+        envelop.preventReceipt();
       }
     }
 

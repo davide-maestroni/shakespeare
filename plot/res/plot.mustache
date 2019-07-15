@@ -618,8 +618,8 @@ public class Plot {
         } else {
           sender.tell(new Bounce(), envelop.getHeaders().threadOnly(), agent.getSelf());
         }
-        envelop.preventReceipt();
       }
+      envelop.preventReceipt();
     }
   }
 

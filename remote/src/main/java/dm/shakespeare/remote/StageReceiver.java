@@ -743,6 +743,7 @@ public class StageReceiver {
               senders.add(senderActor);
             }
           }
+          envelop.preventReceipt();
         }
       };
     }
