@@ -101,7 +101,7 @@ public class ExpiringMemory implements Memory {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      return references.get(index++);
+      return references.get(index++).getObject();
     }
 
     public void remove() {
