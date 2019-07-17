@@ -72,16 +72,11 @@ class RemoteClassLoader extends ClassLoader {
     return ((path != null) && !path.startsWith("/")) ? "/" + path : null;
   }
 
-  @NotNull
-  private static String toPath(@NotNull final String name) {
-    return "/" + name.replace(".", "/") + ".class";
-  }
-
   @Override
   protected Class<?> loadClass(final String name, final boolean resolve) throws
       ClassNotFoundException {
     RawData data = null;
-    final String path = toPath(name);
+    final String path = Classes.toPath(name);
     synchronized (mutex) {
       try {
         data = dataStore.get(paths.get(path));
@@ -199,7 +194,7 @@ class RemoteClassLoader extends ClassLoader {
     final Set<String> dependencies = Classes.getDependencies(buffer);
     final HashMap<String, String> paths = this.paths;
     for (final String name : dependencies) {
-      final String path = toPath(name);
+      final String path = Classes.toPath(name);
       final boolean hasPath;
       synchronized (mutex) {
         hasPath = paths.containsKey(path);

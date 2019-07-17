@@ -25,11 +25,13 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
@@ -74,7 +76,9 @@ import dm.shakespeare.remote.transport.RemoteRequest;
 import dm.shakespeare.remote.transport.RemoteResponse;
 import dm.shakespeare.remote.transport.UploadRequest;
 import dm.shakespeare.remote.transport.UploadResponse;
+import dm.shakespeare.remote.util.Classes;
 import dm.shakespeare.util.ConstantConditions;
+import dm.shakespeare.util.Iterables;
 
 /**
  * Created by davide-maestroni on 05/27/2019.
@@ -527,6 +531,27 @@ public class StageRef extends Stage {
     return actor;
   }
 
+  public void uploadClasses(@NotNull final Iterable<? extends Class<?>> classes) {
+    final HashSet<String> paths = new HashSet<String>();
+    for (final Class<?> aClass : classes) {
+      paths.add(Classes.toPath(aClass));
+    }
+    uploadResources(paths);
+  }
+
+  public void uploadResources(@NotNull final Iterable<? extends String> paths) {
+    final Set<? extends String> pathSet = Iterables.asSet(paths);
+    final Map<String, File> resourceFiles = StageRef.resourceFiles;
+    final HashMap<String, RawData> resources = new HashMap<String, RawData>();
+    for (final Entry<String, File> entry : resourceFiles.entrySet()) {
+      final String path = entry.getKey();
+      if (pathSet.contains(path)) {
+        resources.put(path, RawData.wrap(entry.getValue()));
+      }
+    }
+    uploadResources(resources);
+  }
+
   public void uploadResources(@NotNull final String pathRegex) {
     final Pattern pattern = Pattern.compile(pathRegex);
     final HashMap<String, RawData> resources = new HashMap<String, RawData>();
@@ -537,26 +562,7 @@ public class StageRef extends Stage {
         resources.put(path, RawData.wrap(entry.getValue()));
       }
     }
-    if (!resources.isEmpty()) {
-      Throwable error;
-      try {
-        final UploadResponse response =
-            (UploadResponse) getMessageSender().send(new UploadRequest().withResources(resources),
-                remoteId);
-        error = response.getError();
-
-      } catch (final Exception e) {
-        error = e;
-      }
-
-      if (error != null) {
-        if (error instanceof RuntimeException) {
-          throw (RuntimeException) error;
-        }
-
-        throw new RuntimeException(error);
-      }
-    }
+    uploadResources(resources);
   }
 
   private void flushSenders() {
@@ -682,6 +688,30 @@ public class StageRef extends Stage {
       } else if (retainAll) {
         actor.dismiss();
       }
+    }
+  }
+
+  private void uploadResources(@NotNull final Map<String, RawData> resources) {
+    if (resources.isEmpty()) {
+      return;
+    }
+    Throwable error;
+    try {
+      final UploadResponse response =
+          (UploadResponse) getMessageSender().send(new UploadRequest().withResources(resources),
+              remoteId);
+      error = response.getError();
+
+    } catch (final Exception e) {
+      error = e;
+    }
+
+    if (error != null) {
+      if (error instanceof RuntimeException) {
+        throw (RuntimeException) error;
+      }
+
+      throw new RuntimeException(error);
     }
   }
 

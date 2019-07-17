@@ -167,6 +167,16 @@ public class Classes {
     return names;
   }
 
+  @NotNull
+  public static String toPath(@NotNull final Class<?> aClass) {
+    return toPath(aClass.getName());
+  }
+
+  @NotNull
+  public static String toPath(@NotNull final String className) {
+    return "/" + className.replace(".", "/") + ".class";
+  }
+
   private static void addName(@NotNull final HashSet<String> names,
       @NotNull final ByteBuffer buffer, int start, final int size) {
     final int end = start + size;
