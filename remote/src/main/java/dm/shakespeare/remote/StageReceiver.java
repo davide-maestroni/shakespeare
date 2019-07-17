@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -70,7 +71,6 @@ import dm.shakespeare.remote.transport.RemoteRequest;
 import dm.shakespeare.remote.transport.RemoteResponse;
 import dm.shakespeare.remote.transport.UploadRequest;
 import dm.shakespeare.remote.transport.UploadResponse;
-import dm.shakespeare.util.CQueue;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.WeakValueHashMap;
 
@@ -90,10 +90,10 @@ public class StageReceiver {
   private final WeakValueHashMap<String, Actor> instanceIdToActor =
       new WeakValueHashMap<String, Actor>();
   private final Logger logger;
+  private final LinkedList<SenderActor> lruSenders = new LinkedList<SenderActor>();
   private final RequestHandler<MessageRequest> messageHandler;
   private final HashMap<SenderID, SenderActor> senderIdToActor =
       new HashMap<SenderID, SenderActor>();
-  private final CQueue<SenderActor> senders = new CQueue<SenderActor>();
   private final Integer sendersCacheSize;
   private final Long sendersCacheTimeout;
   private final Object sendersMutex = new Object();
@@ -101,7 +101,7 @@ public class StageReceiver {
   private final Stage stage;
   private final RequestHandler<UploadRequest> uploadHandler;
 
-  private Sender sender;
+  private Sender messageSender;
 
   public StageReceiver(@NotNull final StageConfig config, @NotNull final Stage stage) {
     this.stage = ConstantConditions.notNull("stage", stage);
@@ -238,10 +238,10 @@ public class StageReceiver {
     final RemoteReceiver receiver = new RemoteReceiver();
     final Sender sender = connector.connect(receiver);
     synchronized (connectionMutex) {
-      if (this.sender != null) {
+      if (this.messageSender != null) {
         throw new IllegalStateException("stage is already connected");
       }
-      this.sender = sender;
+      this.messageSender = sender;
     }
     return receiver;
   }
@@ -249,8 +249,8 @@ public class StageReceiver {
   public void disconnect() {
     final Sender sender;
     synchronized (connectionMutex) {
-      sender = this.sender;
-      this.sender = null;
+      sender = this.messageSender;
+      this.messageSender = null;
     }
 
     if (sender != null) {
@@ -259,11 +259,11 @@ public class StageReceiver {
   }
 
   private void flushSenders() {
-    final CQueue<SenderActor> senders = this.senders;
+    final LinkedList<SenderActor> lruSenders = this.lruSenders;
     final HashMap<SenderID, SenderActor> senderIdToActor = this.senderIdToActor;
-    int toRemove = senders.size() - sendersCacheSize;
+    int toRemove = lruSenders.size() - sendersCacheSize;
     final long timeout = System.currentTimeMillis() - sendersCacheTimeout;
-    final Iterator<SenderActor> iterator = senders.iterator();
+    final Iterator<SenderActor> iterator = lruSenders.iterator();
     while (iterator.hasNext()) {
       final SenderActor senderActor = iterator.next();
       if ((toRemove <= 0) && (senderActor.getTimestamp() >= timeout)) {
@@ -283,6 +283,17 @@ public class StageReceiver {
   }
 
   @NotNull
+  private Sender getMessageSender() {
+    synchronized (connectionMutex) {
+      final Sender sender = this.messageSender;
+      if (sender == null) {
+        throw new IllegalStateException("stage is not connected");
+      }
+      return sender;
+    }
+  }
+
+  @NotNull
   private String getOrAddInstanceId(@NotNull final Actor actor) {
     synchronized (idsMutex) {
       String instanceId = actorToInstanceId.get(actor);
@@ -295,27 +306,16 @@ public class StageReceiver {
     }
   }
 
-  @NotNull
-  private Sender getSender() {
-    synchronized (connectionMutex) {
-      final Sender sender = this.sender;
-      if (sender == null) {
-        throw new IllegalStateException("stage is not connected");
-      }
-      return sender;
-    }
-  }
-
   @Nullable
-  private Actor getSenderActor(@NotNull final ActorID actorID, @Nullable final String senderId) {
+  private Actor getOrCreateSender(@NotNull final ActorID actorID, final String senderId) {
     if (actorID.getInstanceId() == null) {
       return stage.get(actorID.getActorId());
     }
 
     final SenderID senderID = new SenderID(actorID, senderId);
     SenderActor senderActor;
+    final HashMap<SenderID, SenderActor> senderIdToActor = this.senderIdToActor;
     synchronized (sendersMutex) {
-      flushSenders();
       senderActor = senderIdToActor.get(senderID);
     }
 
@@ -324,15 +324,17 @@ public class StageReceiver {
       senderActor = new SenderActor(actor, senderID);
       synchronized (sendersMutex) {
         if (senderIdToActor.put(senderID, senderActor) == null) {
-          senders.add(senderActor);
+          lruSenders.add(senderActor);
+          flushSenders();
         }
       }
 
     } else {
       synchronized (sendersMutex) {
-        final CQueue<SenderActor> senders = this.senders;
-        senders.remove(senderActor);
-        senders.add(senderActor);
+        final LinkedList<SenderActor> lruSenders = this.lruSenders;
+        lruSenders.remove(senderActor);
+        lruSenders.add(senderActor.refresh());
+        flushSenders();
       }
     }
     return senderActor.getActor();
@@ -388,6 +390,20 @@ public class StageReceiver {
     return new FindResponse().withActorIDs(Collections.<ActorID>emptySet());
   }
 
+  @Nullable
+  private Actor resolveActor(@NotNull final ActorID actorID, @Nullable final String senderId) {
+    synchronized (sendersMutex) {
+      final SenderActor senderActor = senderIdToActor.get(new SenderID(actorID, senderId));
+      if (senderActor != null) {
+        final LinkedList<SenderActor> lruSenders = this.lruSenders;
+        lruSenders.remove(senderActor);
+        lruSenders.add(senderActor.refresh());
+        return senderActor.getActor();
+      }
+    }
+    return stage.get(actorID.getActorId());
+  }
+
   private interface RequestHandler<R extends RemoteRequest> {
 
     @NotNull
@@ -418,7 +434,8 @@ public class StageReceiver {
 
     private final Actor actor;
     private final SenderID senderId;
-    private final long timestamp;
+
+    private long timestamp;
 
     private SenderActor(@NotNull final Actor actor, @NotNull final SenderID senderId) {
       this.actor = actor;
@@ -438,6 +455,12 @@ public class StageReceiver {
 
     long getTimestamp() {
       return timestamp;
+    }
+
+    @NotNull
+    SenderActor refresh() {
+      timestamp = System.currentTimeMillis();
+      return this;
     }
   }
 
@@ -596,7 +619,7 @@ public class StageReceiver {
           senderID.getActorId() == null)) {
         return new MessageResponse().withError(new IllegalArgumentException());
       }
-      final Actor actor = stage.get(actorID.getActorId());
+      final Actor actor = resolveActor(actorID, senderId);
       if (actor == null) {
         return new MessageResponse().withError(new IllegalArgumentException());
       }
@@ -604,7 +627,7 @@ public class StageReceiver {
       if ((instanceId == null) || !instanceId.equals(actorID.getInstanceId())) {
         return new MessageResponse().withError(new IllegalArgumentException());
       }
-      final Actor sender = getSenderActor(senderID, senderId);
+      final Actor sender = getOrCreateSender(senderID, senderId);
       if (sender == null) {
         return new MessageResponse().withError(new IllegalArgumentException());
       }
@@ -644,7 +667,7 @@ public class StageReceiver {
           senderID.getActorId() == null)) {
         return new MessageResponse().withError(new IllegalArgumentException());
       }
-      final Actor actor = stage.get(actorID.getActorId());
+      final Actor actor = resolveActor(actorID, senderId);
       if (actor == null) {
         return new MessageResponse().withError(new IllegalArgumentException());
       }
@@ -652,7 +675,7 @@ public class StageReceiver {
       if ((instanceId == null) || !instanceId.equals(actorID.getInstanceId())) {
         return new MessageResponse().withError(new IllegalArgumentException());
       }
-      final Actor sender = getSenderActor(senderID, senderId);
+      final Actor sender = getOrCreateSender(senderID, senderId);
       if (sender == null) {
         return new MessageResponse().withError(new IllegalArgumentException());
       }
@@ -726,23 +749,37 @@ public class StageReceiver {
 
         public void onMessage(final Object message, @NotNull final Envelop envelop,
             @NotNull final Agent agent) throws Exception {
-          final SenderID senderId = SenderRole.this.senderId;
           final Actor sender = envelop.getSender();
           final ActorID actorID =
               new ActorID().withActorId(sender.getId()).withInstanceId(getOrAddInstanceId(sender));
-          getSender().send(new MessageRequest().withActorID(senderId.actorID)
+          final HashMap<SenderID, SenderActor> senderIdToActor = StageReceiver.this.senderIdToActor;
+          synchronized (sendersMutex) {
+            final SenderID senderID = new SenderID(actorID, null);
+            SenderActor senderActor = senderIdToActor.get(senderID);
+            if (senderActor == null) {
+              senderActor = new SenderActor(sender, senderID);
+              senderIdToActor.put(senderID, senderActor);
+              lruSenders.add(senderActor);
+
+            } else {
+              final LinkedList<SenderActor> lruSenders = StageReceiver.this.lruSenders;
+              lruSenders.remove(senderActor);
+              lruSenders.add(senderActor.refresh());
+            }
+            senderActor = senderIdToActor.get(senderId);
+            if (senderActor != null) {
+              final LinkedList<SenderActor> lruSenders = StageReceiver.this.lruSenders;
+              lruSenders.remove(senderActor);
+              lruSenders.add(senderActor.refresh());
+            }
+            flushSenders();
+          }
+          final SenderID senderID = SenderRole.this.senderId;
+          getMessageSender().send(new MessageRequest().withActorID(senderID.actorID)
               .withSenderActorID(actorID)
               .withHeaders(envelop.getHeaders())
               .withMessageData(RawData.wrap(serializer.serialize(message)))
-              .withSentTimestamp(envelop.getSentAt()), senderId.senderId);
-          synchronized (sendersMutex) {
-            if (senderIdToActor.containsKey(senderId)) {
-              final SenderActor senderActor = new SenderActor(agent.getSelf(), senderId);
-              final CQueue<SenderActor> senders = StageReceiver.this.senders;
-              senders.remove(senderActor);
-              senders.add(senderActor);
-            }
-          }
+              .withSentTimestamp(envelop.getSentAt()), senderID.senderId);
           envelop.preventReceipt();
         }
       };

@@ -390,20 +390,24 @@ public abstract class Event<T> {
       public void onMessage(final Object message, @NotNull final Envelop envelop,
           @NotNull final Agent agent) {
         if (message == EventSignal.GET) {
+          final Actor sender = envelop.getSender();
+          final Headers headers = envelop.getHeaders().threadOnly();
           Object effect = queue.poll();
           if (effect != null) {
             close();
             if (effect == NarratorSignal.NULL) {
               effect = null;
             }
+            sender.tell(effect, headers, agent.getSelf());
             agent.setBehavior(new DoneBehavior(effect));
 
           } else if (isClosed.get()) {
-            agent.setBehavior(new DoneBehavior(new Conflict(new NarrationStoppedException())));
+            effect = new Conflict(new NarrationStoppedException());
+            sender.tell(effect, headers, agent.getSelf());
+            agent.setBehavior(new DoneBehavior(effect));
 
           } else {
-            final Headers headers = envelop.getHeaders().threadOnly();
-            senders.put(headers.getThreadId(), new Sender(envelop.getSender(), headers));
+            senders.put(headers.getThreadId(), new Sender(sender, headers));
             agent.setBehavior(new InputBehavior());
           }
 
