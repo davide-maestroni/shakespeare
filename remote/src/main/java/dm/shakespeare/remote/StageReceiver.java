@@ -72,7 +72,6 @@ import dm.shakespeare.remote.transport.RemoteResponse;
 import dm.shakespeare.remote.transport.UploadRequest;
 import dm.shakespeare.remote.transport.UploadResponse;
 import dm.shakespeare.util.ConstantConditions;
-import dm.shakespeare.util.WeakValueHashMap;
 
 /**
  * Created by davide-maestroni on 06/04/2019.
@@ -87,8 +86,6 @@ public class StageReceiver {
   private final RequestHandler<DismissActorRequest> dismissHandler;
   private final ExecutorService executorService;
   private final Object idsMutex = new Object();
-  private final WeakValueHashMap<String, Actor> instanceIdToActor =
-      new WeakValueHashMap<String, Actor>();
   private final Logger logger;
   private final LinkedList<SenderActor> lruSenders = new LinkedList<SenderActor>();
   private final RequestHandler<MessageRequest> messageHandler;
@@ -296,10 +293,10 @@ public class StageReceiver {
   @NotNull
   private String getOrAddInstanceId(@NotNull final Actor actor) {
     synchronized (idsMutex) {
+      final WeakHashMap<Actor, String> actorToInstanceId = this.actorToInstanceId;
       String instanceId = actorToInstanceId.get(actor);
       if (instanceId == null) {
         instanceId = createInstanceId();
-        instanceIdToActor.put(instanceId, actor);
         actorToInstanceId.put(actor, instanceId);
       }
       return instanceId;
@@ -523,7 +520,6 @@ public class StageReceiver {
         final Actor actor = stage.createActor(actorId, (Role) role);
         final String instanceId = "remote:" + UUID.randomUUID().toString();
         synchronized (idsMutex) {
-          instanceIdToActor.put(instanceId, actor);
           actorToInstanceId.put(actor, instanceId);
         }
         return new CreateActorResponse().withActorID(
@@ -563,7 +559,6 @@ public class StageReceiver {
         final Actor actor = stage.createActor(actorId, (Role) role);
         final String instanceId = createInstanceId();
         synchronized (idsMutex) {
-          instanceIdToActor.put(instanceId, actor);
           actorToInstanceId.put(actor, instanceId);
         }
         return new CreateActorResponse().withActorID(
