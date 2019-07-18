@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.remote;
+package dm.shakespeare.remote.io;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,14 +25,12 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.ObjectStreamClass;
 
-import dm.shakespeare.remote.io.AbstractSerializer;
-import dm.shakespeare.remote.io.RawData;
 import dm.shakespeare.remote.util.ClassLoaderObjectInputStream;
 
 /**
  * Created by davide-maestroni on 04/16/2019.
  */
-class JavaSerializer extends AbstractSerializer {
+public class JavaSerializer extends AbstractSerializer {
 
   @NotNull
   public Object deserialize(@NotNull final RawData data,

@@ -100,22 +100,22 @@ public class LocalConfig extends CommonConfig {
 
   @NotNull
   @Override
-  public LocalConfig withExecutor(final String executorClass) {
-    super.withExecutor(executorClass);
+  public LocalConfig withExecutorService(final String executorClass) {
+    super.withExecutorService(executorClass);
     return this;
   }
 
   @NotNull
   @Override
-  public LocalConfig withExecutor(final Class<? extends ExecutorService> executorClass) {
-    super.withExecutor(executorClass);
+  public LocalConfig withExecutorService(final Class<? extends ExecutorService> executorClass) {
+    super.withExecutorService(executorClass);
     return this;
   }
 
   @NotNull
   @Override
-  public LocalConfig withExecutor(final ExecutorService executor) {
-    super.withExecutor(executor);
+  public LocalConfig withExecutorService(final ExecutorService executor) {
+    super.withExecutorService(executor);
     return this;
   }
 

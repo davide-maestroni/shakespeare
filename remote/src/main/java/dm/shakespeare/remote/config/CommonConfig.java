@@ -63,17 +63,17 @@ public class CommonConfig extends StageConfig {
   }
 
   @NotNull
-  public CommonConfig withExecutor(final String executorClass) {
+  public CommonConfig withExecutorService(final String executorClass) {
     return withOption(KEY_EXECUTOR_CLASS, executorClass);
   }
 
   @NotNull
-  public CommonConfig withExecutor(final Class<? extends ExecutorService> executorClass) {
+  public CommonConfig withExecutorService(final Class<? extends ExecutorService> executorClass) {
     return withOption(KEY_EXECUTOR_CLASS, executorClass);
   }
 
   @NotNull
-  public CommonConfig withExecutor(final ExecutorService executor) {
+  public CommonConfig withExecutorService(final ExecutorService executor) {
     return withOption(KEY_EXECUTOR_CLASS, executor);
   }
 

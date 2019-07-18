@@ -113,22 +113,22 @@ public class RemoteConfig extends CommonConfig {
 
   @NotNull
   @Override
-  public RemoteConfig withExecutor(final String executorClass) {
-    super.withExecutor(executorClass);
+  public RemoteConfig withExecutorService(final String executorClass) {
+    super.withExecutorService(executorClass);
     return this;
   }
 
   @NotNull
   @Override
-  public RemoteConfig withExecutor(final Class<? extends ExecutorService> executorClass) {
-    super.withExecutor(executorClass);
+  public RemoteConfig withExecutorService(final Class<? extends ExecutorService> executorClass) {
+    super.withExecutorService(executorClass);
     return this;
   }
 
   @NotNull
   @Override
-  public RemoteConfig withExecutor(final ExecutorService executor) {
-    super.withExecutor(executor);
+  public RemoteConfig withExecutorService(final ExecutorService executor) {
+    super.withExecutorService(executor);
     return this;
   }
 

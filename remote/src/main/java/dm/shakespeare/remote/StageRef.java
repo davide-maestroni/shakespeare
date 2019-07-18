@@ -55,6 +55,7 @@ import dm.shakespeare.log.LogPrinters;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.remote.config.LocalConfig;
 import dm.shakespeare.remote.config.StageConfig;
+import dm.shakespeare.remote.io.JavaSerializer;
 import dm.shakespeare.remote.io.RawData;
 import dm.shakespeare.remote.io.Serializer;
 import dm.shakespeare.remote.message.Rejection;

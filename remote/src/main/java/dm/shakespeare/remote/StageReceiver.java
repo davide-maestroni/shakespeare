@@ -50,6 +50,7 @@ import dm.shakespeare.remote.config.RemoteConfig;
 import dm.shakespeare.remote.config.StageConfig;
 import dm.shakespeare.remote.io.DataStore;
 import dm.shakespeare.remote.io.FileDataStore;
+import dm.shakespeare.remote.io.JavaSerializer;
 import dm.shakespeare.remote.io.RawData;
 import dm.shakespeare.remote.io.Serializer;
 import dm.shakespeare.remote.transport.ActorID;
