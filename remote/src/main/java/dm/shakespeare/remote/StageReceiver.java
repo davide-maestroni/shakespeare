@@ -587,23 +587,35 @@ public class StageReceiver {
       if (actorID == null) {
         return new DismissActorResponse().withError(new IllegalArgumentException());
       }
-      final Actor actor = stage.get(actorID.getActorId());
+      final String senderId = request.getSenderId();
+      final Actor actor = resolveActor(actorID, senderId);
       if (actor == null) {
         return new DismissActorResponse().withError(new IllegalArgumentException());
       }
 
       synchronized (idsMutex) {
-        if (!actor.equals(instanceIdToActor.get(actorID.getInstanceId()))) {
+        if (!actorToInstanceId.get(actor).equals(actorID.getInstanceId())) {
           return new DismissActorResponse().withError(new IllegalArgumentException());
         }
       }
 
+      final boolean dismissed;
       if (request.getMayInterruptIfRunning()) {
-        actor.dismissNow();
+        dismissed = actor.dismissNow();
 
       } else {
-        actor.dismiss();
+        dismissed = actor.dismiss();
       }
+
+      if (dismissed) {
+        synchronized (sendersMutex) {
+          final SenderActor senderActor = senderIdToActor.remove(new SenderID(actorID, senderId));
+          if (senderActor != null) {
+            lruSenders.remove(senderActor);
+          }
+        }
+      }
+
       return new DismissActorResponse();
     }
   }
@@ -774,13 +786,27 @@ public class StageReceiver {
             }
             flushSenders();
           }
-          final SenderID senderID = SenderRole.this.senderId;
-          getMessageSender().send(new MessageRequest().withActorID(senderID.actorID)
+          final SenderID senderId = SenderRole.this.senderId;
+          getMessageSender().send(new MessageRequest().withActorID(senderId.actorID)
               .withSenderActorID(actorID)
               .withHeaders(envelop.getHeaders())
               .withMessageData(RawData.wrap(serializer.serialize(message)))
-              .withSentTimestamp(envelop.getSentAt()), senderID.senderId);
+              .withSentTimestamp(envelop.getSentAt()), senderId.senderId);
           envelop.preventReceipt();
+        }
+
+        @Override
+        public void onStop(@NotNull final Agent agent) throws Exception {
+          if (agent.isDismissed()) {
+            synchronized (sendersMutex) {
+              final SenderActor senderActor = senderIdToActor.remove(senderId);
+              lruSenders.remove(senderActor);
+            }
+
+            final SenderID senderId = SenderRole.this.senderId;
+            getMessageSender().send(new DismissActorRequest().withActorID(senderId.actorID),
+                senderId.senderId);
+          }
         }
       };
     }

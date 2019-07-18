@@ -42,8 +42,9 @@ public class RoundRobinBehavior extends AbstractProxyBehavior {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private transient final ArrayList<Actor> proxied = new ArrayList<Actor>();
-  private transient final WeakHashMap<Actor, Actor> senders = new WeakHashMap<Actor, Actor>();
+  private transient final ArrayList<Actor> proxiedActors = new ArrayList<Actor>();
+  private transient final WeakHashMap<Actor, Actor> senderToProxied =
+      new WeakHashMap<Actor, Actor>();
 
   private transient int current;
 
@@ -55,18 +56,18 @@ public class RoundRobinBehavior extends AbstractProxyBehavior {
       @NotNull final Agent agent) throws Exception {
     if (message == ProxySignal.ADD_PROXIED) {
       final Actor sender = envelop.getSender();
-      final ArrayList<Actor> proxied = this.proxied;
-      if (!proxied.contains(sender)) {
+      final ArrayList<Actor> proxiedActors = this.proxiedActors;
+      if (!proxiedActors.contains(sender)) {
         agent.getLogger()
             .dbg("[%s] adding new proxied actor: envelop=%s - message=%s", agent.getSelf(), envelop,
                 message);
-        proxied.add(sender);
+        proxiedActors.add(sender);
       }
 
     } else if (message == ProxySignal.REMOVE_PROXIED) {
       final Actor sender = envelop.getSender();
-      final ArrayList<Actor> proxied = this.proxied;
-      final int index = proxied.indexOf(sender);
+      final ArrayList<Actor> proxiedActors = this.proxiedActors;
+      final int index = proxiedActors.indexOf(sender);
       if (index >= 0) {
         if (index < current) {
           --current;
@@ -74,7 +75,7 @@ public class RoundRobinBehavior extends AbstractProxyBehavior {
         agent.getLogger()
             .dbg("[%s] removing proxied actor: envelop=%s - message=%s", agent.getSelf(), envelop,
                 message);
-        proxied.remove(sender);
+        proxiedActors.remove(sender);
       }
 
     } else {
@@ -87,23 +88,23 @@ public class RoundRobinBehavior extends AbstractProxyBehavior {
    */
   protected void onIncoming(@NotNull final Actor sender, final Object message, final long sentAt,
       @NotNull final Headers headers, @NotNull final Agent agent) throws Exception {
-    final ArrayList<Actor> proxied = this.proxied;
-    if (proxied.isEmpty()) {
+    final ArrayList<Actor> proxiedActors = this.proxiedActors;
+    if (proxiedActors.isEmpty()) {
       agent.getLogger()
           .wrn("[%s] no proxied actor present, bouncing message: sender=%s - headers=%s - "
               + "message=%s", agent.getSelf(), sender, headers, message);
       sender.tell(new Bounce(message, headers), headers.threadOnly(), agent.getSelf());
 
     } else {
-      final WeakHashMap<Actor, Actor> senders = this.senders;
-      Actor actor = senders.get(sender);
+      final WeakHashMap<Actor, Actor> senderToProxied = this.senderToProxied;
+      Actor actor = senderToProxied.get(sender);
       if (actor == null) {
-        final int size = proxied.size();
-        actor = proxied.get(current % size);
+        final int size = proxiedActors.size();
+        actor = proxiedActors.get(current % size);
         if (++current >= size) {
           current = 0;
         }
-        senders.put(sender, actor);
+        senderToProxied.put(sender, actor);
       }
       agent.getLogger()
           .dbg("[%s] forwarding message to proxied actor: recipient=%s - sender=%s - headers=%s - "

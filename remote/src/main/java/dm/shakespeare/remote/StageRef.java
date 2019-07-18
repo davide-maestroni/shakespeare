@@ -311,6 +311,16 @@ public class StageRef extends Stage {
               return new MessageResponse();
             }
           }
+
+        } else if (request instanceof DismissActorRequest) {
+          synchronized (sendersMutex) {
+            final SenderActor senderActor =
+                actorIdToSender.remove(((DismissActorRequest) request).getActorID());
+            if (senderActor != null) {
+              actorToSender.remove(senderActor.getActor());
+              lruSenders.remove(senderActor);
+            }
+          }
         }
         return new MessageResponse().withError(new IllegalArgumentException("invalid request"));
       }
@@ -801,7 +811,7 @@ public class StageRef extends Stage {
 
         @Override
         public void onStop(@NotNull final Agent agent) throws Exception {
-          if (agent.isDismissed() && remoteActors.containsKey(agent.getSelf())) {
+          if (agent.isDismissed()) {
             getMessageSender().send(new DismissActorRequest().withActorID(
                 new ActorID().withActorId(id).withInstanceId(instanceId))
                 .withMayInterruptIfRunning(Thread.currentThread().isInterrupted()), remoteId);

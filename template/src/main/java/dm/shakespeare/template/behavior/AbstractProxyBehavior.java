@@ -41,23 +41,22 @@ public abstract class AbstractProxyBehavior extends SerializableAbstractBehavior
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private transient final WeakValueHashMap<Actor, Actor> proxyToSenderMap =
+  private transient final WeakValueHashMap<Actor, Actor> proxyToSender =
       new WeakValueHashMap<Actor, Actor>();
-  private transient final WeakHashMap<Actor, Actor> senderToProxyMap =
-      new WeakHashMap<Actor, Actor>();
+  private transient final WeakHashMap<Actor, Actor> senderToProxy = new WeakHashMap<Actor, Actor>();
 
   /**
    * {@inheritDoc}
    */
   public void onMessage(final Object message, @NotNull final Envelop envelop,
       @NotNull final Agent agent) throws Exception {
-    final WeakHashMap<Actor, Actor> senderToProxyMap = this.senderToProxyMap;
-    final WeakValueHashMap<Actor, Actor> proxyToSenderMap = this.proxyToSenderMap;
+    final WeakHashMap<Actor, Actor> senderToProxy = this.senderToProxy;
+    final WeakValueHashMap<Actor, Actor> proxyToSender = this.proxyToSender;
     final Actor sender = envelop.getSender();
     final Headers headers = envelop.getHeaders();
     if (message instanceof OutgoingMessage) {
       final OutgoingMessage outgoingMessage = (OutgoingMessage) message;
-      final Actor recipient = proxyToSenderMap.get(sender);
+      final Actor recipient = proxyToSender.get(sender);
       if (recipient == null) {
         if (headers.getReceiptId() != null) {
           outgoingMessage.getSender()
@@ -72,13 +71,13 @@ public abstract class AbstractProxyBehavior extends SerializableAbstractBehavior
 
     } else {
       final Actor self = agent.getSelf();
-      if (!senderToProxyMap.containsKey(sender)) {
-        proxyToSenderMap.keySet().retainAll(senderToProxyMap.values());
+      if (!senderToProxy.containsKey(sender)) {
+        proxyToSender.keySet().retainAll(senderToProxy.values());
         final Actor proxy = Stage.back().createActor(sender.getId(), new SenderRole(self));
-        senderToProxyMap.put(sender, proxy);
-        proxyToSenderMap.put(proxy, sender);
+        senderToProxy.put(sender, proxy);
+        proxyToSender.put(proxy, sender);
       }
-      final Actor proxy = senderToProxyMap.get(sender);
+      final Actor proxy = senderToProxy.get(sender);
       if (proxy != null) {
         onIncoming(proxy, message, envelop.getSentAt(), envelop.getHeaders(), agent);
       }

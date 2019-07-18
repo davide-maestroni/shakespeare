@@ -45,9 +45,10 @@ public class LoadBalancerBehavior extends AbstractProxyBehavior {
 
   private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
-  private transient final HashMap<Actor, Integer> proxied = new HashMap<Actor, Integer>();
+  private transient final HashMap<Actor, Integer> pendingCounts = new HashMap<Actor, Integer>();
   private transient final String receiptId = toString();
-  private transient final WeakHashMap<Actor, Actor> senders = new WeakHashMap<Actor, Actor>();
+  private transient final WeakHashMap<Actor, Actor> senderToProxied =
+      new WeakHashMap<Actor, Actor>();
 
   /**
    * {@inheritDoc}
@@ -57,12 +58,12 @@ public class LoadBalancerBehavior extends AbstractProxyBehavior {
       @NotNull final Agent agent) throws Exception {
     if (message == ProxySignal.ADD_PROXIED) {
       final Actor sender = envelop.getSender();
-      final HashMap<Actor, Integer> proxied = this.proxied;
-      if (!proxied.containsKey(sender)) {
+      final HashMap<Actor, Integer> pendingCounts = this.pendingCounts;
+      if (!pendingCounts.containsKey(sender)) {
         agent.getLogger()
             .dbg("[%s] adding new proxied actor: envelop=%s - message=%s", agent.getSelf(), envelop,
                 message);
-        proxied.put(sender, 0);
+        pendingCounts.put(sender, 0);
       }
 
     } else if (message == ProxySignal.REMOVE_PROXIED) {
@@ -70,7 +71,7 @@ public class LoadBalancerBehavior extends AbstractProxyBehavior {
       agent.getLogger()
           .dbg("[%s] removing proxied actor: envelop=%s - message=%s", agent.getSelf(), envelop,
               message);
-      proxied.remove(sender);
+      pendingCounts.remove(sender);
 
     } else {
       super.onMessage(message, envelop, agent);
@@ -82,12 +83,12 @@ public class LoadBalancerBehavior extends AbstractProxyBehavior {
    */
   protected void onIncoming(@NotNull final Actor sender, final Object message, final long sentAt,
       @NotNull final Headers headers, @NotNull final Agent agent) throws Exception {
-    final HashMap<Actor, Integer> proxied = this.proxied;
-    final WeakHashMap<Actor, Actor> senders = this.senders;
-    Actor actor = senders.get(sender);
+    final HashMap<Actor, Integer> pendingCounts = this.pendingCounts;
+    final WeakHashMap<Actor, Actor> senderToProxied = this.senderToProxied;
+    Actor actor = senderToProxied.get(sender);
     if (actor == null) {
       Integer min = null;
-      for (final Entry<Actor, Integer> entry : proxied.entrySet()) {
+      for (final Entry<Actor, Integer> entry : pendingCounts.entrySet()) {
         final Integer count = entry.getValue();
         if ((min == null) || (count < min)) {
           min = count;
@@ -95,14 +96,14 @@ public class LoadBalancerBehavior extends AbstractProxyBehavior {
         }
       }
       if (actor != null) {
-        senders.put(sender, actor);
+        senderToProxied.put(sender, actor);
       }
     }
     if (actor != null) {
       agent.getLogger()
           .dbg("[%s] forwarding message to proxied actor: recipient=%s - sender=%s - headers=%s - "
               + "message=%s", agent.getSelf(), actor, sender, headers, message);
-      proxied.put(actor, proxied.get(actor) + 1);
+      pendingCounts.put(actor, pendingCounts.get(actor) + 1);
       actor.tell(message, decorateHeaders(headers.asSentAt(sentAt)), sender);
 
     } else {
@@ -121,10 +122,10 @@ public class LoadBalancerBehavior extends AbstractProxyBehavior {
       final Object message, final long sentAt, @NotNull Headers headers,
       @NotNull final Agent agent) throws Exception {
     if (message instanceof Receipt) {
-      final HashMap<Actor, Integer> proxied = this.proxied;
-      final Integer count = proxied.get(sender);
+      final HashMap<Actor, Integer> pendingCounts = this.pendingCounts;
+      final Integer count = pendingCounts.get(sender);
       if (count != null) {
-        proxied.put(sender, Math.max(0, count - 1));
+        pendingCounts.put(sender, Math.max(0, count - 1));
       }
       final Headers messageHeaders =
           resetHeaders((Receipt) message, ((Receipt) message).getHeaders());
