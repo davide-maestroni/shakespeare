@@ -77,7 +77,6 @@ import dm.shakespeare.remote.transport.RemoteRequest;
 import dm.shakespeare.remote.transport.RemoteResponse;
 import dm.shakespeare.remote.transport.UploadRequest;
 import dm.shakespeare.remote.transport.UploadResponse;
-import dm.shakespeare.remote.util.Classes;
 import dm.shakespeare.util.ConstantConditions;
 import dm.shakespeare.util.Iterables;
 
@@ -89,6 +88,7 @@ public class StageRef extends Stage {
   private static final Object resourcesMutex = new Object();
 
   private static Map<String, File> resourceFiles = Collections.emptyMap();
+
   private final HashMap<ActorID, SenderActor> actorIdToSender = new HashMap<ActorID, SenderActor>();
   private final HashMap<Actor, SenderActor> actorToSender = new HashMap<Actor, SenderActor>();
   private final long actorsFullSyncTime;
@@ -543,9 +543,15 @@ public class StageRef extends Stage {
   }
 
   public void uploadClasses(@NotNull final Iterable<? extends Class<?>> classes) {
+    final Map<String, File> resourceFiles = StageRef.resourceFiles;
     final HashSet<String> paths = new HashSet<String>();
     for (final Class<?> aClass : classes) {
-      paths.add(Classes.toPath(aClass));
+      final String path = "/" + aClass.getName().replace(".", "/");
+      for (final String resourcePath : resourceFiles.keySet()) {
+        if (resourcePath.startsWith(path)) {
+          paths.add(resourcePath);
+        }
+      }
     }
     uploadResources(paths);
   }

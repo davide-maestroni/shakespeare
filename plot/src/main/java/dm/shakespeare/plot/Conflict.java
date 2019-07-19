@@ -18,18 +18,27 @@ package dm.shakespeare.plot;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.Serializable;
+
 import dm.shakespeare.message.Bounce;
+import dm.shakespeare.plot.config.BuildConfig;
 import dm.shakespeare.util.ConstantConditions;
 
 /**
  * Created by davide-maestroni on 01/25/2019.
  */
-class Conflict {
+class Conflict implements Serializable {
+
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   private final Throwable incident;
 
   Conflict(@NotNull final Throwable incident) {
     this.incident = ConstantConditions.notNull("incident", incident);
+  }
+
+  private Conflict() {
+    this.incident = null;
   }
 
   @NotNull
@@ -43,7 +52,7 @@ class Conflict {
   }
 
   @NotNull
-  Throwable getCause() {
+  public Throwable getIncident() {
     return incident;
   }
 }

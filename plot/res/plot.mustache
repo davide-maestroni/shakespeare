@@ -383,10 +383,6 @@ public class Plot {
   private static class DefaultSetting extends SerializableSetting {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
-
-    private Object readResolve() throws ObjectStreamException {
-      return DEFAULT_SETTING;
-    }
   }
 
   private static class EventWrapper<T> extends Event<T> {

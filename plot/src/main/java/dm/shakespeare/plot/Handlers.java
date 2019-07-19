@@ -18,7 +18,6 @@ package dm.shakespeare.plot;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.ObjectStreamException;
 import java.io.Serializable;
 
 import dm.shakespeare.plot.config.BuildConfig;
@@ -59,10 +58,6 @@ public class Handlers {
 
     public Object call(final Object effect) {
       return effect;
-    }
-
-    private Object readResolve() throws ObjectStreamException {
-      return IDENTITY;
     }
   }
 

@@ -18,7 +18,6 @@ package dm.shakespeare.actor;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -60,7 +59,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
       new ArrayList<Observer<? super Agent>>();
 
   @NotNull
-  @SuppressWarnings("unchecked")
   public Behavior build() {
     final ArrayList<MatchingHandler> messageHandlers = this.messageHandlers;
     final ArrayList<Handler<?>> noMatchHandlers = this.noMatchHandlers;
@@ -261,10 +259,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
 
     public void accept(@NotNull final Agent agent) {
     }
-
-    private Object readResolve() throws ObjectStreamException {
-      return DEFAULT_AGENT_OBSERVER;
-    }
   }
 
   private static class DefaultMessageHandler implements Handler<Object>, Serializable {
@@ -273,10 +267,6 @@ class StandardBehaviorBuilder implements BehaviorBuilder {
 
     public void handle(final Object message, @NotNull final Envelop envelop,
         @NotNull final Agent agent) {
-    }
-
-    private Object readResolve() throws ObjectStreamException {
-      return DEFAULT_MESSAGE_HANDLER;
     }
   }
 

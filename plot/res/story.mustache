@@ -980,7 +980,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else if (message == EventSignal.CANCEL) {
           final Conflict conflict = Conflict.ofCancel();
-          cancel(conflict.getCause());
+          cancel(conflict.getIncident());
           agent.setBehavior(
               new DoneBehavior(conflict, Collections.singleton(conflict), nextSenders));
         }
@@ -1037,7 +1037,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
 
         } else if (message == EventSignal.CANCEL) {
           final Conflict conflict = Conflict.ofCancel();
-          cancel(conflict.getCause());
+          cancel(conflict.getIncident());
           agent.setBehavior(
               new DoneBehavior(conflict, Collections.singleton(conflict), nextSenders));
         }
@@ -1920,8 +1920,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
           } else {
             while (inputIterator.hasNext()) {
               final R effect = effectHandler.call((T) inputIterator.next());
-              //int n = ((Integer) inputIterator.next()).intValue();
-              memory.put(0);
+              memory.put(effect);
             }
           }
           done(agent);
@@ -4016,7 +4015,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @Override
     Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Agent agent) throws
         Exception {
-      final Throwable incident = conflict.getCause();
+      final Throwable incident = conflict.getIncident();
       for (final Class<? extends Throwable> incidentType : incidentTypes) {
         if (incidentType.isInstance(incident)) {
           SettingInfo.set(getSettingInfo());
@@ -4062,7 +4061,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
     @Override
     Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Agent agent) throws
         Exception {
-      final Throwable incident = conflict.getCause();
+      final Throwable incident = conflict.getIncident();
       for (final Class<? extends Throwable> incidentType : incidentTypes) {
         if (incidentType.isInstance(incident)) {
           SettingInfo.set(getSettingInfo());
@@ -4553,7 +4552,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
               effects.add(message);
 
             } else {
-              storyObserver.onIncident(spectator, ((Conflict) message).getCause());
+              storyObserver.onIncident(spectator, ((Conflict) message).getIncident());
               envelop.getSender().tell(StorySignal.NEXT, headers, self);
             }
 
@@ -4587,7 +4586,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
             boolean isEnded = false;
             for (final Object effect : effects) {
               if (effect instanceof Conflict) {
-                storyObserver.onIncident(spectator, ((Conflict) effect).getCause());
+                storyObserver.onIncident(spectator, ((Conflict) effect).getIncident());
 
               } else if (effect == StorySignal.END) {
                 storyObserver.onEnd(spectator);
@@ -4899,7 +4898,7 @@ public abstract class Story<T> extends Event<Iterable<T>> {
         Exception {
       SettingInfo.set(getSettingInfo());
       try {
-        eventObserver.onIncident(conflict.getCause());
+        eventObserver.onIncident(conflict.getIncident());
 
       } finally {
         SettingInfo.unset();

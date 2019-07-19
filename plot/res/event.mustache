@@ -413,7 +413,7 @@ public abstract class Event<T> {
 
         } else if (message == EventSignal.CANCEL) {
           final Conflict conflict = Conflict.ofCancel();
-          cancel(conflict.getCause());
+          cancel(conflict.getIncident());
           agent.setBehavior(new DoneBehavior(conflict));
         }
         envelop.preventReceipt();
@@ -430,7 +430,7 @@ public abstract class Event<T> {
 
         } else if (message == EventSignal.CANCEL) {
           final Conflict conflict = Conflict.ofCancel();
-          cancel(conflict.getCause());
+          cancel(conflict.getIncident());
           agent.setBehavior(new DoneBehavior(conflict));
 
         } else if (message == NarratorSignal.AVAILABLE) {
@@ -889,7 +889,7 @@ public abstract class Event<T> {
               effect = message;
 
             } else {
-              eventObserver.onIncident(((Conflict) message).getCause());
+              eventObserver.onIncident(((Conflict) message).getIncident());
               agent.getSelf().dismiss();
             }
 
@@ -908,7 +908,7 @@ public abstract class Event<T> {
           } else if ((message == SpectatorSignal.RESUME) && isPaused) {
             final Object effect = this.effect;
             if (effect instanceof Conflict) {
-              eventObserver.onIncident(((Conflict) effect).getCause());
+              eventObserver.onIncident(((Conflict) effect).getIncident());
 
             } else {
               eventObserver.onEffect((T) message);
@@ -1138,7 +1138,7 @@ public abstract class Event<T> {
     @Override
     Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Agent agent) throws
         Exception {
-      final Throwable incident = conflict.getCause();
+      final Throwable incident = conflict.getIncident();
       for (final Class<? extends Throwable> incidentType : incidentTypes) {
         if (incidentType.isInstance(incident)) {
           SettingInfo.set(getSettingInfo());
@@ -1179,7 +1179,7 @@ public abstract class Event<T> {
     @Override
     Actor getConflictActor(@NotNull final Conflict conflict, @NotNull final Agent agent) throws
         Exception {
-      final Throwable incident = conflict.getCause();
+      final Throwable incident = conflict.getIncident();
       for (final Class<? extends Throwable> incidentType : incidentTypes) {
         if (incidentType.isInstance(incident)) {
           SettingInfo.set(getSettingInfo());
@@ -1448,7 +1448,7 @@ public abstract class Event<T> {
         Exception {
       SettingInfo.set(getSettingInfo());
       try {
-        eventObserver.onIncident(conflict.getCause());
+        eventObserver.onIncident(conflict.getIncident());
 
       } finally {
         SettingInfo.unset();

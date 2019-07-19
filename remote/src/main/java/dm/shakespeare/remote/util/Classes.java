@@ -168,11 +168,6 @@ public class Classes {
   }
 
   @NotNull
-  public static String toPath(@NotNull final Class<?> aClass) {
-    return toPath(aClass.getName());
-  }
-
-  @NotNull
   public static String toPath(@NotNull final String className) {
     return "/" + className.replace(".", "/") + ".class";
   }

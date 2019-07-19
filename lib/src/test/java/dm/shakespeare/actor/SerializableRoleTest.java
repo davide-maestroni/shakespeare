@@ -391,8 +391,10 @@ public class SerializableRoleTest {
           final ObjectInputStream objectInputStream;
           objectInputStream = new ObjectInputStream(inputStream);
           return objectInputStream.readObject();
+
         } catch (IOException e) {
           throw new InvalidObjectException(e.getMessage());
+
         } catch (ClassNotFoundException e) {
           throw new InvalidClassException(e.getMessage());
         }
