@@ -267,7 +267,7 @@ public class StageRef extends Stage {
   }
 
   private static void registerFiles() throws IOException {
-    // TODO: System.getProperty("java.class.path") 2019-07-20 only way to get all files!!!!
+    // TODO: System.getProperty("java.class.path") fallback when running in subprocess!!!!
     synchronized (resourcesMutex) {
       if (resourceFiles.isEmpty()) {
         final HashMap<String, File> fileMap = new HashMap<String, File>();
