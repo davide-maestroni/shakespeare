@@ -267,10 +267,11 @@ public class StageRef extends Stage {
   }
 
   private static void registerFiles() throws IOException {
+    // TODO: System.getProperty("java.class.path") 2019-07-20 only way to get all files!!!!
     synchronized (resourcesMutex) {
       if (resourceFiles.isEmpty()) {
         final HashMap<String, File> fileMap = new HashMap<String, File>();
-        final Enumeration<URL> resources = StageRef.class.getClassLoader().getResources("");
+        final Enumeration<URL> resources = StageRef.class.getClassLoader().getResources(".");
         while (resources.hasMoreElements()) {
           final URL url = resources.nextElement();
           final File root = new File(url.getPath());
