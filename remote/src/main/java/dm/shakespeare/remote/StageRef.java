@@ -549,8 +549,11 @@ public class StageRef extends Stage {
     for (final Class<?> aClass : classes) {
       final String path = "/" + aClass.getName().replace(".", "/");
       for (final String resourcePath : resourceFiles.keySet()) {
-        if (resourcePath.startsWith(path)) {
-          paths.add(resourcePath);
+        if (resourcePath.startsWith(path) && (resourcePath.length() > path.length())) {
+          final char c = resourcePath.charAt(path.length());
+          if ((c == '.') || (c == '$')) {
+            paths.add(resourcePath);
+          }
         }
       }
     }

@@ -147,6 +147,7 @@ public class ProcessConnector implements Connector {
                         } catch (final Exception e) {
                           logger.err(e,
                               "failed to process request: " + requestWrapper.getRequestId());
+                          // TODO: 2019-07-20 send error response
                         }
                       }
                     });
