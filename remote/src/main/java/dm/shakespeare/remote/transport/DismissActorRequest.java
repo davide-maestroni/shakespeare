@@ -28,6 +28,18 @@ public class DismissActorRequest extends RemoteRequest {
   private ActorID actorID;
   private boolean mayInterruptIfRunning;
 
+  @NotNull
+  public DismissActorResponse buildResponse() {
+    return new DismissActorResponse();
+  }
+
+  @NotNull
+  @Override
+  public DismissActorRequest withSenderId(final String senderId) {
+    super.withSenderId(senderId);
+    return this;
+  }
+
   public ActorID getActorID() {
     return actorID;
   }
@@ -53,13 +65,6 @@ public class DismissActorRequest extends RemoteRequest {
   @NotNull
   public DismissActorRequest withMayInterruptIfRunning(final boolean mayInterruptIfRunning) {
     this.mayInterruptIfRunning = mayInterruptIfRunning;
-    return this;
-  }
-
-  @NotNull
-  @Override
-  public DismissActorRequest withSenderId(final String senderId) {
-    super.withSenderId(senderId);
     return this;
   }
 }

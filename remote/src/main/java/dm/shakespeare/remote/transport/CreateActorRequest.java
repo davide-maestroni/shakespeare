@@ -34,6 +34,18 @@ public class CreateActorRequest extends RemoteRequest {
   private Map<String, RawData> resources;
   private RawData roleData;
 
+  @NotNull
+  public CreateActorResponse buildResponse() {
+    return new CreateActorResponse();
+  }
+
+  @NotNull
+  @Override
+  public CreateActorRequest withSenderId(final String senderId) {
+    super.withSenderId(senderId);
+    return this;
+  }
+
   public String getActorId() {
     return actorId;
   }
@@ -92,13 +104,6 @@ public class CreateActorRequest extends RemoteRequest {
   @NotNull
   public CreateActorRequest withRoleData(final RawData roleData) {
     this.roleData = roleData;
-    return this;
-  }
-
-  @NotNull
-  @Override
-  public CreateActorRequest withSenderId(final String senderId) {
-    super.withSenderId(senderId);
     return this;
   }
 }

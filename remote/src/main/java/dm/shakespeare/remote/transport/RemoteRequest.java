@@ -23,13 +23,16 @@ import java.io.Serializable;
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
-public class RemoteRequest implements Serializable {
+public abstract class RemoteRequest implements Serializable {
 
   public static final int VERSION = 1;
 
   private static final long serialVersionUID = VERSION;
 
   private String senderId;
+
+  @NotNull
+  public abstract RemoteResponse buildResponse();
 
   public String getSenderId() {
     return senderId;

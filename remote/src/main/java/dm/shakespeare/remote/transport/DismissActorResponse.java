@@ -25,19 +25,10 @@ public class DismissActorResponse extends RemoteResponse {
 
   private static final long serialVersionUID = VERSION;
 
-  private Throwable error;
-
-  public Throwable getError() {
-    return error;
-  }
-
-  public void setError(final Throwable error) {
-    this.error = error;
-  }
-
   @NotNull
+  @Override
   public DismissActorResponse withError(final Throwable error) {
-    this.error = error;
+    super.withError(error);
     return this;
   }
 }

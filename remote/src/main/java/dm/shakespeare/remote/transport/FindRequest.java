@@ -32,6 +32,18 @@ public class FindRequest extends RemoteRequest {
   private String pattern;
   private Tester<? super Actor> tester;
 
+  @NotNull
+  public FindResponse buildResponse() {
+    return new FindResponse();
+  }
+
+  @NotNull
+  @Override
+  public FindRequest withSenderId(final String senderId) {
+    super.withSenderId(senderId);
+    return this;
+  }
+
   public FilterType getFilterType() {
     return filterType;
   }
@@ -65,13 +77,6 @@ public class FindRequest extends RemoteRequest {
   @NotNull
   public FindRequest withPattern(final String pattern) {
     this.pattern = pattern;
-    return this;
-  }
-
-  @NotNull
-  @Override
-  public FindRequest withSenderId(final String senderId) {
-    super.withSenderId(senderId);
     return this;
   }
 

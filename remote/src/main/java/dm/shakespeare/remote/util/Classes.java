@@ -87,7 +87,7 @@ public class Classes {
           buffer.position(buffer.position() + 2);
           break;
         case CONSTANT_NAMEANDTYPE:
-          buffer.position(buffer.position() + 2);// skip name, fall through:
+          buffer.position(buffer.position() + 2); // skip name, fall through:
         case CONSTANT_METHODTYPE:
           isNamedType.set(buffer.getChar());
           break;

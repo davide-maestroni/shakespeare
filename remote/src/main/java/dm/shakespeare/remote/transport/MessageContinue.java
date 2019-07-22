@@ -59,6 +59,13 @@ public class MessageContinue extends RemoteResponse {
   }
 
   @NotNull
+  @Override
+  public MessageContinue withError(final Throwable error) {
+    super.withError(error);
+    return this;
+  }
+
+  @NotNull
   public MessageContinue withResourcePaths(final List<String> resourcePaths) {
     this.resourcePaths = resourcePaths;
     return this;

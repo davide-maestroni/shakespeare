@@ -221,7 +221,8 @@ class RemoteClassLoader extends ClassLoader {
       if (name.endsWith(".path")) {
         BufferedReader reader = null;
         try {
-          reader = new BufferedReader(new InputStreamReader(entry.getData().toInputStream()));
+          reader =
+              new BufferedReader(new InputStreamReader(entry.getData().toInputStream(), "UTF-8"));
           paths.put(reader.readLine(),
               name.substring(0, name.length() - ".path".length()) + ".raw");
 

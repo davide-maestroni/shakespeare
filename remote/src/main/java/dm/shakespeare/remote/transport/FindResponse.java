@@ -62,4 +62,11 @@ public class FindResponse extends RemoteResponse {
     this.actorIDs = actorIDs;
     return this;
   }
+
+  @NotNull
+  @Override
+  public FindResponse withError(final Throwable error) {
+    super.withError(error);
+    return this;
+  }
 }

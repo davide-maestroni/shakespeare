@@ -32,6 +32,18 @@ public class UploadRequest extends RemoteRequest {
 
   private Map<String, RawData> resources;
 
+  @NotNull
+  public UploadResponse buildResponse() {
+    return new UploadResponse();
+  }
+
+  @NotNull
+  @Override
+  public UploadRequest withSenderId(final String senderId) {
+    super.withSenderId(senderId);
+    return this;
+  }
+
   public Map<String, RawData> getResources() {
     return resources;
   }
@@ -62,13 +74,6 @@ public class UploadRequest extends RemoteRequest {
   @NotNull
   public UploadRequest withResources(final Map<String, RawData> resources) {
     this.resources = resources;
-    return this;
-  }
-
-  @NotNull
-  @Override
-  public UploadRequest withSenderId(final String senderId) {
-    super.withSenderId(senderId);
     return this;
   }
 }

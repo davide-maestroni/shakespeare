@@ -26,7 +26,6 @@ public class CreateActorResponse extends RemoteResponse {
   private static final long serialVersionUID = VERSION;
 
   private ActorID actorID;
-  private Throwable error;
 
   public ActorID getActorID() {
     return actorID;
@@ -36,14 +35,6 @@ public class CreateActorResponse extends RemoteResponse {
     this.actorID = actorID;
   }
 
-  public Throwable getError() {
-    return error;
-  }
-
-  public void setError(final Throwable error) {
-    this.error = error;
-  }
-
   @NotNull
   public CreateActorResponse withActorID(final ActorID actorID) {
     this.actorID = actorID;
@@ -51,8 +42,9 @@ public class CreateActorResponse extends RemoteResponse {
   }
 
   @NotNull
+  @Override
   public CreateActorResponse withError(final Throwable error) {
-    this.error = error;
+    super.withError(error);
     return this;
   }
 }

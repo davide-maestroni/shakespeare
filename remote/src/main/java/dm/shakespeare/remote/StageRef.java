@@ -20,6 +20,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
@@ -40,6 +42,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import dm.shakespeare.Stage;
 import dm.shakespeare.actor.AbstractBehavior;
@@ -85,10 +89,14 @@ import dm.shakespeare.util.Iterables;
  */
 public class StageRef extends Stage {
 
+  private static final FilenameFilter JAR_FILTER = new FilenameFilter() {
+
+    public boolean accept(final File file, final String name) {
+      return name.endsWith(".jar") || name.endsWith(".JAR");
+    }
+  };
   private static final Object resourcesMutex = new Object();
-
   private static Map<String, File> resourceFiles = Collections.emptyMap();
-
   private final HashMap<ActorID, SenderActor> actorIdToSender = new HashMap<ActorID, SenderActor>();
   private final HashMap<Actor, SenderActor> actorToSender = new HashMap<Actor, SenderActor>();
   private final long actorsFullSyncTime;
@@ -107,7 +115,6 @@ public class StageRef extends Stage {
   private final Object sendersMutex = new Object();
   private final Serializer serializer;
   private final Synchronizer synchronizer;
-
   private Sender messageSender;
   private ScheduledExecutorService scheduledExecutorService;
 
@@ -196,12 +203,7 @@ public class StageRef extends Stage {
     } else {
       final Synchronizer partialSync;
       if (partialSyncTime < 0) {
-        partialSync = new Synchronizer() {
-
-          public boolean sync() {
-            return true;
-          }
-        };
+        partialSync = new DummySynchronizer(true);
 
       } else if (partialSyncTime > 0) {
         partialSync = new Synchronizer() {
@@ -214,12 +216,7 @@ public class StageRef extends Stage {
         };
 
       } else {
-        partialSync = new Synchronizer() {
-
-          public boolean sync() {
-            return false;
-          }
-        };
+        partialSync = new DummySynchronizer(false);
       }
 
       if (fullSyncTime < 0) {
@@ -266,8 +263,60 @@ public class StageRef extends Stage {
     }
   }
 
-  private static void registerFiles() throws IOException {
-    // TODO: System.getProperty("java.class.path") fallback when running in subprocess!!!!
+  private static void registerJar(@NotNull final File jarFile,
+      @NotNull final HashMap<String, File> fileMap) throws IOException {
+    ZipInputStream zipInputStream = null;
+    try {
+      zipInputStream = new ZipInputStream(new FileInputStream(jarFile));
+      ZipEntry entry;
+      while ((entry = zipInputStream.getNextEntry()) != null) {
+        if (!entry.isDirectory()) {
+          final File tempFile = File.createTempFile("sks-", ".dat");
+          tempFile.deleteOnExit();
+          RawData.wrapOnce(zipInputStream).copyTo(tempFile);
+          final String path = "/" + entry.getName();
+          if (!fileMap.containsKey(path)) {
+            fileMap.put(path, tempFile);
+          }
+        }
+      }
+
+    } finally {
+      if (zipInputStream != null) {
+        zipInputStream.close();
+      }
+    }
+  }
+
+  private static void registerPaths(@NotNull final String classPath,
+      @NotNull final HashMap<String, File> fileMap) throws IOException {
+    final String[] paths = classPath.split(":");
+    for (final String path : paths) {
+      final File file = new File(path);
+      if (file.getName().equals("*")) {
+        // all JARs in directory
+        final File dir = file.getParentFile();
+        final File[] jars = dir.listFiles(JAR_FILTER);
+        if (jars != null) {
+          for (final File jar : jars) {
+            registerJar(jar, fileMap);
+          }
+        }
+
+      } else if (file.exists()) {
+        if (file.isFile()) {
+          // single JAR
+          registerJar(file, fileMap);
+
+        } else {
+          // class files
+          registerFile(file, file, fileMap);
+        }
+      }
+    }
+  }
+
+  private static void registerResources() throws IOException {
     synchronized (resourcesMutex) {
       if (resourceFiles.isEmpty()) {
         final HashMap<String, File> fileMap = new HashMap<String, File>();
@@ -276,6 +325,14 @@ public class StageRef extends Stage {
           final URL url = resources.nextElement();
           final File root = new File(url.getPath());
           registerFile(root, root, fileMap);
+        }
+
+        if (fileMap.isEmpty()) {
+          // probably running in a sub-process
+          final String classPath = System.getProperty("java.class.path");
+          if (classPath != null) {
+            registerPaths(classPath, fileMap);
+          }
         }
         resourceFiles = fileMap;
       }
@@ -332,7 +389,7 @@ public class StageRef extends Stage {
         throw new IllegalStateException("stage is already connected");
       }
       this.messageSender = sender;
-      registerFiles();
+      registerResources();
       final ScheduledExecutorService executorService =
           (this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor());
       final long fullSyncTime = this.actorsFullSyncTime;
@@ -384,10 +441,15 @@ public class StageRef extends Stage {
   public ActorSet findAll(@NotNull final Pattern idPattern) {
     try {
       if (!synchronizer.sync()) {
-        final FindResponse response = (FindResponse) getMessageSender().send(
+        final RemoteResponse response = getMessageSender().send(
             new FindRequest().withFilterType(FilterType.ALL).withPattern(idPattern.pattern()),
             remoteId);
-        syncActors(response, false);
+        if (response instanceof FindResponse) {
+          syncActors((FindResponse) response, false);
+
+        } else {
+          throw new IllegalStateException("invalid response from remote stage: " + response);
+        }
       }
 
     } catch (final RuntimeException e) {
@@ -404,10 +466,15 @@ public class StageRef extends Stage {
   public ActorSet findAll(@NotNull final Tester<? super Actor> tester) {
     try {
       if (!synchronizer.sync()) {
-        final FindResponse response = (FindResponse) getMessageSender().send(
+        final RemoteResponse response = getMessageSender().send(
             new FindRequest().withFilterType(FilterType.ALL)
                 .withTester(ConstantConditions.notNull("tester", tester)), remoteId);
-        syncActors(response, false);
+        if (response instanceof FindResponse) {
+          syncActors((FindResponse) response, false);
+
+        } else {
+          throw new IllegalStateException("invalid response from remote stage: " + response);
+        }
       }
 
     } catch (final RuntimeException e) {
@@ -424,10 +491,15 @@ public class StageRef extends Stage {
   public Actor findAny(@NotNull final Pattern idPattern) {
     try {
       if (!synchronizer.sync()) {
-        final FindResponse response = (FindResponse) getMessageSender().send(
+        final RemoteResponse response = getMessageSender().send(
             new FindRequest().withFilterType(FilterType.ANY).withPattern(idPattern.pattern()),
             remoteId);
-        syncActors(response, false);
+        if (response instanceof FindResponse) {
+          syncActors((FindResponse) response, false);
+
+        } else {
+          throw new IllegalStateException("invalid response from remote stage: " + response);
+        }
       }
 
     } catch (final RuntimeException e) {
@@ -444,10 +516,15 @@ public class StageRef extends Stage {
   public Actor findAny(@NotNull final Tester<? super Actor> tester) {
     try {
       if (!synchronizer.sync()) {
-        final FindResponse response = (FindResponse) getMessageSender().send(
+        final RemoteResponse response = getMessageSender().send(
             new FindRequest().withFilterType(FilterType.ANY)
                 .withTester(ConstantConditions.notNull("tester", tester)), remoteId);
-        syncActors(response, false);
+        if (response instanceof FindResponse) {
+          syncActors((FindResponse) response, false);
+
+        } else {
+          throw new IllegalStateException("invalid response from remote stage: " + response);
+        }
       }
 
     } catch (final RuntimeException e) {
@@ -464,10 +541,15 @@ public class StageRef extends Stage {
   public Actor get(@NotNull final String id) {
     try {
       if (!synchronizer.sync()) {
-        final FindResponse response = (FindResponse) getMessageSender().send(
+        final RemoteResponse response = getMessageSender().send(
             new FindRequest().withFilterType(FilterType.EXACT)
                 .withPattern(ConstantConditions.notNull("id", id)), remoteId);
-        syncActors(response, false);
+        if (response instanceof FindResponse) {
+          syncActors((FindResponse) response, false);
+
+        } else {
+          throw new IllegalStateException("invalid response from remote stage: " + response);
+        }
       }
 
     } catch (final RuntimeException e) {
@@ -506,12 +588,19 @@ public class StageRef extends Stage {
         .withRoleData(RawData.wrap(data))
         .withResources(resources), remoteId);
     while (response instanceof CreateActorContinue) {
-      resources.clear();
-      final List<String> missingResources = ((CreateActorContinue) response).getResourcePaths();
+      final CreateActorContinue createActorContinue = (CreateActorContinue) response;
+      final Throwable error = createActorContinue.getError();
+      if (error != null) {
+        if (error instanceof Exception) {
+          throw (Exception) error;
+        }
+        throw new Exception(error);
+      }
+      final List<String> missingResources = (createActorContinue).getResourcePaths();
       if ((missingResources == null) || missingResources.isEmpty()) {
         throw new IllegalStateException("invalid response from remote stage: missing resources");
       }
-
+      resources.clear();
       for (final String missingResource : missingResources) {
         final File resourceFile = resourceFiles.get(missingResource);
         if (resourceFile != null) {
@@ -527,20 +616,26 @@ public class StageRef extends Stage {
           .withRoleData(RawData.wrap(data))
           .withResources(resources), remoteId);
     }
-    final CreateActorResponse actorResponse = (CreateActorResponse) response;
-    final Throwable error = actorResponse.getError();
-    if (error != null) {
-      if (error instanceof Exception) {
-        throw (Exception) error;
-      }
 
-      throw new Exception(error);
+    if (response instanceof CreateActorResponse) {
+      final CreateActorResponse actorResponse = (CreateActorResponse) response;
+      final Throwable error = actorResponse.getError();
+      if (error != null) {
+        if (error instanceof Exception) {
+          throw (Exception) error;
+        }
+
+        throw new Exception(error);
+      }
+      final ActorID actorID = actorResponse.getActorID();
+      final Actor actor =
+          super.buildActor(id, new RemoteRole((actorID != null) ? actorID.getInstanceId() : null));
+      remoteActors.put(actor, null);
+      return actor;
+
+    } else {
+      throw new IllegalStateException("invalid response from remote stage: " + response);
     }
-    final ActorID actorID = actorResponse.getActorID();
-    final Actor actor =
-        super.buildActor(id, new RemoteRole((actorID != null) ? actorID.getInstanceId() : null));
-    remoteActors.put(actor, null);
-    return actor;
   }
 
   public void uploadClasses(@NotNull final Iterable<? extends Class<?>> classes) {
@@ -687,14 +782,27 @@ public class StageRef extends Stage {
   }
 
   private void syncActors(final long syncMillis) throws Exception {
-    final FindResponse response =
-        (FindResponse) getMessageSender().send(new FindRequest().withFilterType(FilterType.ALL),
-            remoteId);
-    syncActors(response, true);
+    final RemoteResponse response =
+        getMessageSender().send(new FindRequest().withFilterType(FilterType.ALL), remoteId);
+    if (response instanceof FindResponse) {
+      syncActors((FindResponse) response, true);
+
+    } else {
+      throw new IllegalStateException("invalid response from remote stage: " + response);
+    }
     lastSyncTime.set(syncMillis);
   }
 
-  private void syncActors(@NotNull final FindResponse response, final boolean retainAll) {
+  private void syncActors(@NotNull final FindResponse response, final boolean retainAll) throws
+      Exception {
+    final Throwable error = response.getError();
+    if (error != null) {
+      if (error instanceof Exception) {
+        throw (Exception) error;
+      }
+      throw new Exception(error);
+    }
+
     final HashMap<String, ActorID> ids = new HashMap<String, ActorID>();
     for (final ActorID actorID : response.getActorIDs()) {
       ids.put(actorID.getActorId(), actorID);
@@ -718,10 +826,14 @@ public class StageRef extends Stage {
     }
     Throwable error;
     try {
-      final UploadResponse response =
-          (UploadResponse) getMessageSender().send(new UploadRequest().withResources(resources),
-              remoteId);
-      error = response.getError();
+      final RemoteResponse response =
+          getMessageSender().send(new UploadRequest().withResources(resources), remoteId);
+      if (response instanceof UploadResponse) {
+        error = response.getError();
+
+      } else {
+        throw new IllegalStateException("invalid response from remote stage: " + response);
+      }
 
     } catch (final Exception e) {
       error = e;
@@ -739,6 +851,19 @@ public class StageRef extends Stage {
   private interface Synchronizer {
 
     boolean sync() throws Exception;
+  }
+
+  private static class DummySynchronizer implements Synchronizer {
+
+    private final boolean result;
+
+    private DummySynchronizer(final boolean result) {
+      this.result = result;
+    }
+
+    public boolean sync() {
+      return result;
+    }
   }
 
   private static class RefreshInstanceId {
@@ -863,13 +988,18 @@ public class StageRef extends Stage {
             .withSenderActorID(senderID)
             .withResources(resources), remoteId);
         while (response instanceof MessageContinue) {
-          resources.clear();
-          final List<String> missingResources = ((MessageContinue) response).getResourcePaths();
+          final MessageContinue messageContinue = (MessageContinue) response;
+          final Throwable error = messageContinue.getError();
+          if (error != null) {
+            logger.err(error, "invalid response from remote stage: request failure");
+            return false;
+          }
+          final List<String> missingResources = messageContinue.getResourcePaths();
           if ((missingResources == null) || missingResources.isEmpty()) {
             logger.err("invalid response from remote stage: missing resources");
             return false;
           }
-
+          resources.clear();
           for (final String missingResource : missingResources) {
             final File resourceFile = resourceFiles.get(missingResource);
             if (resourceFile != null) {
@@ -894,7 +1024,7 @@ public class StageRef extends Stage {
         return false;
       }
 
-      final Throwable error = ((MessageResponse) response).getError();
+      final Throwable error = response.getError();
       if (error != null) {
         if (error instanceof Exception) {
           throw (Exception) error;

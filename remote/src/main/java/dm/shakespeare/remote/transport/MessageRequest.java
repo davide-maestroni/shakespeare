@@ -38,6 +38,18 @@ public class MessageRequest extends RemoteRequest {
   private ActorID senderActorID;
   private long sentTimestamp = System.currentTimeMillis();
 
+  @NotNull
+  public MessageResponse buildResponse() {
+    return new MessageResponse();
+  }
+
+  @NotNull
+  @Override
+  public MessageRequest withSenderId(final String senderId) {
+    super.withSenderId(senderId);
+    return this;
+  }
+
   public ActorID getActorID() {
     return actorID;
   }
@@ -132,13 +144,6 @@ public class MessageRequest extends RemoteRequest {
   @NotNull
   public MessageRequest withSenderActorID(final ActorID senderActorID) {
     this.senderActorID = senderActorID;
-    return this;
-  }
-
-  @NotNull
-  @Override
-  public MessageRequest withSenderId(final String senderId) {
-    super.withSenderId(senderId);
     return this;
   }
 

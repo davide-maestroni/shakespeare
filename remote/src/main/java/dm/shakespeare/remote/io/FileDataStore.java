@@ -40,9 +40,12 @@ public class FileDataStore implements DataStore {
       throw new IllegalArgumentException("container is not a directory");
     }
     this.root = root;
-    for (final File file : root.listFiles()) {
-      if (file.isFile()) {
-        data.put(file.getName(), RawData.wrap(file));
+    final File[] files = root.listFiles();
+    if (files != null) {
+      for (final File file : files) {
+        if (file.isFile()) {
+          data.put(file.getName(), RawData.wrap(file));
+        }
       }
     }
   }
@@ -77,6 +80,10 @@ public class FileDataStore implements DataStore {
     return null;
   }
 
+  public boolean isEmpty() {
+    return data.isEmpty();
+  }
+
   @NotNull
   public RawData save(@NotNull final String key, @NotNull final RawData data) throws IOException {
     final File file = new File(root, key);
@@ -86,17 +93,13 @@ public class FileDataStore implements DataStore {
     return rawData;
   }
 
-  public boolean isEmpty() {
-    return data.isEmpty();
+  public int size() {
+    return data.size();
   }
 
   @NotNull
   public Iterator<DataEntry> iterator() {
     return new FileDataIterator();
-  }
-
-  public int size() {
-    return data.size();
   }
 
   private class FileDataEntry implements DataEntry {

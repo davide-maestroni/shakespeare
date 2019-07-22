@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.UUID;
@@ -35,6 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import dm.shakespeare.log.LogPrinters;
 import dm.shakespeare.log.Logger;
+import dm.shakespeare.remote.config.BuildConfig;
 import dm.shakespeare.remote.io.JavaSerializer;
 import dm.shakespeare.remote.io.RawData;
 import dm.shakespeare.remote.io.Serializer;
@@ -114,7 +116,13 @@ public class ProcessConnector implements Connector {
   @NotNull
   public Sender connect(@NotNull final Receiver receiver) {
     if (connectionCount.getAndIncrement() == 0) {
-      reader = new BufferedReader(new InputStreamReader(inputStream));
+      try {
+        reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+
+      } catch (final UnsupportedEncodingException e) {
+        throw new IllegalStateException(e);
+      }
+
       final ExecutorService executorService = Executors.newSingleThreadExecutor();
       new Thread(new Runnable() {
 
@@ -136,10 +144,10 @@ public class ProcessConnector implements Connector {
                     executorService.execute(new Runnable() {
 
                       public void run() {
+                        final RemoteRequest request = requestWrapper.getRequest();
                         try {
                           logger.dbg("processing request: " + requestWrapper.getRequestId());
-                          final RemoteResponse response =
-                              receiver.receive(requestWrapper.getRequest());
+                          final RemoteResponse response = receiver.receive(request);
                           final ResponseWrapper responseWrapper =
                               new ResponseWrapper(response, requestWrapper.getRequestId());
                           printStream.println(serialize(responseWrapper));
@@ -147,7 +155,18 @@ public class ProcessConnector implements Connector {
                         } catch (final Exception e) {
                           logger.err(e,
                               "failed to process request: " + requestWrapper.getRequestId());
-                          // TODO: 2019-07-20 send error response
+                          if (request != null) {
+                            final ResponseWrapper responseWrapper =
+                                new ResponseWrapper(request.buildResponse().withError(e),
+                                    requestWrapper.getRequestId());
+                            try {
+                              printStream.println(serialize(responseWrapper));
+
+                            } catch (final Exception ex) {
+                              logger.err(ex, "failed to send error response: "
+                                  + requestWrapper.getRequestId());
+                            }
+                          }
                         }
                       }
                     });
@@ -165,7 +184,7 @@ public class ProcessConnector implements Connector {
                   builder.setLength(0);
 
                 } catch (final Exception e) {
-                  logger.dbg(e, "failed to process message: " + line);
+                  logger.err(e, "failed to process message: " + line);
                 }
               }
             }
@@ -250,6 +269,8 @@ public class ProcessConnector implements Connector {
 
   private static class RequestWrapper implements Serializable {
 
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
     private final RemoteRequest request;
     private final String requestId;
 
@@ -273,6 +294,8 @@ public class ProcessConnector implements Connector {
   }
 
   private static class ResponseWrapper implements Serializable {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private final String requestId;
     private final RemoteResponse response;

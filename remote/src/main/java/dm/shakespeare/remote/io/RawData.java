@@ -34,6 +34,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel.MapMode;
 
+import dm.shakespeare.remote.config.BuildConfig;
 import dm.shakespeare.remote.util.ByteBufferInputStream;
 import dm.shakespeare.util.ConstantConditions;
 
@@ -43,6 +44,7 @@ import dm.shakespeare.util.ConstantConditions;
 public abstract class RawData implements Serializable {
 
   private static final int DEFAULT_CHUNK_SIZE = 8192;
+  private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
   @NotNull
   public static RawData wrap(@NotNull final byte[] bytes) {
@@ -75,12 +77,7 @@ public abstract class RawData implements Serializable {
       copyTo(outputStream);
 
     } finally {
-      try {
-        outputStream.close();
-
-      } catch (final IOException e) {
-        // TODO: 18/04/2019 ???
-      }
+      outputStream.close();
     }
   }
 
@@ -99,6 +96,8 @@ public abstract class RawData implements Serializable {
   abstract void serialize(@NotNull ObjectOutputStream out) throws IOException;
 
   private static class ByteArrayData extends RawData {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private final byte[] data;
 
@@ -154,6 +153,8 @@ public abstract class RawData implements Serializable {
 
   private static class ByteBufferData extends RawData {
 
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
     private final ByteBuffer buffer;
 
     private ByteBufferData(@NotNull final ByteBuffer buffer) {
@@ -167,12 +168,7 @@ public abstract class RawData implements Serializable {
         outputStream.getChannel().write(buffer);
 
       } finally {
-        try {
-          outputStream.close();
-
-        } catch (final IOException e) {
-          // TODO: 18/04/2019 ???
-        }
+        outputStream.close();
       }
     }
 
@@ -216,6 +212,8 @@ public abstract class RawData implements Serializable {
   }
 
   private static class FileData extends RawData {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private final File file;
 
@@ -378,6 +376,8 @@ public abstract class RawData implements Serializable {
 
   private static class InputStreamData extends RawData {
 
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
     private final InputStream input;
 
     private byte[] data;
@@ -393,25 +393,15 @@ public abstract class RawData implements Serializable {
 
       } else {
         final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-        final InputStream inputStream = input;
-        try {
-          final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-          int length;
-          while ((length = inputStream.read(chunk)) > 0) {
-            out.write(chunk, 0, length);
-            outputStream.write(chunk, 0, length);
-          }
-          outputStream.close();
-          this.data = outputStream.toByteArray();
-
-        } finally {
-          try {
-            inputStream.close();
-
-          } catch (final IOException e) {
-            // TODO: 18/04/2019 ???
-          }
+        @SuppressWarnings("UnnecessaryLocalVariable") final InputStream inputStream = input;
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        int length;
+        while ((length = inputStream.read(chunk)) > 0) {
+          out.write(chunk, 0, length);
+          outputStream.write(chunk, 0, length);
         }
+        outputStream.close();
+        this.data = outputStream.toByteArray();
       }
     }
 
@@ -422,25 +412,15 @@ public abstract class RawData implements Serializable {
 
       } else {
         final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-        final InputStream inputStream = input;
-        try {
-          final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-          int length;
-          while ((length = inputStream.read(chunk)) > 0) {
-            buffer.put(chunk, 0, length);
-            outputStream.write(chunk, 0, length);
-          }
-          outputStream.close();
-          this.data = outputStream.toByteArray();
-
-        } finally {
-          try {
-            inputStream.close();
-
-          } catch (final IOException e) {
-            // TODO: 18/04/2019 ???
-          }
+        @SuppressWarnings("UnnecessaryLocalVariable") final InputStream inputStream = input;
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        int length;
+        while ((length = inputStream.read(chunk)) > 0) {
+          buffer.put(chunk, 0, length);
+          outputStream.write(chunk, 0, length);
         }
+        outputStream.close();
+        this.data = outputStream.toByteArray();
       }
     }
 
@@ -453,24 +433,14 @@ public abstract class RawData implements Serializable {
     public byte[] toByteArray() throws IOException {
       if (data == null) {
         final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-        final InputStream inputStream = input;
-        try {
-          final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-          int length;
-          while ((length = inputStream.read(chunk)) > 0) {
-            outputStream.write(chunk, 0, length);
-          }
-          outputStream.close();
-          data = outputStream.toByteArray();
-
-        } finally {
-          try {
-            inputStream.close();
-
-          } catch (final IOException e) {
-            // TODO: 18/04/2019 ???
-          }
+        @SuppressWarnings("UnnecessaryLocalVariable") final InputStream inputStream = input;
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        int length;
+        while ((length = inputStream.read(chunk)) > 0) {
+          outputStream.write(chunk, 0, length);
         }
+        outputStream.close();
+        data = outputStream.toByteArray();
       }
       return data;
     }
@@ -487,28 +457,18 @@ public abstract class RawData implements Serializable {
 
       } else {
         final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-        final InputStream inputStream = input;
-        try {
-          final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-          int length;
-          while ((length = inputStream.read(chunk)) > 0) {
-            out.writeInt(length);
-            out.write(chunk, 0, length);
-            outputStream.write(chunk, 0, length);
-          }
-          out.writeInt(0);
-          out.close();
-          outputStream.close();
-          this.data = outputStream.toByteArray();
-
-        } finally {
-          try {
-            inputStream.close();
-
-          } catch (final IOException e) {
-            // TODO: 18/04/2019 ???
-          }
+        @SuppressWarnings("UnnecessaryLocalVariable") final InputStream inputStream = input;
+        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        int length;
+        while ((length = inputStream.read(chunk)) > 0) {
+          out.writeInt(length);
+          out.write(chunk, 0, length);
+          outputStream.write(chunk, 0, length);
         }
+        out.writeInt(0);
+        out.close();
+        outputStream.close();
+        this.data = outputStream.toByteArray();
       }
     }
 
@@ -518,6 +478,8 @@ public abstract class RawData implements Serializable {
   }
 
   private static class RawDataWrapper extends RawData {
+
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
 
     private transient RawData data;
 
@@ -606,6 +568,8 @@ public abstract class RawData implements Serializable {
 
   private static class UncachedInputStreamData extends RawData {
 
+    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
     private final InputStream input;
 
     private UncachedInputStreamData(@NotNull final InputStream input) {
@@ -614,39 +578,19 @@ public abstract class RawData implements Serializable {
 
     public void copyTo(@NotNull final OutputStream out) throws IOException {
       final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-      final InputStream inputStream = input;
-      try {
-        int length;
-        while ((length = inputStream.read(chunk)) > 0) {
-          out.write(chunk, 0, length);
-        }
-
-      } finally {
-        try {
-          inputStream.close();
-
-        } catch (final IOException e) {
-          // TODO: 18/04/2019 ???
-        }
+      @SuppressWarnings("UnnecessaryLocalVariable") final InputStream inputStream = input;
+      int length;
+      while ((length = inputStream.read(chunk)) > 0) {
+        out.write(chunk, 0, length);
       }
     }
 
     public void copyTo(@NotNull final ByteBuffer buffer) throws IOException {
       final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-      final InputStream inputStream = input;
-      try {
-        int length;
-        while ((length = inputStream.read(chunk)) > 0) {
-          buffer.put(chunk, 0, length);
-        }
-
-      } finally {
-        try {
-          inputStream.close();
-
-        } catch (final IOException e) {
-          // TODO: 18/04/2019 ???
-        }
+      @SuppressWarnings("UnnecessaryLocalVariable") final InputStream inputStream = input;
+      int length;
+      while ((length = inputStream.read(chunk)) > 0) {
+        buffer.put(chunk, 0, length);
       }
     }
 
@@ -657,24 +601,14 @@ public abstract class RawData implements Serializable {
     @NotNull
     public byte[] toByteArray() throws IOException {
       final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-      final InputStream inputStream = input;
-      try {
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        int length;
-        while ((length = inputStream.read(chunk)) > 0) {
-          outputStream.write(chunk, 0, length);
-        }
-        outputStream.close();
-        return outputStream.toByteArray();
-
-      } finally {
-        try {
-          inputStream.close();
-
-        } catch (final IOException e) {
-          // TODO: 18/04/2019 ???
-        }
+      @SuppressWarnings("UnnecessaryLocalVariable") final InputStream inputStream = input;
+      final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+      int length;
+      while ((length = inputStream.read(chunk)) > 0) {
+        outputStream.write(chunk, 0, length);
       }
+      outputStream.close();
+      return outputStream.toByteArray();
     }
 
     @NotNull
@@ -684,24 +618,14 @@ public abstract class RawData implements Serializable {
 
     void serialize(@NotNull final ObjectOutputStream out) throws IOException {
       final byte[] chunk = new byte[DEFAULT_CHUNK_SIZE];
-      final InputStream inputStream = input;
-      try {
-        int length;
-        while ((length = inputStream.read(chunk)) > 0) {
-          out.writeInt(length);
-          out.write(chunk, 0, length);
-        }
-        out.writeInt(0);
-        out.close();
-
-      } finally {
-        try {
-          inputStream.close();
-
-        } catch (final IOException e) {
-          // TODO: 18/04/2019 ???
-        }
+      @SuppressWarnings("UnnecessaryLocalVariable") final InputStream inputStream = input;
+      int length;
+      while ((length = inputStream.read(chunk)) > 0) {
+        out.writeInt(length);
+        out.write(chunk, 0, length);
       }
+      out.writeInt(0);
+      out.close();
     }
 
     private Object writeReplace() throws ObjectStreamException {

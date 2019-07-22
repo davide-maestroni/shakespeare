@@ -16,6 +16,8 @@
 
 package dm.shakespeare.remote.transport;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.Serializable;
 
 /**
@@ -26,4 +28,20 @@ public class RemoteResponse implements Serializable {
   public static final int VERSION = RemoteRequest.VERSION;
 
   private static final long serialVersionUID = VERSION;
+
+  private Throwable error;
+
+  public Throwable getError() {
+    return error;
+  }
+
+  public void setError(final Throwable error) {
+    this.error = error;
+  }
+
+  @NotNull
+  public RemoteResponse withError(final Throwable error) {
+    this.error = error;
+    return this;
+  }
 }
