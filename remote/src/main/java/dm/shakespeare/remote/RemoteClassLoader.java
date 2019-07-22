@@ -98,12 +98,8 @@ class RemoteClassLoader extends ClassLoader {
             }
             return definedClass;
 
-          } catch (final IOException e) {
-            try {
-              inputStream.close();
-
-            } catch (final IOException ignored) {
-            }
+          } finally {
+            inputStream.close();
           }
 
         } else {
@@ -173,13 +169,8 @@ class RemoteClassLoader extends ClassLoader {
           final ByteBuffer buffer = channel.map(MapMode.READ_ONLY, 0, channel.size());
           fillMissingPaths(buffer, missingPaths);
 
-        } catch (final IOException e) {
-          try {
-            inputStream.close();
-
-          } catch (final IOException ignored) {
-          }
-          throw e;
+        } finally {
+          inputStream.close();
         }
 
       } else {
@@ -219,24 +210,22 @@ class RemoteClassLoader extends ClassLoader {
     for (final DataEntry entry : dataStore) {
       final String name = entry.getKey();
       if (name.endsWith(".path")) {
-        BufferedReader reader = null;
         try {
-          reader =
-              new BufferedReader(new InputStreamReader(entry.getData().toInputStream(), "UTF-8"));
-          paths.put(reader.readLine(),
-              name.substring(0, name.length() - ".path".length()) + ".raw");
+          BufferedReader reader = null;
+          try {
+            reader =
+                new BufferedReader(new InputStreamReader(entry.getData().toInputStream(), "UTF-8"));
+            paths.put(reader.readLine(),
+                name.substring(0, name.length() - ".path".length()) + ".raw");
+
+          } finally {
+            if (reader != null) {
+              reader.close();
+            }
+          }
 
         } catch (final IOException e) {
           throw new RuntimeException(e);
-
-        } finally {
-          if (reader != null) {
-            try {
-              reader.close();
-
-            } catch (final IOException ignored) {
-            }
-          }
         }
 
       } else if (name.endsWith(".raw")) {
