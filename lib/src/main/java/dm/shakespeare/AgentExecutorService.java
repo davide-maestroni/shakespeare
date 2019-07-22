@@ -158,7 +158,7 @@ class AgentExecutorService implements ExecutorService {
 
     public V call() throws Exception {
       if (agent.isDismissed()) {
-        throw new IllegalStateException();
+        throw new IllegalStateException("actor has been dismissed");
       }
       return task.call();
     }

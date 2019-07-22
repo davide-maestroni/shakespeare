@@ -417,9 +417,10 @@ public class StageReceiver {
     public RemoteResponse handle(@NotNull final CreateActorRequest request) {
       final String actorId = request.getActorId();
       if (actorId == null) {
-        return new CreateActorResponse().withError(new IllegalArgumentException());
+        return new CreateActorResponse().withError(
+            new IllegalArgumentException("missing actor ID"));
       }
-      return new CreateActorResponse().withError(new UnsupportedOperationException());
+      return new CreateActorResponse().withError(new UnsupportedOperationException("create"));
     }
   }
 
@@ -427,7 +428,7 @@ public class StageReceiver {
 
     @NotNull
     public DismissActorResponse handle(@NotNull final DismissActorRequest request) {
-      return new DismissActorResponse().withError(new UnsupportedOperationException());
+      return new DismissActorResponse().withError(new UnsupportedOperationException("dismiss"));
     }
   }
 
@@ -501,7 +502,7 @@ public class StageReceiver {
 
     @NotNull
     public UploadResponse handle(@NotNull final UploadRequest request) {
-      return new UploadResponse().withError(new UnsupportedOperationException());
+      return new UploadResponse().withError(new UnsupportedOperationException("upload"));
     }
   }
 
@@ -511,7 +512,8 @@ public class StageReceiver {
     public RemoteResponse handle(@NotNull final CreateActorRequest request) {
       final String actorId = request.getActorId();
       if (actorId == null) {
-        return new CreateActorResponse().withError(new IllegalArgumentException());
+        return new CreateActorResponse().withError(
+            new IllegalArgumentException("missing actor ID"));
       }
 
       final RawData roleData = request.getRoleData();
@@ -519,7 +521,8 @@ public class StageReceiver {
         final RemoteClassLoader classLoader = StageReceiver.this.classLoader;
         final Object role = serializer.deserialize(roleData, classLoader);
         if (!(role instanceof Role)) {
-          return new CreateActorResponse().withError(new IllegalArgumentException());
+          return new CreateActorResponse().withError(
+              new IllegalArgumentException("invalid role instance"));
         }
         final Actor actor = stage.createActor(actorId, (Role) role);
         final String instanceId = "remote:" + UUID.randomUUID().toString();
@@ -546,7 +549,8 @@ public class StageReceiver {
     public RemoteResponse handle(@NotNull final CreateActorRequest request) {
       final String actorId = request.getActorId();
       if (actorId == null) {
-        return new CreateActorResponse().withError(new IllegalArgumentException());
+        return new CreateActorResponse().withError(
+            new IllegalArgumentException("missing actor ID"));
       }
 
       final RawData roleData = request.getRoleData();
@@ -559,7 +563,8 @@ public class StageReceiver {
         }
         final Object role = serializer.deserialize(roleData, classLoader);
         if (!(role instanceof Role)) {
-          return new CreateActorResponse().withError(new IllegalArgumentException());
+          return new CreateActorResponse().withError(
+              new IllegalArgumentException("invalid role instance"));
         }
         final Actor actor = stage.createActor(actorId, (Role) role);
         final String instanceId = createInstanceId();
@@ -585,17 +590,20 @@ public class StageReceiver {
     public DismissActorResponse handle(@NotNull final DismissActorRequest request) {
       final ActorID actorID = request.getActorID();
       if (actorID == null) {
-        return new DismissActorResponse().withError(new IllegalArgumentException());
+        return new DismissActorResponse().withError(
+            new IllegalArgumentException("missing actor ID"));
       }
       final String senderId = request.getSenderId();
       final Actor actor = resolveActor(actorID, senderId);
       if (actor == null) {
-        return new DismissActorResponse().withError(new IllegalArgumentException());
+        return new DismissActorResponse().withError(
+            new IllegalArgumentException("invalid actor ID: " + actorID));
       }
 
       synchronized (idsMutex) {
         if (!actorToInstanceId.get(actor).equals(actorID.getInstanceId())) {
-          return new DismissActorResponse().withError(new IllegalArgumentException());
+          return new DismissActorResponse().withError(
+              new IllegalArgumentException("invalid actor ID: " + actorID));
         }
       }
 
@@ -629,19 +637,22 @@ public class StageReceiver {
       final ActorID senderID = request.getSenderActorID();
       if ((actorID == null) || (actorID.getActorId() == null) || (senderID == null) || (
           senderID.getActorId() == null)) {
-        return new MessageResponse().withError(new IllegalArgumentException());
+        return new MessageResponse().withError(new IllegalArgumentException("missing actor ID"));
       }
       final Actor actor = resolveActor(actorID, senderId);
       if (actor == null) {
-        return new MessageResponse().withError(new IllegalArgumentException());
+        return new MessageResponse().withError(
+            new IllegalArgumentException("invalid actor ID: " + actorID));
       }
       final String instanceId = getInstanceId(actor);
       if ((instanceId == null) || !instanceId.equals(actorID.getInstanceId())) {
-        return new MessageResponse().withError(new IllegalArgumentException());
+        return new MessageResponse().withError(
+            new IllegalArgumentException("invalid actor ID: " + actorID));
       }
       final Actor sender = getOrCreateSender(senderID, senderId);
       if (sender == null) {
-        return new MessageResponse().withError(new IllegalArgumentException());
+        return new MessageResponse().withError(
+            new IllegalArgumentException("invalid sender actor ID: " + senderID));
       }
 
       try {
@@ -677,19 +688,22 @@ public class StageReceiver {
       final ActorID senderID = request.getSenderActorID();
       if ((actorID == null) || (actorID.getActorId() == null) || (senderID == null) || (
           senderID.getActorId() == null)) {
-        return new MessageResponse().withError(new IllegalArgumentException());
+        return new MessageResponse().withError(new IllegalArgumentException("missing actor ID"));
       }
       final Actor actor = resolveActor(actorID, senderId);
       if (actor == null) {
-        return new MessageResponse().withError(new IllegalArgumentException());
+        return new MessageResponse().withError(
+            new IllegalArgumentException("invalid actor ID: " + actorID));
       }
       final String instanceId = getInstanceId(actor);
       if ((instanceId == null) || !instanceId.equals(actorID.getInstanceId())) {
-        return new MessageResponse().withError(new IllegalArgumentException());
+        return new MessageResponse().withError(
+            new IllegalArgumentException("invalid actor ID: " + actorID));
       }
       final Actor sender = getOrCreateSender(senderID, senderId);
       if (sender == null) {
-        return new MessageResponse().withError(new IllegalArgumentException());
+        return new MessageResponse().withError(
+            new IllegalArgumentException("invalid sender actor ID: " + actorID));
       }
 
       try {
@@ -759,7 +773,7 @@ public class StageReceiver {
         logger.dbg("[%s] upload response: ", StageReceiver.this, response);
         return response;
       }
-      throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException("request: " + request);
     }
   }
 

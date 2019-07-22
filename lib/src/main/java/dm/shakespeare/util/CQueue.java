@@ -242,7 +242,7 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E>, Serial
   @SuppressWarnings("unchecked")
   public E get(final int index) {
     if ((index < 0) || (index >= size())) {
-      throw new IndexOutOfBoundsException();
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     return (E) data[(first + index) & mask];
   }
@@ -452,7 +452,7 @@ public class CQueue<E> extends AbstractCollection<E> implements Queue<E>, Serial
   @SuppressWarnings("unchecked")
   public E set(final int index, @Nullable final E element) {
     if ((index < 0) || (index >= size())) {
-      throw new IndexOutOfBoundsException();
+      throw new IndexOutOfBoundsException(Integer.toString(index));
     }
     final Object[] data = this.data;
     final int pos = (first + index) & mask;

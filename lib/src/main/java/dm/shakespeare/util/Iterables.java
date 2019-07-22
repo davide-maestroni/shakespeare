@@ -500,7 +500,7 @@ public class Iterables {
 
     public void remove() {
       if (iterator == null) {
-        throw new IllegalStateException();
+        throw new IllegalStateException("next has not been called");
       }
       iterator.remove();
     }

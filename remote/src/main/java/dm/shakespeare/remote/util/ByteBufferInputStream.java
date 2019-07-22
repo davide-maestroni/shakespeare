@@ -40,7 +40,7 @@ public class ByteBufferInputStream extends InputStream {
 
   public int read() throws IOException {
     if (isClosed) {
-      throw new IOException();
+      throw new IOException("stream is closed");
     }
 
     if (!buffer.hasRemaining()) {
@@ -53,7 +53,7 @@ public class ByteBufferInputStream extends InputStream {
   public int read(@NotNull final byte[] bytes, final int offset, final int length) throws
       IOException {
     if (isClosed) {
-      throw new IOException();
+      throw new IOException("stream is closed");
     }
 
     if (length == 0) {
@@ -71,7 +71,7 @@ public class ByteBufferInputStream extends InputStream {
   @Override
   public long skip(final long n) throws IOException {
     if (isClosed) {
-      throw new IOException();
+      throw new IOException("stream is closed");
     }
 
     if (n <= 0) {
@@ -86,7 +86,7 @@ public class ByteBufferInputStream extends InputStream {
   @Override
   public int available() throws IOException {
     if (isClosed) {
-      throw new IOException();
+      throw new IOException("stream is closed");
     }
     return buffer.remaining();
   }

@@ -101,8 +101,7 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
         return future.get();
       }
     }
-
-    throw new IllegalStateException();
+    throw new IllegalStateException("cannot get value");
   }
 
   public V get(final long timeout, @NotNull final TimeUnit timeUnit) throws InterruptedException,
@@ -119,8 +118,7 @@ abstract class AbstractFuture<V> implements ScheduledFuture<V>, Runnable {
             TimeUnit.MILLISECONDS);
       }
     }
-
-    throw new TimeoutException();
+    throw new TimeoutException("timeout after " + timeout + " " + timeUnit);
   }
 
   public int compareTo(@NotNull final Delayed delayed) {

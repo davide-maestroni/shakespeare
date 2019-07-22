@@ -218,8 +218,7 @@ public class SupervisedBehavior extends SerializableAbstractBehavior {
      * Usually needed during deserialization.
      */
     private SupervisedFailure() {
-      failureId = "";
-      cause = new UnsupportedOperationException();
+      this("", new IllegalStateException());
     }
 
     /**

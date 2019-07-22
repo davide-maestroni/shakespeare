@@ -59,7 +59,7 @@ class TrampolineExecutorService extends AbstractExecutorService {
 
   public void execute(@NotNull final Runnable command) {
     if (isShutdown.get()) {
-      throw new RejectedExecutionException();
+      throw new RejectedExecutionException("executor service has been shut down");
     }
     run(command);
   }

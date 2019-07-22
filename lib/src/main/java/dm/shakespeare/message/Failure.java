@@ -35,7 +35,7 @@ public class Failure extends Bounce {
    * Creates a new empty failure message.
    */
   public Failure() {
-    this(null, Headers.empty(), new IllegalArgumentException());
+    this(null, Headers.empty(), new IllegalStateException());
   }
 
   /**

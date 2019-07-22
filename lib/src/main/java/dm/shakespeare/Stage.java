@@ -358,7 +358,7 @@ public class Stage {
       synchronized (mutex) {
         actors.remove(id, actor);
       }
-      throw new IllegalStateException();
+      throw new IllegalStateException("cannot add observer to actor");
     }
   }
 

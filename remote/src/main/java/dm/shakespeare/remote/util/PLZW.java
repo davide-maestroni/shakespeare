@@ -155,7 +155,7 @@ public class PLZW {
     if (lut == null) {
       final int length = alphabet.length();
       if (length < 16) {
-        throw new IllegalArgumentException();
+        throw new IllegalArgumentException("alphabet too large: " + length);
       }
       lut = new HashMap<Character, Byte>();
       for (int i = 0; i < length; ++i) {
@@ -181,7 +181,7 @@ public class PLZW {
     if (lut == null) {
       final int length = alphabet.length();
       if (length < 16) {
-        throw new IllegalArgumentException();
+        throw new IllegalArgumentException("alphabet too large: " + length);
       }
       lut = new char[length];
       for (int i = 0; i < length; ++i) {

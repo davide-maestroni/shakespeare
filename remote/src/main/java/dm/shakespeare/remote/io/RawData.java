@@ -221,7 +221,7 @@ public abstract class RawData implements Serializable {
 
     private FileData(@NotNull final File file) {
       if (!file.isFile()) {
-        throw new IllegalArgumentException();
+        throw new IllegalArgumentException(file + " is not a file");
       }
       this.file = file;
     }
@@ -304,7 +304,7 @@ public abstract class RawData implements Serializable {
         final File file = this.file;
         final long length = file.length();
         if (length > Integer.MAX_VALUE) {
-          throw new IOException();
+          throw new IOException("size too large: " + length);
         }
         final byte[] data = new byte[(int) length];
         final FileInputStream inputStream = new FileInputStream(file);
@@ -499,7 +499,7 @@ public abstract class RawData implements Serializable {
         while ((length = in.readInt()) > 0) {
           // sanity check
           if (length > DEFAULT_CHUNK_SIZE) {
-            throw new IOException();
+            throw new IOException("invalid chunk size: " + length);
           }
           in.readFully(chunk, 0, length);
           total += length;
