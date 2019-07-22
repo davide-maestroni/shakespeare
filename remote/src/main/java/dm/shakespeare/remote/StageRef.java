@@ -95,8 +95,11 @@ public class StageRef extends Stage {
       return name.endsWith(".jar") || name.endsWith(".JAR");
     }
   };
+
   private static final Object resourcesMutex = new Object();
+
   private static Map<String, File> resourceFiles = Collections.emptyMap();
+
   private final HashMap<ActorID, SenderActor> actorIdToSender = new HashMap<ActorID, SenderActor>();
   private final HashMap<Actor, SenderActor> actorToSender = new HashMap<Actor, SenderActor>();
   private final long actorsFullSyncTime;
@@ -115,6 +118,7 @@ public class StageRef extends Stage {
   private final Object sendersMutex = new Object();
   private final Serializer serializer;
   private final Synchronizer synchronizer;
+
   private Sender messageSender;
   private ScheduledExecutorService scheduledExecutorService;
 

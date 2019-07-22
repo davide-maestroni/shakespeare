@@ -48,9 +48,9 @@ import dm.shakespeare.actor.SerializableRole;
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.remote.config.LocalConfig;
 import dm.shakespeare.remote.config.RemoteConfig;
-import dm.shakespeare.remote.transport.connection.TestConnector;
 import dm.shakespeare.remote.io.JavaSerializer;
 import dm.shakespeare.remote.io.RawData;
+import dm.shakespeare.remote.transport.connection.TestConnector;
 import dm.shakespeare.remote.util.Classes;
 import dm.shakespeare.remote.util.PLZW;
 
