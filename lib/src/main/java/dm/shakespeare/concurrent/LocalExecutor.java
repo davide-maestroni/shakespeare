@@ -58,7 +58,7 @@ class LocalExecutor implements Executor {
             // rethrow errors
             throw (Error) t;
           }
-          logger.wrn(t, "suppressed exception");
+          logger.wrn(t, "[%s] suppressed exception", this);
           if (Thread.currentThread().isInterrupted()) {
             return;
           }

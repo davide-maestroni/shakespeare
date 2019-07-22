@@ -50,6 +50,7 @@ import dm.shakespeare.util.ConstantConditions;
 public class Stage {
 
   // TODO: 28/02/2019 swagger converter
+  // TODO: 2019-07-22 exceptions w/o message
 
   private static final Stage BACK_STAGE = new Stage() {
 

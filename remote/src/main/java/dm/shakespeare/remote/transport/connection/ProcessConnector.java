@@ -138,25 +138,27 @@ public class ProcessConnector implements Connector {
               if (line.startsWith(startBoundary) && line.endsWith(endBoundary)) {
                 builder.append(line, startBoundary.length(), line.length() - endBoundary.length());
                 try {
-                  logger.dbg("processing message");
+                  logger.dbg("[%s] processing message", ProcessConnector.this);
                   Object object = deserialize(builder.toString());
                   if (object instanceof RequestWrapper) {
                     final RequestWrapper requestWrapper = (RequestWrapper) object;
-                    logger.dbg("receiving request: " + requestWrapper.getRequestId());
+                    logger.dbg("[%s] receiving request: %s", ProcessConnector.this,
+                        requestWrapper.getRequestId());
                     executorService.execute(new Runnable() {
 
                       public void run() {
                         final RemoteRequest request = requestWrapper.getRequest();
                         try {
-                          logger.dbg("processing request: " + requestWrapper.getRequestId());
+                          logger.dbg("[%s] processing request: %s", ProcessConnector.this,
+                              requestWrapper.getRequestId());
                           final RemoteResponse response = receiver.receive(request);
                           final ResponseWrapper responseWrapper =
                               new ResponseWrapper(response, requestWrapper.getRequestId());
                           printStream.println(serialize(responseWrapper));
 
                         } catch (final Exception e) {
-                          logger.err(e,
-                              "failed to process request: " + requestWrapper.getRequestId());
+                          logger.err(e, "[%s] failed to process request: %s", ProcessConnector.this,
+                              requestWrapper.getRequestId());
                           if (request != null) {
                             final ResponseWrapper responseWrapper =
                                 new ResponseWrapper(request.buildResponse().withError(e),
@@ -165,8 +167,8 @@ public class ProcessConnector implements Connector {
                               printStream.println(serialize(responseWrapper));
 
                             } catch (final Exception ex) {
-                              logger.err(ex, "failed to send error response: "
-                                  + requestWrapper.getRequestId());
+                              logger.err(ex, "[%s] failed to send error response: %s",
+                                  ProcessConnector.this, requestWrapper.getRequestId());
                             }
                           }
                         }
@@ -175,7 +177,8 @@ public class ProcessConnector implements Connector {
 
                   } else if (object instanceof ResponseWrapper) {
                     final ResponseWrapper responseWrapper = (ResponseWrapper) object;
-                    logger.dbg("receiving response: " + responseWrapper.getRequestId());
+                    logger.dbg("[%s] receiving response: %s", ProcessConnector.this,
+                        responseWrapper.getRequestId());
                     synchronized (responses) {
                       final HashMap<String, RemoteResponse> responses =
                           ProcessConnector.this.responses;
@@ -186,13 +189,13 @@ public class ProcessConnector implements Connector {
                   builder.setLength(0);
 
                 } catch (final Exception e) {
-                  logger.err(e, "failed to process message: " + line);
+                  logger.err(e, "[%s] failed to process message: %s", ProcessConnector.this, line);
                 }
               }
             }
 
           } catch (final IOException e) {
-            logger.wrn(e, "error while reading input stream");
+            logger.wrn(e, "[%s] error while reading input stream", ProcessConnector.this);
 
           } finally {
             executorService.shutdown();
@@ -217,7 +220,8 @@ public class ProcessConnector implements Connector {
             @Nullable final String receiverId) throws Exception {
           final String requestId = UUID.randomUUID().toString();
           final RequestWrapper requestWrapper = new RequestWrapper(request, requestId);
-          logger.dbg("sending request: " + requestWrapper.getRequestId());
+          logger.dbg("[%s] sending request: %s", ProcessConnector.this,
+              requestWrapper.getRequestId());
           final PrintStream printStream = ProcessConnector.this.printStream;
           printStream.println(serialize(requestWrapper));
           printStream.flush();
@@ -228,7 +232,8 @@ public class ProcessConnector implements Connector {
               responses.wait();
             }
           }
-          logger.dbg("request response: " + requestWrapper.getRequestId());
+          logger.dbg("[%s] request response: %s", ProcessConnector.this,
+              requestWrapper.getRequestId());
           return response;
         }
       };

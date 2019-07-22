@@ -220,6 +220,7 @@ public class StageReceiver {
     } else {
       this.uploadHandler = new UploadUnsupportedHandler();
     }
+    this.logger.dbg("[%s] created receiver with config: %s", this, config);
   }
 
   @NotNull
@@ -233,6 +234,7 @@ public class StageReceiver {
 
   @NotNull
   public Receiver connect() throws Exception {
+    logger.dbg("[%s] connecting", this);
     final RemoteReceiver receiver = new RemoteReceiver();
     final Sender sender = connector.connect(receiver);
     synchronized (connectionMutex) {
@@ -252,6 +254,7 @@ public class StageReceiver {
     }
 
     if (sender != null) {
+      logger.dbg("[%s] disconnecting", this);
       sender.disconnect();
     }
   }
@@ -527,10 +530,11 @@ public class StageReceiver {
             new ActorID().withActorId(actorId).withInstanceId(instanceId));
 
       } catch (final RemoteClassNotFoundException e) {
+        logger.err(e, "[%s] error while handling create request", StageReceiver.this);
         return new CreateActorResponse().withError(e);
 
       } catch (final Exception e) {
-        logger.err(e, "error while handling create request");
+        logger.err(e, "[%s] error while handling create request", StageReceiver.this);
         return new CreateActorResponse().withError(e);
       }
     }
@@ -569,7 +573,7 @@ public class StageReceiver {
         return new CreateActorContinue().addResourcePath(e.getMessage());
 
       } catch (final Exception e) {
-        logger.err(e, "error while handling create request");
+        logger.err(e, "[%s] error while handling create request", StageReceiver.this);
         return new CreateActorResponse().withError(e);
       }
     }
@@ -653,11 +657,11 @@ public class StageReceiver {
         actor.tell(msg, headers, sender);
 
       } catch (final RemoteClassNotFoundException e) {
-        logger.err(e, "error while handling message request");
+        logger.err(e, "[%s] error while handling message request", StageReceiver.this);
         return new MessageResponse().withError(e);
 
       } catch (final Exception e) {
-        logger.err(e, "error while handling message request");
+        logger.err(e, "[%s] error while handling message request", StageReceiver.this);
         return new MessageResponse().withError(e);
       }
       return new MessageResponse();
@@ -713,7 +717,7 @@ public class StageReceiver {
         return new MessageContinue().addResourcePath(e.getMessage());
 
       } catch (final Exception e) {
-        logger.err(e, "error while handling message request");
+        logger.err(e, "[%s] error while handling message request", StageReceiver.this);
         return new MessageResponse().withError(e);
       }
       return new MessageResponse();
@@ -724,20 +728,36 @@ public class StageReceiver {
 
     @NotNull
     public RemoteResponse receive(@NotNull final RemoteRequest request) {
+      final Logger logger = StageReceiver.this.logger;
       if (request instanceof MessageRequest) {
-        return messageHandler.handle((MessageRequest) request);
+        logger.dbg("[%s] handling message request: ", StageReceiver.this, request);
+        final RemoteResponse response = messageHandler.handle((MessageRequest) request);
+        logger.dbg("[%s] message response: ", StageReceiver.this, response);
+        return response;
 
       } else if (request instanceof FindRequest) {
-        return handleFind((FindRequest) request);
+        logger.dbg("[%s] handling find request: ", StageReceiver.this, request);
+        final FindResponse response = handleFind((FindRequest) request);
+        logger.dbg("[%s] find response: ", StageReceiver.this, response);
+        return response;
 
       } else if (request instanceof CreateActorRequest) {
-        return createHandler.handle((CreateActorRequest) request);
+        logger.dbg("[%s] handling create request: ", StageReceiver.this, request);
+        final RemoteResponse response = createHandler.handle((CreateActorRequest) request);
+        logger.dbg("[%s] create response: ", StageReceiver.this, response);
+        return response;
 
       } else if (request instanceof DismissActorRequest) {
-        return dismissHandler.handle((DismissActorRequest) request);
+        logger.dbg("[%s] handling dismiss request: ", StageReceiver.this, request);
+        final RemoteResponse response = dismissHandler.handle((DismissActorRequest) request);
+        logger.dbg("[%s] dismiss response: ", StageReceiver.this, response);
+        return response;
 
       } else if (request instanceof UploadRequest) {
-        return uploadHandler.handle((UploadRequest) request);
+        logger.dbg("[%s] handling upload request: ", StageReceiver.this, request);
+        final RemoteResponse response = uploadHandler.handle((UploadRequest) request);
+        logger.dbg("[%s] upload response: ", StageReceiver.this, response);
+        return response;
       }
       throw new UnsupportedOperationException();
     }
@@ -822,7 +842,7 @@ public class StageReceiver {
         classLoader.register(request.getResources());
 
       } catch (final Exception e) {
-        logger.err(e, "error while handling upload request");
+        logger.err(e, "[%s] error while handling upload request", StageReceiver.this);
         return new UploadResponse().withError(e);
       }
       return new UploadResponse();

@@ -241,6 +241,7 @@ public class StageRef extends Stage {
         };
       }
     }
+    this.logger.dbg("[%s] created reference with config: %s", this, config);
   }
 
   @NotNull
@@ -344,6 +345,7 @@ public class StageRef extends Stage {
   }
 
   public void connect() throws Exception {
+    logger.dbg("[%s] connecting", this);
     final Sender sender = connector.connect(new Receiver() {
 
       @NotNull
@@ -368,7 +370,7 @@ public class StageRef extends Stage {
                     messageRequest.getSentTimestamp()), sender);
 
               } catch (final Exception e) {
-                logger.wrn(e, "failed to deserialize message");
+                logger.wrn(e, "[%s] failed to deserialize message", StageRef.this);
                 return new MessageResponse().withError(e);
               }
               return new MessageResponse();
@@ -409,7 +411,7 @@ public class StageRef extends Stage {
                 syncActors(currentTimeMillis);
 
               } catch (final Exception e) {
-                logger.err(e, "failed to sync remote actors");
+                logger.err(e, "[%s] failed to sync remote actors", StageRef.this);
               }
               nextSyncTime = currentTimeMillis + fullSyncTime;
 
@@ -436,6 +438,7 @@ public class StageRef extends Stage {
     }
 
     if (sender != null) {
+      logger.dbg("[%s] disconnecting", this);
       sender.disconnect();
     }
   }
@@ -995,12 +998,13 @@ public class StageRef extends Stage {
           final MessageContinue messageContinue = (MessageContinue) response;
           final Throwable error = messageContinue.getError();
           if (error != null) {
-            logger.err(error, "invalid response from remote stage: request failure");
+            logger.err(error, "[%s] invalid response from remote stage: request failure",
+                StageRef.this);
             return false;
           }
           final List<String> missingResources = messageContinue.getResourcePaths();
           if ((missingResources == null) || missingResources.isEmpty()) {
-            logger.err("invalid response from remote stage: missing resources");
+            logger.err("[%s] invalid response from remote stage: missing resources", StageRef.this);
             return false;
           }
           resources.clear();
@@ -1012,8 +1016,8 @@ public class StageRef extends Stage {
           }
 
           if (resources.isEmpty()) {
-            logger.err("invalid response from remote stage: unknown resources: %s",
-                missingResources);
+            logger.err("[%s] invalid response from remote stage: unknown resources: %s",
+                StageRef.this, missingResources);
             return false;
           }
           response = getMessageSender().send(new MessageRequest().withActorID(actorID)
@@ -1024,10 +1028,9 @@ public class StageRef extends Stage {
         }
 
       } catch (final Exception e) {
-        logger.wrn(e, "failed to deserialize message");
+        logger.err(e, "[%s] failed to deserialize message", StageRef.this);
         return false;
       }
-
       final Throwable error = response.getError();
       if (error != null) {
         if (error instanceof Exception) {

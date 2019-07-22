@@ -73,7 +73,7 @@ public class TopicBehavior extends SerializableAbstractBehavior {
           }
 
         } catch (final Exception e) {
-          agent.getLogger().wrn(e, "subscription error");
+          agent.getLogger().wrn(e, "[%s] subscription error", agent.getSelf());
         }
       }
     }
