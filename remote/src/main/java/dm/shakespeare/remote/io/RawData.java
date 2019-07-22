@@ -237,20 +237,9 @@ public abstract class RawData implements Serializable {
 
         } finally {
           if (inputStream != null) {
-            try {
-              inputStream.close();
-
-            } catch (final IOException e) {
-              // TODO: 18/04/2019 ???
-            }
+            inputStream.close();
           }
-
-          try {
-            outputStream.close();
-
-          } catch (final IOException e) {
-            // TODO: 18/04/2019 ???
-          }
+          outputStream.close();
         }
       }
     }
@@ -264,11 +253,7 @@ public abstract class RawData implements Serializable {
               .transferTo(0, file.length(), ((FileOutputStream) out).getChannel());
 
         } finally {
-          try {
-            inputStream.close();
-          } catch (final IOException e) {
-            // TODO: 18/04/2019 ???
-          }
+          inputStream.close();
         }
 
       } else {
@@ -286,12 +271,7 @@ public abstract class RawData implements Serializable {
             }
 
           } finally {
-            try {
-              inputStream.close();
-
-            } catch (final IOException e) {
-              // TODO: 18/04/2019 ???
-            }
+            inputStream.close();
           }
         }
       }
@@ -309,12 +289,7 @@ public abstract class RawData implements Serializable {
           buffer.put(inputStream.getChannel().map(MapMode.READ_ONLY, 0, file.length()));
 
         } finally {
-          try {
-            inputStream.close();
-
-          } catch (final IOException e) {
-            // TODO: 18/04/2019 ???
-          }
+          inputStream.close();
         }
       }
     }
@@ -340,12 +315,7 @@ public abstract class RawData implements Serializable {
           this.data = data;
 
         } finally {
-          try {
-            inputStream.close();
-
-          } catch (final IOException e) {
-            // TODO: 18/04/2019 ???
-          }
+          inputStream.close();
         }
       }
       return data;
