@@ -124,12 +124,12 @@ public class ClientServerConnection {
 
     private final Logger logger;
     private final Object mutex = new Object();
-    private final boolean piggyBackRequests;
+    private final int piggyBackRequests;
     private final HashMap<String, RemoteResponse> responses = new HashMap<String, RemoteResponse>();
 
     private Receiver receiver;
 
-    private ServerConnector(final boolean piggyBackRequests, @NotNull final Logger logger) {
+    private ServerConnector(final int piggyBackRequests, @NotNull final Logger logger) {
       this.piggyBackRequests = piggyBackRequests;
       this.logger = logger;
     }
@@ -145,9 +145,6 @@ public class ClientServerConnection {
 
         public void disconnect() {
           isConnected = false;
-          if (piggyBackRequests) {
-            logger.dbg("[%s] disconnecting", ServerConnector.this);
-          }
         }
 
         @NotNull
@@ -186,6 +183,9 @@ public class ClientServerConnection {
         try {
           final RemoteResponse remoteResponse = receiver.receive(remoteRequest);
           // TODO: 2019-07-22 piggyBack
+          if (piggyBackRequests > 0) {
+
+          }
           return new ResponseWrapper(remoteResponse, null, Collections.<RequestWrapper>emptyList());
 
         } catch (final Exception e) {
@@ -213,8 +213,8 @@ public class ClientServerConnection {
   public static class ServerConnectorBuilder {
 
     private Logger logger;
-    private boolean piggyBackRequests;
-    // TODO: 2019-07-22 piggyBack size + queue size + timeout
+    private int piggyBackRequests;
+    // TODO: 2019-07-22 queue size + timeout
 
     private ServerConnectorBuilder() {
     }
@@ -233,7 +233,7 @@ public class ClientServerConnection {
     }
 
     @NotNull
-    public ServerConnectorBuilder withPiggyBackRequests(final boolean piggyBackRequests) {
+    public ServerConnectorBuilder withPiggyBackRequests(final int piggyBackRequests) {
       this.piggyBackRequests = piggyBackRequests;
       return this;
     }
