@@ -21,13 +21,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import dm.shakespeare.concurrent.ExecutorServices;
 import dm.shakespeare.log.LogPrinters;
@@ -125,6 +125,7 @@ public class ClientServerConnection {
     private final Logger logger;
     private final Object mutex = new Object();
     private final boolean piggyBackRequests;
+    private final HashMap<String, RemoteResponse> responses = new HashMap<String, RemoteResponse>();
 
     private Receiver receiver;
 
@@ -140,7 +141,10 @@ public class ClientServerConnection {
       }
       return new Sender() {
 
+        private volatile boolean isConnected = true;
+
         public void disconnect() {
+          isConnected = false;
           if (piggyBackRequests) {
             logger.dbg("[%s] disconnecting", ServerConnector.this);
           }
@@ -149,7 +153,20 @@ public class ClientServerConnection {
         @NotNull
         public RemoteResponse send(@NotNull final RemoteRequest request,
             @Nullable final String receiverId) throws Exception {
-          return new RemoteResponse();
+          if (!isConnected) {
+            throw new IllegalStateException("sender is disconnected");
+          }
+          final String requestId = UUID.randomUUID().toString();
+          final RequestWrapper requestWrapper = new RequestWrapper(request, requestId);
+          // TODO: 2019-07-22 enqueue request
+          RemoteResponse response;
+          synchronized (responses) {
+            final HashMap<String, RemoteResponse> responses = ServerConnector.this.responses;
+            while ((response = responses.remove(requestId)) == null) {
+              responses.wait();
+            }
+          }
+          return response;
         }
       };
     }
@@ -165,14 +182,28 @@ public class ClientServerConnection {
       }
 
       if (payload instanceof RemoteRequest) {
-        final RemoteResponse response = receiver.receive((RemoteRequest) payload);
-        // TODO: 2019-07-22 piggyBack
-        return new ResponseWrapper(response, null, Collections.<RequestWrapper>emptyList());
+        final RemoteRequest remoteRequest = (RemoteRequest) payload;
+        try {
+          final RemoteResponse remoteResponse = receiver.receive(remoteRequest);
+          // TODO: 2019-07-22 piggyBack
+          return new ResponseWrapper(remoteResponse, null, Collections.<RequestWrapper>emptyList());
+
+        } catch (final Exception e) {
+          return new ResponseWrapper(remoteRequest.buildResponse().withError(e), null,
+              Collections.<RequestWrapper>emptyList());
+        }
 
       } else if (payload instanceof RemoteRequestsGet) {
+        // TODO: 2019-07-22 consume queue
         return new RemoteRequestsResult();
 
       } else if (payload instanceof ResponseWrapper) {
+        final ResponseWrapper responseWrapper = (ResponseWrapper) payload;
+        synchronized (responses) {
+          final HashMap<String, RemoteResponse> responses = ServerConnector.this.responses;
+          responses.put(responseWrapper.getRequestId(), responseWrapper.getResponse());
+          responses.notifyAll();
+        }
         return null;
       }
       throw new IllegalArgumentException("unsupported payload type");
@@ -183,6 +214,7 @@ public class ClientServerConnection {
 
     private Logger logger;
     private boolean piggyBackRequests;
+    // TODO: 2019-07-22 queue size + timeout
 
     private ServerConnectorBuilder() {
     }
@@ -213,7 +245,6 @@ public class ClientServerConnection {
         ExecutorServices.asScheduled(Executors.newCachedThreadPool());
 
     private final ConnectorClient client;
-    private final AtomicBoolean isConnected = new AtomicBoolean();
     private final Logger logger;
     private final long maxPollingMillis;
     private final long minPollingMillis;
@@ -223,6 +254,7 @@ public class ClientServerConnection {
     private final String senderId = UUID.randomUUID().toString();
     private long currentDelayMillis;
     private volatile ScheduledFuture<?> future;
+    private volatile boolean isConnected = true;
 
     private ClientSender(@NotNull final Receiver receiver, @NotNull final ConnectorClient client,
         final long minPollingMillis, final long maxPollingMillis, @NotNull final Logger logger) {
@@ -257,13 +289,13 @@ public class ClientServerConnection {
     }
 
     public void disconnect() {
-      isConnected.set(false);
+      isConnected = false;
     }
 
     @NotNull
     public RemoteResponse send(@NotNull final RemoteRequest request,
         @Nullable final String receiverId) throws Exception {
-      if (!isConnected.get()) {
+      if (!isConnected) {
         throw new IllegalStateException("sender is disconnected");
       }
       logger.dbg("[%s] sending request to [%s]: %s", this, receiverId, request);
