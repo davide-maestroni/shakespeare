@@ -68,8 +68,9 @@ public class RemoteServerTest {
             .withRemoteCreateEnable(true)
             .withSerializerWhitelist("java.lang.**,dm.shakespeare.**")
             .withExecutorService(executorService), new Stage());
+    stageReceiver.connect();
     final StageRef stage = new StageRef(new LocalConfig().withRemoteId("id")
-        .withConnector(connector.localConnector(stageReceiver.connect()))
+        .withConnector(connector.localConnector())
         .withExecutorService(executorService));
     stage.connect();
     final Actor printActor = Stage.back().createActor(new PrintRole());
@@ -140,14 +141,16 @@ public class RemoteServerTest {
   @Test
   public void zip() throws Exception {
     String encoded = PLZW.getEncoder().encode("This is a test!".getBytes("US-ASCII"));
-    //    System.out.println(Base64.encodeBytes("This is a test!".getBytes("US-ASCII"), Base64
+    //    System.out.println(Base64Test.encodeBytes("This is a test!".getBytes("US-ASCII"),
+    //    Base64Test
     //    .GZIP).length());
     byte[] decoded = PLZW.getDecoder().decode(encoded);
     System.out.println(new String(decoded, "US-ASCII"));
 
     PLZW.getEncoder().encode("TOBEORNOTTOBEORTOBEORNOT#".getBytes("US-ASCII"));
-    //    System.out.println(Base64.encodeBytes("TOBEORNOTTOBEORTOBEORNOT#".getBytes("US-ASCII"),
-    //    Base64.GZIP).length());
+    //    System.out.println(Base64Test.encodeBytes("TOBEORNOTTOBEORTOBEORNOT#".getBytes
+    //    ("US-ASCII"),
+    //    Base64Test.GZIP).length());
 
     dm.shakespeare.remote.io.JavaSerializer javaSerializer =
         new dm.shakespeare.remote.io.JavaSerializer();
@@ -157,7 +160,7 @@ public class RemoteServerTest {
     Object deserialize = javaSerializer.deserialize(RawData.wrap(PLZW.getDecoder().decode(encoded)),
         PrintRole.class.getClassLoader());
     assert deserialize instanceof PrintRole;
-    //    System.out.println(Base64.encodeBytes(bytes, Base64.GZIP).length());
+    //    System.out.println(Base64Test.encodeBytes(bytes, Base64Test.GZIP).length());
 
     StringWriter writer = new StringWriter();
     OutputStream encoder = PLZW.newEncoder(writer);

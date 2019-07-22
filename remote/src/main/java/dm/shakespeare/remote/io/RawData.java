@@ -236,10 +236,14 @@ public abstract class RawData implements Serializable {
           inputStream.getChannel().transferTo(0, this.file.length(), outputStream.getChannel());
 
         } finally {
-          if (inputStream != null) {
-            inputStream.close();
+          try {
+            if (inputStream != null) {
+              inputStream.close();
+            }
+
+          } finally {
+            outputStream.close();
           }
-          outputStream.close();
         }
       }
     }

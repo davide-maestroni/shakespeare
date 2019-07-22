@@ -232,8 +232,7 @@ public class StageReceiver {
     return ((string != null) && (string.trim().length() > 0));
   }
 
-  @NotNull
-  public Receiver connect() throws Exception {
+  public void connect() throws Exception {
     logger.dbg("[%s] connecting", this);
     final RemoteReceiver receiver = new RemoteReceiver();
     final Sender sender = connector.connect(receiver);
@@ -243,7 +242,6 @@ public class StageReceiver {
       }
       this.messageSender = sender;
     }
-    return receiver;
   }
 
   public void disconnect() {

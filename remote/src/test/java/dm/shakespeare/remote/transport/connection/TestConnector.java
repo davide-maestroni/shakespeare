@@ -23,21 +23,25 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import dm.shakespeare.remote.transport.message.RemoteRequest;
 import dm.shakespeare.remote.transport.message.RemoteResponse;
-import dm.shakespeare.remote.transport.connection.Connector;
 
 /**
  * Created by davide-maestroni on 07/18/2019.
  */
 public class TestConnector implements Connector {
 
-  private final Map<String, Receiver> receivers =
+  private final Map<String, Receiver> localReceivers =
       Collections.synchronizedMap(new HashMap<String, Receiver>());
+  private final AtomicReference<Receiver> remoteReceiver = new AtomicReference<Receiver>();
 
   @NotNull
   public Sender connect(@NotNull final Receiver receiver) {
+    if (remoteReceiver.getAndSet(receiver) != null) {
+      throw new IllegalStateException();
+    }
     return new Sender() {
 
       public void disconnect() {
@@ -46,19 +50,23 @@ public class TestConnector implements Connector {
       @NotNull
       public RemoteResponse send(@NotNull final RemoteRequest request,
           @Nullable final String receiverId) throws Exception {
-        return receivers.get(receiverId).receive(request);
+        return localReceivers.get(receiverId).receive(request);
       }
     };
   }
 
   @NotNull
-  public Connector localConnector(@NotNull final Receiver localReceiver) {
+  public Connector localConnector() {
+    final Receiver remoteReceiver = this.remoteReceiver.get();
+    if (remoteReceiver == null) {
+      throw new IllegalStateException();
+    }
     final String id = UUID.randomUUID().toString();
     return new Connector() {
 
       @NotNull
       public Sender connect(@NotNull final Receiver receiver) {
-        receivers.put(id, receiver);
+        localReceivers.put(id, receiver);
         return new Sender() {
 
           public void disconnect() {
@@ -67,7 +75,7 @@ public class TestConnector implements Connector {
           @NotNull
           public RemoteResponse send(@NotNull final RemoteRequest request,
               @Nullable final String receiverId) throws Exception {
-            return localReceiver.receive(request.withSenderId(id));
+            return remoteReceiver.receive(request.withSenderId(id));
           }
         };
       }

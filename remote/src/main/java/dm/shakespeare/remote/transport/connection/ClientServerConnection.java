@@ -123,7 +123,10 @@ public class ClientServerConnection {
   public static class ServerConnector implements Connector {
 
     private final Logger logger;
+    private final Object mutex = new Object();
     private final boolean piggyBackRequests;
+
+    private Receiver receiver;
 
     private ServerConnector(final boolean piggyBackRequests, @NotNull final Logger logger) {
       this.piggyBackRequests = piggyBackRequests;
@@ -132,7 +135,47 @@ public class ClientServerConnection {
 
     @NotNull
     public Sender connect(@NotNull final Receiver receiver) throws Exception {
-      return null;
+      synchronized (mutex) {
+        this.receiver = ConstantConditions.notNull("receiver", receiver);
+      }
+      return new Sender() {
+
+        public void disconnect() {
+          if (piggyBackRequests) {
+            logger.dbg("[%s] disconnecting", ServerConnector.this);
+          }
+        }
+
+        @NotNull
+        public RemoteResponse send(@NotNull final RemoteRequest request,
+            @Nullable final String receiverId) throws Exception {
+          return new RemoteResponse();
+        }
+      };
+    }
+
+    @Nullable
+    public Object receive(@NotNull final Object payload) throws Exception {
+      final Receiver receiver;
+      synchronized (mutex) {
+        receiver = this.receiver;
+        if (receiver == null) {
+          throw new IllegalStateException("not connected");
+        }
+      }
+
+      if (payload instanceof RemoteRequest) {
+        final RemoteResponse response = receiver.receive((RemoteRequest) payload);
+        // TODO: 2019-07-22 piggyBack
+        return new ResponseWrapper(response, null, Collections.<RequestWrapper>emptyList());
+
+      } else if (payload instanceof RemoteRequestsGet) {
+        return new RemoteRequestsResult();
+
+      } else if (payload instanceof ResponseWrapper) {
+        return null;
+      }
+      throw new IllegalArgumentException("unsupported payload type");
     }
   }
 
@@ -192,7 +235,7 @@ public class ClientServerConnection {
 
         public void run() {
           try {
-            final Object response = client.request(new RemoteRequestsGet());
+            final Object response = client.request(new RemoteRequestsGet(senderId));
             if (response instanceof RemoteRequestsResult) {
               handleRequests(((RemoteRequestsResult) response).getRequests());
 
@@ -254,7 +297,8 @@ public class ClientServerConnection {
             } catch (final Exception e) {
               logger.err(e, "[%s] failed to handle request", ClientSender.this);
               try {
-                client.request(remoteRequest.buildResponse().withError(e));
+                client.request(new ResponseWrapper(remoteRequest.buildResponse().withError(e),
+                    requestWrapper.getRequestId(), Collections.<RequestWrapper>emptyList()));
 
               } catch (final Exception ex) {
                 logger.err(ex, "[%s] failed to send error", ClientSender.this);
@@ -287,6 +331,20 @@ public class ClientServerConnection {
   private static class RemoteRequestsGet implements Serializable {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
+    private final String senderId;
+
+    private RemoteRequestsGet() {
+      senderId = null;
+    }
+
+    private RemoteRequestsGet(final String senderId) {
+      this.senderId = senderId;
+    }
+
+    public String getSenderId() {
+      return senderId;
+    }
   }
 
   private static class RemoteRequestsResult implements Serializable {
@@ -347,8 +405,8 @@ public class ClientServerConnection {
       requests = null;
     }
 
-    private ResponseWrapper(@NotNull final RemoteResponse response, @NotNull final String requestId,
-        @Nullable final List<RequestWrapper> requests) {
+    private ResponseWrapper(@NotNull final RemoteResponse response,
+        @Nullable final String requestId, @Nullable final List<RequestWrapper> requests) {
       this.response = response;
       this.requestId = requestId;
       this.requests = requests;
