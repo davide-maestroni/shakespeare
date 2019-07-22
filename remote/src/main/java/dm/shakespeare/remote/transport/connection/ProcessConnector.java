@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.remote.transport;
+package dm.shakespeare.remote.transport.connection;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,6 +40,8 @@ import dm.shakespeare.remote.config.BuildConfig;
 import dm.shakespeare.remote.io.JavaSerializer;
 import dm.shakespeare.remote.io.RawData;
 import dm.shakespeare.remote.io.Serializer;
+import dm.shakespeare.remote.transport.message.RemoteRequest;
+import dm.shakespeare.remote.transport.message.RemoteResponse;
 import dm.shakespeare.remote.util.PLZW;
 import dm.shakespeare.util.ConstantConditions;
 

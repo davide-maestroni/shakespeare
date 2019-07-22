@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.remote.transport;
+package dm.shakespeare.remote.transport.message;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -25,14 +25,14 @@ import java.util.List;
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
-public class MessageContinue extends RemoteResponse {
+public class CreateActorContinue extends RemoteResponse {
 
   private static final long serialVersionUID = VERSION;
 
   private List<String> resourcePaths;
 
   @NotNull
-  public MessageContinue addAllResourcePaths(
+  public CreateActorContinue addAllResourcePaths(
       @NotNull final Collection<? extends String> resourcePaths) {
     if (this.resourcePaths == null) {
       this.resourcePaths = new ArrayList<String>();
@@ -42,7 +42,7 @@ public class MessageContinue extends RemoteResponse {
   }
 
   @NotNull
-  public MessageContinue addResourcePath(final String resourcePath) {
+  public CreateActorContinue addResourcePath(final String resourcePath) {
     if (resourcePaths == null) {
       resourcePaths = new ArrayList<String>();
     }
@@ -60,13 +60,13 @@ public class MessageContinue extends RemoteResponse {
 
   @NotNull
   @Override
-  public MessageContinue withError(final Throwable error) {
+  public CreateActorContinue withError(final Throwable error) {
     super.withError(error);
     return this;
   }
 
   @NotNull
-  public MessageContinue withResourcePaths(final List<String> resourcePaths) {
+  public CreateActorContinue withResourcePaths(final List<String> resourcePaths) {
     this.resourcePaths = resourcePaths;
     return this;
   }

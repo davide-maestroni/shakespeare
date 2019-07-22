@@ -26,7 +26,7 @@ import java.util.concurrent.ExecutorService;
 import dm.shakespeare.log.Logger;
 import dm.shakespeare.remote.io.DataStore;
 import dm.shakespeare.remote.io.Serializer;
-import dm.shakespeare.remote.transport.Connector;
+import dm.shakespeare.remote.transport.connection.Connector;
 
 /**
  * Created by davide-maestroni on 06/07/2019.

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.remote.transport;
+package dm.shakespeare.remote.transport.message;
 
 import org.jetbrains.annotations.NotNull;
 

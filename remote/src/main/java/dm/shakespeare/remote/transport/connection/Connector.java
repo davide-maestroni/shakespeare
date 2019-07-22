@@ -14,21 +14,34 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.remote.transport;
+package dm.shakespeare.remote.transport.connection;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import dm.shakespeare.remote.transport.message.RemoteRequest;
+import dm.shakespeare.remote.transport.message.RemoteResponse;
 
 /**
- * Created by davide-maestroni on 04/09/2019.
+ * Created by davide-maestroni on 04/16/2019.
  */
-public class UploadResponse extends RemoteResponse {
-
-  private static final long serialVersionUID = VERSION;
+public interface Connector {
 
   @NotNull
-  @Override
-  public UploadResponse withError(final Throwable error) {
-    super.withError(error);
-    return this;
+  Sender connect(@NotNull Receiver receiver) throws Exception;
+
+  interface Receiver {
+
+    @NotNull
+    RemoteResponse receive(@NotNull RemoteRequest request) throws Exception;
+  }
+
+  interface Sender {
+
+    void disconnect();
+
+    @NotNull
+    RemoteResponse send(@NotNull RemoteRequest request, @Nullable String receiverId) throws
+        Exception;
   }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.remote;
+package dm.shakespeare.remote.transport.connection;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,9 +24,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import dm.shakespeare.remote.transport.Connector;
-import dm.shakespeare.remote.transport.RemoteRequest;
-import dm.shakespeare.remote.transport.RemoteResponse;
+import dm.shakespeare.remote.transport.message.RemoteRequest;
+import dm.shakespeare.remote.transport.message.RemoteResponse;
+import dm.shakespeare.remote.transport.connection.Connector;
 
 /**
  * Created by davide-maestroni on 07/18/2019.

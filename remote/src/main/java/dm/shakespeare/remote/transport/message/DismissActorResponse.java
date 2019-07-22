@@ -14,36 +14,20 @@
  * limitations under the License.
  */
 
-package dm.shakespeare.remote.transport;
+package dm.shakespeare.remote.transport.message;
 
 import org.jetbrains.annotations.NotNull;
 
 /**
  * Created by davide-maestroni on 04/09/2019.
  */
-public class CreateActorResponse extends RemoteResponse {
+public class DismissActorResponse extends RemoteResponse {
 
   private static final long serialVersionUID = VERSION;
 
-  private ActorID actorID;
-
-  public ActorID getActorID() {
-    return actorID;
-  }
-
-  public void setActorID(final ActorID actorID) {
-    this.actorID = actorID;
-  }
-
-  @NotNull
-  public CreateActorResponse withActorID(final ActorID actorID) {
-    this.actorID = actorID;
-    return this;
-  }
-
   @NotNull
   @Override
-  public CreateActorResponse withError(final Throwable error) {
+  public DismissActorResponse withError(final Throwable error) {
     super.withError(error);
     return this;
   }
