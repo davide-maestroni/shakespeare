@@ -214,7 +214,7 @@ public class ClientServerConnection {
 
     private Logger logger;
     private boolean piggyBackRequests;
-    // TODO: 2019-07-22 queue size + timeout
+    // TODO: 2019-07-22 piggyBack size + queue size + timeout
 
     private ServerConnectorBuilder() {
     }
@@ -427,6 +427,7 @@ public class ClientServerConnection {
   private static class ResponseWrapper implements Serializable {
 
     private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
+
     private final String requestId;
     private final List<RequestWrapper> requests;
     private final RemoteResponse response;
