@@ -75,14 +75,14 @@ class RemoteClassLoader extends ClassLoader {
   @Override
   protected Class<?> loadClass(final String name, final boolean resolve) throws
       ClassNotFoundException {
-    RawData data = null;
+    final RawData data;
     final String path = Classes.toPath(name);
     synchronized (mutex) {
       try {
         data = dataStore.get(paths.get(path));
 
       } catch (final IOException e) {
-        // TODO: 2019-06-27 ???
+        throw new RuntimeException(e);
       }
     }
     if (data != null) {
@@ -116,7 +116,7 @@ class RemoteClassLoader extends ClassLoader {
         }
 
       } catch (final IOException e) {
-        // TODO: 2019-06-27 ???
+        throw new RuntimeException(e);
       }
     }
     try {
@@ -227,15 +227,14 @@ class RemoteClassLoader extends ClassLoader {
               name.substring(0, name.length() - ".path".length()) + ".raw");
 
         } catch (final IOException e) {
-          // TODO: 18/04/2019 ???
+          throw new RuntimeException(e);
 
         } finally {
           if (reader != null) {
             try {
               reader.close();
 
-            } catch (final IOException e) {
-              // TODO: 18/04/2019 ??
+            } catch (final IOException ignored) {
             }
           }
         }

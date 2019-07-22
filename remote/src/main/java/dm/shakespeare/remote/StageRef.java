@@ -448,7 +448,7 @@ public class StageRef extends Stage {
           syncActors((FindResponse) response, false);
 
         } else {
-          throw new IllegalStateException("invalid response from remote stage: " + response);
+          throw new IllegalArgumentException("invalid response from remote stage: " + response);
         }
       }
 
@@ -473,7 +473,7 @@ public class StageRef extends Stage {
           syncActors((FindResponse) response, false);
 
         } else {
-          throw new IllegalStateException("invalid response from remote stage: " + response);
+          throw new IllegalArgumentException("invalid response from remote stage: " + response);
         }
       }
 
@@ -498,7 +498,7 @@ public class StageRef extends Stage {
           syncActors((FindResponse) response, false);
 
         } else {
-          throw new IllegalStateException("invalid response from remote stage: " + response);
+          throw new IllegalArgumentException("invalid response from remote stage: " + response);
         }
       }
 
@@ -523,7 +523,7 @@ public class StageRef extends Stage {
           syncActors((FindResponse) response, false);
 
         } else {
-          throw new IllegalStateException("invalid response from remote stage: " + response);
+          throw new IllegalArgumentException("invalid response from remote stage: " + response);
         }
       }
 
@@ -548,7 +548,7 @@ public class StageRef extends Stage {
           syncActors((FindResponse) response, false);
 
         } else {
-          throw new IllegalStateException("invalid response from remote stage: " + response);
+          throw new IllegalArgumentException("invalid response from remote stage: " + response);
         }
       }
 
@@ -598,7 +598,7 @@ public class StageRef extends Stage {
       }
       final List<String> missingResources = (createActorContinue).getResourcePaths();
       if ((missingResources == null) || missingResources.isEmpty()) {
-        throw new IllegalStateException("invalid response from remote stage: missing resources");
+        throw new IllegalArgumentException("invalid response from remote stage: missing resources");
       }
       resources.clear();
       for (final String missingResource : missingResources) {
@@ -609,7 +609,7 @@ public class StageRef extends Stage {
       }
 
       if (resources.isEmpty()) {
-        throw new IllegalStateException(
+        throw new IllegalArgumentException(
             "invalid response from remote stage: unknown resources: " + missingResources);
       }
       response = getMessageSender().send(new CreateActorRequest().withActorId(id)
@@ -634,7 +634,7 @@ public class StageRef extends Stage {
       return actor;
 
     } else {
-      throw new IllegalStateException("invalid response from remote stage: " + response);
+      throw new IllegalArgumentException("invalid response from remote stage: " + response);
     }
   }
 
@@ -788,7 +788,7 @@ public class StageRef extends Stage {
       syncActors((FindResponse) response, true);
 
     } else {
-      throw new IllegalStateException("invalid response from remote stage: " + response);
+      throw new IllegalArgumentException("invalid response from remote stage: " + response);
     }
     lastSyncTime.set(syncMillis);
   }
@@ -832,7 +832,7 @@ public class StageRef extends Stage {
         error = response.getError();
 
       } else {
-        throw new IllegalStateException("invalid response from remote stage: " + response);
+        throw new IllegalArgumentException("invalid response from remote stage: " + response);
       }
 
     } catch (final Exception e) {

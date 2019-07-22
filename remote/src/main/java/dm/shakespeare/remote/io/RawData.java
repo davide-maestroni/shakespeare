@@ -544,12 +544,7 @@ public abstract class RawData implements Serializable {
         }
 
       } finally {
-        try {
-          outputStream.close();
-
-        } catch (final IOException e) {
-          // TODO: 18/04/2019 ???
-        }
+        outputStream.close();
       }
 
       if (outputStream instanceof ByteArrayOutputStream) {
