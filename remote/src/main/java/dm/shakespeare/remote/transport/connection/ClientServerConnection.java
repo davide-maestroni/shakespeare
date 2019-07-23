@@ -109,8 +109,8 @@ public class ClientServerConnection {
     }
 
     @NotNull
-    public ClientConnectorBuilder withLogger(@NotNull final Logger logger) {
-      this.logger = ConstantConditions.notNull("logger", logger);
+    public ClientConnectorBuilder withLogger(final Logger logger) {
+      this.logger = logger;
       return this;
     }
 
@@ -299,7 +299,7 @@ public class ClientServerConnection {
   public static class ServerConnectorBuilder {
 
     private Logger logger;
-    // TODO: 2019-07-22 queue size + timeout
+    // TODO: 2019-07-22 max queue size + expiration
 
     private ServerConnectorBuilder() {
     }
@@ -308,12 +308,12 @@ public class ClientServerConnection {
     public ServerConnector build() {
       final Logger logger = this.logger;
       return new ServerConnector((logger != null) ? logger
-          : new Logger(LogPrinters.javaLoggingPrinter(ClientConnector.class.getName())));
+          : new Logger(LogPrinters.javaLoggingPrinter(ServerConnector.class.getName())));
     }
 
     @NotNull
-    public ServerConnectorBuilder withLogger(@NotNull final Logger logger) {
-      this.logger = ConstantConditions.notNull("logger", logger);
+    public ServerConnectorBuilder withLogger(final Logger logger) {
+      this.logger = logger;
       return this;
     }
   }
