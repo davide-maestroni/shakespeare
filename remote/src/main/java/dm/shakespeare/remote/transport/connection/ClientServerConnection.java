@@ -19,7 +19,6 @@ package dm.shakespeare.remote.transport.connection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 
 import dm.shakespeare.log.LogPrinters;
 import dm.shakespeare.log.Logger;
-import dm.shakespeare.remote.config.BuildConfig;
 import dm.shakespeare.remote.transport.connection.Connector.Receiver;
 import dm.shakespeare.remote.transport.connection.Connector.Sender;
 import dm.shakespeare.remote.transport.message.RemoteRequest;
@@ -67,11 +65,13 @@ public class ClientServerConnection {
     private final long maxPollingMillis;
     private final int maxPollingRequests;
     private final long minPollingMillis;
+    private final String senderId;
 
-    private ClientConnector(@NotNull final ConnectorClient client, final int maxPollingRequests,
-        final long minPollingMillis, final long maxPollingMillis, final int maxPiggyBackRequests,
-        @NotNull final Logger logger) {
+    private ClientConnector(@NotNull final ConnectorClient client, final String senderId,
+        final int maxPollingRequests, final long minPollingMillis, final long maxPollingMillis,
+        final int maxPiggyBackRequests, @NotNull final Logger logger) {
       this.client = client;
+      this.senderId = senderId;
       this.maxPollingRequests = maxPollingRequests;
       this.minPollingMillis = minPollingMillis;
       this.maxPollingMillis = maxPollingMillis;
@@ -81,7 +81,7 @@ public class ClientServerConnection {
 
     @NotNull
     public Sender connect(@NotNull final Receiver receiver) {
-      return new ClientSender(receiver, client, maxPollingRequests, minPollingMillis,
+      return new ClientSender(receiver, client, senderId, maxPollingRequests, minPollingMillis,
           maxPollingMillis, maxPiggyBackRequests, logger);
     }
   }
@@ -95,6 +95,7 @@ public class ClientServerConnection {
     private long maxPollingMillis = TimeUnit.MINUTES.toMillis(15);
     private int maxPollingRequests;
     private long minPollingMillis = -1;
+    private String senderId;
 
     private ClientConnectorBuilder(@NotNull final ConnectorClient client) {
       this.client = ConstantConditions.notNull("client", client);
@@ -103,8 +104,8 @@ public class ClientServerConnection {
     @NotNull
     public Connector build() {
       final Logger logger = this.logger;
-      return new ClientConnector(client, maxPollingRequests, minPollingMillis, maxPollingMillis,
-          maxPiggyBackRequests, (logger != null) ? logger
+      return new ClientConnector(client, senderId, maxPollingRequests, minPollingMillis,
+          maxPollingMillis, maxPiggyBackRequests, (logger != null) ? logger
           : new Logger(LogPrinters.javaLoggingPrinter(ClientConnector.class.getName())));
     }
 
@@ -137,76 +138,10 @@ public class ClientServerConnection {
       this.minPollingMillis = minPollingMillis;
       return this;
     }
-  }
-
-  public static class ClientRequest implements Serializable {
-
-    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
-
-    private int maxIncludedRequests;
-    private RemoteRequest request;
-
-    public int getMaxIncludedRequests() {
-      return maxIncludedRequests;
-    }
-
-    public void setMaxIncludedRequests(final int maxIncludedRequests) {
-      this.maxIncludedRequests = maxIncludedRequests;
-    }
-
-    public RemoteRequest getRequest() {
-      return request;
-    }
-
-    public void setRequest(final RemoteRequest request) {
-      this.request = request;
-    }
 
     @NotNull
-    public ClientRequest withMaxIncludedRequests(final int maxIncludedRequests) {
-      this.maxIncludedRequests = maxIncludedRequests;
-      return this;
-    }
-
-    @NotNull
-    public ClientRequest withRequest(final RemoteRequest request) {
-      this.request = request;
-      return this;
-    }
-  }
-
-  public static class ClientResponse implements Serializable {
-
-    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
-
-    private List<ServerRequest> requests;
-    private RemoteResponse response;
-
-    public List<ServerRequest> getRequests() {
-      return requests;
-    }
-
-    public void setRequests(final List<ServerRequest> requests) {
-      this.requests = requests;
-    }
-
-    public RemoteResponse getResponse() {
-      return response;
-    }
-
-    public void setResponse(final RemoteResponse response) {
-      this.response = response;
-    }
-
-    @NotNull
-    public ClientResponse withRequests(final List<ServerRequest> requests) {
-      this.requests = requests;
-      return this;
-    }
-
-    @NotNull
-    public ClientResponse withResponse(final RemoteResponse response) {
-      this.response = response;
+    public ClientConnectorBuilder withSenderId(final String senderId) {
+      this.senderId = senderId;
       return this;
     }
   }
@@ -215,11 +150,15 @@ public class ClientServerConnection {
 
     private final Logger logger;
     private final Object mutex = new Object();
+    private final RequestQueue queue;
     private final HashMap<String, RemoteResponse> responses = new HashMap<String, RemoteResponse>();
 
     private Receiver receiver;
 
-    private ServerConnector(@NotNull final Logger logger) {
+    private ServerConnector(final int maxServerRequests, final long requestExpirationMillis,
+        @NotNull final Logger logger) {
+      this.queue =
+          new RequestQueue(maxServerRequests, requestExpirationMillis, TimeUnit.MILLISECONDS);
       this.logger = logger;
     }
 
@@ -245,7 +184,7 @@ public class ClientServerConnection {
           final String requestId = UUID.randomUUID().toString();
           final ServerRequest serverRequest =
               new ServerRequest().withRequest(request).withRequestId(requestId);
-          // TODO: 2019-07-22 enqueue request
+          queue.enqueue(receiverId, serverRequest);
           RemoteResponse response;
           synchronized (responses) {
             final HashMap<String, RemoteResponse> responses = ServerConnector.this.responses;
@@ -280,17 +219,23 @@ public class ClientServerConnection {
       final ClientResponse clientResponse = new ClientResponse();
       final RemoteRequest remoteRequest = request.getRequest();
       if (remoteRequest != null) {
-        try {
-          final RemoteResponse remoteResponse = receiver.receive(remoteRequest);
-          clientResponse.setResponse(remoteResponse);
+        if (!(remoteRequest instanceof GetRequest)) {
+          try {
+            final RemoteResponse remoteResponse = receiver.receive(remoteRequest);
+            clientResponse.setResponse(remoteResponse);
 
-        } catch (final Exception e) {
-          clientResponse.setResponse(remoteRequest.buildResponse().withError(e));
+          } catch (final Exception e) {
+            clientResponse.setResponse(remoteRequest.buildResponse().withError(e));
+          }
         }
-      }
 
-      if (request.getMaxIncludedRequests() > 0) {
-        // TODO: 2019-07-23 dequeue requests
+        if (request.getMaxIncludedRequests() > 0) {
+          clientResponse.setRequests(
+              queue.dequeue(remoteRequest.getSenderId(), request.getMaxIncludedRequests()));
+        }
+
+      } else {
+        logger.wrn("[%s] remote request is missing: %s", this, request);
       }
       return clientResponse;
     }
@@ -299,7 +244,8 @@ public class ClientServerConnection {
   public static class ServerConnectorBuilder {
 
     private Logger logger;
-    // TODO: 2019-07-22 max queue size + expiration
+    private int maxServerRequests;
+    private long requestExpirationMillis;
 
     private ServerConnectorBuilder() {
     }
@@ -307,8 +253,9 @@ public class ClientServerConnection {
     @NotNull
     public ServerConnector build() {
       final Logger logger = this.logger;
-      return new ServerConnector((logger != null) ? logger
-          : new Logger(LogPrinters.javaLoggingPrinter(ServerConnector.class.getName())));
+      return new ServerConnector(maxServerRequests, requestExpirationMillis,
+          (logger != null) ? logger
+              : new Logger(LogPrinters.javaLoggingPrinter(ServerConnector.class.getName())));
     }
 
     @NotNull
@@ -316,88 +263,16 @@ public class ClientServerConnection {
       this.logger = logger;
       return this;
     }
-  }
-
-  public static class ServerRequest implements Serializable {
-
-    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
-
-    private RemoteRequest request;
-    private String requestId;
-
-    public RemoteRequest getRequest() {
-      return request;
-    }
-
-    public void setRequest(final RemoteRequest request) {
-      this.request = request;
-    }
-
-    public String getRequestId() {
-      return requestId;
-    }
-
-    public void setRequestId(final String requestId) {
-      this.requestId = requestId;
-    }
 
     @NotNull
-    public ServerRequest withRequest(final RemoteRequest request) {
-      this.request = request;
+    public ServerConnectorBuilder withMaxServerRequests(final int maxServerRequests) {
+      this.maxServerRequests = maxServerRequests;
       return this;
     }
 
     @NotNull
-    public ServerRequest withRequestId(final String requestId) {
-      this.requestId = requestId;
-      return this;
-    }
-  }
-
-  public static class ServerResponse extends ClientRequest {
-
-    private static final long serialVersionUID = BuildConfig.SERIAL_VERSION_UID;
-
-    private String requestId;
-    private RemoteResponse response;
-
-    public String getRequestId() {
-      return requestId;
-    }
-
-    public void setRequestId(final String requestId) {
-      this.requestId = requestId;
-    }
-
-    public RemoteResponse getResponse() {
-      return response;
-    }
-
-    public void setResponse(final RemoteResponse response) {
-      this.response = response;
-    }
-
-    @NotNull
-    public ServerResponse withMaxIncludedRequests(final int maxIncludedRequests) {
-      super.withMaxIncludedRequests(maxIncludedRequests);
-      return this;
-    }
-
-    @NotNull
-    public ServerResponse withRequest(final RemoteRequest request) {
-      super.withRequest(request);
-      return this;
-    }
-
-    @NotNull
-    public ServerResponse withRequestId(final String requestId) {
-      this.requestId = requestId;
-      return this;
-    }
-
-    @NotNull
-    public ServerResponse withResponse(final RemoteResponse response) {
-      this.response = response;
+    public ServerConnectorBuilder withRequestExpirationMillis(final long requestExpirationMillis) {
+      this.requestExpirationMillis = requestExpirationMillis;
       return this;
     }
   }
@@ -417,17 +292,18 @@ public class ClientServerConnection {
     private final Object mutex = new Object();
     private final Runnable pollingTask;
     private final Receiver receiver;
-    private final String senderId = UUID.randomUUID().toString(); // TODO: 2019-07-23 parameter
+    private final String senderId;
 
     private long currentDelayMillis;
     private volatile boolean isConnected = true;
     private volatile ScheduledFuture<?> scheduledFuture;
 
     private ClientSender(@NotNull final Receiver receiver, @NotNull final ConnectorClient client,
-        final int maxPollingRequests, final long minPollingMillis, final long maxPollingMillis,
-        final int maxPiggyBackRequests, @NotNull final Logger logger) {
+        final String senderId, final int maxPollingRequests, final long minPollingMillis,
+        final long maxPollingMillis, final int maxPiggyBackRequests, @NotNull final Logger logger) {
       this.receiver = ConstantConditions.notNull("receiver", receiver);
       this.client = client;
+      this.senderId = senderId;
       this.maxPollingRequests = maxPollingRequests;
       this.minPollingMillis = minPollingMillis;
       this.maxPollingMillis = maxPollingMillis;
@@ -437,8 +313,9 @@ public class ClientServerConnection {
 
         public void run() {
           try {
-            final ClientResponse response =
-                client.request(new ClientRequest().withMaxIncludedRequests(maxPollingRequests));
+            final ClientResponse response = client.request(
+                new ClientRequest().withRequest(new GetRequest().withSenderId(senderId))
+                    .withMaxIncludedRequests(maxPollingRequests));
             handleRequests(response.getRequests());
 
           } catch (final Exception e) {
